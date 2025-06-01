@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+clockwork
+
+# Cmake folders
+build-release/
+build-debug/
