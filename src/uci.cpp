@@ -1,4 +1,5 @@
 #include "uci.hpp"
+#include "move.hpp"
 
 #include <ios>
 #include <iostream>
@@ -20,7 +21,7 @@ void UCIHandler::handleCommandLine(int argc, char* argv[]) {
         executeCommand(argv[i]);
 }
 
-void UCIHandler::executeCommand(std::string line) {
+void UCIHandler::executeCommand(const std::string& line) {
     std::istringstream is{line};
 
     std::string command;
@@ -35,8 +36,56 @@ void UCIHandler::executeCommand(std::string line) {
         std::cout << "readyok" << std::endl;
     else if (command == "quit")
         std::exit(0);
+    else if (command == "go")
+        handleGo(is);
+    else if (command == "position")
+        handlePosition(is);
     else
         std::cout << "Unknown command" << std::endl;
+}
+
+void UCIHandler::handleGo(std::istringstream& is) {
+    std::string token;
+    while (is >> token)
+    {
+        if (token == "depth")
+        {
+            is >> settings.depth;
+        }
+        else if (token == "movetime")
+        {
+            is >> settings.moveTime;
+        }
+        else if (token == "wtime")
+        {
+            is >> settings.wTime;
+        }
+        else if (token == "btime")
+        {
+            is >> settings.bTime;
+        }
+        else if (token == "winc")
+        {
+            is >> settings.wInc;
+        }
+        else if (token == "binc")
+        {
+            is >> settings.bInc;
+        }
+    }
+}
+
+void UCIHandler::handlePosition(std::istringstream& is) {
+    std::string token;
+    if (is >> token)
+    {
+        if (token == "startpos")
+        {
+        }
+        else if (token == "fen")
+        {
+        }
+    }
 }
 
 }
