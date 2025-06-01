@@ -2,8 +2,13 @@
 
 using namespace Clockwork;
 
-int main() {
+int main(int argc, char* argv[]) {
     UCI::UCIHandler uci;
-    uci.loop();
+
+    if (argc > 1)
+        uci.handleCommandLine(argc, argv);
+    else
+        uci.loop();
+
     return 0;
 }
