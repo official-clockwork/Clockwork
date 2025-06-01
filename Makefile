@@ -1,5 +1,5 @@
 
-CXXA ?= clang++
+CXX ?= clang++
 EXE ?= clockwork
 
 ifeq ($(OS), Windows_NT)
@@ -16,14 +16,13 @@ EXE := "$(EXE)$(SUFFIX)"
 all: release
 
 release:
-	CXX=$(CXXA) cmake -DCMAKE_BUILD_TYPE=Relase -B build-release -S . && cmake --build build-release -j
-	cp build-release/clockwork $(EXE)
+	CXX=$(CXX) cmake -DCMAKE_BUILD_TYPE=Relase -B build-release -S . && cmake --build build-release -j
+	cp "build-release/clockwork$(SUFFIX)" $(EXE)
 
 debug:
-	export CXX=$CXX
-	cmake -DCMAKE_BUILD_TYPE=Debug -B build-debug -S . && cmake --build build-debug -j
-	cp build-debug/clockwork $(EXE)
+	CXX=$(CXX) cmake -DCMAKE_BUILD_TYPE=Debug -B build-debug -S . && cmake --build build-debug -j
+	cp "build-debug/clockwork$(SUFFIX)" $(EXE)
 
 clean:
 	rm -rf build-debug build-release
-	rm ./clockwork
+	rm $(EXE)

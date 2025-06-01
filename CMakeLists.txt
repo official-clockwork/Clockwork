@@ -17,6 +17,16 @@ set_target_properties(clockwork PROPERTIES
 # We don't support MSVC
 target_compile_options(clockwork PRIVATE -Wall -Wextra -Wconversion)
 
+target_compile_options(clockwork PRIVATE
+ $<$<CONFIG:Debug>:
+    -fsanitize=address,undefined -g3
+  >)
+
+target_link_options(clockwork PRIVATE
+ $<$<CONFIG:Debug>:
+    -fsanitize=address,undefined
+  >)
+
 #Optimizations
 target_compile_options(clockwork PRIVATE -march=native)
 
