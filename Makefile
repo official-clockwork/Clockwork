@@ -16,11 +16,11 @@ EXE := "$(EXE)$(SUFFIX)"
 all: release
 
 release:
-	CXX=$(CXX) cmake -DCMAKE_BUILD_TYPE=Relase -B build-release -S . && cmake --build build-release -j
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=$(CXX) -B build-release -S . && cmake --build build-release -j
 	cp "build-release/clockwork$(SUFFIX)" $(EXE)
 
 debug:
-	CXX=$(CXX) cmake -DCMAKE_BUILD_TYPE=Debug -B build-debug -S . && cmake --build build-debug -j
+	cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=$(CXX) -B build-debug -S . && cmake --build build-debug -j
 	cp "build-debug/clockwork$(SUFFIX)" $(EXE)
 
 clean:
