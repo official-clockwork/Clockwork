@@ -45,17 +45,43 @@ void UCIHandler::executeCommand(std::string line) {
 
 void UCIHandler::handleGo(std::istringstream& is) {
     std::string token;
-    if (is >> token)
+    while (is >> token)
     {
         if (token == "depth")
         {
             int depth;
             is >> depth;
+            settings.depth = depth;
         }
         else if (token == "movetime")
         {
             int moveTime;
             is >> moveTime;
+            settings.moveTime = moveTime;
+        }
+        else if (token == "wtime")
+        {
+            int wTime;
+            is >> wTime;
+            settings.wTime = wTime;
+        }
+        else if (token == "btime")
+        {
+            int bTime;
+            is >> bTime;
+            settings.bTime = bTime;
+        }
+        else if (token == "winc")
+        {
+            int wInc;
+            is >> wInc;
+            settings.wInc = wInc;
+        }
+        else if (token == "binc")
+        {
+            int bInc;
+            is >> bInc;
+            settings.bInc = bInc;
         }
     }
 }
