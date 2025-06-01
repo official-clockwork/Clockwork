@@ -1,4 +1,5 @@
 #include "uci.hpp"
+#include "move.hpp"
 
 #include <ios>
 #include <iostream>
