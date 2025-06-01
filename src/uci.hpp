@@ -20,7 +20,7 @@ class UCIHandler {
 
    private:
     SearchSettings settings;
-    void executeCommand(std::string);
+    void executeCommand(const std::string&);
     void handleGo(std::istringstream&);
     void handlePosition(std::istringstream&);
 };

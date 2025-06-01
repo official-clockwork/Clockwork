@@ -20,7 +20,7 @@ void UCIHandler::handleCommandLine(int argc, char* argv[]) {
         executeCommand(argv[i]);
 }
 
-void UCIHandler::executeCommand(std::string line) {
+void UCIHandler::executeCommand(const std::string& line) {
     std::istringstream is{line};
 
     std::string command;
