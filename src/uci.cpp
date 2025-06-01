@@ -49,39 +49,27 @@ void UCIHandler::handleGo(std::istringstream& is) {
     {
         if (token == "depth")
         {
-            int depth;
-            is >> depth;
-            settings.depth = depth;
+            is >> settings.depth;
         }
         else if (token == "movetime")
         {
-            int moveTime;
-            is >> moveTime;
-            settings.moveTime = moveTime;
+            is >> settings.moveTime;
         }
         else if (token == "wtime")
         {
-            int wTime;
-            is >> wTime;
-            settings.wTime = wTime;
+            is >> settings.wTime;
         }
         else if (token == "btime")
         {
-            int bTime;
-            is >> bTime;
-            settings.bTime = bTime;
+            is >> settings.bTime;
         }
         else if (token == "winc")
         {
-            int wInc;
-            is >> wInc;
-            settings.wInc = wInc;
+            is >> settings.wInc;
         }
         else if (token == "binc")
         {
-            int bInc;
-            is >> bInc;
-            settings.bInc = bInc;
+            is >> settings.bInc;
         }
     }
 }
