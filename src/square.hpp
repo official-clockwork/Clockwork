@@ -30,15 +30,14 @@ struct Square {
         return fromFileAndRank(file, rank);
     }
 
-    constexpr usize file() const { return raw / 8; }
+    constexpr usize file() const { return raw % 8; }
 
-    constexpr usize rank() const { return raw % 8; }
+    constexpr usize rank() const { return raw / 8; }
 
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());
         return os << file << sq.rank() + 1;
     }
-
 };
 
 }

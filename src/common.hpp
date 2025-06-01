@@ -1,27 +1,40 @@
-
-#include "util/types.hpp"
+#pragma once
 
 namespace Clockwork {
 
-enum class Color { white, black };
+enum class Color {
+    white,
+    black
+};
 
-enum class Piece {
+enum class PieceType {
     pawn,
     knight,
     bishop,
     rook,
     queen,
     king,
+    empty,
 };
 
-constexpr char piece_char(Piece piece) {
-    switch (piece) {
-        case Piece::pawn: return 'p';
-        case Piece::knight: return 'n';
-        case Piece::bishop: return 'b';
-        case Piece::rook: return 'r';
-        case Piece::queen: return 'q';
-        case Piece::king: return 'k';
+constexpr char piece_char(PieceType piece) {
+    using enum PieceType;
+    switch (piece)
+    {
+    case pawn :
+        return 'p';
+    case knight :
+        return 'n';
+    case bishop :
+        return 'b';
+    case rook :
+        return 'r';
+    case queen :
+        return 'q';
+    case king :
+        return 'k';
+    case empty :
+        return '.';
     }
 }
 
