@@ -11,6 +11,8 @@ class UCIHandler {
 
    private:
     void executeCommand(std::string);
+    void handleGo(std::istringstream&);
+    void handlePosition(std::istringstream&);
 };
 
 }

@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+.idea/.name
+.idea/Clockwork.iml
+.idea/codeStyles/codeStyleConfig.xml
+.idea/codeStyles/Project.xml
+.idea/editor.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+src/.idea/editor.xml
+src/.idea/modules.xml
+src/.idea/src.iml
+src/.idea/vcs.xml

@@ -35,8 +35,42 @@ void UCIHandler::executeCommand(std::string line) {
         std::cout << "readyok" << std::endl;
     else if (command == "quit")
         std::exit(0);
+    else if (command == "go")
+        handleGo(is);
+    else if (command == "position")
+        handlePosition(is);
     else
         std::cout << "Unknown command" << std::endl;
+}
+
+void UCIHandler::handleGo(std::istringstream& is) {
+    std::string token;
+    if (is >> token)
+    {
+        if (token == "depth")
+        {
+            int depth;
+            is >> depth;
+        }
+        else if (token == "movetime")
+        {
+            int moveTime;
+            is >> moveTime;
+        }
+    }
+}
+
+void UCIHandler::handlePosition(std::istringstream& is) {
+    std::string token;
+    if (is >> token)
+    {
+        if (token == "startpos")
+        {
+        }
+        else if (token == "fen")
+        {
+        }
+    }
 }
 
 }
