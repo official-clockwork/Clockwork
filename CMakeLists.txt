@@ -6,7 +6,7 @@ project(
         DESCRIPTION "HCE Community Engine"
         LANGUAGES CXX)
 
-add_executable(clockwork src/main.cpp src/uci.cpp src/uci.hpp src/util/types.h)
+add_executable(clockwork src/main.cpp src/uci.cpp src/uci.hpp src/square.hpp src/move.hpp src/common.hpp src/util/types.hpp)
 
 set_target_properties(clockwork PROPERTIES
     CXX_STANDARD 20
