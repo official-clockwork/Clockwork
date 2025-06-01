@@ -5,22 +5,29 @@
 #include <string_view>
 #include <cassert>
 #include <ostream>
+#include <optional>
 
 namespace Clockwork {
 
 struct Square {
     u8 raw;
 
-    constexpr explicit Square(u8 value ) : raw(value) {}
+    static constexpr Square fromFileAndRank(int file, int rank) {
+        assert(file >= 0 && file < 8);
+        assert(rank >= 0 && rank < 8);
+        return Square{static_cast<u8>(rank * 8 + file)};
+    }
 
-    constexpr explicit Square(std::string_view sv) {
-        // TODO: Better error handling?
-        assert(sv.size() == 2);
-        char file = sv[0];
-        assert(file >= 'a' && file <= 'h');
-        char rank = sv[1];
-        assert(rank >= '1' && rank <= '8');
-        raw = 8 * (file - 'a') + rank - '1';
+    static constexpr std::optional<Square> parse(std::string_view str) {
+        if (str.size() != 2)
+            return std::nullopt;
+        if (str[0] < 'a' or str[0] > 'h')
+            return std::nullopt;
+        const int file = str[0] - 'a';
+        if (str[1] < '1' or str[1] > '8')
+            return std::nullopt;
+        const int rank = str[1] - '1';
+        return fromFileAndRank(file, rank);
     }
 
     constexpr usize file() const { return raw / 8; }
