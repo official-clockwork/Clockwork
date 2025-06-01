@@ -4,8 +4,14 @@ EXE ?= clockwork
 
 ifeq ($(OS), Windows_NT)
 	SUFFIX := .exe
+	COPY := copy
+	RM := rd /q
+	RM_DIR := rd /s /q
 else
 	SUFFIX :=
+	COPY := cp
+	RM := rm
+	RM_DIR := rm -rf
 endif
 
 
@@ -17,12 +23,12 @@ all: release
 
 release:
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=$(CXX) -B build-release -S . && cmake --build build-release -j
-	cp "build-release/clockwork$(SUFFIX)" $(EXE)
+	$(COPY) "build-release/clockwork$(SUFFIX)" $(EXE)
 
 debug:
 	cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=$(CXX) -B build-debug -S . && cmake --build build-debug -j
-	cp "build-debug/clockwork$(SUFFIX)" $(EXE)
+	$(COPY) "build-debug/clockwork$(SUFFIX)" $(EXE)
 
 clean:
-	rm -rf build-debug build-release
-	rm $(EXE)
+	$(RM_DIR) build-debug build-release
+	$(RM) $(EXE)
