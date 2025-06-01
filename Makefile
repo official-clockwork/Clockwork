@@ -1,18 +1,20 @@
-
 CXX ?= clang++
 EXE ?= clockwork
 
 ifeq ($(OS), Windows_NT)
-	SUFFIX := .exe
-	COPY := copy
-	RM := rd /q
-	RM_DIR := rd /s /q
+    SUFFIX := .exe
+    COPY := copy
+    RM := del
+    RM_DIR := rd /s /q
+    MK_PATH = $(subst /,\,$(1))
 else
-	SUFFIX :=
-	COPY := cp
-	RM := rm
-	RM_DIR := rm -rf
+    SUFFIX :=
+    COPY := cp
+    RM := rm
+    RM_DIR := rm -rf
+    MK_PATH = $(1)
 endif
+
 
 
 EXE := "$(EXE)$(SUFFIX)"
@@ -21,32 +23,14 @@ EXE := "$(EXE)$(SUFFIX)"
 
 all: release
 
-ifeq ($(OS), Windows_NT)
 release:
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=$(CXX) -B build-release -S . && cmake --build build-release -j
-	copy "build-release\clockwork.exe" $(EXE)
-else
-release:
-	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=$(CXX) -B build-release -S . && cmake --build build-release -j
-	cp "build-release/clockwork" $(EXE)
-endif
+	$(COPY) $(call MK_PATH,"build-release/clockwork$(SUFFIX)") $(EXE)
 
-ifeq ($(OS), Windows_NT)
 debug:
 	cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=$(CXX) -B build-debug -S . && cmake --build build-debug -j
-	copy "build-debug\clockwork.exe" $(EXE)
-else
-debug:
-	cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=$(CXX) -B build-debug -S . && cmake --build build-debug -j
-	cp "build-debug/clockwork" $(EXE)
-endif
+	$(COPY) $(call MK_PATH,"build-debug/clockwork$(SUFFIX)") $(EXE)
 
-ifeq ($(OS), Windows_NT)
 clean:
-		rd /s /q build-debug build-release
-		rd $(EXE)
-else
-clean:
-		rm -rf build-debug build-release
-		rm $(EXE)
-endif
+	-$(RM_DIR) build-debug build-release
+	-$(RM) $(EXE)
