@@ -1,0 +1,43 @@
+Checks: >
+  -*,
+  readability-identifier-naming,
+  modernize-use-nodiscard,
+  modernize-avoid-c-arrays,
+  modernize-use-nullptr,
+  modernize-deprecated-headers,
+  modernize-replace-auto-ptr,
+  modernize-use-default-member-init,
+  modernize-use-equals-default,
+  modernize-use-equals-delete,
+  modernize-return-braced-init-list,
+  modernize-use-using,
+  modernize-use-transparent-functors,
+  cppcoreguidelines-avoid-c-arrays,
+  cppcoreguidelines-pro-type-cstyle-cast
+
+WarningsAsErrors: ''
+
+CheckOptions:
+  # Function names: snake_case
+  - key:             readability-identifier-naming.FunctionCase
+    value:           lower_case
+
+  # Variable names: camelCase
+  - key:             readability-identifier-naming.VariableCase
+    value:           camelBack
+
+  # Constants: SCREAMING_SNAKE_CASE
+  - key:             readability-identifier-naming.ConstantCase
+    value:           UPPER_CASE
+
+  # Enum constant values: PascalCase
+  - key:             readability-identifier-naming.EnumConstantCase
+    value:           CamelCase
+
+  # Public data members: camelCase
+  - key:             readability-identifier-naming.PublicMemberCase
+    value:           camelBack
+
+  # Private data members: camelCase
+  - key:             readability-identifier-naming.PrivateMemberCase
+    value:           camelBack

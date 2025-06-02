@@ -13,16 +13,16 @@ struct SearchSettings {
     int moveTime = 0;
 };
 
-class UCIHandler {
+class UCIHandler { 
    public:
     void loop();
-    void handleCommandLine(int argc, char* argv[]);
+    void handle_command_line(int argc, char* argv[]);
 
    private:
     SearchSettings settings;
-    void executeCommand(const std::string&);
-    void handleGo(std::istringstream&);
-    void handlePosition(std::istringstream&);
+    void execute_command(const std::string&);
+    void handle_go(std::istringstream&);
+    void handle_position(std::istringstream&);
 };
 
 }

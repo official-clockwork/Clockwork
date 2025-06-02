@@ -3,39 +3,38 @@
 namespace Clockwork {
 
 enum class Color {
-    white,
-    black
-};
+    White,
+    Black
+}; 
 
 enum class PieceType {
-    pawn,
-    knight,
-    bishop,
-    rook,
-    queen,
-    king,
-    empty,
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
+    Empty,
 };
 
 constexpr char piece_char(PieceType piece) {
     using enum PieceType;
-    switch (piece)
-    {
-    case pawn :
+    switch (piece) {
+    case Pawn :
         return 'p';
-    case knight :
+    case Knight :
         return 'n';
-    case bishop :
+    case Bishop :
         return 'b';
-    case rook :
+    case Rook :
         return 'r';
-    case queen :
+    case Queen :
         return 'q';
-    case king :
+    case King :
         return 'k';
-    case empty :
+    case Empty :
         return '.';
     }
 }
 
-}
+} 

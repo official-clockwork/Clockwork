@@ -6,22 +6,22 @@
 #include <istream>
 #include <sstream>
 #include <string>
-
+ 
 namespace Clockwork::UCI {
 
 void UCIHandler::loop() {
     std::string input;
-
+ 
     while (std::getline(std::cin, input))
-        executeCommand(input);
+        execute_command(input);
 }
 
-void UCIHandler::handleCommandLine(int argc, char* argv[]) {
+void UCIHandler::handle_command_line(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i)
-        executeCommand(argv[i]);
+        execute_command(argv[i]);
 }
 
-void UCIHandler::executeCommand(const std::string& line) {
+void UCIHandler::execute_command(const std::string& line) {
     std::istringstream is{line};
 
     std::string command;
@@ -37,14 +37,14 @@ void UCIHandler::executeCommand(const std::string& line) {
     else if (command == "quit")
         std::exit(0);
     else if (command == "go")
-        handleGo(is);
+        handle_go(is);
     else if (command == "position")
-        handlePosition(is);
+        handle_position(is);
     else
         std::cout << "Unknown command" << std::endl;
 }
 
-void UCIHandler::handleGo(std::istringstream& is) {
+void UCIHandler::handle_go(std::istringstream& is) {
     std::string token;
     while (is >> token)
     {
@@ -75,7 +75,7 @@ void UCIHandler::handleGo(std::istringstream& is) {
     }
 }
 
-void UCIHandler::handlePosition(std::istringstream& is) {
+void UCIHandler::handle_position(std::istringstream& is) {
     std::string token;
     if (is >> token)
     {
