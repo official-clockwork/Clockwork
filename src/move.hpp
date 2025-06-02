@@ -35,11 +35,11 @@ struct Move {
     }
 
     [[nodiscard]] constexpr Square from() const {
-        return {raw & 0x3F};
+        return static_cast<Square>(raw & 0x3F);
     }
-
+    
     [[nodiscard]] constexpr Square to() const {
-        return {(raw >> 6) & 0x3F};
+        return static_cast<Square>((raw >> 6) & 0x3F);
     }
 
     [[nodiscard]] constexpr MoveFlags flags() const {
