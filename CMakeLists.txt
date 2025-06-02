@@ -9,23 +9,23 @@ project(
 add_executable(clockwork src/main.cpp src/uci.cpp src/uci.hpp src/square.hpp src/move.hpp src/common.hpp src/util/types.hpp)
 
 set_target_properties(clockwork PROPERTIES
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS NO)
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO)
 
 # Warnings
 # We don't support MSVC
 target_compile_options(clockwork PRIVATE -Wall -Wextra -Wconversion)
 
 target_compile_options(clockwork PRIVATE
- $<$<CONFIG:Debug>:
-    -fsanitize=address,undefined -g3
-  >)
+        $<$<CONFIG:Debug>:
+        -fsanitize=address,undefined -g3
+        >)
 
 target_link_options(clockwork PRIVATE
- $<$<CONFIG:Debug>:
-    -fsanitize=address,undefined
-  >)
+        $<$<CONFIG:Debug>:
+        -fsanitize=address,undefined
+        >)
 
 #Optimizations
 target_compile_options(clockwork PRIVATE -march=native)
@@ -33,6 +33,6 @@ target_compile_options(clockwork PRIVATE -march=native)
 # LTO
 include(CheckIPOSupported)
 check_ipo_supported(RESULT lto)
-if(lto)
-  set_target_properties(clockwork PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
+if (lto)
+    set_target_properties(clockwork PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif ()
