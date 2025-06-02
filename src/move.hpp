@@ -6,27 +6,27 @@
 
 #include <optional>
 
-namespace Clockwork { 
+namespace Clockwork {
 
 static_assert(static_cast<u16>(PieceType::Knight) == 1);
 
 enum class MoveFlags : u16 {
-    Normal               = 0b0000 << 12,
-    Castle               = 0b0001 << 12,
-    CaptureBit          = 0b0100 << 12,
-    EnPassant           = 0b0110 << 12,
-    PromotionBit        = 0b1000 << 12,
-    PromoKnight         = (0b1000 | (static_cast<u16>(PieceType::Knight) - 1)) << 12,
-    PromoBishop         = (0b1000 | (static_cast<u16>(PieceType::Bishop) - 1)) << 12,
-    PromoRook           = (0b1000 | (static_cast<u16>(PieceType::Rook) - 1)) << 12,
-    PromoQueen          = (0b1000 | (static_cast<u16>(PieceType::Queen) - 1)) << 12,
-    PromoCapture        = 0b1100 << 12,
+    Normal             = 0b0000 << 12,
+    Castle             = 0b0001 << 12,
+    CaptureBit         = 0b0100 << 12,
+    EnPassant          = 0b0110 << 12,
+    PromotionBit       = 0b1000 << 12,
+    PromoKnight        = (0b1000 | (static_cast<u16>(PieceType::Knight) - 1)) << 12,
+    PromoBishop        = (0b1000 | (static_cast<u16>(PieceType::Bishop) - 1)) << 12,
+    PromoRook          = (0b1000 | (static_cast<u16>(PieceType::Rook) - 1)) << 12,
+    PromoQueen         = (0b1000 | (static_cast<u16>(PieceType::Queen) - 1)) << 12,
+    PromoCapture       = 0b1100 << 12,
     PromoKnightCapture = (0b1100 | (static_cast<u16>(PieceType::Knight) - 1)) << 12,
     PromoBishopCapture = (0b1100 | (static_cast<u16>(PieceType::Bishop) - 1)) << 12,
     PromoRookCapture   = (0b1100 | (static_cast<u16>(PieceType::Rook) - 1)) << 12,
     PromoQueenCapture  = (0b1100 | (static_cast<u16>(PieceType::Queen) - 1)) << 12,
 };
- 
+
 struct Move {
     u16 raw;
 
@@ -53,7 +53,7 @@ struct Move {
     [[nodiscard]] constexpr bool is_promotion() const {
         return raw & static_cast<u16>(MoveFlags::PromotionBit);
     }
- 
+
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {
         switch (flags()) {
         case MoveFlags::PromoKnight :

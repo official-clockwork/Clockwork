@@ -5,7 +5,7 @@ namespace Clockwork {
 enum class Color {
     White,
     Black
-}; 
+};
 
 enum class PieceType {
     Pawn,
@@ -37,4 +37,4 @@ constexpr char piece_char(PieceType piece) {
     }
 }
 
-} 
+}

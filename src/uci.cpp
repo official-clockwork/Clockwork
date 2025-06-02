@@ -6,12 +6,12 @@
 #include <istream>
 #include <sstream>
 #include <string>
- 
+
 namespace Clockwork::UCI {
 
 void UCIHandler::loop() {
     std::string input;
- 
+
     while (std::getline(std::cin, input))
         execute_command(input);
 }
@@ -27,8 +27,7 @@ void UCIHandler::execute_command(const std::string& line) {
     std::string command;
     is >> std::skipws >> command;
 
-    if (command == "uci")
-    {
+    if (command == "uci") {
         std::cout << "id Name Clockwork\n";
         std::cout << "id author The Clockwork community" << std::endl;
     }
@@ -46,30 +45,23 @@ void UCIHandler::execute_command(const std::string& line) {
 
 void UCIHandler::handle_go(std::istringstream& is) {
     std::string token;
-    while (is >> token)
-    {
-        if (token == "depth")
-        {
+    while (is >> token) {
+        if (token == "depth") {
             is >> settings.depth;
         }
-        else if (token == "movetime")
-        {
+        else if (token == "movetime") {
             is >> settings.moveTime;
         }
-        else if (token == "wtime")
-        {
+        else if (token == "wtime") {
             is >> settings.wTime;
         }
-        else if (token == "btime")
-        {
+        else if (token == "btime") {
             is >> settings.bTime;
         }
-        else if (token == "winc")
-        {
+        else if (token == "winc") {
             is >> settings.wInc;
         }
-        else if (token == "binc")
-        {
+        else if (token == "binc") {
             is >> settings.bInc;
         }
     }
@@ -77,14 +69,9 @@ void UCIHandler::handle_go(std::istringstream& is) {
 
 void UCIHandler::handle_position(std::istringstream& is) {
     std::string token;
-    if (is >> token)
-    {
-        if (token == "startpos")
-        {
-        }
-        else if (token == "fen")
-        {
-        }
+    if (is >> token) {
+        if (token == "startpos") {}
+        else if (token == "fen") {}
     }
 }
 

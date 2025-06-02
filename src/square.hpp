@@ -10,10 +10,11 @@
 namespace Clockwork {
 
 struct Square {
-    u8 raw; 
+    u8 raw;
 
     constexpr Square(u8 r) :
-        raw{r} {}
+        raw{r} {
+    }
 
     static constexpr Square from_file_and_rank(int file, int rank) {
         assert(file >= 0 && file < 8);
@@ -33,9 +34,13 @@ struct Square {
         return from_file_and_rank(FILE, RANK);
     }
 
-    [[nodiscard]] constexpr usize file() const { return raw % 8; }
+    [[nodiscard]] constexpr usize file() const {
+        return raw % 8;
+    }
 
-    [[nodiscard]] constexpr usize rank() const { return raw / 8; }
+    [[nodiscard]] constexpr usize rank() const {
+        return raw / 8;
+    }
 
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());
