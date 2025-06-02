@@ -20,6 +20,7 @@ target_compile_options(clockwork PRIVATE -Wall -Wextra -Wconversion)
 target_compile_options(clockwork PRIVATE
         $<$<CONFIG:Debug>:
         -fsanitize=address,undefined -g3
+        -D_GLIBCXX_DEBUG -D_LIBCPP_DEBUG=1
         >)
 
 target_link_options(clockwork PRIVATE
