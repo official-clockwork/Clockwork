@@ -8,8 +8,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        compiler: [g++, clang++]
+        os:
+          - ubuntu-latest
+          - macos-latest
+        compiler:
+          - g++
+          - clang++
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repo
@@ -21,7 +25,45 @@ jobs:
         run: ${{ matrix.compiler }} -v
 
       - name: Build Debug
-        run: make debug=yes CXX=${{ matrix.compiler }}
+        run: make debug CXX=${{ matrix.compiler }}
+
+      - name: Clean build
+        run: make clean
+
+      - name: Build Release
+        run: make CXX=${{ matrix.compiler }}
+
+  windows-compilation:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { sys: mingw64, compiler: g++     }
+          - { sys: ucrt64,  compiler: g++     }
+          - { sys: clang64, compiler: clang++ }
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: "msys2 {0}"
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          install: make cmake
+          pacboy: toolchain:p
+
+      - name: Check compiler
+        run: ${{ matrix.compiler }} -v
+
+      - name: Build Debug
+        if: matrix.compiler == 'clang++'
+        run: make debug CXX=${{ matrix.compiler }}
 
       - name: Clean build
         run: make clean

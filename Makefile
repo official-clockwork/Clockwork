@@ -1,20 +1,29 @@
 CXX ?= clang++
 EXE ?= clockwork
 
-ifeq ($(OS), Windows_NT)
-    SUFFIX := .exe
-    COPY := copy
-    RM := del
-    RM_DIR := rd /s /q
-    MK_PATH = $(subst /,\,$(1))
-else
-    SUFFIX :=
-    COPY := cp
-    RM := rm
-    RM_DIR := rm -rf
-    MK_PATH = $(1)
-endif
 
+ifdef MSYSTEM
+	SUFFIX := .exe
+	SUFFIX :=
+	COPY := cp
+	RM := rm -f
+	RM_DIR := rm -rf
+	MK_PATH = $(1)
+else
+	ifeq ($(OS), Windows_NT)
+	    SUFFIX := .exe
+	    COPY := copy
+	    RM := del
+	    RM_DIR := rd /s /q
+	    MK_PATH = $(subst /,\,$(1))
+	else
+	    SUFFIX :=
+	    COPY := cp
+	    RM := rm -f
+	    RM_DIR := rm -rf
+	    MK_PATH = $(1)
+	endif
+endif
 
 
 EXE := "$(EXE)$(SUFFIX)"
