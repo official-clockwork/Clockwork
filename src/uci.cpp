@@ -50,19 +50,19 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.depth;
         }
         else if (token == "movetime") {
-            is >> settings.moveTime;
+            is >> settings.move_time;
         }
         else if (token == "wtime") {
-            is >> settings.wTime;
+            is >> settings.w_time;
         }
         else if (token == "btime") {
-            is >> settings.bTime;
+            is >> settings.b_time;
         }
         else if (token == "winc") {
-            is >> settings.wInc;
+            is >> settings.w_inc;
         }
         else if (token == "binc") {
-            is >> settings.bInc;
+            is >> settings.b_inc;
         }
     }
 }
