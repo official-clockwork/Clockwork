@@ -1,8 +1,9 @@
 #pragma once
 
-#include "util/types.hpp"
-#include "square.hpp"
 #include "common.hpp"
+#include "square.hpp"
+#include "util/types.hpp"
+
 
 #include <optional>
 #include <string_view>
@@ -79,8 +80,7 @@ struct Move {
             else
                 os << 'g';
             os << mv.to().rank() + 1;
-        }
-        else {
+        } else {
             os << mv.to();
         }
 

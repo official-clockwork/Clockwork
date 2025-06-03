@@ -22,7 +22,7 @@ BraceWrapping:
   AfterFunction: false
   AfterClass: false
   AfterControlStatement: Never
-  BeforeElse: true
+  BeforeElse: false
   AfterEnum: false
   AfterNamespace: false
   AfterStruct: false
@@ -38,15 +38,16 @@ IndentAccessModifiers: false
 IndentGotoLabels: false
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
+# InsertBraces: TBD
+InsertTrailingCommas: None
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
 PackConstructorInitializers: Never
 ReflowComments: false
-SortIncludes: Never
+SortIncludes: CaseSensitive
 SortUsingDeclarations: false
-SpaceAfterCStyleCast: true
 SpaceAfterTemplateKeyword: false
-SpaceBeforeCaseColon: true
+SpaceBeforeCaseColon: false
 SpaceBeforeCpp11BracedList: false
 SpaceBeforeInheritanceColon: false
 SpaceInEmptyBlock: false
