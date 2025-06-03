@@ -8,56 +8,52 @@ std::optional<Move> Move::parse(std::string_view str, const Position& ctx) {
     if (str.size() != 4 && str.size() != 5)
         return std::nullopt;
 
-    const auto from = Square::parse(str.substr(0, 2));
+    auto from = Square::parse(str.substr(0, 2));
     if (!from)
         return std::nullopt;
 
-    const auto to = Square::parse(str.substr(2, 2));
+    auto to = Square::parse(str.substr(2, 2));
     if (!to)
         return std::nullopt;
 
-    const Place src = ctx.board()[*from];
-    const Place dst = ctx.board()[*to];
+    Place src = ctx.board()[*from];
+    Place dst = ctx.board()[*to];
 
-    const PieceType ptype   = src.ptype();
-    const bool      capture = !dst.isEmpty();
+    PieceType ptype   = src.ptype();
+    bool      capture = !dst.is_empty();
 
-    if (src.color() != ctx.activeColor())
+    if (src.color() != ctx.active_color())
         return std::nullopt;
 
-    if (str.size() == 4)
-    {
-        if (ptype == PieceType::pawn)
-        {
-            if (ctx.enPassant() == *to)
-                return Move(*from, *to, MoveFlags::en_passant);
+    if (str.size() == 4) {
+        if (ptype == PieceType::Pawn) {
+            if (ctx.en_passant() == *to)
+                return Move(*from, *to, MoveFlags::EnPassant);
         }
-        if (ptype == PieceType::king)
-        {
-            // TOOD: FRC
+        if (ptype == PieceType::King) {
+            // TODO: FRC
             if (from->file() == 4 && to->file() == 2)
-                return Move(*from, ctx.rookInfo(ctx.activeColor()).aside, MoveFlags::castle);
+                return Move(*from, ctx.rook_info(ctx.active_color()).aside, MoveFlags::Castle);
             if (from->file() == 4 && to->file() == 6)
-                return Move(*from, ctx.rookInfo(ctx.activeColor()).hside, MoveFlags::castle);
+                return Move(*from, ctx.rook_info(ctx.active_color()).hside, MoveFlags::Castle);
         }
-        return Move(*from, *to, capture ? MoveFlags::capture_bit : MoveFlags::normal);
+        return Move(*from, *to, capture ? MoveFlags::CaptureBit : MoveFlags::Normal);
     }
 
     // This check needs to be here because castling is king captures rook in FRC.
-    if (capture && dst.color() == ctx.activeColor())
+    if (capture && dst.color() == ctx.active_color())
         return std::nullopt;
 
-    const auto mf = [&]() -> std::optional<MoveFlags> {
-        switch (str[4])
-        {
+    auto mf = [&]() -> std::optional<MoveFlags> {
+        switch (str[4]) {
         case 'q' :
-            return capture ? MoveFlags::promo_queen_capture : MoveFlags::promo_queen;
+            return capture ? MoveFlags::PromoQueenCapture : MoveFlags::PromoQueen;
         case 'n' :
-            return capture ? MoveFlags::promo_knight_capture : MoveFlags::promo_knight;
+            return capture ? MoveFlags::PromoKnightCapture : MoveFlags::PromoKnight;
         case 'r' :
-            return capture ? MoveFlags::promo_rook_capture : MoveFlags::promo_rook;
+            return capture ? MoveFlags::PromoRookCapture : MoveFlags::PromoRook;
         case 'b' :
-            return capture ? MoveFlags::promo_bishop_capture : MoveFlags::promo_bishop;
+            return capture ? MoveFlags::PromoBishopCapture : MoveFlags::PromoBishop;
         default :
             return std::nullopt;
         }

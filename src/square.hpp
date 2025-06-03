@@ -17,7 +17,6 @@ struct Square {
         return {0x80};
     }
 
-
     static constexpr Square from_file_and_rank(int file, int rank) {
         assert(file >= 0 && file < 8);
         assert(rank >= 0 && rank < 8);
@@ -29,26 +28,26 @@ struct Square {
             return std::nullopt;
         if (str[0] < 'a' or str[0] > 'h')
             return std::nullopt;
-        const int FILE = str[0] - 'a';
+        int file = str[0] - 'a';
         if (str[1] < '1' or str[1] > '8')
             return std::nullopt;
-        const int RANK = str[1] - '1';
-        return from_file_and_rank(FILE, RANK);
+        int rank = str[1] - '1';
+        return from_file_and_rank(file, rank);
     }
 
-    [[nodiscard]] constexpr usize file() const {
+    [[nodiscard]] constexpr int file() const {
         return raw % 8;
     }
 
-    [[nodiscard]] constexpr usize rank() const {
+    [[nodiscard]] constexpr int rank() const {
         return raw / 8;
     }
 
-    [[nodiscard]] constexpr bool isValid() const {
+    [[nodiscard]] constexpr bool is_valid() const {
         return (raw & 0x80) == 0;
     }
 
-    [[nodiscard]] constexpr u64 toBitboard() const {
+    [[nodiscard]] constexpr u64 to_bitboard() const {
         return static_cast<u64>(1) << raw;
     }
 
@@ -57,7 +56,7 @@ struct Square {
         return os << file << sq.rank() + 1;
     }
 
-    constexpr std::strong_ordering operator<=>(const Square&) const = default;
+    const std::strong_ordering operator<=>(const Square&) const = default;
 };
 
 }

@@ -7,14 +7,18 @@ project(
         LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_OSX_ARCHITECTURES "x86_64")
 include_directories(src)
 
-enable_testing()
-set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
-function(do_test name)
-  add_executable(${name} tests/${name}.cpp ${srcs})
-  add_test(${name} ${name})
-endfunction()
+#Optimizations
+set(CLOCKWORK_MARCH_TARGET "native" CACHE STRING "Specify the target architecture for -march (e.g., native, skylake, znver2). Set to OFF or empty to disable.")
+
+if(CLOCKWORK_MARCH_TARGET AND NOT CLOCKWORK_MARCH_TARGET STREQUAL "OFF")
+    message(STATUS "Using -march=${CLOCKWORK_MARCH_TARGET} for optimizations")
+    add_compile_options("-march=${CLOCKWORK_MARCH_TARGET}")
+else()
+    message(STATUS "-march flag disabled by user")
+endif()
 
 # Sorted list of source files
 set(srcs
@@ -46,6 +50,14 @@ set_target_properties(clockwork PROPERTIES
         CXX_STANDARD_REQUIRED YES
         CXX_EXTENSIONS NO)
 
+# Tests
+enable_testing()
+set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
+function(do_test name)
+  add_executable(${name} tests/${name}.cpp ${srcs})
+  add_test(${name} ${name})
+endfunction()
+
 do_test(test_perft)
 do_test(test_position)
 
@@ -63,16 +75,6 @@ target_link_options(clockwork PRIVATE
         $<$<CONFIG:Debug>:
         -fsanitize=address,undefined
         >)
-
-#Optimizations
-set(CLOCKWORK_MARCH_TARGET "native" CACHE STRING "Specify the target architecture for -march (e.g., native, skylake, znver2). Set to OFF or empty to disable.")
-
-if(CLOCKWORK_MARCH_TARGET AND NOT CLOCKWORK_MARCH_TARGET STREQUAL "OFF")
-    message(STATUS "Using -march=${CLOCKWORK_MARCH_TARGET} for optimizations")
-    target_compile_options(clockwork PRIVATE "-march=${CLOCKWORK_MARCH_TARGET}")
-else()
-    message(STATUS "-march flag disabled by user")
-endif()
 
 # LTO
 include(CheckIPOSupported)

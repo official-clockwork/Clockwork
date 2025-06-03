@@ -7,6 +7,6 @@ namespace Clockwork {
 
 u64 perft(const Position& position, usize depth);
 
-void splitPerft(const Position& position, usize depth);
+void split_perft(const Position& position, usize depth);
 
 }

@@ -6,8 +6,12 @@
 
 namespace Clockwork {
 
-forceinline u32 concat32(u16 a, u16 b) { return static_cast<u32>(a) | (static_cast<u32>(b) << 16); }
-forceinline u64 concat64(u32 a, u32 b) { return static_cast<u64>(a) | (static_cast<u64>(b) << 32); }
+forceinline u32 concat32(u16 a, u16 b) {
+    return static_cast<u32>(a) | (static_cast<u32>(b) << 16);
+}
+forceinline u64 concat64(u32 a, u32 b) {
+    return static_cast<u64>(a) | (static_cast<u64>(b) << 32);
+}
 
 struct v128 {
     __m128i raw{};
@@ -21,17 +25,23 @@ struct v128 {
     forceinline constexpr v128(__m128i raw) :
         raw(raw){};
     forceinline explicit v128(std::array<u8, 16> src) :
-        raw(std::bit_cast<__m128i>(src)) {}
+        raw(std::bit_cast<__m128i>(src)) {
+    }
     forceinline explicit v128(std::array<u16, 8> src) :
-        raw(std::bit_cast<__m128i>(src)) {}
+        raw(std::bit_cast<__m128i>(src)) {
+    }
 
     static forceinline v128 load(const void* src) {
         return {_mm_loadu_si128(reinterpret_cast<const __m128i*>(src))};
     }
 
-    static forceinline v128 zero() { return {_mm_setzero_si128()}; }
+    static forceinline v128 zero() {
+        return {_mm_setzero_si128()};
+    }
 
-    static forceinline v128 broadcast8(u8 x) { return {_mm_set1_epi8(static_cast<i8>(x))}; }
+    static forceinline v128 broadcast8(u8 x) {
+        return {_mm_set1_epi8(static_cast<i8>(x))};
+    }
 
     static forceinline v128 blend8(v128 mask, v128 a, v128 b) {
         return {_mm_blendv_epi8(a.raw, b.raw, mask.raw)};
@@ -42,18 +52,20 @@ struct v128 {
     }
 
     static forceinline v128 permute8(v128 index, v128 a, v128 b, v128 c, v128 d) {
-        const v128 w = permute8(index, a);
-        const v128 x = permute8(index, b);
-        const v128 y = permute8(index, c);
-        const v128 z = permute8(index, d);
+        v128 w = permute8(index, a);
+        v128 x = permute8(index, b);
+        v128 y = permute8(index, c);
+        v128 z = permute8(index, d);
 
-        const v128 mask0 = shl16(index, 2);
-        const v128 mask1 = shl16(index, 3);
+        v128 mask0 = shl16(index, 2);
+        v128 mask1 = shl16(index, 3);
 
         return blend8(mask0, blend8(mask1, w, x), blend8(mask1, y, z));
     }
 
-    static forceinline v128 shl16(v128 a, int shift) { return {_mm_slli_epi16(a.raw, shift)}; }
+    static forceinline v128 shl16(v128 a, int shift) {
+        return {_mm_slli_epi16(a.raw, shift)};
+    }
 
     static forceinline u16 eq8(v128 a, v128 b) {
         return static_cast<u16>(_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
@@ -63,10 +75,12 @@ struct v128 {
         return static_cast<u16>(~_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
     }
 
-    forceinline u16 nonzero8() const { return neq8(*this, zero()); }
+    forceinline u16 nonzero8() const {
+        return neq8(*this, zero());
+    }
 
     forceinline bool operator==(const v128& other) const {
-        const __m128i t = _mm_xor_si128(raw, other.raw);
+        __m128i t = _mm_xor_si128(raw, other.raw);
         return _mm_testz_si128(t, t);
     }
 };
@@ -84,22 +98,36 @@ struct v256 {
     forceinline constexpr v256(__m256i raw) :
         raw(raw){};
     forceinline explicit v256(std::array<u8, 32> src) :
-        raw(std::bit_cast<__m256i>(src)) {}
+        raw(std::bit_cast<__m256i>(src)) {
+    }
     forceinline explicit v256(std::array<u16, 16> src) :
-        raw(std::bit_cast<__m256i>(src)) {}
+        raw(std::bit_cast<__m256i>(src)) {
+    }
     forceinline explicit v256(v128 a, v128 b) :
         raw(std::bit_cast<__m256i>(std::array<v128, 2>{a, b})){};
 
-    static forceinline v256 zero() { return {_mm256_setzero_si256()}; }
+    static forceinline v256 zero() {
+        return {_mm256_setzero_si256()};
+    }
 
-    static forceinline v256 broadcast8(u8 x) { return {_mm256_set1_epi8(static_cast<i8>(x))}; }
-    static forceinline v256 broadcast64(u64 x) { return {_mm256_set1_epi64x(static_cast<i64>(x))}; }
+    static forceinline v256 broadcast8(u8 x) {
+        return {_mm256_set1_epi8(static_cast<i8>(x))};
+    }
+    static forceinline v256 broadcast64(u64 x) {
+        return {_mm256_set1_epi64x(static_cast<i64>(x))};
+    }
 
-    static forceinline v256 from128(v128 a) { return {_mm256_castsi128_si256(a.raw)}; }
+    static forceinline v256 from128(v128 a) {
+        return {_mm256_castsi128_si256(a.raw)};
+    }
 
-    forceinline v128 to128() const { return {_mm256_castsi256_si128(raw)}; }
+    forceinline v128 to128() const {
+        return {_mm256_castsi256_si128(raw)};
+    }
 
-    static forceinline v256 add8(v256 a, v256 b) { return {_mm256_add_epi8(a.raw, b.raw)}; }
+    static forceinline v256 add8(v256 a, v256 b) {
+        return {_mm256_add_epi8(a.raw, b.raw)};
+    }
 
     static forceinline v256 permute8(v256 index, v256 a, v256 b) {
         return v256{v128::permute8(index.extract128<0>(), a.extract128<0>(), a.extract128<1>(),
@@ -108,7 +136,9 @@ struct v256 {
                                    b.extract128<0>(), b.extract128<1>())};
     }
 
-    static forceinline v256 shr16(v256 a, int shift) { return {_mm256_srli_epi16(a.raw, shift)}; }
+    static forceinline v256 shr16(v256 a, int shift) {
+        return {_mm256_srli_epi16(a.raw, shift)};
+    }
 
     static forceinline u32 eq8(v256 a, v256 b) {
         return static_cast<u32>(_mm256_movemask_epi8(_mm256_cmpeq_epi8(a.raw, b.raw)));
@@ -127,13 +157,19 @@ struct v256 {
     forceinline v128 extract128() const {
         return {_mm256_extracti128_si256(raw, offset)};
     }
-    forceinline u32 msb8() const { return static_cast<u32>(_mm256_movemask_epi8(raw)); }
+    forceinline u32 msb8() const {
+        return static_cast<u32>(_mm256_movemask_epi8(raw));
+    }
 
-    friend forceinline v256 operator&(v256 a, v256 b) { return {_mm256_and_si256(a.raw, b.raw)}; }
-    friend forceinline v256 operator|(v256 a, v256 b) { return {_mm256_or_si256(a.raw, b.raw)}; }
+    friend forceinline v256 operator&(v256 a, v256 b) {
+        return {_mm256_and_si256(a.raw, b.raw)};
+    }
+    friend forceinline v256 operator|(v256 a, v256 b) {
+        return {_mm256_or_si256(a.raw, b.raw)};
+    }
 
     forceinline bool operator==(const v256& other) const {
-        const __m256i t = _mm256_xor_si256(raw, other.raw);
+        __m256i t = _mm256_xor_si256(raw, other.raw);
         return _mm256_testz_si256(t, t);
     }
 };
@@ -151,11 +187,15 @@ struct v512 {
     forceinline constexpr explicit v512(v256 a, v256 b) :
         raw({a, b}){};
     forceinline explicit v512(std::array<u8, 64> src) :
-        raw(std::bit_cast<std::array<v256, 2>>(src)) {}
+        raw(std::bit_cast<std::array<v256, 2>>(src)) {
+    }
     forceinline explicit v512(std::array<u16, 32> src) :
-        raw(std::bit_cast<std::array<v256, 2>>(src)) {}
+        raw(std::bit_cast<std::array<v256, 2>>(src)) {
+    }
 
-    static forceinline v512 zero() { return v512{v256::zero(), v256::zero()}; }
+    static forceinline v512 zero() {
+        return v512{v256::zero(), v256::zero()};
+    }
 
     static forceinline v512 broadcast8(u8 x) {
         return v512{v256::broadcast8(x), v256::broadcast8(x)};
@@ -164,9 +204,13 @@ struct v512 {
         return v512{v256::broadcast64(x), v256::broadcast64(x)};
     }
 
-    static forceinline v512 from128(v128 a) { return v512{v256::from128(a), v256::zero()}; }
+    static forceinline v512 from128(v128 a) {
+        return v512{v256::from128(a), v256::zero()};
+    }
 
-    forceinline v128 to128() const { return raw[0].to128(); }
+    forceinline v128 to128() const {
+        return raw[0].to128();
+    }
 
     static forceinline v512 add8(v512 a, v512 b) {
         return v512{v256::add8(a.raw[0], b.raw[0]), v256::add8(a.raw[1], b.raw[1])};
@@ -175,7 +219,7 @@ struct v512 {
     static forceinline v512 compress8(u64 m, v512 a) {
         // TODO: Slow
         std::array<u8, 64> result{};
-        const auto         in = std::bit_cast<std::array<u8, 64>>(a);
+        auto               in = std::bit_cast<std::array<u8, 64>>(a);
         for (int i = 0; m != 0; i++, m &= m - 1)
             result[i] = in[static_cast<usize>(std::countr_zero(m))];
         return std::bit_cast<v512>(result);
@@ -202,12 +246,22 @@ struct v512 {
         return concat32(v256::neq16(a.raw[0], b.raw[0]), v256::neq16(a.raw[1], b.raw[1]));
     }
 
-    static forceinline u64 testn8(v512 a, v512 b) { return (a & b).zero8(); }
+    static forceinline u64 testn8(v512 a, v512 b) {
+        return (a & b).zero8();
+    }
 
-    forceinline u64 msb8() const { return concat64(raw[0].msb8(), raw[1].msb8()); }
-    forceinline u64 zero8() const { return eq8(*this, zero()); }
-    forceinline u64 nonzero8() const { return neq8(*this, zero()); }
-    forceinline u32 nonzero16() const { return neq16(*this, zero()); }
+    forceinline u64 msb8() const {
+        return concat64(raw[0].msb8(), raw[1].msb8());
+    }
+    forceinline u64 zero8() const {
+        return eq8(*this, zero());
+    }
+    forceinline u64 nonzero8() const {
+        return neq8(*this, zero());
+    }
+    forceinline u32 nonzero16() const {
+        return neq16(*this, zero());
+    }
 
     friend forceinline v512 operator&(v512 a, v512 b) {
         return v512{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]};
@@ -217,7 +271,9 @@ struct v512 {
         return v512{a.raw[0] | b.raw[0], a.raw[1] | b.raw[1]};
     }
 
-    forceinline auto operator==(const v512& other) const -> bool { return raw == other.raw; }
+    forceinline auto operator==(const v512& other) const -> bool {
+        return raw == other.raw;
+    }
 };
 static_assert(sizeof(v512) == 64);
 

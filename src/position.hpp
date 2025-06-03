@@ -17,21 +17,29 @@ template<typename T>
 struct alignas(16) PieceList {
     std::array<T, 16> array{};
 
-    constexpr T& operator[](PieceId id) { return array[id.raw]; }
-    constexpr T  operator[](PieceId id) const { return array[id.raw]; }
+    constexpr T& operator[](PieceId id) {
+        return array[id.raw];
+    }
+    constexpr T operator[](PieceId id) const {
+        return array[id.raw];
+    }
 
-    v128 toVec() const {
+    [[nodiscard]] v128 to_vec() const {
         static_assert(sizeof(array) == sizeof(v128));
         return v128::load(array.data());
     }
 
-    u16 maskValid() const { return toVec().nonzero8(); }
-
-    u16 maskEq(PieceType ptype) const {
-        return v128::eq8(toVec(), v128::broadcast8(static_cast<u8>(ptype)));
+    [[nodiscard]] u16 mask_valid() const {
+        return to_vec().nonzero8();
     }
 
-    constexpr bool operator==(const PieceList& other) const { return array == other.array; }
+    [[nodiscard]] u16 mask_eq(PieceType ptype) const {
+        return v128::eq8(to_vec(), v128::broadcast8(static_cast<u8>(ptype)));
+    }
+
+    constexpr bool operator==(const PieceList& other) const {
+        return array == other.array;
+    }
 };
 
 struct RookInfo {
@@ -48,13 +56,15 @@ struct RookInfo {
         hside = hside == sq ? Square::invalid() : hside;
     }
 
-    constexpr bool isClear() const { return !aside.isValid() && !hside.isValid(); }
+    [[nodiscard]] constexpr bool is_clear() const {
+        return !aside.is_valid() && !hside.is_valid();
+    }
 
     constexpr bool operator==(const RookInfo&) const = default;
 };
 
 struct Position {
-   private:
+private:
     std::array<Wordboard, 2>            m_attack_table{};
     std::array<PieceList<Square>, 2>    m_piece_list_sq{};
     std::array<PieceList<PieceType>, 2> m_piece_list{};
@@ -66,33 +76,43 @@ struct Position {
     Square                              m_enpassant = Square::invalid();
     std::array<RookInfo, 2>             m_rook_info;
 
-   public:
+public:
     constexpr Position() = default;
 
-    const Byteboard& board() const { return m_board; }
-    const Wordboard& attackTable(Color color) const {
+    [[nodiscard]] const Byteboard& board() const {
+        return m_board;
+    }
+    [[nodiscard]] const Wordboard& attack_table(Color color) const {
         return m_attack_table[static_cast<usize>(color)];
     }
-    const PieceList<PieceType>& pieceList(Color color) const {
+    [[nodiscard]] const PieceList<PieceType>& piece_list(Color color) const {
         return m_piece_list[static_cast<usize>(color)];
     }
-    const PieceList<Square>& pieceListSq(Color color) const {
+    [[nodiscard]] const PieceList<Square>& piece_list_sq(Color color) const {
         return m_piece_list_sq[static_cast<usize>(color)];
     }
-    Color    activeColor() const { return m_active_color; }
-    Square   enPassant() const { return m_enpassant; }
-    RookInfo rookInfo(Color color) const { return m_rook_info[static_cast<usize>(color)]; }
-
-    Square kingSq(Color color) const { return pieceListSq(color)[PieceId{0}]; }
-
-    bool isValid() const {
-        return attackTable(m_active_color)[kingSq(invert(m_active_color))] == 0;
+    [[nodiscard]] Color active_color() const {
+        return m_active_color;
+    }
+    [[nodiscard]] Square en_passant() const {
+        return m_enpassant;
+    }
+    [[nodiscard]] RookInfo rook_info(Color color) const {
+        return m_rook_info[static_cast<usize>(color)];
     }
 
-    Position move(Move m) const;
+    [[nodiscard]] Square king_sq(Color color) const {
+        return piece_list_sq(color)[PieceId{0}];
+    }
 
-    const std::array<Wordboard, 2> calcAttacksSlow();
-    const std::array<u16, 2>       calcAttacksSlow(Square sq);
+    [[nodiscard]] bool is_valid() const {
+        return attack_table(m_active_color)[king_sq(invert(m_active_color))] == 0;
+    }
+
+    [[nodiscard]] Position move(Move m) const;
+
+    const std::array<Wordboard, 2> calc_attacks_slow();
+    const std::array<u16, 2>       calc_attacks_slow(Square sq);
 
     static std::optional<Position> parse(std::string_view str);
     static std::optional<Position> parse(std::string_view board,

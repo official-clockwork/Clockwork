@@ -10,19 +10,20 @@ namespace Clockwork {
 using MoveList = StaticVector<Move, 256>;
 
 class MoveGen {
-   public:
+public:
     explicit MoveGen(const Position& position) :
-        m_active_color(position.activeColor()),
-        m_position(position) {}
+        m_active_color(position.active_color()),
+        m_position(position) {
+    }
 
-    void generateMoves(MoveList& moves);
+    void generate_moves(MoveList& moves);
 
-   private:
+private:
     void write(MoveList& moves, Square sq, u16 piecemask, MoveFlags mf);
     void write(MoveList& moves, const Wordboard& at, u64 bb, u16 piecemask, MoveFlags mf);
-    void writePawn(MoveList& moves, u64 bb, int shift, MoveFlags mf);
+    void write_pawn(MoveList& moves, u64 bb, int shift, MoveFlags mf);
 
-    const Color     m_active_color;
+    Color           m_active_color;
     const Position& m_position;
 };
 

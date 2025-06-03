@@ -9,6 +9,8 @@
 
 namespace Clockwork {
 
+struct Position;
+
 static_assert(static_cast<u16>(PieceType::Knight) == 2);
 
 enum class MoveFlags : u16 {
@@ -30,6 +32,8 @@ enum class MoveFlags : u16 {
 
 struct Move {
     u16 raw;
+
+    Move() = default;
 
     constexpr Move(Square from, Square to, MoveFlags flags = MoveFlags::Normal) {
         raw = static_cast<u16>(from.raw | (to.raw << 6) | static_cast<u16>(flags));
@@ -57,7 +61,7 @@ struct Move {
 
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {
         if (!is_promotion())
-            returns std::nullopt;
+            return std::nullopt;
 
         static_assert(static_cast<u16>(PieceType::Knight) == 2);
         return static_cast<PieceType>(((raw >> 12) & 0b0011) + 2);

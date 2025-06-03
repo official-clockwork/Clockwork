@@ -15,15 +15,14 @@ static u64 core(const Position& position, usize depth) {
 
     MoveList moves;
     MoveGen  movegen{position};
-    movegen.generateMoves(moves);
+    movegen.generate_moves(moves);
 
-    for (Move m : moves)
-    {
-        const Position new_position = position.move(m);
-        if (!new_position.isValid())
+    for (Move m : moves) {
+        Position new_position = position.move(m);
+        if (!new_position.is_valid())
             continue;
 
-        const u64 child = core<false>(new_position, depth - 1);
+        u64 child = core<false>(new_position, depth - 1);
 
         if constexpr (print)
             std::cout << m << ": " << child << std::endl;
@@ -34,10 +33,12 @@ static u64 core(const Position& position, usize depth) {
     return result;
 }
 
-u64 perft(const Position& position, usize depth) { return core<false>(position, depth); }
+u64 perft(const Position& position, usize depth) {
+    return core<false>(position, depth);
+}
 
-void splitPerft(const Position& position, usize depth) {
-    const u64 total = core<true>(position, depth);
+void split_perft(const Position& position, usize depth) {
+    u64 total = core<true>(position, depth);
     std::cout << "total: " << total << std::endl;
 }
 

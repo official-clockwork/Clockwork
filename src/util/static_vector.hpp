@@ -11,7 +11,7 @@ namespace Clockwork {
 
 template<typename T, usize cap>
 class StaticVector {
-   public:
+public:
     using value_type     = T;
     using iterator       = T*;
     using const_iterator = const T*;
@@ -54,11 +54,19 @@ class StaticVector {
         len += std::exchange(other.len, 0);
     }
 
-    constexpr void clear() { len = 0; }
+    constexpr void clear() {
+        len = 0;
+    }
 
-    constexpr usize size() const { return len; }
-    constexpr usize capacity() const { return cap; }
-    constexpr bool  empty() const { return len == 0; }
+    [[nodiscard]] constexpr usize size() const {
+        return len;
+    }
+    [[nodiscard]] constexpr usize capacity() const {
+        return cap;
+    }
+    [[nodiscard]] constexpr bool empty() const {
+        return len == 0;
+    }
 
     constexpr auto resize(usize new_size) -> void {
         assert(new_size <= cap);
@@ -74,15 +82,27 @@ class StaticVector {
         return data[index];
     }
 
-    constexpr iterator       begin() { return &data[0]; }
-    constexpr const_iterator begin() const { return &data[0]; }
-    constexpr const_iterator cbegin() const { return begin(); }
+    constexpr iterator begin() {
+        return &data[0];
+    }
+    constexpr const_iterator begin() const {
+        return &data[0];
+    }
+    constexpr const_iterator cbegin() const {
+        return begin();
+    }
 
-    constexpr iterator       end() { return &data[len]; }
-    constexpr const_iterator end() const { return &data[len]; }
-    constexpr const_iterator cend() const { return end(); }
+    constexpr iterator end() {
+        return &data[len];
+    }
+    constexpr const_iterator end() const {
+        return &data[len];
+    }
+    constexpr const_iterator cend() const {
+        return end();
+    }
 
-   protected:
+protected:
     usize              len = 0;
     std::array<T, cap> data;
 };

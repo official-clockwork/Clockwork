@@ -23,14 +23,14 @@ constexpr Color invert(Color color) {
     return static_cast<Color>(static_cast<int>(color) ^ 1);
 }
 
-enum class PieceType {
+enum class PieceType : u8 {
+    None,
     Pawn,
     Knight,
     Bishop,
     Rook,
     Queen,
     King,
-    Empty,
 };
 
 constexpr char piece_char(PieceType piece) {

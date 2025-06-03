@@ -51,13 +51,13 @@ jobs:
         run: ${{ matrix.compiler }} -v
 
       - name: Build Debug
-        run: make debug CXX=${{ matrix.compiler }} ARCH=x86-64-v2
+        run: make debug CXX=${{ matrix.compiler }} ARCH=x86-64-v3
 
       - name: Clean build
         run: make clean
 
       - name: Build Release
-        run: make CXX=${{ matrix.compiler }} ARCH=x86-64-v2
+        run: make CXX=${{ matrix.compiler }} ARCH=x86-64-v3
 
   windows-compilation:
     strategy:
