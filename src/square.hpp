@@ -2,19 +2,21 @@
 
 #include "util/types.hpp"
 
-#include <string_view>
 #include <cassert>
-#include <ostream>
+#include <compare>
 #include <optional>
+#include <ostream>
+#include <string_view>
 
 namespace Clockwork {
 
 struct Square {
     u8 raw;
 
-    constexpr Square(u8 r) :
-        raw{r} {
+    static constexpr Square invalid() {
+        return {0x80};
     }
+
 
     static constexpr Square from_file_and_rank(int file, int rank) {
         assert(file >= 0 && file < 8);
@@ -42,10 +44,20 @@ struct Square {
         return raw / 8;
     }
 
+    [[nodiscard]] constexpr bool isValid() const {
+        return (raw & 0x80) == 0;
+    }
+
+    [[nodiscard]] constexpr u64 toBitboard() const {
+        return static_cast<u64>(1) << raw;
+    }
+
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());
         return os << file << sq.rank() + 1;
     }
+
+    constexpr std::strong_ordering operator<=>(const Square&) const = default;
 };
 
 }

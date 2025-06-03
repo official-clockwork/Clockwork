@@ -6,12 +6,48 @@ project(
         DESCRIPTION "HCE Community Engine"
         LANGUAGES CXX)
 
-add_executable(clockwork src/main.cpp src/uci.cpp src/uci.hpp src/square.hpp src/move.hpp src/common.hpp src/util/types.hpp)
+set(CMAKE_CXX_STANDARD 20)
+include_directories(src)
 
+enable_testing()
+set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
+function(do_test name)
+  add_executable(${name} tests/${name}.cpp ${srcs})
+  add_test(${name} ${name})
+endfunction()
+
+# Sorted list of source files
+set(srcs
+    src/board.cpp
+    src/board.hpp
+    src/common.hpp
+    src/geometry.hpp
+    src/move.cpp
+    src/move.hpp
+    src/movegen.cpp
+    src/movegen.hpp
+    src/perft.cpp
+    src/perft.hpp
+    src/position.cpp
+    src/position.hpp
+    src/square.hpp
+    src/uci.cpp
+    src/uci.hpp
+    src/util/static_vector.hpp
+    src/util/types.hpp
+    src/util/vec.hpp
+    src/util/vec/avx2.hpp
+    src/util/vec/avx512.hpp
+)
+
+add_executable(clockwork ${srcs} src/main.cpp)
 set_target_properties(clockwork PROPERTIES
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED YES
         CXX_EXTENSIONS NO)
+
+do_test(test_perft)
+do_test(test_position)
 
 # Warnings
 # We don't support MSVC

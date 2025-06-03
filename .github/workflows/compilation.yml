@@ -4,17 +4,14 @@ on:
   workflow_call:
 
 jobs:
-  compilation:
+  linux-compilation:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
         compiler:
           - g++
           - clang++
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
@@ -32,6 +29,35 @@ jobs:
 
       - name: Build Release
         run: make CXX=${{ matrix.compiler }}
+
+      - name: Test
+        run: make CXX=${{ matrix.compiler }} test
+
+  macos-compilation:
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - g++
+          - clang++
+    runs-on: macos-latest
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check Compiler
+        run: ${{ matrix.compiler }} -v
+
+      - name: Build Debug
+        run: make debug CXX=${{ matrix.compiler }} ARCH=x86-64-v2
+
+      - name: Clean build
+        run: make clean
+
+      - name: Build Release
+        run: make CXX=${{ matrix.compiler }} ARCH=x86-64-v2
 
   windows-compilation:
     strategy:
@@ -70,3 +96,6 @@ jobs:
 
       - name: Build Release
         run: make CXX=${{ matrix.compiler }}
+
+      - name: Test
+        run: make CXX=${{ matrix.compiler }} test

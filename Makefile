@@ -30,7 +30,7 @@ CMAKE_FLAGS := -DCMAKE_CXX_COMPILER=$(CXX) -DCLOCKWORK_MARCH_TARGET=$(ARCH)
 
 EXE := "$(EXE)$(SUFFIX)"
 
-.PHONY: all release debug clean
+.PHONY: all release debug test clean
 
 all: release
 
@@ -41,6 +41,9 @@ release:
 debug:
 	cmake -DCMAKE_BUILD_TYPE=Debug $(CMAKE_FLAGS) -B build-debug -S . && cmake --build build-debug -j
 	$(COPY) $(call MK_PATH,"build-debug/clockwork$(SUFFIX)") $(EXE)
+
+test: release
+	ctest --test-dir build-release
 
 clean:
 	-$(RM_DIR) build-debug build-release

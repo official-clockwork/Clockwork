@@ -34,8 +34,7 @@
 clockwork
 
 # Cmake folders
-build-release/
-build-debug/
+build*/
 
 # IDEs
 .idea/*

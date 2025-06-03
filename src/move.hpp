@@ -5,10 +5,11 @@
 #include "common.hpp"
 
 #include <optional>
+#include <string_view>
 
 namespace Clockwork {
 
-static_assert(static_cast<u16>(PieceType::Knight) == 1);
+static_assert(static_cast<u16>(PieceType::Knight) == 2);
 
 enum class MoveFlags : u16 {
     Normal             = 0b0000 << 12,
@@ -16,30 +17,30 @@ enum class MoveFlags : u16 {
     CaptureBit         = 0b0100 << 12,
     EnPassant          = 0b0110 << 12,
     PromotionBit       = 0b1000 << 12,
-    PromoKnight        = (0b1000 | (static_cast<u16>(PieceType::Knight) - 1)) << 12,
-    PromoBishop        = (0b1000 | (static_cast<u16>(PieceType::Bishop) - 1)) << 12,
-    PromoRook          = (0b1000 | (static_cast<u16>(PieceType::Rook) - 1)) << 12,
-    PromoQueen         = (0b1000 | (static_cast<u16>(PieceType::Queen) - 1)) << 12,
+    PromoKnight        = (0b1000 | (static_cast<u16>(PieceType::Knight) - 2)) << 12,
+    PromoBishop        = (0b1000 | (static_cast<u16>(PieceType::Bishop) - 2)) << 12,
+    PromoRook          = (0b1000 | (static_cast<u16>(PieceType::Rook) - 2)) << 12,
+    PromoQueen         = (0b1000 | (static_cast<u16>(PieceType::Queen) - 2)) << 12,
     PromoCapture       = 0b1100 << 12,
-    PromoKnightCapture = (0b1100 | (static_cast<u16>(PieceType::Knight) - 1)) << 12,
-    PromoBishopCapture = (0b1100 | (static_cast<u16>(PieceType::Bishop) - 1)) << 12,
-    PromoRookCapture   = (0b1100 | (static_cast<u16>(PieceType::Rook) - 1)) << 12,
-    PromoQueenCapture  = (0b1100 | (static_cast<u16>(PieceType::Queen) - 1)) << 12,
+    PromoKnightCapture = (0b1100 | (static_cast<u16>(PieceType::Knight) - 2)) << 12,
+    PromoBishopCapture = (0b1100 | (static_cast<u16>(PieceType::Bishop) - 2)) << 12,
+    PromoRookCapture   = (0b1100 | (static_cast<u16>(PieceType::Rook) - 2)) << 12,
+    PromoQueenCapture  = (0b1100 | (static_cast<u16>(PieceType::Queen) - 2)) << 12,
 };
 
 struct Move {
     u16 raw;
 
     constexpr Move(Square from, Square to, MoveFlags flags = MoveFlags::Normal) {
-        raw = from.raw | (to.raw << 6) | static_cast<u16>(flags);
+        raw = static_cast<u16>(from.raw | (to.raw << 6) | static_cast<u16>(flags));
     }
 
     [[nodiscard]] constexpr Square from() const {
-        return static_cast<Square>(raw & 0x3F);
+        return Square{static_cast<u8>(raw & 0x3F)};
     }
 
     [[nodiscard]] constexpr Square to() const {
-        return static_cast<Square>((raw >> 6) & 0x3F);
+        return Square{static_cast<u8>((raw >> 6) & 0x3F)};
     }
 
     [[nodiscard]] constexpr MoveFlags flags() const {
@@ -55,22 +56,30 @@ struct Move {
     }
 
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {
-        switch (flags()) {
-        case MoveFlags::PromoKnight :
-            return PieceType::Knight;
-        case MoveFlags::PromoBishop :
-            return PieceType::Bishop;
-        case MoveFlags::PromoRook :
-            return PieceType::Rook;
-        case MoveFlags::PromoQueen :
-            return PieceType::Queen;
-        default :
-            return std::nullopt;
-        }
+        if (!is_promotion())
+            returns std::nullopt;
+
+        static_assert(static_cast<u16>(PieceType::Knight) == 2);
+        return static_cast<PieceType>(((raw >> 12) & 0b0011) + 2);
     }
 
+    static std::optional<Move> parse(std::string_view str, const Position& context);
+
     friend std::ostream& operator<<(std::ostream& os, Move mv) {
-        os << mv.from() << mv.to();
+        os << mv.from();
+
+        if (mv.flags() == MoveFlags::Castle) {
+            // TODO: FRC
+            if (mv.to().file() < mv.from().file())
+                os << 'c';
+            else
+                os << 'g';
+            os << mv.to().rank() + 1;
+        }
+        else {
+            os << mv.to();
+        }
+
         if (auto promo = mv.promo()) {
             os << piece_char(*promo);
         }
