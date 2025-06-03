@@ -1,4 +1,4 @@
-AccessModifierOffset: 0
+AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: Consecutive
 AlignConsecutiveDeclarations: Consecutive
@@ -34,6 +34,7 @@ BreakStringLiterals: false
 ColumnLimit: 100
 ContinuationIndentWidth: 2
 Cpp11BracedListStyle: true
+IndentAccessModifiers: false
 IndentGotoLabels: false
 IndentPPDirectives: BeforeHash
 IndentWidth: 4

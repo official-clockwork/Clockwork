@@ -14,11 +14,11 @@ struct SearchSettings {
 };
 
 class UCIHandler {
-    public:
+public:
     void loop();
     void handle_command_line(int argc, char* argv[]);
 
-    private:
+private:
     SearchSettings settings;
     void           execute_command(const std::string&);
     void           handle_go(std::istringstream&);
