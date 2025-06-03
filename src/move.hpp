@@ -1,8 +1,9 @@
 #pragma once
 
-#include "util/types.hpp"
-#include "square.hpp"
 #include "common.hpp"
+#include "square.hpp"
+#include "util/types.hpp"
+
 
 #include <optional>
 
@@ -56,15 +57,15 @@ struct Move {
 
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {
         switch (flags()) {
-        case MoveFlags::PromoKnight :
+        case MoveFlags::PromoKnight:
             return PieceType::Knight;
-        case MoveFlags::PromoBishop :
+        case MoveFlags::PromoBishop:
             return PieceType::Bishop;
-        case MoveFlags::PromoRook :
+        case MoveFlags::PromoRook:
             return PieceType::Rook;
-        case MoveFlags::PromoQueen :
+        case MoveFlags::PromoQueen:
             return PieceType::Queen;
-        default :
+        default:
             return std::nullopt;
         }
     }

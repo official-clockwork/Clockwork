@@ -30,8 +30,7 @@ void UCIHandler::execute_command(const std::string& line) {
     if (command == "uci") {
         std::cout << "id Name Clockwork\n";
         std::cout << "id author The Clockwork community" << std::endl;
-    }
-    else if (command == "isready")
+    } else if (command == "isready")
         std::cout << "readyok" << std::endl;
     else if (command == "quit")
         std::exit(0);
@@ -48,20 +47,15 @@ void UCIHandler::handle_go(std::istringstream& is) {
     while (is >> token) {
         if (token == "depth") {
             is >> settings.depth;
-        }
-        else if (token == "movetime") {
+        } else if (token == "movetime") {
             is >> settings.move_time;
-        }
-        else if (token == "wtime") {
+        } else if (token == "wtime") {
             is >> settings.w_time;
-        }
-        else if (token == "btime") {
+        } else if (token == "btime") {
             is >> settings.b_time;
-        }
-        else if (token == "winc") {
+        } else if (token == "winc") {
             is >> settings.w_inc;
-        }
-        else if (token == "binc") {
+        } else if (token == "binc") {
             is >> settings.b_inc;
         }
     }
@@ -70,8 +64,9 @@ void UCIHandler::handle_go(std::istringstream& is) {
 void UCIHandler::handle_position(std::istringstream& is) {
     std::string token;
     if (is >> token) {
-        if (token == "startpos") {}
-        else if (token == "fen") {}
+        if (token == "startpos") {
+        } else if (token == "fen") {
+        }
     }
 }
 
