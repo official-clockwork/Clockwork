@@ -24,7 +24,7 @@ CheckOptions:
 
   # Variable names: camelCase
   - key:             readability-identifier-naming.VariableCase
-    value:           camelBack
+    value:           lower_case
 
   # Constants: SCREAMING_SNAKE_CASE
   - key:             readability-identifier-naming.ConstantCase
@@ -36,8 +36,8 @@ CheckOptions:
 
   # Public data members: camelCase
   - key:             readability-identifier-naming.PublicMemberCase
-    value:           camelBack
+    value:           lower_case
 
   # Private data members: camelCase
   - key:             readability-identifier-naming.PrivateMemberCase
-    value:           camelBack
+    value:           lower_case
