@@ -6,6 +6,7 @@
 #include "common.hpp"
 #include "move.hpp"
 #include "position.hpp"
+#include "util/bit.hpp"
 #include "util/types.hpp"
 
 namespace Clockwork {
@@ -111,7 +112,7 @@ void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {
         return;
 
     usize count = std::popcount(piecemask);
-    for (u8 i = 0; i < count; i++, piecemask &= piecemask - 1) {
+    for (u8 i = 0; i < count; i++, piecemask = clear_lowest_bit(piecemask)) {
         PieceId id{static_cast<u8>(std::countr_zero(piecemask))};
         Square  src = m_position.piece_list_sq(m_active_color)[id];
         moves.push_back(Move{src, dest, mf});
@@ -119,14 +120,14 @@ void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {
 }
 
 void MoveGen::write(MoveList& moves, const Wordboard& at, u64 bb, u16 piecemask, MoveFlags mf) {
-    for (; bb != 0; bb &= bb - 1) {
+    for (; bb != 0; bb = clear_lowest_bit(bb)) {
         Square dest{static_cast<u8>(std::countr_zero(bb))};
         write(moves, dest, piecemask & at[dest], mf);
     }
 }
 
 void MoveGen::write_pawn(MoveList& moves, u64 bb, int shift, MoveFlags mf) {
-    for (; bb != 0; bb &= bb - 1) {
+    for (; bb != 0; bb = clear_lowest_bit(bb)) {
         Square src{static_cast<u8>(std::countr_zero(bb))};
         Square dest{static_cast<u8>(src.raw + shift)};
         moves.push_back(Move{src, dest, mf});

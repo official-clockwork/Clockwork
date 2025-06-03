@@ -37,6 +37,7 @@ set(srcs
     src/square.hpp
     src/uci.cpp
     src/uci.hpp
+    src/util/bit.hpp
     src/util/static_vector.hpp
     src/util/types.hpp
     src/util/vec.hpp
