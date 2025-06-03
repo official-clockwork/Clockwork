@@ -6,11 +6,11 @@ namespace Clockwork::UCI {
 
 struct SearchSettings {
     int depth    = 0;
-    int wTime    = 0;
-    int bTime    = 0;
-    int wInc     = 0;
-    int bInc     = 0;
-    int moveTime = 0;
+    int w_time    = 0;
+    int b_time    = 0;
+    int w_inc     = 0;
+    int b_inc     = 0;
+    int move_time = 0;
 };
 
 class UCIHandler {
