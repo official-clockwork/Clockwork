@@ -77,11 +77,11 @@ struct v128 {
         return static_cast<u16>(~_mm_movemask_epi8(_mm_cmpeq_epi8(a.raw, b.raw)));
     }
 
-    forceinline u16 nonzero8() const {
+    [[nodiscard]] forceinline u16 nonzero8() const {
         return neq8(*this, zero());
     }
 
-    forceinline bool operator==(const v128& other) const {
+    [[nodiscard]] forceinline bool operator==(const v128& other) const {
         __m128i t = _mm_xor_si128(raw, other.raw);
         return _mm_testz_si128(t, t);
     }
@@ -123,7 +123,7 @@ struct v256 {
         return {_mm256_castsi128_si256(a.raw)};
     }
 
-    forceinline v128 to128() const {
+    [[nodiscard]] forceinline v128 to128() const {
         return {_mm256_castsi256_si128(raw)};
     }
 
@@ -156,10 +156,10 @@ struct v256 {
     }
 
     template<int offset>
-    forceinline v128 extract128() const {
+    [[nodiscard]] forceinline v128 extract128() const {
         return {_mm256_extracti128_si256(raw, offset)};
     }
-    forceinline u32 msb8() const {
+    [[nodiscard]] forceinline u32 msb8() const {
         return static_cast<u32>(_mm256_movemask_epi8(raw));
     }
 
@@ -210,7 +210,7 @@ struct v512 {
         return v512{v256::from128(a), v256::zero()};
     }
 
-    forceinline v128 to128() const {
+    [[nodiscard]] forceinline v128 to128() const {
         return raw[0].to128();
     }
 
@@ -252,16 +252,16 @@ struct v512 {
         return (a & b).zero8();
     }
 
-    forceinline u64 msb8() const {
+    [[nodiscard]] forceinline u64 msb8() const {
         return concat64(raw[0].msb8(), raw[1].msb8());
     }
-    forceinline u64 zero8() const {
+    [[nodiscard]] forceinline u64 zero8() const {
         return eq8(*this, zero());
     }
-    forceinline u64 nonzero8() const {
+    [[nodiscard]] forceinline u64 nonzero8() const {
         return neq8(*this, zero());
     }
-    forceinline u32 nonzero16() const {
+    [[nodiscard]] forceinline u32 nonzero16() const {
         return neq16(*this, zero());
     }
 

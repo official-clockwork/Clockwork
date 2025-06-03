@@ -291,7 +291,7 @@ std::optional<Position> Position::parse(std::string_view board,
     // Parse castling rights
     // TODO: FRC, Error detection
     if (castle != "-") {
-        for (const char ch : castle) {
+        for (char ch : castle) {
             switch (ch) {
             case 'K' :
             case 'H' :
@@ -317,14 +317,14 @@ std::optional<Position> Position::parse(std::string_view board,
 
     // En passant
     if (enpassant != "-") {
-        const auto sq = Square::parse(enpassant);
+        auto sq = Square::parse(enpassant);
         if (!sq)
             return std::nullopt;
         result.m_enpassant = *sq;
     }
 
     // Parse 50mr clock
-    if (const int value = std::stoi(std::string{irreversible_clock}); value <= 100) {
+    if (int value = std::stoi(std::string{irreversible_clock}); value <= 100) {
         result.m_50mr = static_cast<u16>(value);
     }
     else {
@@ -332,7 +332,7 @@ std::optional<Position> Position::parse(std::string_view board,
     }
 
     // Parse game ply
-    if (const int value = std::stoi(std::string{ply}); value != 0 && value < 10000) {
+    if (int value = std::stoi(std::string{ply}); value != 0 && value < 10000) {
         result.m_ply = static_cast<u16>((value - 1) * 2 + static_cast<int>(result.m_active_color));
     }
     else {

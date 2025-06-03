@@ -68,7 +68,7 @@ public:
         return len == 0;
     }
 
-    constexpr auto resize(usize new_size) -> void {
+    constexpr void resize(usize new_size) {
         assert(new_size <= cap);
         len = new_size;
     }
@@ -82,23 +82,23 @@ public:
         return data[index];
     }
 
-    constexpr iterator begin() {
+    [[nodiscard]] constexpr iterator begin() {
         return &data[0];
     }
-    constexpr const_iterator begin() const {
+    [[nodiscard]] constexpr const_iterator begin() const {
         return &data[0];
     }
-    constexpr const_iterator cbegin() const {
+    [[nodiscard]] constexpr const_iterator cbegin() const {
         return begin();
     }
 
-    constexpr iterator end() {
+    [[nodiscard]] constexpr iterator end() {
         return &data[len];
     }
-    constexpr const_iterator end() const {
+    [[nodiscard]] constexpr const_iterator end() const {
         return &data[len];
     }
-    constexpr const_iterator cend() const {
+    [[nodiscard]] constexpr const_iterator cend() const {
         return end();
     }
 

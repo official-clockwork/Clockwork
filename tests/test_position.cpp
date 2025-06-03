@@ -21,7 +21,7 @@ void roundtrip_classical_fens() {
     }};
 
     for (std::string_view fen : cases) {
-        const Position position = *Position::parse(fen);
+        Position position = *Position::parse(fen);
 
         std::ostringstream os;
         os << position;

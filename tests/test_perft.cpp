@@ -24,7 +24,7 @@ auto main() -> int {
         std::cout << fen << ":" << std::endl;
 
         for (usize depth = 0; depth < results.size(); depth++) {
-            const u64 value = perft(position, depth);
+            u64 value = perft(position, depth);
 
             std::cout << depth << ":" << value << std::endl;
 
