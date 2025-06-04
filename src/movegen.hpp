@@ -20,7 +20,7 @@ public:
 
 private:
     void write(MoveList& moves, Square sq, u16 piecemask, MoveFlags mf);
-    void write(MoveList& moves, const Wordboard& at, u64 bb, u16 piecemask, MoveFlags mf);
+    void write(MoveList& moves, const std::array<u16, 64>& at, u64 bb, u16 piecemask, MoveFlags mf);
     void write_pawn(MoveList& moves, u64 bb, int shift, MoveFlags mf);
 
     Color           m_active_color;

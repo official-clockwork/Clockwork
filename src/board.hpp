@@ -2,6 +2,7 @@
 
 #include <array>
 #include <bit>
+#include <cstring>
 #include <iosfwd>
 
 #include "common.hpp"
@@ -99,23 +100,21 @@ struct Byteboard {
 static_assert(sizeof(Byteboard) == 64);
 
 struct Wordboard {
-    std::array<u16, 64> mailbox;
+    std::array<v512, 2> raw;
 
-    [[nodiscard]] std::array<v512, 2> to_vec() const {
-        return std::bit_cast<std::array<v512, 2>>(mailbox);
+    [[nodiscard]] std::array<u16, 64> to_mailbox() const {
+        return std::bit_cast<std::array<u16, 64>>(raw);
     }
 
     [[nodiscard]] u64 get_attacked_bitboard() const {
-        const auto VEC = to_vec();
-        return concat64(VEC[0].nonzero16(), VEC[1].nonzero16());
+        return concat64(raw[0].nonzero16(), raw[1].nonzero16());
     }
 
-    constexpr u16& operator[](Square sq) {
-        return mailbox[sq.raw];
-    }
-
-    constexpr u16 operator[](Square sq) const {
-        return mailbox[sq.raw];
+    [[nodiscard]] u16 read(Square sq) const {
+        u16 value;
+        std::memcpy(&value, reinterpret_cast<const char*>(raw.data()) + sq.raw * sizeof(u16),
+                    sizeof(u16));
+        return value;
     }
 
     bool                 operator==(const Wordboard& other) const = default;

@@ -19,7 +19,7 @@ Position Position::move(Move m) const {
     Square to    = m.to();
     Place  src   = m_board[from];
     Place  dst   = m_board[to];
-    usize  color = static_cast<usize>(m_active_color);
+    bool   color = static_cast<bool>(m_active_color);
 
     if (m_enpassant.is_valid()) {
         new_pos.m_enpassant = Square::invalid();

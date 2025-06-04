@@ -106,7 +106,7 @@ public:
     }
 
     [[nodiscard]] bool is_valid() const {
-        return attack_table(m_active_color)[king_sq(invert(m_active_color))] == 0;
+        return attack_table(m_active_color).read(king_sq(invert(m_active_color))) == 0;
     }
 
     [[nodiscard]] Position move(Move m) const;

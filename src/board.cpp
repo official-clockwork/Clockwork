@@ -14,7 +14,7 @@ std::ostream& operator<<(std::ostream& os, const Wordboard& at) {
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
             Square sq    = Square::from_file_and_rank(file, rank);
-            u16    value = at[sq];
+            u16    value = at.read(sq);
 
             os << std::hex << std::setfill('0') << std::setw(4) << value << ' ';
         }

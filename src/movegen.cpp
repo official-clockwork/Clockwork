@@ -34,7 +34,7 @@ void MoveGen::generate_moves(MoveList& moves) {
     u64 empty = m_position.board().get_empty_bitboard();
     u64 enemy = m_position.board().get_color_bitboard(invert(active_color));
 
-    const Wordboard& at = m_position.attack_table(active_color);
+    std::array<u16, 64> at = m_position.attack_table(active_color).to_mailbox();
 
     u64 active = m_position.attack_table(active_color).get_attacked_bitboard();
     u64 danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
@@ -44,9 +44,8 @@ void MoveGen::generate_moves(MoveList& moves) {
     u16 pawn_mask     = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
     u16 non_pawn_mask = valid_plist & ~pawn_mask;
 
-    // En passant
     if (Square ep = m_position.en_passant(); ep.is_valid()) {
-        write(moves, ep, at[ep] & pawn_mask, MoveFlags::EnPassant);
+        write(moves, ep, at[ep.raw] & pawn_mask, MoveFlags::EnPassant);
     }
 
     // Undefended non-pawn captures
@@ -123,10 +122,11 @@ void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {
     }
 }
 
-void MoveGen::write(MoveList& moves, const Wordboard& at, u64 bb, u16 piecemask, MoveFlags mf) {
+void MoveGen::write(
+  MoveList& moves, const std::array<u16, 64>& at, u64 bb, u16 piecemask, MoveFlags mf) {
     for (; bb != 0; bb = clear_lowest_bit(bb)) {
         Square dest{static_cast<u8>(std::countr_zero(bb))};
-        write(moves, dest, piecemask & at[dest], mf);
+        write(moves, dest, piecemask & at[dest.raw], mf);
     }
 }
 
