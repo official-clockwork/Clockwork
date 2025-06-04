@@ -1,7 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
+
 
 #define forceinline inline __attribute__((always_inline))
 

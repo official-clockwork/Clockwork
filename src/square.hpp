@@ -24,13 +24,16 @@ struct Square {
     }
 
     static constexpr std::optional<Square> parse(std::string_view str) {
-        if (str.size() != 2)
+        if (str.size() != 2) {
             return std::nullopt;
-        if (str[0] < 'a' or str[0] > 'h')
+        }
+        if (str[0] < 'a' or str[0] > 'h') {
             return std::nullopt;
+        }
         int file = str[0] - 'a';
-        if (str[1] < '1' or str[1] > '8')
+        if (str[1] < '1' or str[1] > '8') {
             return std::nullopt;
+        }
         int rank = str[1] - '1';
         return from_file_and_rank(file, rank);
     }
@@ -58,5 +61,4 @@ struct Square {
 
     const std::strong_ordering operator<=>(const Square&) const = default;
 };
-
 }

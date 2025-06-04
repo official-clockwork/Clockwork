@@ -12,9 +12,9 @@ enum class Color {
 constexpr char color_char(Color color) {
     using enum Color;
     switch (color) {
-    case White :
+    case White:
         return 'w';
-    case Black :
+    case Black:
         return 'b';
     }
 }
@@ -30,25 +30,25 @@ enum class PieceType : u8 {
     Bishop,
     Rook,
     Queen,
-    King,
+    King
 };
 
 constexpr char piece_char(PieceType piece) {
     using enum PieceType;
     switch (piece) {
-    case None :
+    case None:
         return '.';
-    case Pawn :
+    case Pawn:
         return 'p';
-    case Knight :
+    case Knight:
         return 'n';
-    case Bishop :
+    case Bishop:
         return 'b';
-    case Rook :
+    case Rook:
         return 'r';
-    case Queen :
+    case Queen:
         return 'q';
-    case King :
+    case King:
         return 'k';
     }
 }
