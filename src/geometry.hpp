@@ -47,7 +47,7 @@ inline v512 superpiece_attacks(v512 ray_places, v512 ray_valid) {
     return v512::gts8_vm(ray_places, v512::sub64(ray_places, v512::broadcast64(0x101))) & ray_valid;
 }
 
-inline u64 attackers_from_rays(v512 ray_places) {
+inline v512 attackers_from_rays(v512 ray_places) {
     constexpr u8 K  = 1 << 0;
     constexpr u8 WP = 1 << 1;
     constexpr u8 BP = 1 << 2;
@@ -79,7 +79,7 @@ inline u64 attackers_from_rays(v512 ray_places) {
 
     v512 bit_rays =
       v512::permute8(v512::shr16(ray_places, 4) & v512::broadcast8(0x0F), PTYPE_TO_BITS);
-    return (bit_rays & ATTACKER_MASK).nonzero8();
+    return v512::gts8_vm(bit_rays & ATTACKER_MASK, v512::zero());
 }
 
 }  // namespace rose::geometry

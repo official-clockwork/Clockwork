@@ -301,8 +301,8 @@ struct v512 {
         return v512{v256::eq8_vm(a.raw[0], b.raw[0]), v256::eq8_vm(a.raw[1], b.raw[1])};
     }
 
-    static forceinline v512 gt8_vm(v512 a, v512 b) {
-        return v512{v256::gt8_vm(a.raw[0], b.raw[0]), v256::gt8_vm(a.raw[1], b.raw[1])};
+    static forceinline v512 gts8_vm(v512 a, v512 b) {
+        return v512{v256::gts8_vm(a.raw[0], b.raw[0]), v256::gts8_vm(a.raw[1], b.raw[1])};
     }
 
     static forceinline u64 neq8(v512 a, v512 b) {
