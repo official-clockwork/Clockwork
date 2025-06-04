@@ -38,7 +38,7 @@ IndentAccessModifiers: false
 IndentGotoLabels: false
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
-# InsertBraces: TBD
+InsertBraces: true
 InsertTrailingCommas: None
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
