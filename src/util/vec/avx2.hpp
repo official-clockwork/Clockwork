@@ -141,6 +141,7 @@ struct v256 {
         return {_mm256_add_epi8(a.raw, b.raw)};
     }
 
+
     static forceinline v256 blend8(v256 mask, v256 a, v256 b) {
         return {_mm256_blendv_epi8(a.raw, b.raw, mask.raw)};
     }
