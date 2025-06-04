@@ -78,8 +78,8 @@ inline u64 attackers_from_rays(v512 ray_places) {
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NW
     }};
 
-    v512 bit_rays = v512::permute8(v512::shr16(ray_places, 4) & v512::broadcast8(0x0F),
-                                   v512::from128(PTYPE_TO_BITS));
+    v512 bit_rays =
+      v512::permute8(v512::shr16(ray_places, 4) & v512::broadcast8(0x0F), PTYPE_TO_BITS);
     return (bit_rays & ATTACKER_MASK).nonzero8();
 }
 

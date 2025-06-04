@@ -118,6 +118,9 @@ struct v256 {
     static forceinline v256 broadcast64(u64 x) {
         return {_mm256_set1_epi64x(static_cast<i64>(x))};
     }
+    static forceinline v256 broadcast128(v128 x) {
+        return {_mm256_broadcastsi128_si256(x.raw)};
+    }
 
     static forceinline v256 from128(v128 a) {
         return {_mm256_castsi128_si256(a.raw)};
@@ -129,6 +132,10 @@ struct v256 {
 
     static forceinline v256 add8(v256 a, v256 b) {
         return {_mm256_add_epi8(a.raw, b.raw)};
+    }
+
+    static forceinline v256 permute8(v256 index, v128 a) {
+        return {_mm256_shuffle_epi8(v256::broadcast128(a).raw, index.raw)};
     }
 
     static forceinline v256 permute8(v256 index, v256 a, v256 b) {
@@ -230,6 +237,10 @@ struct v512 {
     static forceinline v512 permute8(v512 index, v512 a) {
         return v512{v256::permute8(index.raw[0], a.raw[0], a.raw[1]),
                     v256::permute8(index.raw[1], a.raw[0], a.raw[1])};
+    }
+
+    static forceinline v512 permute8(v512 index, v128 a) {
+        return v512{v256::permute8(index.raw[0], a), v256::permute8(index.raw[1], a)};
     }
 
     static forceinline v512 shr16(v512 a, int shift) {
