@@ -122,6 +122,13 @@ struct v256 {
         return {_mm256_broadcastsi128_si256(x.raw)};
     }
 
+    [[nodiscard]] forceinline v256 broadcast128lo() const {
+        return {_mm256_permute2x128_si256(raw, raw, 0b00000000)};
+    }
+    [[nodiscard]] forceinline v256 broadcast128hi() const {
+        return {_mm256_permute2x128_si256(raw, raw, 0b00010001)};
+    }
+
     static forceinline v256 from128(v128 a) {
         return {_mm256_castsi128_si256(a.raw)};
     }
@@ -134,15 +141,28 @@ struct v256 {
         return {_mm256_add_epi8(a.raw, b.raw)};
     }
 
+    static forceinline v256 blend8(v256 mask, v256 a, v256 b) {
+        return {_mm256_blendv_epi8(a.raw, b.raw, mask.raw)};
+    }
+
     static forceinline v256 permute8(v256 index, v128 a) {
         return {_mm256_shuffle_epi8(v256::broadcast128(a).raw, index.raw)};
     }
 
     static forceinline v256 permute8(v256 index, v256 a, v256 b) {
-        return v256{v128::permute8(index.extract128<0>(), a.extract128<0>(), a.extract128<1>(),
-                                   b.extract128<0>(), b.extract128<1>()),
-                    v128::permute8(index.extract128<1>(), a.extract128<0>(), a.extract128<1>(),
-                                   b.extract128<0>(), b.extract128<1>())};
+        v256 mask0 = shl16(index, 2);
+        v256 mask1 = shl16(index, 3);
+
+        v256 x = blend8(mask1, _mm256_shuffle_epi8(a.broadcast128lo().raw, index.raw),
+                        _mm256_shuffle_epi8(a.broadcast128hi().raw, index.raw));
+        v256 y = blend8(mask1, _mm256_shuffle_epi8(b.broadcast128lo().raw, index.raw),
+                        _mm256_shuffle_epi8(b.broadcast128hi().raw, index.raw));
+
+        return blend8(mask0, x, y);
+    }
+
+    static forceinline v256 shl16(v256 a, int shift) {
+        return {_mm256_slli_epi16(a.raw, shift)};
     }
 
     static forceinline v256 shr16(v256 a, int shift) {
