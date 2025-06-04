@@ -6,8 +6,8 @@
 
 #include <iomanip>
 
-#include "position.hpp"
 #include "perft.hpp"
+#include "position.hpp"
 
 using namespace Clockwork;
 

@@ -2,8 +2,9 @@
 
 #include <array>
 #include <bit>
-#include <sstream>
 #include <iostream>
+#include <sstream>
+
 
 #include "board.hpp"
 #include "geometry.hpp"
@@ -20,37 +21,40 @@ Position Position::move(Move m) const {
     Place  dst   = m_board[to];
     usize  color = static_cast<usize>(m_active_color);
 
-    if (m_enpassant.is_valid())
+    if (m_enpassant.is_valid()) {
         new_pos.m_enpassant = Square::invalid();
+    }
 
     const auto CHECK_SRC_CASTLING_RIGHTS = [&] {
-        if (src.ptype() == PieceType::Rook)
+        if (src.ptype() == PieceType::Rook) {
             new_pos.m_rook_info[color].unset(from);
-        else if (src.ptype() == PieceType::King)
+        } else if (src.ptype() == PieceType::King) {
             new_pos.m_rook_info[color].clear();
+        }
     };
 
     const auto CHECK_DST_CASTLING_RIGHTS = [&] {
-        if (dst.ptype() == PieceType::Rook)
+        if (dst.ptype() == PieceType::Rook) {
             new_pos.m_rook_info[!color].unset(to);
+        }
     };
 
     switch (m.flags()) {
-    case MoveFlags::Normal :
+    case MoveFlags::Normal:
         new_pos.m_board[from]                    = Place::empty();
         new_pos.m_board[to]                      = src;
         new_pos.m_piece_list_sq[color][src.id()] = to;
         if (src.ptype() == PieceType::Pawn) {
             new_pos.m_50mr = 0;
-            if (from.raw - to.raw == 16 || to.raw - from.raw == 16)
+            if (from.raw - to.raw == 16 || to.raw - from.raw == 16) {
                 new_pos.m_enpassant = Square{static_cast<u8>((from.raw + to.raw) / 2)};
-        }
-        else {
+            }
+        } else {
             new_pos.m_50mr++;
             CHECK_SRC_CASTLING_RIGHTS();
         }
         break;
-    case MoveFlags::CaptureBit :
+    case MoveFlags::CaptureBit:
         new_pos.m_board[from]                     = Place::empty();
         new_pos.m_board[to]                       = src;
         new_pos.m_piece_list_sq[color][src.id()]  = to;
@@ -60,7 +64,7 @@ Position Position::move(Move m) const {
         CHECK_SRC_CASTLING_RIGHTS();
         CHECK_DST_CASTLING_RIGHTS();
         break;
-    case MoveFlags::Castle : {
+    case MoveFlags::Castle: {
         bool    aside     = to.file() < from.file();
         PieceId king_id   = PieceId{0};  // == src.id()
         PieceId rook_id   = dst.id();
@@ -79,7 +83,7 @@ Position Position::move(Move m) const {
         new_pos.m_rook_info[color].clear();
         break;
     }
-    case MoveFlags::EnPassant : {
+    case MoveFlags::EnPassant: {
         Square victim_sq           = Square::from_file_and_rank(m_enpassant.file(), from.rank());
         Place  victim              = m_board[victim_sq];
         new_pos.m_board[from]      = Place::empty();
@@ -91,20 +95,20 @@ Position Position::move(Move m) const {
         new_pos.m_50mr                               = 0;
         break;
     }
-    case MoveFlags::PromoKnight :
-    case MoveFlags::PromoBishop :
-    case MoveFlags::PromoRook :
-    case MoveFlags::PromoQueen :
+    case MoveFlags::PromoKnight:
+    case MoveFlags::PromoBishop:
+    case MoveFlags::PromoRook:
+    case MoveFlags::PromoQueen:
         new_pos.m_board[from]                    = Place::empty();
         new_pos.m_board[to]                      = Place{m_active_color, *m.promo(), src.id()};
         new_pos.m_piece_list_sq[color][src.id()] = to;
         new_pos.m_piece_list[color][src.id()]    = *m.promo();
         new_pos.m_50mr                           = 0;
         break;
-    case MoveFlags::PromoKnightCapture :
-    case MoveFlags::PromoBishopCapture :
-    case MoveFlags::PromoRookCapture :
-    case MoveFlags::PromoQueenCapture :
+    case MoveFlags::PromoKnightCapture:
+    case MoveFlags::PromoBishopCapture:
+    case MoveFlags::PromoRookCapture:
+    case MoveFlags::PromoQueenCapture:
         new_pos.m_board[from]                     = Place::empty();
         new_pos.m_board[to]                       = Place{m_active_color, *m.promo(), src.id()};
         new_pos.m_piece_list_sq[color][src.id()]  = to;
@@ -196,95 +200,109 @@ std::optional<Position> Position::parse(std::string_view board,
 
             auto put_piece = [&](Color color, PieceType ptype) -> bool {
                 u8& current_id = id[static_cast<usize>(color)];
-                if (current_id >= 0x10)
+                if (current_id >= 0x10) {
                     return false;
+                }
                 put_piece_raw(color, ptype, current_id);
                 current_id++;
                 return true;
             };
 
             switch (ch) {
-            case '/' :
-                if (file != 0 || place_index == 0)
+            case '/':
+                if (file != 0 || place_index == 0) {
                     return std::nullopt;
+                }
                 break;
-            case '1' :
-            case '2' :
-            case '3' :
-            case '4' :
-            case '5' :
-            case '6' :
-            case '7' :
-            case '8' :
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
                 place_index += ch - '0';
                 break;
-            case 'K' :
+            case 'K':
                 // TODO: Error if king already on board
                 put_piece_raw(Color::White, PieceType::King, 0);
                 break;
-            case 'Q' :
-                if (!put_piece(Color::White, PieceType::Queen))
+            case 'Q':
+                if (!put_piece(Color::White, PieceType::Queen)) {
                     return std::nullopt;
+                }
                 break;
-            case 'R' :
-                if (!put_piece(Color::White, PieceType::Rook))
+            case 'R':
+                if (!put_piece(Color::White, PieceType::Rook)) {
                     return std::nullopt;
+                }
                 break;
-            case 'B' :
-                if (!put_piece(Color::White, PieceType::Bishop))
+            case 'B':
+                if (!put_piece(Color::White, PieceType::Bishop)) {
                     return std::nullopt;
+                }
                 break;
-            case 'N' :
-                if (!put_piece(Color::White, PieceType::Knight))
+            case 'N':
+                if (!put_piece(Color::White, PieceType::Knight)) {
                     return std::nullopt;
+                }
                 break;
-            case 'P' :
-                if (!put_piece(Color::White, PieceType::Pawn))
+            case 'P':
+                if (!put_piece(Color::White, PieceType::Pawn)) {
                     return std::nullopt;
+                }
                 break;
-            case 'k' :
+            case 'k':
                 // TODO: Error if king already on board
                 put_piece_raw(Color::Black, PieceType::King, 0);
                 break;
-            case 'q' :
-                if (!put_piece(Color::Black, PieceType::Queen))
+            case 'q':
+                if (!put_piece(Color::Black, PieceType::Queen)) {
                     return std::nullopt;
+                }
                 break;
-            case 'r' :
-                if (!put_piece(Color::Black, PieceType::Rook))
+            case 'r':
+                if (!put_piece(Color::Black, PieceType::Rook)) {
                     return std::nullopt;
+                }
                 break;
-            case 'b' :
-                if (!put_piece(Color::Black, PieceType::Bishop))
+            case 'b':
+                if (!put_piece(Color::Black, PieceType::Bishop)) {
                     return std::nullopt;
+                }
                 break;
-            case 'n' :
-                if (!put_piece(Color::Black, PieceType::Knight))
+            case 'n':
+                if (!put_piece(Color::Black, PieceType::Knight)) {
                     return std::nullopt;
+                }
                 break;
-            case 'p' :
-                if (!put_piece(Color::Black, PieceType::Pawn))
+            case 'p':
+                if (!put_piece(Color::Black, PieceType::Pawn)) {
                     return std::nullopt;
+                }
                 break;
-            default :
+            default:
                 return std::nullopt;
             }
         }
-        if (place_index != 64 || i != board.size())
+        if (place_index != 64 || i != board.size()) {
             return std::nullopt;
+        }
     }
 
     // Parse color
-    if (color.size() != 1)
+    if (color.size() != 1) {
         return std::nullopt;
+    }
     switch (color[0]) {
-    case 'b' :
+    case 'b':
         result.m_active_color = Color::Black;
         break;
-    case 'w' :
+    case 'w':
         result.m_active_color = Color::White;
         break;
-    default :
+    default:
         return std::nullopt;
     }
 
@@ -293,23 +311,23 @@ std::optional<Position> Position::parse(std::string_view board,
     if (castle != "-") {
         for (char ch : castle) {
             switch (ch) {
-            case 'K' :
-            case 'H' :
+            case 'K':
+            case 'H':
                 result.m_rook_info[0].hside = *Square::parse("h1");
                 break;
-            case 'Q' :
-            case 'A' :
+            case 'Q':
+            case 'A':
                 result.m_rook_info[0].aside = *Square::parse("a1");
                 break;
-            case 'k' :
-            case 'h' :
+            case 'k':
+            case 'h':
                 result.m_rook_info[1].hside = *Square::parse("h8");
                 break;
-            case 'q' :
-            case 'a' :
+            case 'q':
+            case 'a':
                 result.m_rook_info[1].aside = *Square::parse("a8");
                 break;
-            default :
+            default:
                 return std::nullopt;
             }
         }
@@ -318,24 +336,23 @@ std::optional<Position> Position::parse(std::string_view board,
     // En passant
     if (enpassant != "-") {
         auto sq = Square::parse(enpassant);
-        if (!sq)
+        if (!sq) {
             return std::nullopt;
+        }
         result.m_enpassant = *sq;
     }
 
     // Parse 50mr clock
     if (int value = std::stoi(std::string{irreversible_clock}); value <= 100) {
         result.m_50mr = static_cast<u16>(value);
-    }
-    else {
+    } else {
         return std::nullopt;
     }
 
     // Parse game ply
     if (int value = std::stoi(std::string{ply}); value != 0 && value < 10000) {
         result.m_ply = static_cast<u16>((value - 1) * 2 + static_cast<int>(result.m_active_color));
-    }
-    else {
+    } else {
         return std::nullopt;
     }
 
@@ -360,16 +377,16 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
 
             if (p.is_empty()) {
                 blanks++;
-            }
-            else {
+            } else {
                 emit_blanks();
                 os << p.to_char();
             }
 
             if (file == 7) {
                 emit_blanks();
-                if (rank != 0)
+                if (rank != 0) {
                     os << '/';
+                }
             }
         }
     }
@@ -379,21 +396,27 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
     // TODO: FRC
     RookInfo white_rook_info = position.rook_info(Color::White);
     RookInfo black_rook_info = position.rook_info(Color::Black);
-    if (white_rook_info.is_clear() && black_rook_info.is_clear())
+    if (white_rook_info.is_clear() && black_rook_info.is_clear()) {
         os << '-';
-    if (white_rook_info.hside.is_valid())
+    }
+    if (white_rook_info.hside.is_valid()) {
         os << 'K';
-    if (white_rook_info.aside.is_valid())
+    }
+    if (white_rook_info.aside.is_valid()) {
         os << 'Q';
-    if (black_rook_info.hside.is_valid())
+    }
+    if (black_rook_info.hside.is_valid()) {
         os << 'k';
-    if (black_rook_info.aside.is_valid())
+    }
+    if (black_rook_info.aside.is_valid()) {
         os << 'q';
+    }
 
-    if (position.m_enpassant.is_valid())
+    if (position.m_enpassant.is_valid()) {
         os << ' ' << position.m_enpassant << ' ';
-    else
+    } else {
         os << " - ";
+    }
 
     os << position.m_50mr << ' ' << (position.m_ply / 2 + 1);
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <utility>
 #include <tuple>
+#include <utility>
+
 
 #include "square.hpp"
 #include "util/types.hpp"

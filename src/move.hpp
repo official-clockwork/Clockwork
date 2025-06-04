@@ -61,8 +61,9 @@ struct Move {
     }
 
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {
-        if (!is_promotion())
+        if (!is_promotion()) {
             return std::nullopt;
+        }
 
         static_assert(static_cast<u16>(PieceType::Knight) == 2);
         return static_cast<PieceType>(((raw >> 12) & 0b0011) + 2);
@@ -75,10 +76,11 @@ struct Move {
 
         if (mv.flags() == MoveFlags::Castle) {
             // TODO: FRC
-            if (mv.to().file() < mv.from().file())
+            if (mv.to().file() < mv.from().file()) {
                 os << 'c';
-            else
+            } else {
                 os << 'g';
+            }
             os << mv.to().rank() + 1;
         } else {
             os << mv.to();

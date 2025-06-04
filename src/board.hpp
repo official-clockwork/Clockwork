@@ -4,10 +4,11 @@
 #include <bit>
 #include <iosfwd>
 
-#include "util/types.hpp"
-#include "util/vec.hpp"
 #include "common.hpp"
 #include "square.hpp"
+#include "util/types.hpp"
+#include "util/vec.hpp"
+
 
 namespace Clockwork {
 

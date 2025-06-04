@@ -2,8 +2,9 @@
 
 #include <algorithm>
 #include <array>
-#include <utility>
 #include <cassert>
+#include <utility>
+
 
 #include "util/types.hpp"
 

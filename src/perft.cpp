@@ -8,8 +8,9 @@ namespace Clockwork {
 
 template<bool print>
 static u64 core(const Position& position, usize depth) {
-    if (depth == 0)
+    if (depth == 0) {
         return 1;
+    }
 
     u64 result = 0;
 
@@ -19,13 +20,15 @@ static u64 core(const Position& position, usize depth) {
 
     for (Move m : moves) {
         Position new_position = position.move(m);
-        if (!new_position.is_valid())
+        if (!new_position.is_valid()) {
             continue;
+        }
 
         u64 child = core<false>(new_position, depth - 1);
 
-        if constexpr (print)
+        if constexpr (print) {
             std::cout << m << ": " << child << std::endl;
+        }
 
         result += child;
     }

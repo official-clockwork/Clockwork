@@ -13,13 +13,13 @@ namespace Clockwork {
 
 static std::tuple<u64, u64, u64, int, int> valid_pawns(Color color, u64 bb, u64 empty, u64 dests) {
     switch (color) {
-    case Color::White : {
+    case Color::White: {
         u64 single = bb & ((empty & dests) >> 8);
         return {single & 0x0000FFFFFFFFFF00,
                 bb & (empty >> 8) & ((empty & dests) >> 16) & 0x000000000000FF00,
                 single & 0x00FF000000000000, 8, 16};
     }
-    case Color::Black : {
+    case Color::Black: {
         u64 single = bb & ((empty & dests) << 8);
         return {single & 0x00FFFFFFFFFF0000,
                 bb & (empty << 8) & ((empty & dests) << 16) & 0x00FF000000000000,
@@ -45,8 +45,9 @@ void MoveGen::generate_moves(MoveList& moves) {
     u16 non_pawn_mask = valid_plist & ~pawn_mask;
 
     // En passant
-    if (Square ep = m_position.en_passant(); ep.is_valid())
+    if (Square ep = m_position.en_passant(); ep.is_valid()) {
         write(moves, ep, at[ep] & pawn_mask, MoveFlags::EnPassant);
+    }
 
     // Undefended non-pawn captures
     write(moves, at, active & enemy & ~danger, non_pawn_mask, MoveFlags::CaptureBit);
@@ -72,15 +73,17 @@ void MoveGen::generate_moves(MoveList& moves) {
             u64 clear      = empty | king_sq.to_bitboard() | rook_info.aside.to_bitboard();
             u8  rank_empty = static_cast<u8>(clear >> color_shift);
             u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
-            if ((rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C)
+            if ((rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C) {
                 moves.push_back(Move{king_sq, rook_info.aside, MoveFlags::Castle});
+            }
         }
         if (rook_info.hside.is_valid()) {
             u64 clear      = empty | king_sq.to_bitboard() | rook_info.hside.to_bitboard();
             u8  rank_empty = static_cast<u8>(clear >> color_shift);
             u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
-            if ((rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70)
+            if ((rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70) {
                 moves.push_back(Move{king_sq, rook_info.hside, MoveFlags::Castle});
+            }
         }
     }
 
@@ -108,8 +111,9 @@ void MoveGen::generate_moves(MoveList& moves) {
 }
 
 void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {
-    if (!piecemask)
+    if (!piecemask) {
         return;
+    }
 
     usize count = std::popcount(piecemask);
     for (u8 i = 0; i < count; i++, piecemask = clear_lowest_bit(piecemask)) {
