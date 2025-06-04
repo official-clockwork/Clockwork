@@ -115,6 +115,9 @@ struct v256 {
     static forceinline v256 broadcast8(u8 x) {
         return {_mm256_set1_epi8(static_cast<i8>(x))};
     }
+    static forceinline v256 broadcast16(u16 x) {
+        return {_mm256_set1_epi16(static_cast<i16>(x))};
+    }
     static forceinline v256 broadcast64(u64 x) {
         return {_mm256_set1_epi64x(static_cast<i64>(x))};
     }
@@ -169,8 +172,20 @@ struct v256 {
         return {_mm256_srli_epi16(a.raw, shift)};
     }
 
+    static forceinline v256 sub64(v256 a, v256 b) {
+        return {_mm256_sub_epi64(a.raw, b.raw)};
+    }
+
     static forceinline u32 eq8(v256 a, v256 b) {
-        return static_cast<u32>(_mm256_movemask_epi8(_mm256_cmpeq_epi8(a.raw, b.raw)));
+        return eq8_vm(a, b).msb8();
+    }
+
+    static forceinline v256 eq8_vm(v256 a, v256 b) {
+        return {_mm256_cmpeq_epi8(a.raw, b.raw)};
+    }
+
+    static forceinline v256 gts8_vm(v256 a, v256 b) {
+        return {_mm256_cmpgt_epi8(a.raw, b.raw)};
     }
 
     static forceinline u32 neq8(v256 a, v256 b) {
@@ -195,6 +210,9 @@ struct v256 {
     }
     friend forceinline v256 operator|(v256 a, v256 b) {
         return {_mm256_or_si256(a.raw, b.raw)};
+    }
+    friend forceinline v256 operator^(v256 a, v256 b) {
+        return {_mm256_xor_si256(a.raw, b.raw)};
     }
 
     forceinline bool operator==(const v256& other) const {
@@ -228,6 +246,9 @@ struct v512 {
 
     static forceinline v512 broadcast8(u8 x) {
         return v512{v256::broadcast8(x), v256::broadcast8(x)};
+    }
+    static forceinline v512 broadcast16(u16 x) {
+        return v512{v256::broadcast16(x), v256::broadcast16(x)};
     }
     static forceinline v512 broadcast64(u64 x) {
         return v512{v256::broadcast64(x), v256::broadcast64(x)};
@@ -268,8 +289,20 @@ struct v512 {
         return v512{v256::shr16(a.raw[0], shift), v256::shr16(a.raw[1], shift)};
     }
 
+    static forceinline v512 sub64(v512 a, v512 b) {
+        return v512{v256::sub64(a.raw[0], b.raw[0]), v256::sub64(a.raw[1], b.raw[1])};
+    }
+
     static forceinline u64 eq8(v512 a, v512 b) {
         return concat64(v256::eq8(a.raw[0], b.raw[0]), v256::eq8(a.raw[1], b.raw[1]));
+    }
+
+    static forceinline v512 eq8_vm(v512 a, v512 b) {
+        return v512{v256::eq8_vm(a.raw[0], b.raw[0]), v256::eq8_vm(a.raw[1], b.raw[1])};
+    }
+
+    static forceinline v512 gt8_vm(v512 a, v512 b) {
+        return v512{v256::gt8_vm(a.raw[0], b.raw[0]), v256::gt8_vm(a.raw[1], b.raw[1])};
     }
 
     static forceinline u64 neq8(v512 a, v512 b) {
@@ -300,9 +333,15 @@ struct v512 {
     friend forceinline v512 operator&(v512 a, v512 b) {
         return v512{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]};
     }
-
     friend forceinline v512 operator|(v512 a, v512 b) {
         return v512{a.raw[0] | b.raw[0], a.raw[1] | b.raw[1]};
+    }
+    friend forceinline v512 operator^(v512 a, v512 b) {
+        return v512{a.raw[0] ^ b.raw[0], a.raw[1] ^ b.raw[1]};
+    }
+
+    friend forceinline v512& operator&=(v512& a, v512 b) {
+        return a = a & b;
     }
 
     forceinline auto operator==(const v512& other) const -> bool {

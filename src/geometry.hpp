@@ -18,15 +18,15 @@ forceinline constexpr auto expand_sq(Square sq) -> u8 {
 
 // 0rrr0fff → 00rrrfff
 template<typename V>
-forceinline auto compress_coords(V list) -> std::tuple<V, typename V::Mask8> {
-    typename V::Mask8 valid = V::testn8(list, V::broadcast8(0x88));
+forceinline auto compress_coords(V list) -> std::tuple<V, V> {
+    V valid      = V::eq8_vm(list & V::broadcast8(0x88), V::zero());
     V compressed = (list & V::broadcast8(0x07)) | V::shr16(list & V::broadcast8(0x70), 1);
     return {compressed, valid};
 }
 }  // namespace internal
 
 
-inline std::tuple<v512, u64> superpiece_rays(Square sq) {
+inline std::tuple<v512, v512> superpiece_rays(Square sq) {
     static const v512 OFFSETS = v512{std::array<u8, 64>{
       0x1F, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,  // N
       0x21, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,  // NE
@@ -43,10 +43,8 @@ inline std::tuple<v512, u64> superpiece_rays(Square sq) {
     return internal::compress_coords(uncompressed);
 }
 
-inline u64 superpiece_attacks(u64 occupied, u64 ray_valid) {
-    u64 o = occupied | 0x8181818181818181;
-    u64 x = o ^ (o - 0x0303030303030303);
-    return x & ray_valid;
+inline v512 superpiece_attacks(v512 ray_places, v512 ray_valid) {
+    return v512::gts8_vm(ray_places, v512::sub64(ray_places, v512::broadcast64(0x101))) & ray_valid;
 }
 
 inline u64 attackers_from_rays(v512 ray_places) {

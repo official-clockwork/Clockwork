@@ -130,25 +130,22 @@ Position Position::move(Move m) const {
 }
 
 const std::array<Wordboard, 2> Position::calc_attacks_slow() {
-    std::array<Wordboard, 2> result{};
+    std::array<std::array<u16, 64>, 2> result{};
     for (usize i = 0; i < 64; i++) {
         Square sq{static_cast<u8>(i)};
-        auto [white, black]  = calc_attacks_slow(sq);
-        result[0].mailbox[i] = white;
-        result[1].mailbox[i] = black;
+        auto [white, black] = calc_attacks_slow(sq);
+        result[0][i]        = white;
+        result[1][i]        = black;
     }
-    return result;
+    return std::bit_cast<std::array<Wordboard, 2>>(result);
 }
 
 const std::array<u16, 2> Position::calc_attacks_slow(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
     v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
 
-    u64 occupied = ray_places.nonzero8();
-    u64 color    = ray_places.msb8();
-
-    u64 visible = geometry::superpiece_attacks(occupied, ray_valid) & occupied;
-
+    u64 color           = ray_places.msb8();
+    u64 visible         = geometry::superpiece_attacks(ray_places, ray_valid).nonzero8();
     u64 attackers       = geometry::attackers_from_rays(ray_places);
     u64 white_attackers = ~color & visible & attackers;
     u64 black_attackers = color & visible & attackers;
