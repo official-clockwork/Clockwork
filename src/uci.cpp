@@ -12,13 +12,15 @@ namespace Clockwork::UCI {
 void UCIHandler::loop() {
     std::string input;
 
-    while (std::getline(std::cin, input))
+    while (std::getline(std::cin, input)) {
         execute_command(input);
+    }
 }
 
 void UCIHandler::handle_command_line(int argc, char* argv[]) {
-    for (int i = 1; i < argc; ++i)
+    for (int i = 1; i < argc; ++i) {
         execute_command(argv[i]);
+    }
 }
 
 void UCIHandler::execute_command(const std::string& line) {
@@ -30,16 +32,17 @@ void UCIHandler::execute_command(const std::string& line) {
     if (command == "uci") {
         std::cout << "id Name Clockwork\n";
         std::cout << "id author The Clockwork community" << std::endl;
-    } else if (command == "isready")
+    } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
-    else if (command == "quit")
+    } else if (command == "quit") {
         std::exit(0);
-    else if (command == "go")
+    } else if (command == "go") {
         handle_go(is);
-    else if (command == "position")
+    } else if (command == "position") {
         handle_position(is);
-    else
+    } else {
         std::cout << "Unknown command" << std::endl;
+    }
 }
 
 void UCIHandler::handle_go(std::istringstream& is) {

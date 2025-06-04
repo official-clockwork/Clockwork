@@ -2,10 +2,11 @@
 
 #include "util/types.hpp"
 
-#include <string_view>
 #include <cassert>
-#include <ostream>
 #include <optional>
+#include <ostream>
+#include <string_view>
+
 
 namespace Clockwork {
 
@@ -23,13 +24,16 @@ struct Square {
     }
 
     static constexpr std::optional<Square> parse(std::string_view str) {
-        if (str.size() != 2)
+        if (str.size() != 2) {
             return std::nullopt;
-        if (str[0] < 'a' or str[0] > 'h')
+        }
+        if (str[0] < 'a' or str[0] > 'h') {
             return std::nullopt;
+        }
         const int FILE = str[0] - 'a';
-        if (str[1] < '1' or str[1] > '8')
+        if (str[1] < '1' or str[1] > '8') {
             return std::nullopt;
+        }
         const int RANK = str[1] - '1';
         return from_file_and_rank(FILE, RANK);
     }

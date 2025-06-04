@@ -14,25 +14,25 @@ enum class PieceType {
     Rook,
     Queen,
     King,
-    Empty,
+    Empty
 };
 
 constexpr char piece_char(PieceType piece) {
     using enum PieceType;
     switch (piece) {
-    case Pawn :
+    case Pawn:
         return 'p';
-    case Knight :
+    case Knight:
         return 'n';
-    case Bishop :
+    case Bishop:
         return 'b';
-    case Rook :
+    case Rook:
         return 'r';
-    case Queen :
+    case Queen:
         return 'q';
-    case King :
+    case King:
         return 'k';
-    case Empty :
+    case Empty:
         return '.';
     }
 }

@@ -44,7 +44,7 @@ MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
 PackConstructorInitializers: Never
 ReflowComments: false
-SortIncludes: CaseSensitive
+SortIncludes: CaseInsensitive
 SortUsingDeclarations: false
 SpaceAfterTemplateKeyword: false
 SpaceBeforeCaseColon: false
