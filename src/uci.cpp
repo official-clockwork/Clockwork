@@ -122,13 +122,13 @@ void UCIHandler::handle_attacks(std::istringstream&) {
     std::cout << m_position.attack_table(Color::White) << std::endl;
     std::cout << m_position.attack_table(Color::Black) << std::endl;
     std::cout << "White: ";
-    for (int i = 0; i < 16; i++) {
+    for (usize i = 0; i < 16; i++) {
         std::cout << " " << piece_char(m_position.piece_list(Color::White).array[i]) << ":"
                   << m_position.piece_list_sq(Color::White).array[i];
     }
     std::cout << std::endl;
     std::cout << "Black: ";
-    for (int i = 0; i < 16; i++) {
+    for (usize i = 0; i < 16; i++) {
         std::cout << " " << piece_char(m_position.piece_list(Color::Black).array[i]) << ":"
                   << m_position.piece_list_sq(Color::Black).array[i];
     }

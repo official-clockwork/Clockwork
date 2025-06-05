@@ -110,12 +110,7 @@ void MoveGen::generate_moves(MoveList& moves) {
 }
 
 void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {
-    if (!piecemask) {
-        return;
-    }
-
-    usize count = std::popcount(piecemask);
-    for (u8 i = 0; i < count; i++, piecemask = clear_lowest_bit(piecemask)) {
+    for (; piecemask != 0; piecemask = clear_lowest_bit(piecemask)) {
         PieceId id{static_cast<u8>(std::countr_zero(piecemask))};
         Square  src = m_position.piece_list_sq(m_active_color)[id];
         moves.push_back(Move{src, dest, mf});

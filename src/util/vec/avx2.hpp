@@ -301,7 +301,7 @@ struct v512 {
         // TODO: Slow
         std::array<u8, 64> result{};
         auto               in = std::bit_cast<std::array<u8, 64>>(a);
-        for (int i = 0; m != 0; i++, m = clear_lowest_bit(m)) {
+        for (usize i = 0; m != 0; i++, m = clear_lowest_bit(m)) {
             result[i] = in[static_cast<usize>(std::countr_zero(m))];
         }
         return std::bit_cast<v512>(result);
