@@ -49,6 +49,6 @@ SortUsingDeclarations: false
 SpaceAfterTemplateKeyword: false
 SpaceBeforeCaseColon: false
 SpaceBeforeCpp11BracedList: false
-SpaceBeforeInheritanceColon: false
+SpaceBeforeInheritanceColon: true
 SpaceInEmptyBlock: false
 SpacesBeforeTrailingComments: 2
