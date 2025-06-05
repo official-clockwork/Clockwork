@@ -39,17 +39,17 @@ struct Place {
 
     constexpr Place(Color color, PieceType pt, PieceId id) {
         raw =
-          static_cast<u8>((static_cast<int>(color) << 7) | (static_cast<int>(pt) << 4) | id.raw);
+          static_cast<u8>((static_cast<int>(color) << 4) | (static_cast<int>(pt) << 5) | id.raw);
     }
 
     [[nodiscard]] constexpr bool is_empty() const {
         return raw == 0;
     }
     [[nodiscard]] constexpr Color color() const {
-        return static_cast<Color>((raw & 0x80) != 0);
+        return static_cast<Color>((raw & 0x10) != 0);
     }
     [[nodiscard]] constexpr PieceType ptype() const {
-        return static_cast<PieceType>((raw >> 4) & 0x7);
+        return static_cast<PieceType>((raw >> 5) & 0x7);
     }
     [[nodiscard]] constexpr PieceId id() const {
         return PieceId{static_cast<u8>(raw & 0xF)};

@@ -47,16 +47,10 @@ v512 Position::toggle_rays(Square sq) {
     v512 raymask         = geometry::superpiece_attacks(ray_places, ray_valid);
     v512 visible_sliders = raymask & all_sliders & ray_places;
 
-    v512 color = v512::eq8_vm(v512::eq64_vm(visible_sliders & v512::broadcast8(0x80), v512::zero()),
-                              v512::zero());
+    v512 slider_ids = v512::sliderbroadcast(visible_sliders & v512::broadcast8(0x1F));
 
-    v512 slider_ids = v512::sliderbroadcast(visible_sliders & v512::broadcast8(0x0F));
-
-    // Combine information for efficiency
-    // TODO: Change Place format so we can remove some of this code.
-    slider_ids |= color & v512::broadcast8(0x10);
     slider_ids = v512{slider_ids.raw[1], slider_ids.raw[0]} & raymask;  // flip rays
-    slider_ids |= raymask & v512::broadcast8(0x20);
+    slider_ids |= raymask & v512::broadcast8(0x20);  // pack information for efficiency
 
     auto [inv_perm, inv_perm_mask] = geometry::superpiece_inverse_rays_avx2(sq);
 
@@ -69,7 +63,7 @@ v512 Position::toggle_rays(Square sq) {
     v512 ret = v512::eq8_vm(slider_ids & v512::broadcast8(0x20), v512::broadcast8(0x20));
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
-    // Index zero is invalid, so 0 converts to 0.
+    // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
     static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
                                                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
     static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
