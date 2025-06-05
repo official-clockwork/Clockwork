@@ -28,8 +28,8 @@ void UCIHandler::loop() {
     }
 }
 
-void UCIHandler::handle_command_line(int argc, char* argv[]) {
-    for (int i = 1; i < argc; ++i) {
+void UCIHandler::handle_command_line(i32 argc, char* argv[]) {
+    for (i32 i = 1; i < argc; ++i) {
         execute_command(argv[i]);
     }
 }
@@ -137,7 +137,7 @@ void UCIHandler::handle_attacks(std::istringstream&) {
 
 void UCIHandler::handle_perft(std::istringstream& is) {
     std::string token;
-    int         depth = 1;
+    i32         depth = 1;
 
     if (is >> token) {
         depth = std::stoi(token);

@@ -14,13 +14,13 @@ namespace Clockwork::geometry {
 
 namespace internal {
 // 00rrrfff → 0rrr0fff
-forceinline constexpr auto expand_sq(Square sq) -> u8 {
+forceinline constexpr u8 expand_sq(Square sq) {
     return sq.raw + (sq.raw & 0b111000);
 }
 
 // 0rrr0fff → 00rrrfff
 template<typename V>
-forceinline auto compress_coords(V list) -> std::tuple<V, V> {
+forceinline std::tuple<V, V> compress_coords(V list) {
     V valid      = V::eq8_vm(list & V::broadcast8(0x88), V::zero());
     V compressed = (list & V::broadcast8(0x07)) | (V::shr16(list, 1) & V::broadcast8(0x38));
     return {compressed, valid};
@@ -126,7 +126,7 @@ extern const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE;
 
 inline v512 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     assert(ptype != PieceType::None);
-    int  index = ptype == PieceType::Pawn ? color : static_cast<int>(ptype);
+    i32  index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
     v512 bit   = v512::broadcast8(static_cast<u8>(1 << index));
     v512 table = PIECE_MOVES_AVX2_TABLE[sq.raw];
     return v512::eq8_vm(table & bit, bit);

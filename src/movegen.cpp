@@ -11,7 +11,7 @@
 
 namespace Clockwork {
 
-static std::tuple<Bitboard, Bitboard, Bitboard, int, int>
+static std::tuple<Bitboard, Bitboard, Bitboard, i32, i32>
 valid_pawns(Color color, Bitboard bb, Bitboard empty, Bitboard dests) {
     switch (color) {
     case Color::White: {
@@ -69,8 +69,7 @@ void MoveGen::generate_moves(MoveList& moves) {
         Square   king_sq   = m_position.king_sq(active_color);
         RookInfo rook_info = m_position.rook_info(active_color);
         if (rook_info.aside.is_valid()) {
-            Bitboard clear =
-              empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.aside);
+            Bitboard clear = empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.aside);
             u8 rank_empty = clear.front_rank(active_color);
             u8 rank_safe  = (~danger).front_rank(active_color);
             if ((rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C) {
@@ -126,7 +125,7 @@ void MoveGen::write(
     }
 }
 
-void MoveGen::write_pawn(MoveList& moves, Bitboard src_bb, int shift, MoveFlags mf) {
+void MoveGen::write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf) {
     for (Square src : src_bb) {
         Square dest{static_cast<u8>(src.raw + shift)};
         moves.push_back(Move{src, dest, mf});

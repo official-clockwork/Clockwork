@@ -33,7 +33,7 @@ void roundtrip_classical_fens() {
     }
 }
 
-auto main() -> int {
+int main() {
     roundtrip_classical_fens();
     return 0;
 }

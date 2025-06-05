@@ -11,8 +11,8 @@ std::ostream& operator<<(std::ostream& os, const Wordboard& at) {
     std::ios state{nullptr};
     state.copyfmt(os);
 
-    for (int rank = 7; rank >= 0; rank--) {
-        for (int file = 0; file < 8; file++) {
+    for (i32 rank = 7; rank >= 0; rank--) {
+        for (i32 file = 0; file < 8; file++) {
             Square sq    = Square::from_file_and_rank(file, rank);
             u16    value = at.read(sq);
 

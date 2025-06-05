@@ -67,7 +67,7 @@ struct v128 {
         return blend8(mask0, blend8(mask1, w, x), blend8(mask1, y, z));
     }
 
-    static forceinline v128 shl16(v128 a, int shift) {
+    static forceinline v128 shl16(v128 a, i32 shift) {
         return {_mm_slli_epi16(a.raw, shift)};
     }
 
@@ -176,11 +176,11 @@ struct v256 {
         return blend8(mask0, x, y);
     }
 
-    static forceinline v256 shl16(v256 a, int shift) {
+    static forceinline v256 shl16(v256 a, i32 shift) {
         return {_mm256_slli_epi16(a.raw, shift)};
     }
 
-    static forceinline v256 shr16(v256 a, int shift) {
+    static forceinline v256 shr16(v256 a, i32 shift) {
         return {_mm256_srli_epi16(a.raw, shift)};
     }
 
@@ -225,7 +225,7 @@ struct v256 {
           static_cast<u32>(~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw, b.raw))), 0xAAAAAAAA));
     }
 
-    template<int offset>
+    template<i32 offset>
     [[nodiscard]] forceinline v128 extract128() const {
         return {_mm256_extracti128_si256(raw, offset)};
     }
@@ -320,7 +320,7 @@ struct v512 {
         return v512{v256::permute8(index.raw[0], a), v256::permute8(index.raw[1], a)};
     }
 
-    static forceinline v512 shr16(v512 a, int shift) {
+    static forceinline v512 shr16(v512 a, i32 shift) {
         return v512{v256::shr16(a.raw[0], shift), v256::shr16(a.raw[1], shift)};
     }
 
@@ -406,13 +406,13 @@ struct v512 {
         return a = a ^ b;
     }
 
-    forceinline auto operator==(const v512& other) const -> bool {
+    forceinline bool operator==(const v512& other) const {
         return raw == other.raw;
     }
 };
 static_assert(sizeof(v512) == 64);
 
-forceinline u16 findset8(v128 haystack, int haystack_len, v128 needles) {
+forceinline u16 findset8(v128 haystack, i32 haystack_len, v128 needles) {
     return static_cast<u16>(
       _mm_extract_epi16(_mm_cmpestrm(haystack.raw, haystack_len, needles.raw, 16, 0), 0));
 }

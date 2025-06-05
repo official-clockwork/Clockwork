@@ -30,7 +30,7 @@ private:
                MoveFlags                  mf);
 
     // Write quiet pawn moves that start from src_bb, moved by shift.
-    void write_pawn(MoveList& moves, Bitboard src_bb, int shift, MoveFlags mf);
+    void write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf);
 
     Color           m_active_color;
     const Position& m_position;
