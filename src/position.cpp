@@ -152,24 +152,27 @@ Position Position::move(Move m) const {
         new_pos.m_attack_table = new_pos.calc_attacks_slow();
         break;
     case MoveFlags::Castle: {
-        bool    aside     = to.file() < from.file();
-        PieceId king_id   = PieceId{0};  // == src.id()
-        PieceId rook_id   = dst.id();
-        Square  king_from = from;
-        Square  rook_from = to;
-        Square  king_to   = Square::from_file_and_rank(aside ? 2 : 6, from.rank());
-        Square  rook_to   = Square::from_file_and_rank(aside ? 3 : 5, from.rank());
+        bool    aside      = to.file() < from.file();
+        PieceId king_id    = PieceId{0};  // == src.id()
+        PieceId rook_id    = dst.id();
+        Square  king_from  = from;
+        Square  rook_from  = to;
+        Square  king_to    = Square::from_file_and_rank(aside ? 2 : 6, from.rank());
+        Square  rook_to    = Square::from_file_and_rank(aside ? 3 : 5, from.rank());
+        Place   king_place = Place{m_active_color, PieceType::King, king_id};
+        Place   rook_place = Place{m_active_color, PieceType::Rook, rook_id};
 
-        new_pos.m_board[king_from]              = Place::empty();
-        new_pos.m_board[rook_from]              = Place::empty();
-        new_pos.m_board[king_to]                = Place{m_active_color, PieceType::King, king_id};
-        new_pos.m_board[rook_to]                = Place{m_active_color, PieceType::Rook, rook_id};
+        // TODO: Optimize further (slider updates can be elided in some cases).
+        new_pos.incrementally_remove_piece(color, king_id, king_from);
+        new_pos.incrementally_remove_piece(color, rook_id, rook_from);
+        new_pos.incrementally_add_piece(color, king_place, king_to);
+        new_pos.incrementally_add_piece(color, rook_place, rook_to);
+
         new_pos.m_piece_list_sq[color][king_id] = king_to;
         new_pos.m_piece_list_sq[color][rook_id] = rook_to;
-        new_pos.m_50mr++;
 
+        new_pos.m_50mr++;
         new_pos.m_rook_info[color].clear();
-        new_pos.m_attack_table = new_pos.calc_attacks_slow();
         break;
     }
     case MoveFlags::EnPassant: {
