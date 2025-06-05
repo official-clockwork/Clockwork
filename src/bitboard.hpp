@@ -93,6 +93,10 @@ public:
         return shift(dir);
     }
 
+    [[nodiscard]] u64 value() const {
+        return m_raw;
+    }
+
     void clear(Square sq) {
         m_raw &= ~from_square(sq).m_raw;
     }
