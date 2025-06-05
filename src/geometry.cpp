@@ -44,7 +44,7 @@ const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
 
     std::array<v512, 64> table;
     for (u8 sq = 0; sq < 64; sq++) {
-        const u8           esq = internal::expand_sq(Square{sq});
+        u8                 esq = internal::expand_sq(Square{sq});
         std::array<u8, 64> b;
         for (int i = 0; i < 64; i++) {
             u8 value = BASE[AVX2_OFFSETS[i] - esq];
@@ -90,7 +90,7 @@ const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE = []() {
 
     std::array<v512, 64> table;
     for (u8 sq = 0; sq < 64; sq++) {
-        const u8           esq = internal::expand_sq(Square{sq});
+        u8                 esq = internal::expand_sq(Square{sq});
         std::array<u8, 64> b;
         for (int i = 0; i < 64; i++) {
             b[i] = BASE[AVX2_OFFSETS[i] - esq];
