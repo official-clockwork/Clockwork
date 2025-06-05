@@ -44,6 +44,7 @@ set(srcs
     src/util/vec.hpp
     src/util/vec/avx2.hpp
     src/util/vec/avx512.hpp
+    src/options/engine_options.inc
 )
 
 add_executable(clockwork ${srcs} src/main.cpp)
