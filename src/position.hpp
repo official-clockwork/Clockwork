@@ -78,6 +78,8 @@ private:
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq);
     void incrementally_add_piece(bool color, Place p, Square sq);
+    void
+    incrementally_mutate_piece(bool old_color, PieceId old_id, Square sq, bool new_color, Place p);
 
     void remove_attacks(bool color, PieceId id);
     v512 toggle_rays(Square sq);

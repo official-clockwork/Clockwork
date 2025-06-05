@@ -25,6 +25,14 @@ void Position::incrementally_add_piece(bool color, Place p, Square to) {
     add_attacks(color, p.id(), to, p.ptype(), m);
 }
 
+void Position::incrementally_mutate_piece(
+  bool old_color, PieceId old_id, Square sq, bool new_color, Place p) {
+    m_board[sq] = p;
+
+    remove_attacks(old_color, old_id);
+    add_attacks(new_color, p.id(), sq, p.ptype());
+}
+
 void Position::remove_attacks(bool color, PieceId id) {
     v512 mask = v512::broadcast16(~id.to_piece_mask());
     m_attack_table[color].raw[0] &= mask;
@@ -45,6 +53,7 @@ v512 Position::toggle_rays(Square sq) {
     v512 slider_ids = v512::sliderbroadcast(visible_sliders & v512::broadcast8(0x0F));
 
     // Combine information for efficiency
+    // TODO: Change Place format so we can remove some of this code.
     slider_ids |= color & v512::broadcast8(0x10);
     slider_ids = v512{slider_ids.raw[1], slider_ids.raw[0]} & raymask;  // flip rays
     slider_ids |= raymask & v512::broadcast8(0x20);
@@ -81,6 +90,31 @@ v512 Position::toggle_rays(Square sq) {
     m_attack_table[1].raw[1] ^= color1 & at1;
 
     return ret;
+}
+
+void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
+    switch (ptype) {
+    case PieceType::None:
+        return;
+    case PieceType::Pawn:
+    case PieceType::Knight:
+    case PieceType::King:
+        add_attacks(color, id, sq, ptype, v512::broadcast8(0xFF));
+        return;
+    case PieceType::Bishop:
+    case PieceType::Rook:
+    case PieceType::Queen: {
+        auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
+        v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
+        v512 raymask                 = geometry::superpiece_attacks(ray_places, ray_valid);
+
+        auto [inv_perm, inv_perm_mask] = geometry::superpiece_inverse_rays_avx2(sq);
+        v512 boardmask                 = v512::permute8(inv_perm, raymask) & inv_perm_mask;
+
+        add_attacks(color, id, sq, ptype, boardmask);
+        return;
+    }
+    }
 }
 
 void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask) {
@@ -137,19 +171,18 @@ Position Position::move(Move m) const {
             new_pos.m_50mr++;
             CHECK_SRC_CASTLING_RIGHTS();
         }
-
         break;
     case MoveFlags::CaptureBit:
-        new_pos.m_board[from]                     = Place::empty();
-        new_pos.m_board[to]                       = src;
-        new_pos.m_piece_list_sq[color][src.id()]  = to;
-        new_pos.m_piece_list_sq[!color][dst.id()] = {};
-        new_pos.m_piece_list[!color][dst.id()]    = PieceType::None;
-        new_pos.m_50mr                            = 0;
+        new_pos.incrementally_remove_piece(color, src.id(), from);
+        new_pos.incrementally_mutate_piece(!color, dst.id(), to, color, src);
 
+        new_pos.m_piece_list_sq[color][src.id()]  = to;
+        new_pos.m_piece_list_sq[!color][dst.id()] = Square::invalid();
+        new_pos.m_piece_list[!color][dst.id()]    = PieceType::None;
+
+        new_pos.m_50mr = 0;
         CHECK_SRC_CASTLING_RIGHTS();
         CHECK_DST_CASTLING_RIGHTS();
-        new_pos.m_attack_table = new_pos.calc_attacks_slow();
         break;
     case MoveFlags::Castle: {
         bool    aside      = to.file() < from.file();
