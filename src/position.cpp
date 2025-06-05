@@ -192,15 +192,18 @@ Position Position::move(Move m) const {
     case MoveFlags::PromoKnight:
     case MoveFlags::PromoBishop:
     case MoveFlags::PromoRook:
-    case MoveFlags::PromoQueen:
-        new_pos.m_board[from]                    = Place::empty();
-        new_pos.m_board[to]                      = Place{m_active_color, *m.promo(), src.id()};
+    case MoveFlags::PromoQueen: {
+        Place new_place{m_active_color, *m.promo(), src.id()};
+
+        new_pos.incrementally_remove_piece(color, src.id(), from);
+        new_pos.incrementally_add_piece(color, new_place, to);
+
         new_pos.m_piece_list_sq[color][src.id()] = to;
         new_pos.m_piece_list[color][src.id()]    = *m.promo();
-        new_pos.m_50mr                           = 0;
 
-        new_pos.m_attack_table = new_pos.calc_attacks_slow();
+        new_pos.m_50mr = 0;
         break;
+    }
     case MoveFlags::PromoKnightCapture:
     case MoveFlags::PromoBishopCapture:
     case MoveFlags::PromoRookCapture:
