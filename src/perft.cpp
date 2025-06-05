@@ -1,3 +1,5 @@
+#include <chrono>
+#include <iomanip>
 #include <iostream>
 
 #include "movegen.hpp"
@@ -41,8 +43,23 @@ u64 perft(const Position& position, usize depth) {
 }
 
 void split_perft(const Position& position, usize depth) {
+    auto start_time = std::chrono::steady_clock::now();
+
     u64 total = core<true>(position, depth);
     std::cout << "total: " << total << std::endl;
+
+    std::chrono::duration<f64> elapsed    = std::chrono::steady_clock::now() - start_time;
+    f64                        elapsed_ms = elapsed.count() * 1000.0;
+    f64                        mnps       = static_cast<f64>(total) / elapsed.count() / 1000000.0;
+
+    std::ios state(nullptr);
+    state.copyfmt(std::cout);
+
+    std::cout << std::setprecision(1) << std::fixed;
+    std::cout << "perft to depth " << depth << " complete in " << elapsed_ms << "ms (" << mnps
+              << " Mnps)" << std::endl;
+
+    std::cout.copyfmt(state);
 }
 
 }
