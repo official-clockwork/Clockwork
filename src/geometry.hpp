@@ -115,9 +115,9 @@ inline v512 slider_mask(v512 ray_places) {
     return v512::eq8_vm(ray_places, ROOK_BISHOP_MASK) | v512::eq8_vm(ray_places, QUEEN_MASK);
 }
 
-extern const std::array<std::tuple<v512, v512>, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
+extern const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
 
-inline std::tuple<v512, v512> superpiece_inverse_rays_avx2(Square sq) {
+inline v512 superpiece_inverse_rays_avx2(Square sq) {
     return SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw];
 }
 

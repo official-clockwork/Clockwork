@@ -52,10 +52,10 @@ v512 Position::toggle_rays(Square sq) {
     slider_ids = v512{slider_ids.raw[1], slider_ids.raw[0]} & raymask;  // flip rays
     slider_ids |= raymask & v512::broadcast8(0x20);  // pack information for efficiency
 
-    auto [inv_perm, inv_perm_mask] = geometry::superpiece_inverse_rays_avx2(sq);
+    v512 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
 
     // Transform into board layout
-    slider_ids = v512::permute8(inv_perm, slider_ids) & inv_perm_mask;
+    slider_ids = v512::permute8(inv_perm, slider_ids);
 
     // Recover color information
     v512 color = v512::eq8_vm(slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
@@ -101,8 +101,8 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
         v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
         v512 raymask                 = geometry::superpiece_attacks(ray_places, ray_valid);
 
-        auto [inv_perm, inv_perm_mask] = geometry::superpiece_inverse_rays_avx2(sq);
-        v512 boardmask                 = v512::permute8(inv_perm, raymask) & inv_perm_mask;
+        v512 inv_perm  = geometry::superpiece_inverse_rays_avx2(sq);
+        v512 boardmask = v512::permute8(inv_perm, raymask);
 
         add_attacks(color, id, sq, ptype, boardmask);
         return;
