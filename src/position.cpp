@@ -63,7 +63,6 @@ v512 Position::toggle_rays(Square sq) {
     // Transform into board layout
     slider_ids = v512::permute8(inv_perm, slider_ids) & inv_perm_mask;
 
-
     // Recover color information
     color = v512::eq8_vm(slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
     // Recover ray mask information
@@ -209,17 +208,18 @@ Position Position::move(Move m) const {
         break;
     }
     case MoveFlags::EnPassant: {
-        Square victim_sq           = Square::from_file_and_rank(m_enpassant.file(), from.rank());
-        Place  victim              = m_board[victim_sq];
-        new_pos.m_board[from]      = Place::empty();
-        new_pos.m_board[victim_sq] = Place::empty();
-        new_pos.m_board[to]        = src;
+        Square victim_sq = Square::from_file_and_rank(m_enpassant.file(), from.rank());
+        Place  victim    = m_board[victim_sq];
+
+        new_pos.incrementally_remove_piece(color, src.id(), from);
+        new_pos.incrementally_remove_piece(!color, victim.id(), victim_sq);
+        new_pos.incrementally_add_piece(color, src, to);
+
         new_pos.m_piece_list_sq[color][src.id()]     = to;
         new_pos.m_piece_list_sq[!color][victim.id()] = Square::invalid();
         new_pos.m_piece_list[!color][victim.id()]    = PieceType::None;
-        new_pos.m_50mr                               = 0;
 
-        new_pos.m_attack_table = new_pos.calc_attacks_slow();
+        new_pos.m_50mr = 0;
         break;
     }
     case MoveFlags::PromoKnight:
