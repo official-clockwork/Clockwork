@@ -11,19 +11,20 @@
 
 namespace Clockwork {
 
-static std::tuple<u64, u64, u64, i32, i32> valid_pawns(Color color, u64 bb, u64 empty, u64 dests) {
+static std::tuple<Bitboard, Bitboard, Bitboard, i32, i32>
+valid_pawns(Color color, Bitboard bb, Bitboard empty, Bitboard dests) {
     switch (color) {
     case Color::White: {
-        u64 single = bb & ((empty & dests) >> 8);
-        return {single & 0x0000FFFFFFFFFF00,
-                bb & (empty >> 8) & ((empty & dests) >> 16) & 0x000000000000FF00,
-                single & 0x00FF000000000000, 8, 16};
+        Bitboard single = bb & ((empty & dests) >> 8);
+        return {single & Bitboard{0x0000FFFFFFFFFF00},
+                bb & (empty >> 8) & ((empty & dests) >> 16) & Bitboard{0x000000000000FF00},
+                single & Bitboard{0x00FF000000000000}, 8, 16};
     }
     case Color::Black: {
-        u64 single = bb & ((empty & dests) << 8);
-        return {single & 0x00FFFFFFFFFF0000,
-                bb & (empty << 8) & ((empty & dests) << 16) & 0x00FF000000000000,
-                single & 0x000000000000FF00, -8, -16};
+        Bitboard single = bb & ((empty & dests) << 8);
+        return {single & Bitboard{0x00FFFFFFFFFF0000},
+                bb & (empty << 8) & ((empty & dests) << 16) & Bitboard{0x00FF000000000000},
+                single & Bitboard{0x000000000000FF00}, -8, -16};
     }
     }
 }
@@ -31,13 +32,13 @@ static std::tuple<u64, u64, u64, i32, i32> valid_pawns(Color color, u64 bb, u64 
 void MoveGen::generate_moves(MoveList& moves) {
     Color active_color = m_position.active_color();
 
-    u64 empty = m_position.board().get_empty_bitboard();
-    u64 enemy = m_position.board().get_color_bitboard(invert(active_color));
+    Bitboard empty = m_position.board().get_empty_bitboard();
+    Bitboard enemy = m_position.board().get_color_bitboard(invert(active_color));
 
     std::array<u16, 64> at = m_position.attack_table(active_color).to_mailbox();
 
-    u64 active = m_position.attack_table(active_color).get_attacked_bitboard();
-    u64 danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
+    Bitboard active = m_position.attack_table(active_color).get_attacked_bitboard();
+    Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
 
     u16 valid_plist   = m_position.piece_list(active_color).mask_valid();
     u16 king_mask     = 1;
@@ -53,7 +54,7 @@ void MoveGen::generate_moves(MoveList& moves) {
     // Defended non-pawn captures
     write(moves, at, active & enemy & danger, non_pawn_mask & ~king_mask, MoveFlags::CaptureBit);
 
-    u64 promo_zone = static_cast<u64>(0xFF) << (active_color == Color::White ? 56 : 0);
+    Bitboard promo_zone{static_cast<u64>(0xFF) << (active_color == Color::White ? 56 : 0)};
     // Capture-with-promotion
     write(moves, at, active & enemy & promo_zone, pawn_mask, MoveFlags::PromoQueenCapture);
     write(moves, at, active & enemy & promo_zone, pawn_mask, MoveFlags::PromoKnightCapture);
@@ -65,21 +66,21 @@ void MoveGen::generate_moves(MoveList& moves) {
     // Castling
     // TODO: FRC
     {
-        i32      color_shift = active_color == Color::White ? 0 : 56;
-        Square   king_sq     = m_position.king_sq(active_color);
-        RookInfo rook_info   = m_position.rook_info(active_color);
+        Square   king_sq   = m_position.king_sq(active_color);
+        RookInfo rook_info = m_position.rook_info(active_color);
         if (rook_info.aside.is_valid()) {
-            u64 clear      = empty | king_sq.to_bitboard() | rook_info.aside.to_bitboard();
-            u8  rank_empty = static_cast<u8>(clear >> color_shift);
-            u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
+            Bitboard clear = empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.aside);
+            u8 rank_empty = clear.front_rank(active_color);
+            u8 rank_safe  = (~danger).front_rank(active_color);
             if ((rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C) {
                 moves.push_back(Move{king_sq, rook_info.aside, MoveFlags::Castle});
             }
         }
         if (rook_info.hside.is_valid()) {
-            u64 clear      = empty | king_sq.to_bitboard() | rook_info.hside.to_bitboard();
-            u8  rank_empty = static_cast<u8>(clear >> color_shift);
-            u8  rank_safe  = static_cast<u8>(~danger >> color_shift);
+            Bitboard clear =
+              empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.hside);
+            u8 rank_empty = clear.front_rank(active_color);
+            u8 rank_safe  = (~danger).front_rank(active_color);
             if ((rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70) {
                 moves.push_back(Move{king_sq, rook_info.hside, MoveFlags::Castle});
             }
@@ -94,7 +95,7 @@ void MoveGen::generate_moves(MoveList& moves) {
 
     // Pawn quiets
     {
-        u64 bb = m_position.board().bitboard_for(active_color, PieceType::Pawn);
+        Bitboard bb = m_position.board().bitboard_for(active_color, PieceType::Pawn);
         auto [single_push, double_push, promo, single_shift, double_shift] =
           valid_pawns(active_color, bb, empty, empty);
 
@@ -118,16 +119,14 @@ void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {
 }
 
 void MoveGen::write(
-  MoveList& moves, const std::array<u16, 64>& at, u64 bb, u16 piecemask, MoveFlags mf) {
-    for (; bb != 0; bb = clear_lowest_bit(bb)) {
-        Square dest{static_cast<u8>(std::countr_zero(bb))};
+  MoveList& moves, const std::array<u16, 64>& at, Bitboard dest_bb, u16 piecemask, MoveFlags mf) {
+    for (Square dest : dest_bb) {
         write(moves, dest, piecemask & at[dest.raw], mf);
     }
 }
 
-void MoveGen::write_pawn(MoveList& moves, u64 bb, i32 shift, MoveFlags mf) {
-    for (; bb != 0; bb = clear_lowest_bit(bb)) {
-        Square src{static_cast<u8>(std::countr_zero(bb))};
+void MoveGen::write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf) {
+    for (Square src : src_bb) {
         Square dest{static_cast<u8>(src.raw + shift)};
         moves.push_back(Move{src, dest, mf});
     }
