@@ -5,11 +5,11 @@
 #include <cstring>
 #include <iosfwd>
 
+#include "bitboard.hpp"
 #include "common.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
-
 
 namespace Clockwork {
 
@@ -72,19 +72,19 @@ struct Byteboard {
         return std::bit_cast<v512>(mailbox);
     }
 
-    [[nodiscard]] u64 get_empty_bitboard() const {
-        return to_vec().zero8();
+    [[nodiscard]] Bitboard get_empty_bitboard() const {
+        return Bitboard{to_vec().zero8()};
     }
 
-    [[nodiscard]] u64 get_color_bitboard(Color color) const {
+    [[nodiscard]] Bitboard get_color_bitboard(Color color) const {
         u64  color_bb = static_cast<u64>(0) - static_cast<u64>(color);
         auto vec      = to_vec();
-        return ~(v512::test8(vec, v512::broadcast8(0x10)) ^ color_bb) & vec.nonzero8();
+        return Bitboard{~(v512::test8(vec, v512::broadcast8(0x10)) ^ color_bb) & vec.nonzero8()};
     }
 
-    [[nodiscard]] u64 bitboard_for(Color color, PieceType ptype) const {
+    [[nodiscard]] Bitboard bitboard_for(Color color, PieceType ptype) const {
         Place p{color, ptype, PieceId{0}};
-        return v512::eq8(to_vec() & v512::broadcast8(0xF0), v512::broadcast8(p.raw));
+        return Bitboard{v512::eq8(to_vec() & v512::broadcast8(0xF0), v512::broadcast8(p.raw))};
     }
 
     constexpr Place& operator[](Square sq) {
@@ -107,8 +107,8 @@ struct Wordboard {
         return std::bit_cast<std::array<u16, 64>>(raw);
     }
 
-    [[nodiscard]] u64 get_attacked_bitboard() const {
-        return concat64(raw[0].nonzero16(), raw[1].nonzero16());
+    [[nodiscard]] Bitboard get_attacked_bitboard() const {
+        return Bitboard{concat64(raw[0].nonzero16(), raw[1].nonzero16())};
     }
 
     [[nodiscard]] u16 read(Square sq) const {

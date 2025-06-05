@@ -1,12 +1,12 @@
 #pragma once
 
-#include "util/types.hpp"
-
 #include <cassert>
 #include <compare>
 #include <optional>
 #include <ostream>
 #include <string_view>
+
+#include "util/types.hpp"
 
 namespace Clockwork {
 
@@ -48,10 +48,6 @@ struct Square {
 
     [[nodiscard]] constexpr bool is_valid() const {
         return (raw & 0x80) == 0;
-    }
-
-    [[nodiscard]] constexpr u64 to_bitboard() const {
-        return static_cast<u64>(1) << raw;
     }
 
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
