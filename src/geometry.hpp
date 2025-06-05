@@ -14,13 +14,13 @@ namespace Clockwork::geometry {
 
 namespace internal {
 // 00rrrfff → 0rrr0fff
-forceinline constexpr auto expand_sq(Square sq) -> u8 {
+forceinline constexpr u8 expand_sq(Square sq) {
     return sq.raw + (sq.raw & 0b111000);
 }
 
 // 0rrr0fff → 00rrrfff
 template<typename V>
-forceinline auto compress_coords(V list) -> std::tuple<V, V> {
+forceinline std::tuple<V, V> compress_coords(V list) {
     V valid      = V::eq8_vm(list & V::broadcast8(0x88), V::zero());
     V compressed = (list & V::broadcast8(0x07)) | (V::shr16(list, 1) & V::broadcast8(0x38));
     return {compressed, valid};

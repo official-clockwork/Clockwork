@@ -406,7 +406,7 @@ struct v512 {
         return a = a ^ b;
     }
 
-    forceinline auto operator==(const v512& other) const -> bool {
+    forceinline bool operator==(const v512& other) const {
         return raw == other.raw;
     }
 };
