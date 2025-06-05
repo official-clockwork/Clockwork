@@ -39,7 +39,7 @@ struct Place {
 
     constexpr Place(Color color, PieceType pt, PieceId id) {
         raw =
-          static_cast<u8>((static_cast<int>(color) << 4) | (static_cast<int>(pt) << 5) | id.raw);
+          static_cast<u8>((static_cast<i32>(color) << 4) | (static_cast<i32>(pt) << 5) | id.raw);
     }
 
     [[nodiscard]] constexpr bool is_empty() const {

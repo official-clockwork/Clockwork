@@ -279,8 +279,8 @@ const std::array<u16, 2> Position::calc_attacks_slow(Square sq) {
     u64  white_attackers   = ~color & visible_attackers;
     u64  black_attackers   = color & visible_attackers;
 
-    int  white_attackers_count = std::popcount(white_attackers);
-    int  black_attackers_count = std::popcount(black_attackers);
+    i32  white_attackers_count = std::popcount(white_attackers);
+    i32  black_attackers_count = std::popcount(black_attackers);
     v128 white_attackers_coord = v512::compress8(white_attackers, ray_coords).to128();
     v128 black_attackers_coord = v512::compress8(black_attackers, ray_coords).to128();
     return {
@@ -308,12 +308,12 @@ std::optional<Position> Position::parse(std::string_view board,
 
     // Parse board
     {
-        int               place_index = 0;
+        i32               place_index = 0;
         usize             i           = 0;
         std::array<u8, 2> id          = {1, 1};
         for (; place_index < 64 && i < board.size(); i++) {
-            int    file = place_index % 8;
-            int    rank = 7 - place_index / 8;
+            i32    file = place_index % 8;
+            i32    rank = 7 - place_index / 8;
             Square sq   = Square::from_file_and_rank(file, rank);
             char   ch   = board[i];
 
@@ -469,15 +469,15 @@ std::optional<Position> Position::parse(std::string_view board,
     }
 
     // Parse 50mr clock
-    if (int value = std::stoi(std::string{irreversible_clock}); value <= 100) {
+    if (i32 value = std::stoi(std::string{irreversible_clock}); value <= 100) {
         result.m_50mr = static_cast<u16>(value);
     } else {
         return std::nullopt;
     }
 
     // Parse game ply
-    if (int value = std::stoi(std::string{ply}); value != 0 && value < 10000) {
-        result.m_ply = static_cast<u16>((value - 1) * 2 + static_cast<int>(result.m_active_color));
+    if (i32 value = std::stoi(std::string{ply}); value != 0 && value < 10000) {
+        result.m_ply = static_cast<u16>((value - 1) * 2 + static_cast<i32>(result.m_active_color));
     } else {
         return std::nullopt;
     }
@@ -488,7 +488,7 @@ std::optional<Position> Position::parse(std::string_view board,
 }
 
 std::ostream& operator<<(std::ostream& os, const Position& position) {
-    int  blanks      = 0;
+    i32  blanks      = 0;
     auto emit_blanks = [&] {
         if (blanks != 0) {
             os << blanks;
@@ -496,8 +496,8 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
         }
     };
 
-    for (int rank = 7; rank >= 0; rank--) {
-        for (int file = 0; file < 8; file++) {
+    for (i32 rank = 7; rank >= 0; rank--) {
+        for (i32 file = 0; file < 8; file++) {
             Square sq = Square::from_file_and_rank(file, rank);
             Place  p  = position.m_board.mailbox[sq.raw];
 

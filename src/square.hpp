@@ -17,7 +17,7 @@ struct Square {
         return {0x80};
     }
 
-    static constexpr Square from_file_and_rank(int file, int rank) {
+    static constexpr Square from_file_and_rank(i32 file, i32 rank) {
         assert(file >= 0 && file < 8);
         assert(rank >= 0 && rank < 8);
         return Square{static_cast<u8>(rank * 8 + file)};
@@ -30,19 +30,19 @@ struct Square {
         if (str[0] < 'a' or str[0] > 'h') {
             return std::nullopt;
         }
-        int file = str[0] - 'a';
+        i32 file = str[0] - 'a';
         if (str[1] < '1' or str[1] > '8') {
             return std::nullopt;
         }
-        int rank = str[1] - '1';
+        i32 rank = str[1] - '1';
         return from_file_and_rank(file, rank);
     }
 
-    [[nodiscard]] constexpr int file() const {
+    [[nodiscard]] constexpr i32 file() const {
         return raw % 8;
     }
 
-    [[nodiscard]] constexpr int rank() const {
+    [[nodiscard]] constexpr i32 rank() const {
         return raw / 8;
     }
 

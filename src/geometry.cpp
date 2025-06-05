@@ -57,11 +57,11 @@ const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
 
 const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE = []() {
     // clang-format off
-    constexpr u8 K = 1 << static_cast<int>(PieceType::King);
-    constexpr u8 Q = 1 << static_cast<int>(PieceType::Queen);
-    constexpr u8 B = 1 << static_cast<int>(PieceType::Bishop);
-    constexpr u8 R = 1 << static_cast<int>(PieceType::Rook);
-    constexpr u8 HORS = 1 << static_cast<int>(PieceType::Knight);
+    constexpr u8 K = 1 << static_cast<i32>(PieceType::King);
+    constexpr u8 Q = 1 << static_cast<i32>(PieceType::Queen);
+    constexpr u8 B = 1 << static_cast<i32>(PieceType::Bishop);
+    constexpr u8 R = 1 << static_cast<i32>(PieceType::Rook);
+    constexpr u8 HORS = 1 << static_cast<i32>(PieceType::Knight);
     constexpr u8 ORTH = Q | R;
     constexpr u8 DIAG = Q | B;
     constexpr u8 OADJ = ORTH | K;

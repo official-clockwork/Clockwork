@@ -11,7 +11,7 @@
 
 namespace Clockwork {
 
-static std::tuple<u64, u64, u64, int, int> valid_pawns(Color color, u64 bb, u64 empty, u64 dests) {
+static std::tuple<u64, u64, u64, i32, i32> valid_pawns(Color color, u64 bb, u64 empty, u64 dests) {
     switch (color) {
     case Color::White: {
         u64 single = bb & ((empty & dests) >> 8);
@@ -65,7 +65,7 @@ void MoveGen::generate_moves(MoveList& moves) {
     // Castling
     // TODO: FRC
     {
-        int      color_shift = active_color == Color::White ? 0 : 56;
+        i32      color_shift = active_color == Color::White ? 0 : 56;
         Square   king_sq     = m_position.king_sq(active_color);
         RookInfo rook_info   = m_position.rook_info(active_color);
         if (rook_info.aside.is_valid()) {
@@ -125,7 +125,7 @@ void MoveGen::write(
     }
 }
 
-void MoveGen::write_pawn(MoveList& moves, u64 bb, int shift, MoveFlags mf) {
+void MoveGen::write_pawn(MoveList& moves, u64 bb, i32 shift, MoveFlags mf) {
     for (; bb != 0; bb = clear_lowest_bit(bb)) {
         Square src{static_cast<u8>(std::countr_zero(bb))};
         Square dest{static_cast<u8>(src.raw + shift)};

@@ -126,7 +126,7 @@ extern const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE;
 
 inline v512 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     assert(ptype != PieceType::None);
-    int  index = ptype == PieceType::Pawn ? color : static_cast<int>(ptype);
+    i32  index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
     v512 bit   = v512::broadcast8(static_cast<u8>(1 << index));
     v512 table = PIECE_MOVES_AVX2_TABLE[sq.raw];
     return v512::eq8_vm(table & bit, bit);

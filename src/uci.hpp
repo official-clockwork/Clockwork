@@ -8,12 +8,12 @@
 namespace Clockwork::UCI {
 
 struct SearchSettings {
-    int depth     = 0;
-    int w_time    = 0;
-    int b_time    = 0;
-    int w_inc     = 0;
-    int b_inc     = 0;
-    int move_time = 0;
+    i32 depth     = 0;
+    i32 w_time    = 0;
+    i32 b_time    = 0;
+    i32 w_inc     = 0;
+    i32 b_inc     = 0;
+    i32 move_time = 0;
 };
 
 class UCIHandler {
@@ -21,7 +21,7 @@ public:
     UCIHandler();
 
     void loop();
-    void handle_command_line(int argc, char* argv[]);
+    void handle_command_line(i32 argc, char* argv[]);
 
 private:
     Position m_position;

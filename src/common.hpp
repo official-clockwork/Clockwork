@@ -20,7 +20,7 @@ constexpr char color_char(Color color) {
 }
 
 constexpr Color invert(Color color) {
-    return static_cast<Color>(static_cast<int>(color) ^ 1);
+    return static_cast<Color>(static_cast<i32>(color) ^ 1);
 }
 
 enum class PieceType : u8 {
