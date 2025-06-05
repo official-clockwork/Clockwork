@@ -29,64 +29,36 @@ void Position::remove_attacks(bool color, PieceId id) {
     v512 mask = v512::broadcast16(~id.to_piece_mask());
     m_attack_table[color].raw[0] &= mask;
     m_attack_table[color].raw[1] &= mask;
-
-    // std::cout << "remove_attacks " << color << " " << (int)id.raw << std::endl;
-    // std::cout << m_attack_table[0] << std::endl;
-    // std::cout << m_attack_table[1] << std::endl;
 }
 
 v512 Position::toggle_rays(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
     v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
 
-    // std::cout << std::oct << (int)sq.raw << std::dec << std::endl;
-    // std::cout << "ray_coords" << std::endl;
-    // dump_board_octal(ray_coords & ray_valid);
-    // std::cout << "ray_places" << std::endl;
-    // dump_board(ray_places & ray_valid);
-
     v512 all_sliders     = geometry::slider_mask(ray_places);
     v512 raymask         = geometry::superpiece_attacks(ray_places, ray_valid);
     v512 visible_sliders = raymask & all_sliders & ray_places;
-
-    // std::cout << "all_sliders" << std::endl;
-    // dump_board(all_sliders);
-    // std::cout << "raymask" << std::endl;
-    // dump_board(raymask);
-    // std::cout << "visible_sliders" << std::endl;
-    // dump_board(visible_sliders);
 
     v512 color = v512::eq8_vm(v512::eq64_vm(visible_sliders & v512::broadcast8(0x80), v512::zero()),
                               v512::zero());
 
     v512 slider_ids = v512::sliderbroadcast(visible_sliders & v512::broadcast8(0x0F));
 
-    // std::cout << "slider_ids" << std::endl;
-    // dump_board(slider_ids);
-
     // Combine information for efficiency
     slider_ids |= color & v512::broadcast8(0x10);
     slider_ids = v512{slider_ids.raw[1], slider_ids.raw[0]} & raymask;  // flip rays
     slider_ids |= raymask & v512::broadcast8(0x20);
-
-    // std::cout << "slider_ids (post flip)" << std::endl;
-    // dump_board(slider_ids);
 
     auto [inv_perm, inv_perm_mask] = geometry::superpiece_inverse_rays_avx2(sq);
 
     // Transform into board layout
     slider_ids = v512::permute8(inv_perm, slider_ids) & inv_perm_mask;
 
-    // std::cout << "slider_ids (post board)" << std::endl;
-    // dump_board(slider_ids);
 
     // Recover color information
     color = v512::eq8_vm(slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
     // Recover ray mask information
     v512 ret = v512::eq8_vm(slider_ids & v512::broadcast8(0x20), v512::broadcast8(0x20));
-
-    // std::cout << "ret" << std::endl;
-    // dump_board(ret);
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid, so 0 converts to 0.
@@ -97,57 +69,29 @@ v512 Position::toggle_rays(Square sq) {
     v512              at_lo = v512::permute8(slider_ids, BITS_LO);
     v512              at_hi = v512::permute8(slider_ids, BITS_HI);
 
-    // std::cout << "at_lo" << std::endl;
-    // dump_board(at_lo);
-    // std::cout << "at_hi" << std::endl;
-    // dump_board(at_hi);
-
     v512 color0 = v512::unpacklo8(color, color);
     v512 color1 = v512::unpackhi8(color, color);
 
     v512 at0 = v512::unpacklo8(at_lo, at_hi);
     v512 at1 = v512::unpackhi8(at_lo, at_hi);
 
-    // std::cout << "at (white)" << std::endl;
-    // dump_board({v512::andnot(color0, at0), v512::andnot(color1, at1)});
-    // std::cout << "at (black)" << std::endl;
-    // dump_board({color0 & at0, color1 & at1});
-
     m_attack_table[0].raw[1] ^= v512::andnot(color1, at1);
     m_attack_table[0].raw[0] ^= v512::andnot(color0, at0);
     m_attack_table[1].raw[0] ^= color0 & at0;
     m_attack_table[1].raw[1] ^= color1 & at1;
 
-    // std::cout << "toggle_rays " << sq << std::endl;
-    // std::cout << m_attack_table[0] << std::endl;
-    // std::cout << m_attack_table[1] << std::endl;
-
     return ret;
 }
 
 void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask) {
-    // std::cout << "add_attacks " << color << " " << (int)id.raw << " " << sq << " ";
-    // std::cout << piece_char(ptype) << std::endl;
-
-    // dump_board(mask);
-
-    v512 moves = geometry::piece_moves_avx2(color, ptype, sq);
-
-    // dump_board(moves);
-
-    moves &= mask;
+    v512 moves = geometry::piece_moves_avx2(color, ptype, sq) & mask;
 
     v512 m0 = v512::unpacklo8(moves, moves);
     v512 m1 = v512::unpackhi8(moves, moves);
 
-    // dump_board({m0, m1});
-
     v512 bit = v512::broadcast16(id.to_piece_mask());
     m_attack_table[color].raw[0] |= bit & m0;
     m_attack_table[color].raw[1] |= bit & m1;
-
-    // std::cout << m_attack_table[0] << std::endl;
-    // std::cout << m_attack_table[1] << std::endl;
 }
 
 Position Position::move(Move m) const {
