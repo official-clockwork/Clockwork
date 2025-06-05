@@ -21,7 +21,7 @@ constexpr std::array<u8, 64> AVX2_OFFSETS{{
 
 const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
     // clang-format off
-    constexpr u8 NONE = 0xFF;
+    constexpr u8 NONE = 0x80;
     constexpr std::array<u8, 256> BASE{{
         NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE,
         NONE, 0x2F, NONE, NONE, NONE, NONE, NONE, NONE, 0x27, NONE, NONE, NONE, NONE, NONE, NONE, 0x1F,

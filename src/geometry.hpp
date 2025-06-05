@@ -46,7 +46,8 @@ inline std::tuple<v512, v512> superpiece_rays(Square sq) {
 }
 
 inline v512 superpiece_attacks(v512 ray_places, v512 ray_valid) {
-    return v512::gts8_vm(ray_places, v512::sub64(ray_places, v512::broadcast64(0x101))) & ray_valid;
+    return v512::andnot(v512::eq8_vm(ray_places, v512::sub64(ray_places, v512::broadcast64(0x101))),
+                        ray_valid);
 }
 
 inline v512 attackers_from_rays(v512 ray_places) {
