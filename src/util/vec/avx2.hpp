@@ -187,6 +187,10 @@ struct v256 {
         return {_mm256_sub_epi64(a.raw, b.raw)};
     }
 
+    static forceinline u32 test8(v256 a, v256 b) {
+        return v256::neq8(a & b, v256::zero());
+    }
+
     static forceinline v256 unpacklo8(v256 a, v256 b) {
         return {_mm256_unpacklo_epi8(a.raw, b.raw)};
     }
@@ -321,6 +325,10 @@ struct v512 {
 
     static forceinline v512 sub64(v512 a, v512 b) {
         return v512{v256::sub64(a.raw[0], b.raw[0]), v256::sub64(a.raw[1], b.raw[1])};
+    }
+
+    static forceinline u64 test8(v512 a, v512 b) {
+        return concat64(v256::test8(a.raw[0], b.raw[0]), v256::test8(a.raw[1], b.raw[1]));
     }
 
     static forceinline v512 unpacklo8(v512 a, v512 b) {

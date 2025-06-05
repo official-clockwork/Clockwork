@@ -78,7 +78,9 @@ struct Byteboard {
 
     [[nodiscard]] u64 get_color_bitboard(Color color) const {
         auto vec = to_vec();
-        return ~(vec.msb8() ^ static_cast<u64>(-static_cast<i64>(color))) & vec.nonzero8();
+        return ~(v512::test8(vec, v512::broadcast8(0x10))
+                 ^ static_cast<u64>(-static_cast<i64>(color)))
+             & vec.nonzero8();
     }
 
     [[nodiscard]] u64 bitboard_for(Color color, PieceType ptype) const {

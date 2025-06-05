@@ -66,7 +66,7 @@ inline v512 attackers_from_rays(v512 ray_places) {
     constexpr u8 BPAWN_NEAR = B | Q | K | BP;
 
     static const v128 PTYPE_TO_BITS{
-      std::array<u8, 16>{{0, WP, N, B, R, Q, K, 0, 0, BP, N, B, R, Q, K, 0}}};
+      std::array<u8, 16>{{0, 0, WP, BP, N, N, B, B, R, R, Q, Q, K, K, 0, 0}}};
 
     static const v512 ATTACKER_MASK = v512{std::array<u8, 64>{
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // N
@@ -85,32 +85,33 @@ inline v512 attackers_from_rays(v512 ray_places) {
 }
 
 inline v512 slider_mask(v512 ray_places) {
-    constexpr u8 R = static_cast<u8>(PieceType::Rook) << 4;
-    constexpr u8 B = static_cast<u8>(PieceType::Bishop) << 4;
-    constexpr u8 Q = static_cast<u8>(PieceType::Queen) << 4;
+    constexpr u8 R    = static_cast<u8>(PieceType::Rook) << 5;
+    constexpr u8 B    = static_cast<u8>(PieceType::Bishop) << 5;
+    constexpr u8 Q    = static_cast<u8>(PieceType::Queen) << 5;
+    constexpr u8 NONE = 1;
 
     static const v512 ROOK_BISHOP_MASK = v512{std::array<u8, 64>{
-      0xFF, R, R, R, R, R, R, R,  // N
-      0xFF, B, B, B, B, B, B, B,  // NE
-      0xFF, R, R, R, R, R, R, R,  // E
-      0xFF, B, B, B, B, B, B, B,  // SE
-      0xFF, R, R, R, R, R, R, R,  // S
-      0xFF, B, B, B, B, B, B, B,  // SW
-      0xFF, R, R, R, R, R, R, R,  // W
-      0xFF, B, B, B, B, B, B, B,  // NW
+      NONE, R, R, R, R, R, R, R,  // N
+      NONE, B, B, B, B, B, B, B,  // NE
+      NONE, R, R, R, R, R, R, R,  // E
+      NONE, B, B, B, B, B, B, B,  // SE
+      NONE, R, R, R, R, R, R, R,  // S
+      NONE, B, B, B, B, B, B, B,  // SW
+      NONE, R, R, R, R, R, R, R,  // W
+      NONE, B, B, B, B, B, B, B,  // NW
     }};
     static const v512 QUEEN_MASK       = v512{std::array<u8, 64>{
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // N
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // NE
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // E
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // SE
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // S
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // SW
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // W
-      0xFF, Q, Q, Q, Q, Q, Q, Q,  // NW
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // N
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // NE
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // E
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // SE
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // S
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // SW
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // W
+      NONE, Q, Q, Q, Q, Q, Q, Q,  // NW
     }};
 
-    ray_places &= v512::broadcast8(0x70);
+    ray_places &= v512::broadcast8(0xE0);
     return v512::eq8_vm(ray_places, ROOK_BISHOP_MASK) | v512::eq8_vm(ray_places, QUEEN_MASK);
 }
 

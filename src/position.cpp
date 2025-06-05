@@ -58,7 +58,7 @@ v512 Position::toggle_rays(Square sq) {
     slider_ids = v512::permute8(inv_perm, slider_ids) & inv_perm_mask;
 
     // Recover color information
-    color = v512::eq8_vm(slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
+    v512 color = v512::eq8_vm(slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
     // Recover ray mask information
     v512 ret = v512::eq8_vm(slider_ids & v512::broadcast8(0x20), v512::broadcast8(0x20));
 
@@ -272,7 +272,7 @@ const std::array<u16, 2> Position::calc_attacks_slow(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
     v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
 
-    u64  color             = ray_places.msb8();
+    u64  color             = v512::test8(ray_places, v512::broadcast8(0x10));
     v512 visible           = geometry::superpiece_attacks(ray_places, ray_valid);
     v512 attackers         = geometry::attackers_from_rays(ray_places);
     u64  visible_attackers = (visible & attackers).nonzero8();
