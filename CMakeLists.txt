@@ -25,6 +25,7 @@ set(srcs
     src/board.cpp
     src/board.hpp
     src/common.hpp
+    src/geometry.cpp
     src/geometry.hpp
     src/move.cpp
     src/move.hpp

@@ -11,7 +11,7 @@
 namespace Clockwork {
 
 struct Square {
-    u8 raw;
+    u8 raw = 0x80;
 
     static constexpr Square invalid() {
         return {0x80};

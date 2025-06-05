@@ -1,6 +1,9 @@
 #pragma once
 
 #include <string>
+#include <vector>
+
+#include "position.hpp"
 
 namespace Clockwork::UCI {
 
@@ -15,14 +18,20 @@ struct SearchSettings {
 
 class UCIHandler {
 public:
+    UCIHandler();
+
     void loop();
     void handle_command_line(int argc, char* argv[]);
 
 private:
+    Position m_position;
+
     SearchSettings settings;
-    void           execute_command(const std::string&);
-    void           handle_go(std::istringstream&);
-    void           handle_position(std::istringstream&);
+
+    void execute_command(const std::string&);
+    void handle_go(std::istringstream&);
+    void handle_position(std::istringstream&);
+    void handle_perft(std::istringstream&);
 };
 
 }

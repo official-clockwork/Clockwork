@@ -1,9 +1,11 @@
 #pragma once
 
+#include <array>
+#include <cassert>
 #include <tuple>
 #include <utility>
 
-
+#include "common.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
@@ -20,7 +22,7 @@ forceinline constexpr auto expand_sq(Square sq) -> u8 {
 template<typename V>
 forceinline auto compress_coords(V list) -> std::tuple<V, V> {
     V valid      = V::eq8_vm(list & V::broadcast8(0x88), V::zero());
-    V compressed = (list & V::broadcast8(0x07)) | V::shr16(list & V::broadcast8(0x70), 1);
+    V compressed = (list & V::broadcast8(0x07)) | (V::shr16(list, 1) & V::broadcast8(0x38));
     return {compressed, valid};
 }
 }  // namespace internal
@@ -82,4 +84,50 @@ inline v512 attackers_from_rays(v512 ray_places) {
     return v512::gts8_vm(bit_rays & ATTACKER_MASK, v512::zero());
 }
 
-}  // namespace rose::geometry
+inline v512 slider_mask(v512 ray_places) {
+    constexpr u8 R = static_cast<u8>(PieceType::Rook) << 4;
+    constexpr u8 B = static_cast<u8>(PieceType::Bishop) << 4;
+    constexpr u8 Q = static_cast<u8>(PieceType::Queen) << 4;
+
+    static const v512 ROOK_BISHOP_MASK = v512{std::array<u8, 64>{
+      0xFF, R, R, R, R, R, R, R,  // N
+      0xFF, B, B, B, B, B, B, B,  // NE
+      0xFF, R, R, R, R, R, R, R,  // E
+      0xFF, B, B, B, B, B, B, B,  // SE
+      0xFF, R, R, R, R, R, R, R,  // S
+      0xFF, B, B, B, B, B, B, B,  // SW
+      0xFF, R, R, R, R, R, R, R,  // W
+      0xFF, B, B, B, B, B, B, B,  // NW
+    }};
+    static const v512 QUEEN_MASK       = v512{std::array<u8, 64>{
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // N
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // NE
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // E
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // SE
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // S
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // SW
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // W
+      0xFF, Q, Q, Q, Q, Q, Q, Q,  // NW
+    }};
+
+    ray_places &= v512::broadcast8(0x70);
+    return v512::eq8_vm(ray_places, ROOK_BISHOP_MASK) | v512::eq8_vm(ray_places, QUEEN_MASK);
+}
+
+extern const std::array<std::tuple<v512, v512>, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
+
+inline std::tuple<v512, v512> superpiece_inverse_rays_avx2(Square sq) {
+    return SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw];
+}
+
+extern const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE;
+
+inline v512 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
+    assert(ptype != PieceType::None);
+    int  index = ptype == PieceType::Pawn ? color : static_cast<int>(ptype);
+    v512 bit   = v512::broadcast8(static_cast<u8>(1 << index));
+    v512 table = PIECE_MOVES_AVX2_TABLE[sq.raw];
+    return v512::eq8_vm(table & bit, bit);
+}
+
+}

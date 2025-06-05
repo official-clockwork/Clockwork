@@ -76,6 +76,14 @@ private:
     Square                              m_enpassant = Square::invalid();
     std::array<RookInfo, 2>             m_rook_info;
 
+    void incrementally_remove_piece(bool color, PieceId id, Square sq);
+    void incrementally_add_piece(bool color, Place p, Square sq);
+
+    void remove_attacks(bool color, PieceId id);
+    v512 toggle_rays(Square sq);
+    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
+    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
+
 public:
     constexpr Position() = default;
 

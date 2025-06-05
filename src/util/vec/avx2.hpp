@@ -2,6 +2,8 @@
 
 #include <array>
 #include <bit>
+#include <iomanip>
+#include <iostream>
 #include <x86intrin.h>
 
 #include "util/bit.hpp"
@@ -148,6 +150,15 @@ struct v256 {
         return {_mm256_blendv_epi8(a.raw, b.raw, mask.raw)};
     }
 
+    static forceinline v256 sliderbroadcast(v256 a) {
+        __m256i       x = _mm256_sad_epu8(a.raw, _mm256_setzero_si256());
+        const __m256i EXPAND_IDXS{_mm256_setr_epi8(0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                   0xFF, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+                                                   0xFF, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                                                   0xFF, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18)};
+        return {_mm256_shuffle_epi8(x, EXPAND_IDXS)};
+    }
+
     static forceinline v256 permute8(v256 index, v128 a) {
         return {_mm256_shuffle_epi8(v256::broadcast128(a).raw, index.raw)};
     }
@@ -176,12 +187,24 @@ struct v256 {
         return {_mm256_sub_epi64(a.raw, b.raw)};
     }
 
+    static forceinline v256 unpacklo8(v256 a, v256 b) {
+        return {_mm256_unpacklo_epi8(a.raw, b.raw)};
+    }
+
+    static forceinline v256 unpackhi8(v256 a, v256 b) {
+        return {_mm256_unpackhi_epi8(a.raw, b.raw)};
+    }
+
     static forceinline u32 eq8(v256 a, v256 b) {
         return eq8_vm(a, b).msb8();
     }
 
     static forceinline v256 eq8_vm(v256 a, v256 b) {
         return {_mm256_cmpeq_epi8(a.raw, b.raw)};
+    }
+
+    static forceinline v256 eq64_vm(v256 a, v256 b) {
+        return {_mm256_cmpeq_epi64(a.raw, b.raw)};
     }
 
     static forceinline v256 gts8_vm(v256 a, v256 b) {
@@ -213,6 +236,9 @@ struct v256 {
     }
     friend forceinline v256 operator^(v256 a, v256 b) {
         return {_mm256_xor_si256(a.raw, b.raw)};
+    }
+    static forceinline v256 andnot(v256 a, v256 b) {
+        return {_mm256_andnot_si256(a.raw, b.raw)};
     }
 
     forceinline bool operator==(const v256& other) const {
@@ -276,6 +302,10 @@ struct v512 {
         return std::bit_cast<v512>(result);
     }
 
+    static forceinline v512 sliderbroadcast(v512 a) {
+        return v512{v256::sliderbroadcast(a.raw[0]), v256::sliderbroadcast(a.raw[1])};
+    }
+
     static forceinline v512 permute8(v512 index, v512 a) {
         return v512{v256::permute8(index.raw[0], a.raw[0], a.raw[1]),
                     v256::permute8(index.raw[1], a.raw[0], a.raw[1])};
@@ -293,12 +323,24 @@ struct v512 {
         return v512{v256::sub64(a.raw[0], b.raw[0]), v256::sub64(a.raw[1], b.raw[1])};
     }
 
+    static forceinline v512 unpacklo8(v512 a, v512 b) {
+        return v512{v256::unpacklo8(a.raw[0], b.raw[0]), v256::unpacklo8(a.raw[1], b.raw[1])};
+    }
+
+    static forceinline v512 unpackhi8(v512 a, v512 b) {
+        return v512{v256::unpackhi8(a.raw[0], b.raw[0]), v256::unpackhi8(a.raw[1], b.raw[1])};
+    }
+
     static forceinline u64 eq8(v512 a, v512 b) {
         return concat64(v256::eq8(a.raw[0], b.raw[0]), v256::eq8(a.raw[1], b.raw[1]));
     }
 
     static forceinline v512 eq8_vm(v512 a, v512 b) {
         return v512{v256::eq8_vm(a.raw[0], b.raw[0]), v256::eq8_vm(a.raw[1], b.raw[1])};
+    }
+
+    static forceinline v512 eq64_vm(v512 a, v512 b) {
+        return v512{v256::eq64_vm(a.raw[0], b.raw[0]), v256::eq64_vm(a.raw[1], b.raw[1])};
     }
 
     static forceinline v512 gts8_vm(v512 a, v512 b) {
@@ -339,9 +381,20 @@ struct v512 {
     friend forceinline v512 operator^(v512 a, v512 b) {
         return v512{a.raw[0] ^ b.raw[0], a.raw[1] ^ b.raw[1]};
     }
+    static forceinline v512 andnot(v512 a, v512 b) {
+        return v512{v256::andnot(a.raw[0], b.raw[0]), v256::andnot(a.raw[1], b.raw[1])};
+    }
 
     friend forceinline v512& operator&=(v512& a, v512 b) {
         return a = a & b;
+    }
+
+    friend forceinline v512& operator|=(v512& a, v512 b) {
+        return a = a | b;
+    }
+
+    friend forceinline v512& operator^=(v512& a, v512 b) {
+        return a = a ^ b;
     }
 
     forceinline auto operator==(const v512& other) const -> bool {
@@ -353,6 +406,63 @@ static_assert(sizeof(v512) == 64);
 forceinline u16 findset8(v128 haystack, int haystack_len, v128 needles) {
     return static_cast<u16>(
       _mm_extract_epi16(_mm_cmpestrm(haystack.raw, haystack_len, needles.raw, 16, 0), 0));
+}
+
+inline void dump_board(v512 x) {
+    auto m = std::bit_cast<std::array<u8, 64>>(x);
+
+    std::ios state{nullptr};
+    state.copyfmt(std::cout);
+
+    for (int rank = 7; rank >= 0; rank--) {
+        for (int file = 0; file < 8; file++) {
+            Square sq    = Square::from_file_and_rank(file, rank);
+            int    value = m[sq.raw];
+
+            std::cout << std::hex << std::setfill('0') << std::setw(2) << value << ' ';
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout.copyfmt(state);
+}
+
+inline void dump_board_octal(v512 x) {
+    auto m = std::bit_cast<std::array<u8, 64>>(x);
+
+    std::ios state{nullptr};
+    state.copyfmt(std::cout);
+
+    for (int rank = 7; rank >= 0; rank--) {
+        for (int file = 0; file < 8; file++) {
+            Square sq    = Square::from_file_and_rank(file, rank);
+            int    value = m[sq.raw];
+
+            std::cout << std::oct << std::setfill('0') << std::setw(2) << value << ' ';
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout.copyfmt(state);
+}
+
+inline void dump_board(std::array<v512, 2> x) {
+    auto m = std::bit_cast<std::array<u16, 64>>(x);
+
+    std::ios state{nullptr};
+    state.copyfmt(std::cout);
+
+    for (int rank = 7; rank >= 0; rank--) {
+        for (int file = 0; file < 8; file++) {
+            Square sq    = Square::from_file_and_rank(file, rank);
+            int    value = m[sq.raw];
+
+            std::cout << std::hex << std::setfill('0') << std::setw(4) << value << ' ';
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout.copyfmt(state);
 }
 
 }

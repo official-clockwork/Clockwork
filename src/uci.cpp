@@ -1,13 +1,24 @@
 #include "uci.hpp"
-#include "move.hpp"
 
+#include <algorithm>
 #include <ios>
 #include <iostream>
 #include <istream>
 #include <sstream>
 #include <string>
+#include <string_view>
+
+#include "move.hpp"
+#include "perft.hpp"
+#include "position.hpp"
 
 namespace Clockwork::UCI {
+
+constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
+
+UCIHandler::UCIHandler() :
+    m_position(*Position::parse(STARTPOS)) {
+}
 
 void UCIHandler::loop() {
     std::string input;
@@ -40,6 +51,25 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_go(is);
     } else if (command == "position") {
         handle_position(is);
+    } else if (command == "fen") {
+        std::cout << m_position << std::endl;
+    } else if (command == "attacks") {
+        std::cout << m_position.attack_table(Color::White) << std::endl;
+        std::cout << m_position.attack_table(Color::Black) << std::endl;
+        std::cout << "White: ";
+        for (int i = 0; i < 16; i++) {
+            std::cout << " " << piece_char(m_position.piece_list(Color::White).array[i]) << ":"
+                      << m_position.piece_list_sq(Color::White).array[i];
+        }
+        std::cout << std::endl;
+        std::cout << "Black: ";
+        for (int i = 0; i < 16; i++) {
+            std::cout << " " << piece_char(m_position.piece_list(Color::Black).array[i]) << ":"
+                      << m_position.piece_list_sq(Color::Black).array[i];
+        }
+        std::cout << std::endl;
+    } else if (command == "perft") {
+        handle_perft(is);
     } else {
         std::cout << "Unknown command" << std::endl;
     }
@@ -66,11 +96,48 @@ void UCIHandler::handle_go(std::istringstream& is) {
 
 void UCIHandler::handle_position(std::istringstream& is) {
     std::string token;
+
     if (is >> token) {
         if (token == "startpos") {
+            m_position = *Position::parse(STARTPOS);
         } else if (token == "fen") {
+            std::string board, color, castle, enpassant, clock, ply;
+            is >> board >> color >> castle >> enpassant >> clock >> ply;
+            auto pos = Position::parse(board, color, castle, enpassant, clock, ply);
+            if (!pos) {
+                std::cout << "Invalid fen" << std::endl;
+                return;
+            }
+            m_position = *pos;
         }
     }
+
+    if (is >> token) {
+        if (token != "moves") {
+            std::cout << "Unexpected token: " << token << std::endl;
+            return;
+        }
+        while (is >> token) {
+            auto move = Move::parse(token, m_position);
+            if (!move) {
+                std::cout << "Invalid move: " << token << std::endl;
+                return;
+            }
+            m_position = m_position.move(*move);
+        }
+    }
+}
+
+void UCIHandler::handle_perft(std::istringstream& is) {
+    std::string token;
+    int         depth = 1;
+
+    if (is >> token) {
+        depth = std::stoi(token);
+        depth = std::max(0, depth);
+    }
+
+    split_perft(m_position, static_cast<usize>(depth));
 }
 
 }
