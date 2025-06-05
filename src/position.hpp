@@ -64,28 +64,6 @@ struct RookInfo {
 };
 
 struct Position {
-private:
-    std::array<Wordboard, 2>            m_attack_table{};
-    std::array<PieceList<Square>, 2>    m_piece_list_sq{};
-    std::array<PieceList<PieceType>, 2> m_piece_list{};
-    Byteboard                           m_board{};
-    u64                                 m_hash{};
-    u16                                 m_50mr{};
-    u16                                 m_ply{};
-    Color                               m_active_color{};
-    Square                              m_enpassant = Square::invalid();
-    std::array<RookInfo, 2>             m_rook_info;
-
-    void incrementally_remove_piece(bool color, PieceId id, Square sq);
-    void incrementally_add_piece(bool color, Place p, Square sq);
-    void
-    incrementally_mutate_piece(bool old_color, PieceId old_id, Square sq, bool new_color, Place p);
-
-    void remove_attacks(bool color, PieceId id);
-    v512 toggle_rays(Square sq);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
-
 public:
     constexpr Position() = default;
 
@@ -134,6 +112,28 @@ public:
 
     bool                 operator==(const Position&) const = default;
     friend std::ostream& operator<<(std::ostream& os, const Position& position);
+
+private:
+    std::array<Wordboard, 2>            m_attack_table{};
+    std::array<PieceList<Square>, 2>    m_piece_list_sq{};
+    std::array<PieceList<PieceType>, 2> m_piece_list{};
+    Byteboard                           m_board{};
+    u64                                 m_hash{};
+    u16                                 m_50mr{};
+    u16                                 m_ply{};
+    Color                               m_active_color{};
+    Square                              m_enpassant = Square::invalid();
+    std::array<RookInfo, 2>             m_rook_info;
+
+    void incrementally_remove_piece(bool color, PieceId id, Square sq);
+    void incrementally_add_piece(bool color, Place p, Square sq);
+    void
+    incrementally_mutate_piece(bool old_color, PieceId old_id, Square sq, bool new_color, Place p);
+
+    void remove_attacks(bool color, PieceId id);
+    v512 toggle_rays(Square sq);
+    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
+    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
 };
 
 }
