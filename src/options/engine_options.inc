@@ -1,1 +1,1 @@
-PARAM_INT( hash, 16, 1, 65536 )
+PARAM_INT(hash, 16, 1, 65536)
