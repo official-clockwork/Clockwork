@@ -151,12 +151,13 @@ struct v256 {
     }
 
     static forceinline v256 sliderbroadcast(v256 a) {
-        __m256i       x = _mm256_sad_epu8(a.raw, _mm256_setzero_si256());
-        const __m256i EXPAND_IDXS{_mm256_setr_epi8(0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                   0xFF, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
-                                                   0xFF, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
-                                                   0xFF, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18)};
-        return {_mm256_shuffle_epi8(x, EXPAND_IDXS)};
+        __m256i        x    = _mm256_sad_epu8(a.raw, _mm256_setzero_si256());
+        constexpr char NONE = static_cast<char>(0xFF);
+        const __m256i  EXPAND_IDX{_mm256_setr_epi8(NONE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                   NONE, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+                                                   NONE, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                                                   NONE, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18)};
+        return {_mm256_shuffle_epi8(x, EXPAND_IDX)};
     }
 
     static forceinline v256 permute8(v256 index, v128 a) {
@@ -414,63 +415,6 @@ static_assert(sizeof(v512) == 64);
 forceinline u16 findset8(v128 haystack, int haystack_len, v128 needles) {
     return static_cast<u16>(
       _mm_extract_epi16(_mm_cmpestrm(haystack.raw, haystack_len, needles.raw, 16, 0), 0));
-}
-
-inline void dump_board(v512 x) {
-    auto m = std::bit_cast<std::array<u8, 64>>(x);
-
-    std::ios state{nullptr};
-    state.copyfmt(std::cout);
-
-    for (int rank = 7; rank >= 0; rank--) {
-        for (int file = 0; file < 8; file++) {
-            Square sq    = Square::from_file_and_rank(file, rank);
-            int    value = m[sq.raw];
-
-            std::cout << std::hex << std::setfill('0') << std::setw(2) << value << ' ';
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout.copyfmt(state);
-}
-
-inline void dump_board_octal(v512 x) {
-    auto m = std::bit_cast<std::array<u8, 64>>(x);
-
-    std::ios state{nullptr};
-    state.copyfmt(std::cout);
-
-    for (int rank = 7; rank >= 0; rank--) {
-        for (int file = 0; file < 8; file++) {
-            Square sq    = Square::from_file_and_rank(file, rank);
-            int    value = m[sq.raw];
-
-            std::cout << std::oct << std::setfill('0') << std::setw(2) << value << ' ';
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout.copyfmt(state);
-}
-
-inline void dump_board(std::array<v512, 2> x) {
-    auto m = std::bit_cast<std::array<u16, 64>>(x);
-
-    std::ios state{nullptr};
-    state.copyfmt(std::cout);
-
-    for (int rank = 7; rank >= 0; rank--) {
-        for (int file = 0; file < 8; file++) {
-            Square sq    = Square::from_file_and_rank(file, rank);
-            int    value = m[sq.raw];
-
-            std::cout << std::hex << std::setfill('0') << std::setw(4) << value << ' ';
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout.copyfmt(state);
 }
 
 }

@@ -31,6 +31,7 @@ private:
     void execute_command(const std::string&);
     void handle_go(std::istringstream&);
     void handle_position(std::istringstream&);
+    void handle_attacks(std::istringstream&);
     void handle_perft(std::istringstream&);
 };
 

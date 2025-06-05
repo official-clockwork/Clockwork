@@ -48,10 +48,9 @@ const std::array<std::tuple<v512, v512>, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE 
         std::array<u8, 64> b;
         std::array<u8, 64> m;
         for (int i = 0; i < 64; i++) {
-            u8  value = BASE[AVX2_OFFSETS[i] - esq];
-            int j     = i;
-            b[j]      = value;
-            m[i]      = value == NONE ? 0x00 : 0xFF;
+            u8 value = BASE[AVX2_OFFSETS[i] - esq];
+            b[i]     = value;
+            m[i]     = value == NONE ? 0x00 : 0xFF;
         }
         table[sq] = {v512{b}, v512{m}};
     }
