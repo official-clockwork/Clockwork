@@ -240,17 +240,21 @@ Position Position::move(Move m) const {
     case MoveFlags::PromoKnightCapture:
     case MoveFlags::PromoBishopCapture:
     case MoveFlags::PromoRookCapture:
-    case MoveFlags::PromoQueenCapture:
-        new_pos.m_board[from]                     = Place::empty();
-        new_pos.m_board[to]                       = Place{m_active_color, *m.promo(), src.id()};
+    case MoveFlags::PromoQueenCapture: {
+        Place new_place{m_active_color, *m.promo(), src.id()};
+
+        new_pos.incrementally_remove_piece(color, src.id(), from);
+        new_pos.incrementally_mutate_piece(!color, dst.id(), to, color, new_place);
+
         new_pos.m_piece_list_sq[color][src.id()]  = to;
         new_pos.m_piece_list[color][src.id()]     = *m.promo();
         new_pos.m_piece_list_sq[!color][dst.id()] = Square::invalid();
         new_pos.m_piece_list[!color][dst.id()]    = PieceType::None;
-        new_pos.m_50mr                            = 0;
+
+        new_pos.m_50mr = 0;
         CHECK_DST_CASTLING_RIGHTS();
-        new_pos.m_attack_table = new_pos.calc_attacks_slow();
         break;
+    }
     }
 
     new_pos.m_active_color = invert(m_active_color);
