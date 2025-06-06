@@ -33,6 +33,74 @@ void Position::incrementally_mutate_piece(
     add_attacks(new_color, p.id(), sq, p.ptype());
 }
 
+void Position::incrementally_move_piece(bool color, Square from, Square to, Place p) {
+    remove_attacks(color, p.id());
+
+    auto [src_ray_coords, src_ray_valid] = geometry::superpiece_rays(from);
+    auto [dst_ray_coords, dst_ray_valid] = geometry::superpiece_rays(to);
+    v512 src_ray_places                  = v512::permute8(src_ray_coords, m_board.to_vec());
+    m_board[from]                        = Place::empty();
+    m_board[to]                          = p;
+    v512 dst_ray_places                  = v512::permute8(dst_ray_coords, m_board.to_vec());
+
+    v512 src_all_sliders     = geometry::slider_mask(src_ray_places);
+    v512 dst_all_sliders     = geometry::slider_mask(dst_ray_places);
+    v512 src_raymask         = geometry::superpiece_attacks(src_ray_places, src_ray_valid);
+    v512 dst_raymask         = geometry::superpiece_attacks(dst_ray_places, dst_ray_valid);
+    v512 src_visible_sliders = src_raymask & src_all_sliders & src_ray_places;
+    v512 dst_visible_sliders = dst_raymask & dst_all_sliders & dst_ray_places;
+
+    v512 src_slider_ids = v512::sliderbroadcast(src_visible_sliders & v512::broadcast8(0x1F));
+    v512 dst_slider_ids = v512::sliderbroadcast(dst_visible_sliders & v512::broadcast8(0x1F));
+
+    src_slider_ids = v512{src_slider_ids.raw[1], src_slider_ids.raw[0]} & src_raymask;  // flip rays
+    dst_slider_ids = v512{dst_slider_ids.raw[1], dst_slider_ids.raw[0]} & dst_raymask;  // flip rays
+    dst_slider_ids |= dst_raymask & v512::broadcast8(0x20);  // pack information for efficiency
+
+    v512 src_inv_perm = geometry::superpiece_inverse_rays_avx2(from);
+    v512 dst_inv_perm = geometry::superpiece_inverse_rays_avx2(to);
+
+    // Transform into board layout
+    src_slider_ids = v512::permute8(src_inv_perm, src_slider_ids);
+    dst_slider_ids = v512::permute8(dst_inv_perm, dst_slider_ids);
+
+    // Recover color information
+    v512 src_color = v512::eq8_vm(src_slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
+    v512 dst_color = v512::eq8_vm(dst_slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
+    // Recover ray mask information
+    v512 ret = v512::eq8_vm(dst_slider_ids & v512::broadcast8(0x20), v512::broadcast8(0x20));
+
+    // AVX2 doesn't have a variable word shift, so were're doing it this way.
+    // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
+    static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+    v512              src_at_lo = v512::permute8(src_slider_ids, BITS_LO);
+    v512              src_at_hi = v512::permute8(src_slider_ids, BITS_HI);
+    v512              dst_at_lo = v512::permute8(dst_slider_ids, BITS_LO);
+    v512              dst_at_hi = v512::permute8(dst_slider_ids, BITS_HI);
+
+    v512 src_color0 = v512::unpacklo8(src_color, src_color);
+    v512 src_color1 = v512::unpackhi8(src_color, src_color);
+    v512 dst_color0 = v512::unpacklo8(dst_color, dst_color);
+    v512 dst_color1 = v512::unpackhi8(dst_color, dst_color);
+
+    v512 src_at0 = v512::unpacklo8(src_at_lo, src_at_hi);
+    v512 src_at1 = v512::unpackhi8(src_at_lo, src_at_hi);
+    v512 dst_at0 = v512::unpacklo8(dst_at_lo, dst_at_hi);
+    v512 dst_at1 = v512::unpackhi8(dst_at_lo, dst_at_hi);
+
+    m_attack_table[0].raw[0] ^=
+      (v512::andnot(src_color0, src_at0)) ^ (v512::andnot(dst_color0, dst_at0));
+    m_attack_table[0].raw[1] ^=
+      (v512::andnot(src_color1, src_at1)) ^ (v512::andnot(dst_color1, dst_at1));
+    m_attack_table[1].raw[0] ^= (src_color0 & src_at0) ^ (dst_color0 & dst_at0);
+    m_attack_table[1].raw[1] ^= (src_color1 & src_at1) ^ (dst_color1 & dst_at1);
+
+    add_attacks(color, p.id(), to, p.ptype(), ret);
+}
+
 void Position::remove_attacks(bool color, PieceId id) {
     v512 mask = v512::broadcast16(~id.to_piece_mask());
     m_attack_table[color].raw[0] &= mask;
@@ -150,8 +218,7 @@ Position Position::move(Move m) const {
 
     switch (m.flags()) {
     case MoveFlags::Normal:
-        new_pos.incrementally_remove_piece(color, src.id(), from);
-        new_pos.incrementally_add_piece(color, src, to);
+        new_pos.incrementally_move_piece(color, from, to, src);
 
         new_pos.m_piece_list_sq[color][src.id()] = to;
 
@@ -205,9 +272,8 @@ Position Position::move(Move m) const {
         Square victim_sq = Square::from_file_and_rank(m_enpassant.file(), from.rank());
         Place  victim    = m_board[victim_sq];
 
-        new_pos.incrementally_remove_piece(color, src.id(), from);
         new_pos.incrementally_remove_piece(!color, victim.id(), victim_sq);
-        new_pos.incrementally_add_piece(color, src, to);
+        new_pos.incrementally_move_piece(color, from, to, src);
 
         new_pos.m_piece_list_sq[color][src.id()]     = to;
         new_pos.m_piece_list_sq[!color][victim.id()] = Square::invalid();
@@ -222,8 +288,7 @@ Position Position::move(Move m) const {
     case MoveFlags::PromoQueen: {
         Place new_place{m_active_color, *m.promo(), src.id()};
 
-        new_pos.incrementally_remove_piece(color, src.id(), from);
-        new_pos.incrementally_add_piece(color, new_place, to);
+        new_pos.incrementally_move_piece(color, from, to, new_place);
 
         new_pos.m_piece_list_sq[color][src.id()] = to;
         new_pos.m_piece_list[color][src.id()]    = *m.promo();
