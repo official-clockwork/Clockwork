@@ -52,3 +52,4 @@ SpaceBeforeCpp11BracedList: false
 SpaceBeforeInheritanceColon: true
 SpaceInEmptyBlock: false
 SpacesBeforeTrailingComments: 2
+InsertNewlineAtEOF: true
