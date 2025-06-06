@@ -1,4 +1,5 @@
 #include "uci.hpp"
+#include "search.h"
 
 #include <algorithm>
 #include <ios>
@@ -11,6 +12,7 @@
 #include "move.hpp"
 #include "perft.hpp"
 #include "position.hpp"
+#include "search.hpp"
 
 namespace Clockwork::UCI {
 
@@ -79,6 +81,8 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.b_inc;
         }
     }
+    Search::Worker worker;
+    worker.launch_search(m_position);
 }
 
 void UCIHandler::handle_position(std::istringstream& is) {

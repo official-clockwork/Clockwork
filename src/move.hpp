@@ -32,9 +32,9 @@ enum class MoveFlags : u16 {
 };
 
 struct Move {
-    u16 raw;
+    u16 raw = 0;
 
-    Move() = default;
+    constexpr Move() = default;
 
     constexpr Move(Square from, Square to, MoveFlags flags = MoveFlags::Normal) {
         raw = static_cast<u16>(from.raw | (to.raw << 6) | static_cast<u16>(flags));
@@ -70,6 +70,15 @@ struct Move {
     }
 
     static std::optional<Move> parse(std::string_view str, const Position& context);
+
+    [[nodiscard]] constexpr bool operator==(const Move& other) const {
+        return raw == other.raw;
+    }
+    
+    [[nodiscard]] constexpr bool operator!=(const Move& other) const {
+        return raw != other.raw;
+    }
+    
 
     friend std::ostream& operator<<(std::ostream& os, Move mv) {
         os << mv.from();

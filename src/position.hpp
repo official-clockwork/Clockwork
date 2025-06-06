@@ -97,6 +97,10 @@ public:
         return attack_table(m_active_color).read(king_sq(invert(m_active_color))) == 0;
     }
 
+    [[nodiscard]] bool is_in_check() const {
+        return attack_table(invert(m_active_color)).read(king_sq(m_active_color)) != 0;
+    }
+
     [[nodiscard]] Position move(Move m) const;
 
     const std::array<Wordboard, 2> calc_attacks_slow();
