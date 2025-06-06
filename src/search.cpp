@@ -26,10 +26,12 @@ Move Worker::iterative_deepening(Position root_position) {
     Value                         alpha = -VALUE_INF, beta = +VALUE_INF;
     Value                         best_value;
 
-    Depth root_depth = 1;
-    ss[0].pv         = &(pv[0]);
-    Value score      = search(root_position, &ss[0], alpha, beta, root_depth);
-    best_value       = score;
+    Depth root_depth = 2;
+    for (i32 i = 0; i < MAX_PLY; i++) {
+        ss[i].pv = &(pv[i]);
+    }
+    Value score = search(root_position, &ss[0], alpha, beta, root_depth);
+    best_value  = score;
 
     Move best_move = *ss[0].pv;
     return best_move;
