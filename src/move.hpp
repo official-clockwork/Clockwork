@@ -32,7 +32,8 @@ enum class MoveFlags : u16 {
 };
 
 struct Move {
-    u16 raw = 0;
+    u16 raw =
+      0;  // TODO: this default initialization is a slowdown. The reason why we put this in is because our StaticVector needs to call the constructor on all the elements. Once we fix that, we really should change this.
 
     constexpr Move() = default;
 
@@ -71,14 +72,9 @@ struct Move {
 
     static std::optional<Move> parse(std::string_view str, const Position& context);
 
-    [[nodiscard]] constexpr bool operator==(const Move& other) const {
-        return raw == other.raw;
-    }
+    [[nodiscard]] constexpr bool operator==(const Move& other) const = default;
 
-    [[nodiscard]] constexpr bool operator!=(const Move& other) const {
-        return raw != other.raw;
-    }
-
+    [[nodiscard]] constexpr bool operator!=(const Move& other) const = default;
 
     friend std::ostream& operator<<(std::ostream& os, Move mv) {
         os << mv.from();

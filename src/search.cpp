@@ -2,6 +2,7 @@
 #include "board.hpp"
 #include "common.hpp"
 #include "movegen.hpp"
+#include "uci.hpp"
 #include "util/types.hpp"
 #include <array>
 #include <iostream>
@@ -13,20 +14,20 @@ Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
-void Worker::launch_search(Position root_position) {
+void Worker::launch_search(Position root_position, UCI::SearchSettings settings) {
     // Tm setup (skipped for now)
-    Move best_move = iterative_deepening(root_position);
+    Move best_move = iterative_deepening(root_position, settings);
     std::cout << "bestmove " << best_move << std::endl;
 }
 
-Move Worker::iterative_deepening(Position root_position) {
+Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings settings) {
 
-    std::array<Stack, MAX_PLY>    ss;
-    std::array<Move, MAX_PLY + 1> pv;
-    Value                         alpha = -VALUE_INF, beta = +VALUE_INF;
-    Value                         best_value;
+    std::array<Stack, MAX_PLY + 1> ss;
+    std::array<Move, MAX_PLY + 1>  pv;
+    Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
+    Value                          best_value;
 
-    Depth root_depth = 2;
+    Depth root_depth = settings.depth;
     for (i32 i = 0; i < MAX_PLY; i++) {
         ss[i].pv = &(pv[i]);
     }
@@ -55,15 +56,16 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         Value value = -search(pos_after, ss + 1, -beta, -alpha, depth - 1);
         if (value > best_value) {
             best_value = value;
-            if (value > alpha) {
-                if (ss->ply == 0) {
-                    ss->pv[0] = m;  // No pv update for now, just bestmove
-                }
-                if (value >= beta) {
-                    break;  // Beta cutoff
-                }
-                alpha = std::max(alpha, value);
+            if (ss->ply == 0) {
+                ss->pv[0] = m;  // No pv update for now, just bestmove
             }
+            // if (value > alpha) {
+            //
+            //    if (value >= beta) {
+            //        break;
+            //    }
+            //    alpha = std::max(alpha, value);
+            // }
         }
     }
 
@@ -79,24 +81,13 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 }
 
 Value Worker::evaluate(const Position& pos) {
-    const auto& board = pos.board();
-    const Color us    = pos.active_color();
-    const Color them  = invert(us);
-    return ((static_cast<i32>(board.bitboard_for(us, PieceType::Pawn).popcount())
-             - static_cast<i32>(board.bitboard_for(them, PieceType::Pawn).popcount()))
-              * 100
-            + (static_cast<i32>(board.bitboard_for(us, PieceType::Knight).popcount())
-               - static_cast<i32>(board.bitboard_for(them, PieceType::Knight).popcount()))
-                * 300
-            + (static_cast<i32>(board.bitboard_for(us, PieceType::Bishop).popcount())
-               - static_cast<i32>(board.bitboard_for(them, PieceType::Bishop).popcount()))
-                * 300
-            + (static_cast<i32>(board.bitboard_for(us, PieceType::Rook).popcount())
-               - static_cast<i32>(board.bitboard_for(them, PieceType::Rook).popcount()))
-                * 500
-            + (static_cast<i32>(board.bitboard_for(us, PieceType::Queen).popcount())
-               - static_cast<i32>(board.bitboard_for(them, PieceType::Queen).popcount()))
-                * 900);
+    const Color us   = pos.active_color();
+    const Color them = invert(us);
+    return 100 * (pos.piece_count(us, PieceType::Pawn) - pos.piece_count(them, PieceType::Pawn))
+         + 300 * (pos.piece_count(us, PieceType::Knight) - pos.piece_count(them, PieceType::Knight))
+         + 300 * (pos.piece_count(us, PieceType::Bishop) - pos.piece_count(them, PieceType::Bishop))
+         + 500 * (pos.piece_count(us, PieceType::Rook) - pos.piece_count(them, PieceType::Rook))
+         + 900 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen));
 }
 }
 }

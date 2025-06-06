@@ -104,7 +104,8 @@ public:
     }
 
 protected:
-    usize              len = 0;
+    usize len = 0;
+    // TODO: std::array default initializes, and default initialization is a slowdown. We should REALLY remove this and let initialization be handled manually.
     std::array<T, cap> data;
 };
 

@@ -101,6 +101,10 @@ public:
         return attack_table(invert(m_active_color)).read(king_sq(m_active_color)) != 0;
     }
 
+    [[nodiscard]] i32 piece_count(Color color, PieceType ptype) const {
+        return std::popcount(piece_list(color).mask_eq(ptype));
+    }
+
     [[nodiscard]] Position move(Move m) const;
 
     const std::array<Wordboard, 2> calc_attacks_slow();
