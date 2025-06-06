@@ -32,7 +32,7 @@ enum class MoveFlags : u16 {
 };
 
 struct Move {
-    u16 raw = 0;  
+    u16 raw          = 0;
     constexpr Move() = default;
 
     constexpr Move(Square from, Square to, MoveFlags flags = MoveFlags::Normal) {

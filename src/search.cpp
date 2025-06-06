@@ -89,5 +89,6 @@ Value Worker::evaluate(const Position& pos) {
          + 500 * (pos.piece_count(us, PieceType::Rook) - pos.piece_count(them, PieceType::Rook))
          + 900 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen));
 }
+
 }
 }
