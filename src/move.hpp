@@ -32,9 +32,7 @@ enum class MoveFlags : u16 {
 };
 
 struct Move {
-    u16 raw =
-      0;  // TODO: this default initialization is a slowdown. The reason why we put this in is because our StaticVector needs to call the constructor on all the elements. Once we fix that, we really should change this.
-
+    u16 raw = 0;  
     constexpr Move() = default;
 
     constexpr Move(Square from, Square to, MoveFlags flags = MoveFlags::Normal) {

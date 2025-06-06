@@ -39,7 +39,7 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
 }
 
 Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
-    if (depth == 0) {
+    if (depth == 0 || ss->ply >= MAX_PLY) {
         return evaluate(pos);
     }
 
