@@ -3,8 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 
-
 #define forceinline inline __attribute__((always_inline))
+#define unreachable() (__builtin_unreachable())
 
 namespace Clockwork {
 

@@ -17,6 +17,7 @@ constexpr char color_char(Color color) {
     case Black:
         return 'b';
     }
+    unreachable();
 }
 
 constexpr Color invert(Color color) {
@@ -51,6 +52,7 @@ constexpr char piece_char(PieceType piece) {
     case King:
         return 'k';
     }
+    unreachable();
 }
 
 }
