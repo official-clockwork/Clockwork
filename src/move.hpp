@@ -74,11 +74,11 @@ struct Move {
     [[nodiscard]] constexpr bool operator==(const Move& other) const {
         return raw == other.raw;
     }
-    
+
     [[nodiscard]] constexpr bool operator!=(const Move& other) const {
         return raw != other.raw;
     }
-    
+
 
     friend std::ostream& operator<<(std::ostream& os, Move mv) {
         os << mv.from();

@@ -4,9 +4,9 @@
 
 namespace Clockwork {
 
-constexpr i32 MAX_PLY = 256;
-constexpr Value VALUE_INF = 32501;
-constexpr Value VALUE_MATED = 32500;
+constexpr i32   MAX_PLY      = 256;
+constexpr Value VALUE_INF    = 32501;
+constexpr Value VALUE_MATED  = 32500;
 constexpr Value VALUE_ISMATE = 32000;
 
 enum class Color {

@@ -3,25 +3,24 @@
 #include "position.hpp"
 #include "util/types.hpp"
 
-namespace Clockwork{
+namespace Clockwork {
 
-    namespace Search {
-        struct Stack {
-            Move* pv;
-            i32 ply;
-        };
+namespace Search {
+struct Stack {
+    Move* pv;
+    i32   ply;
+};
 
-        class Worker {
-            public:
-            Worker() = default;
-            void launch_search(Position root_position);
+class Worker {
+public:
+    Worker() = default;
+    void launch_search(Position root_position);
 
-            private:
+private:
+    Move iterative_deepening(Position root_position);
 
-            Move iterative_deepening(Position root_position);
-
-            Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth);
-            Value evaluate(const Position& pos);
-        };
-    }
+    Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth);
+    Value evaluate(const Position& pos);
+};
+}
 }
