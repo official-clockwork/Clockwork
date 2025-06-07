@@ -127,7 +127,7 @@ public:
         bool operator==(const Iterator&) const = default;
 
     private:
-        friend class Bitboard;
+        friend struct Bitboard;
 
         explicit constexpr Iterator(u64 bb) :
             m_bb(bb) {
