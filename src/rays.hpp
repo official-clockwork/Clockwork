@@ -52,7 +52,7 @@ template<typename F>
     return result;
 }
 
-inline constexpr Table inclusive_table = generate_rays(
+inline constexpr Table INCLUSIVE_TABLE = generate_rays(
   [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
       int file = a_file;
       int rank = a_rank;
@@ -62,10 +62,10 @@ inline constexpr Table inclusive_table = generate_rays(
   });
 
 [[nodiscard]] constexpr Bitboard inclusive(Square a, Square b) {
-    return inclusive_table[a.raw][b.raw];
+    return INCLUSIVE_TABLE[a.raw][b.raw];
 }
 
-inline constexpr Table infinite_exclusive_table = generate_rays(
+inline constexpr Table INFINITE_EXCLUSIVE_TABLE = generate_rays(
   [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
       int file = a_file;
       int rank = a_rank;
@@ -84,7 +84,7 @@ inline constexpr Table infinite_exclusive_table = generate_rays(
   });
 
 [[nodiscard]] constexpr Bitboard infinite_exclusive(Square a, Square b) {
-    return infinite_exclusive_table[a.raw][b.raw];
+    return INFINITE_EXCLUSIVE_TABLE[a.raw][b.raw];
 }
 
 }
