@@ -225,7 +225,11 @@ Position Position::move(Move m) const {
         if (src.ptype() == PieceType::Pawn) {
             new_pos.m_50mr = 0;
             if (from.raw - to.raw == 16 || to.raw - from.raw == 16) {
-                new_pos.m_enpassant = Square{static_cast<u8>((from.raw + to.raw) / 2)};
+                Color  them = invert(m_active_color);
+                Square ep   = Square{static_cast<u8>((from.raw + to.raw) / 2)};
+                if (is_square_attacked_by(ep, them, PieceType::Pawn)) {
+                    new_pos.m_enpassant = ep;
+                }
             }
         } else {
             new_pos.m_50mr++;
