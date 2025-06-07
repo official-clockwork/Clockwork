@@ -33,11 +33,14 @@ valid_pawns(Color color, Bitboard bb, Bitboard empty, Bitboard dests) {
 }
 
 void MoveGen::generate_moves(MoveList& moves) {
-    switch (m_position.checker_count()) {
+    u64 checkers = m_position.checker_mask();
+    switch (std::popcount(checkers)) {
     case 0:
-    case 1:
         return generate_moves_to<true>(moves, ~Bitboard{0});
+    case 1:
+        return generate_moves_one_checker(moves, checkers);
     case 2:
+    default:
         return generate_moves_two_checkers(moves);
     }
 }
@@ -128,6 +131,16 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations) {
 
         write_pawn(moves, double_push, double_shift, MoveFlags::Normal);
     }
+}
+
+void MoveGen::generate_moves_one_checker(MoveList& moves, u16 checker) {
+    Color  active_color = m_position.active_color();
+    Square king_sq      = m_position.king_sq(active_color);
+
+    Bitboard valid_destinations = ~Bitboard{0};  // TODO
+
+    generate_moves_to<false>(moves, valid_destinations);
+    generate_moves_two_checkers(moves);
 }
 
 void MoveGen::generate_moves_two_checkers(MoveList& moves) {

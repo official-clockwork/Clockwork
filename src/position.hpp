@@ -97,12 +97,12 @@ public:
         return attack_table(m_active_color).read(king_sq(invert(m_active_color))) == 0;
     }
 
-    [[nodiscard]] i32 checker_count() const {
-        return std::popcount(attack_table(invert(m_active_color)).read(king_sq(m_active_color)));
+    [[nodiscard]] u16 checker_mask() const {
+        return attack_table(invert(m_active_color)).read(king_sq(m_active_color));
     }
 
     [[nodiscard]] bool is_in_check() const {
-        return attack_table(invert(m_active_color)).read(king_sq(m_active_color)) != 0;
+        return checker_mask() != 0;
     }
 
     [[nodiscard]] i32 piece_count(Color color, PieceType ptype) const {
