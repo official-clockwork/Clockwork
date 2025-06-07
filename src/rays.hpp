@@ -37,7 +37,8 @@ template<typename F>
             int file_diff         = b_file - a_file;
             int rank_diff         = b_rank - a_rank;
 
-            if (file_diff == 0 || rank_diff == 0 || std::abs(file_diff) == std::abs(rank_diff)) {
+            if (file_diff == 0 || rank_diff == 0 || file_diff == rank_diff
+                || file_diff == -rank_diff) {
                 int file_delta = sign(file_diff);
                 int rank_delta = sign(rank_diff);
 
