@@ -5,6 +5,7 @@
 #include <optional>
 #include <ostream>
 #include <string_view>
+#include <tuple>
 
 #include "util/types.hpp"
 
@@ -44,6 +45,10 @@ struct Square {
 
     [[nodiscard]] constexpr i32 rank() const {
         return raw / 8;
+    }
+
+    [[nodiscard]] constexpr std::tuple<i32, i32> to_file_and_rank() const {
+        return {file(), rank()};
     }
 
     [[nodiscard]] constexpr bool is_valid() const {

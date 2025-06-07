@@ -8,6 +8,7 @@
 #include "geometry.hpp"
 #include "move.hpp"
 #include "position.hpp"
+#include "rays.hpp"
 #include "util/bit.hpp"
 #include "util/types.hpp"
 
@@ -33,7 +34,7 @@ valid_pawns(Color color, Bitboard bb, Bitboard empty, Bitboard dests) {
 }
 
 void MoveGen::generate_moves(MoveList& moves) {
-    u64 checkers = m_position.checker_mask();
+    u16 checkers = m_position.checker_mask();
     switch (std::popcount(checkers)) {
     case 0:
         return generate_moves_to<true>(moves, ~Bitboard{0});
@@ -134,10 +135,13 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations) {
 }
 
 void MoveGen::generate_moves_one_checker(MoveList& moves, u16 checker) {
+    u8 checker_id = static_cast<u8>(std::countr_zero(checker));
+
     Color  active_color = m_position.active_color();
     Square king_sq      = m_position.king_sq(active_color);
+    Square checker_sq   = m_position.piece_list_sq(invert(active_color))[checker_id];
 
-    Bitboard valid_destinations = ~Bitboard{0};  // TODO
+    Bitboard valid_destinations = rays::inclusive(king_sq, checker_sq);
 
     generate_moves_to<false>(moves, valid_destinations);
     generate_moves_two_checkers(moves);
