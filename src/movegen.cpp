@@ -1,6 +1,7 @@
 #include "movegen.hpp"
 
 #include <bit>
+#include <cassert>
 #include <tuple>
 
 #include "bitboard.hpp"
@@ -70,7 +71,10 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bo
     u16 non_pawn_mask = valid_plist & ~pawn_mask;
 
     if (Square ep = m_position.en_passant(); can_ep && ep.is_valid()) {
-        write(moves, ep, at[ep.raw] & pawn_mask, MoveFlags::EnPassant);
+        u16 ep_attackers_mask = at[ep.raw] & pawn_mask;
+        if (ep_attackers_mask && !is_ep_clearance_pinned(ep_attackers_mask)) {
+            write(moves, ep, ep_attackers_mask, MoveFlags::EnPassant);
+        }
     }
 
     // Undefended non-pawn captures
@@ -213,6 +217,32 @@ void MoveGen::write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags 
         Square dest{static_cast<u8>(src.raw + shift)};
         moves.push_back(Move{src, dest, mf});
     }
+}
+
+bool MoveGen::is_ep_clearance_pinned(u16 ep_attackers_mask) const {
+    Color  active_color = m_position.active_color();
+    Square king_sq      = m_position.king_sq(active_color);
+    Square ep           = m_position.en_passant();
+    Square victim_sq    = Square{static_cast<u8>(ep.raw + (active_color == Color::White ? -8 : 8))};
+
+    assert(ep.is_valid());
+
+    if (victim_sq.rank() != king_sq.rank()) {
+        // Potential rook/queen and king are not aligned along the rank: Clearance pin impossible.
+        return false;
+    }
+
+    if (std::popcount(ep_attackers_mask) > 1) {
+        // Two valid en-passant pawns: Clearance pin impossible.
+        return false;
+    }
+
+    u8     my_pawn_id = static_cast<u8>(std::countr_zero(ep_attackers_mask));
+    Square my_pawn_sq = m_position.piece_list_sq(active_color)[my_pawn_id];
+
+    // Handle rare case: Detect clearance pin.
+    Position after_ep = m_position.move(Move{my_pawn_sq, ep, MoveFlags::EnPassant});
+    return !after_ep.is_valid();
 }
 
 }

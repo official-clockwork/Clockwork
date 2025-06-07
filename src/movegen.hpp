@@ -40,6 +40,8 @@ private:
     // Write quiet pawn moves that start from src_bb, moved by shift.
     void write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf);
 
+    bool is_ep_clearance_pinned(u16 ep_attackers_mask) const;
+
     Color           m_active_color;
     const Position& m_position;
 };
