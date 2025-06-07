@@ -56,12 +56,15 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bo
     auto [pin_mask, pinned] = m_position.calc_pin_mask();
     std::array<u16, 64> at  = (m_position.attack_table(active_color) & pin_mask).to_mailbox();
 
-    Bitboard active =
-      m_position.attack_table(active_color).get_attacked_bitboard() & valid_destinations;
-    Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
-
     u16 king_mask = 1;
     u16 pawn_mask = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
+
+    Bitboard pawn_active =
+      m_position.attack_table(active_color).get_piece_mask_bitboard(pawn_mask) & valid_destinations;
+    Bitboard nonpawn_active =
+      m_position.attack_table(active_color).get_piece_mask_bitboard(~pawn_mask)
+      & valid_destinations;
+    Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
 
     u16 valid_plist = m_position.piece_list(active_color).mask_valid();
     if constexpr (!king_moves) {
@@ -77,22 +80,23 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bo
     }
 
     // Undefended non-pawn captures
-    write(moves, at, active & enemy & ~danger, non_pawn_mask, MoveFlags::CaptureBit);
+    write(moves, at, nonpawn_active & enemy & ~danger, non_pawn_mask, MoveFlags::CaptureBit);
     // Defended non-pawn captures
-    write(moves, at, active & enemy & danger, non_pawn_mask & ~king_mask, MoveFlags::CaptureBit);
+    write(moves, at, nonpawn_active & enemy & danger, non_pawn_mask & ~king_mask,
+          MoveFlags::CaptureBit);
 
     Bitboard promo_zone{static_cast<u64>(0xFF) << (active_color == Color::White ? 56 : 0)};
     // Capture-with-promotion
-    write(moves, at, active & enemy & promo_zone, pawn_mask, MoveFlags::PromoQueenCapture);
-    write(moves, at, active & enemy & promo_zone, pawn_mask, MoveFlags::PromoKnightCapture);
-    write(moves, at, active & enemy & promo_zone, pawn_mask, MoveFlags::PromoRookCapture);
-    write(moves, at, active & enemy & promo_zone, pawn_mask, MoveFlags::PromoBishopCapture);
+    write(moves, at, pawn_active & enemy & promo_zone, pawn_mask, MoveFlags::PromoQueenCapture);
+    write(moves, at, pawn_active & enemy & promo_zone, pawn_mask, MoveFlags::PromoKnightCapture);
+    write(moves, at, pawn_active & enemy & promo_zone, pawn_mask, MoveFlags::PromoRookCapture);
+    write(moves, at, pawn_active & enemy & promo_zone, pawn_mask, MoveFlags::PromoBishopCapture);
     // Non-promotion pawn captures
-    write(moves, at, active & enemy & ~promo_zone, pawn_mask, MoveFlags::CaptureBit);
+    write(moves, at, pawn_active & enemy & ~promo_zone, pawn_mask, MoveFlags::CaptureBit);
 
     // Castling
     // TODO: FRC
-    {
+    if constexpr (king_moves) {
         Square   king_sq   = m_position.king_sq(active_color);
         RookInfo rook_info = m_position.rook_info(active_color);
         if (rook_info.aside.is_valid()) {
@@ -116,10 +120,11 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bo
     }
 
     // Undefended non-pawn quiets
-    write(moves, at, active & empty & ~danger, non_pawn_mask, MoveFlags::Normal);
+    write(moves, at, nonpawn_active & empty & ~danger, non_pawn_mask, MoveFlags::Normal);
 
     // Defended non-pawn quiets
-    write(moves, at, active & empty & danger, non_pawn_mask & ~king_mask, MoveFlags::Normal);
+    write(moves, at, nonpawn_active & empty & danger, non_pawn_mask & ~king_mask,
+          MoveFlags::Normal);
 
     // Pawn quiets
     {
