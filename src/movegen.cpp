@@ -160,14 +160,16 @@ void MoveGen::generate_king_moves_to(MoveList& moves, Bitboard valid_destination
 }
 
 void MoveGen::generate_moves_one_checker(MoveList& moves, u16 checker) {
-    u8 checker_id = static_cast<u8>(std::countr_zero(checker));
-
     Color  active_color = m_position.active_color();
     Square king_sq      = m_position.king_sq(active_color);
-    Square checker_sq   = m_position.piece_list_sq(invert(active_color))[checker_id];
+
+    u8        checker_id    = static_cast<u8>(std::countr_zero(checker));
+    Square    checker_sq    = m_position.piece_list_sq(invert(active_color))[checker_id];
+    PieceType checker_ptype = m_position.piece_list(invert(active_color))[checker_id];
 
     Bitboard valid_destinations = rays::inclusive(king_sq, checker_sq);
-    Bitboard checker_ray        = rays::infinite_exclusive(king_sq, checker_sq);
+    Bitboard checker_ray =
+      is_slider(checker_ptype) ? rays::infinite_exclusive(king_sq, checker_sq) : Bitboard{};
 
     generate_moves_to<false>(moves, valid_destinations);
     generate_king_moves_to(moves, ~checker_ray);
@@ -179,10 +181,13 @@ void MoveGen::generate_moves_two_checkers(MoveList& moves, u16 checkers) {
 
     Bitboard checkers_rays;
     for (; checkers != 0; checkers = clear_lowest_bit(checkers)) {
-        u8     checker_id = static_cast<u8>(std::countr_zero(checkers));
-        Square checker_sq = m_position.piece_list_sq(invert(active_color))[checker_id];
+        u8        checker_id    = static_cast<u8>(std::countr_zero(checkers));
+        Square    checker_sq    = m_position.piece_list_sq(invert(active_color))[checker_id];
+        PieceType checker_ptype = m_position.piece_list(invert(active_color))[checker_id];
 
-        checkers_rays |= rays::infinite_exclusive(king_sq, checker_sq);
+        if (is_slider(checker_ptype)) {
+            checkers_rays |= rays::infinite_exclusive(king_sq, checker_sq);
+        }
     }
 
     generate_king_moves_to(moves, ~checkers_rays);

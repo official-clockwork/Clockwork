@@ -60,4 +60,8 @@ constexpr char piece_char(PieceType piece) {
     unreachable();
 }
 
+constexpr bool is_slider(PieceType ptype) {
+    return ptype >= PieceType::Bishop && ptype <= PieceType::Queen;
+}
+
 }
