@@ -14,6 +14,8 @@
 #include "position.hpp"
 #include "search.hpp"
 
+#include "options/macros/option_macros.hpp"
+
 namespace Clockwork::UCI {
 
 constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
@@ -45,6 +47,11 @@ void UCIHandler::execute_command(const std::string& line) {
     if (command == "uci") {
         std::cout << "id Name Clockwork\n";
         std::cout << "id author The Clockwork community" << std::endl;
+        Options::print_all_options();
+    } else if (command == "tunestr") {
+        Options::print_all_tunables();
+    } else if (command == "setoption") {
+        handle_set_option(is);
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "quit") {
@@ -61,6 +68,23 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_perft(is);
     } else {
         std::cout << "Unknown command" << std::endl;
+    }
+}
+
+void UCIHandler::handle_set_option(std::istringstream& is) {
+    std::string token, name, new_value;
+    while (is >> token) {
+        if (token == "name") {
+            is >> name;
+        } else if (token == "value") {
+            is >> new_value;
+        }
+    }
+
+    if (Options::set(name, new_value)) {
+        std::cout << std::format("Option '{}' has been set to '{}'", name, new_value) << std::endl;
+    } else {
+        std::cout << std::format("Unable to set option '{}' to '{}'", name, new_value) << std::endl;
     }
 }
 
