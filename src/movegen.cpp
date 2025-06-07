@@ -163,9 +163,10 @@ void MoveGen::generate_moves_one_checker(MoveList& moves, u16 checker) {
     Square checker_sq   = m_position.piece_list_sq(invert(active_color))[checker_id];
 
     Bitboard valid_destinations = rays::inclusive(king_sq, checker_sq);
+    Bitboard checker_ray        = rays::infinite_exclusive(king_sq, checker_sq);
 
     generate_moves_to<false>(moves, valid_destinations);
-    generate_king_moves_to(moves, ~Bitboard{0});
+    generate_king_moves_to(moves, ~checker_ray);
 }
 
 void MoveGen::generate_moves_two_checkers(MoveList& moves) {
