@@ -35,7 +35,7 @@ struct Place {
         return {};
     }
 
-    static constexpr u8 color_mask = 0x10;
+    static constexpr u8 COLOR_MASK = 0x10;
 
     constexpr Place() = default;
 
@@ -48,7 +48,7 @@ struct Place {
         return raw == 0;
     }
     [[nodiscard]] constexpr Color color() const {
-        return static_cast<Color>((raw & color_mask) != 0);
+        return static_cast<Color>((raw & COLOR_MASK) != 0);
     }
     [[nodiscard]] constexpr PieceType ptype() const {
         return static_cast<PieceType>((raw >> 5) & 0x7);

@@ -334,8 +334,8 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 
     v512 occupied = v512::andnot(v512::eq8_vm(ray_places, v512::zero()), ray_valid);
 
-    v512 color_mask  = v512::broadcast8(Place::color_mask);
-    v512 enemy_color = v512::broadcast8(m_active_color == Color::White ? Place::color_mask : 0);
+    v512 color_mask  = v512::broadcast8(Place::COLOR_MASK);
+    v512 enemy_color = v512::broadcast8(m_active_color == Color::White ? Place::COLOR_MASK : 0);
     v512 enemy       = occupied & v512::eq8_vm(ray_places & color_mask, enemy_color);
 
     v512 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
