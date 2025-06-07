@@ -11,33 +11,13 @@
 
 namespace Clockwork {
 
-namespace detail {
-
-template<typename T, std::size_t N>
-struct Storage {
-    alignas(T) std::array<std::byte, N * sizeof(T)> storage;
-    // We never access the raw bytes directly except to immediately call `std::contruct_at`.
-    // This means we don't need to call `std::launder`.
-    // Unfortunately, the reinterpret_cast means this can't be constexpr.
-    T* data() {
-        return reinterpret_cast<T*>(storage.data());
-    }
-    const T* data() const {
-        if constexpr (N == 0) {
-            return nullptr;
-        }
-        return reinterpret_cast<const T*>(storage.data());
-    }
-};
-}
 
 /// C++26 has `std::inplace_vector`, but that's not yet implemented in any major stdlib.
 /// This template is a simplified version of that idea.
 /// We don't need to worry about special cases like elements being (partially) `const`, etc.
 /// We also don't care about exception safety and simply assume that copying/moving `T` doesn't throw.
 template<typename T, usize cap>
-class StaticVector : private detail::Storage<T, cap> {
-    static_assert(cap == 0 || sizeof(detail::Storage<T, cap>) == cap * sizeof(T), "Internal error");
+class StaticVector {
 
 public:
     using value_type     = T;
@@ -58,28 +38,28 @@ public:
 
     explicit StaticVector(usize len) :
         m_len(len) {
-        std::uninitialized_value_construct_n(begin(), len);
+        std::uninitialized_value_construct_n(data(), len);
     }
 
     StaticVector(const StaticVector& other) :
         m_len(other.m_len) {
-        std::uninitialized_copy(other.begin(), other.end(), begin());
+        std::uninitialized_copy(other.begin(), other.end(), data());
     }
 
     StaticVector(StaticVector&& other) noexcept :
         m_len(other.m_len) {
-        std::uninitialized_move(other.begin(), other.end(), begin());
+        std::uninitialized_move(other.begin(), other.end(), data());
         // technically, this isn't necessary, but it should help catch potential bugs.
         other.clear();
     }
 
     StaticVector& operator=(const StaticVector& other) {
         if (other.m_len > m_len) {
-            std::copy_n(other.begin(), m_len, begin());
+            std::copy_n(other.begin(), m_len, data());
             std::uninitialized_copy(other.begin() + m_len, other.end(), end());
             m_len = other.m_len;
         } else {
-            std::copy(other.begin(), other.end(), begin());
+            std::copy(other.begin(), other.end(), data());
             resize(other.m_len);
         }
         return *this;
@@ -105,14 +85,14 @@ public:
         requires(std::constructible_from<T, Args...>)
     iterator emplace_back(Args&&... args) {
         assert(m_len < cap);
-        T* res = std::construct_at(begin() + m_len, std::forward<Args>(args)...);
+        T* res = std::construct_at(data() + m_len, std::forward<Args>(args)...);
         m_len++;
         return res;
     }
 
     iterator push_back(const T& value) {
         assert(m_len < cap);
-        T* res = std::construct_at(end(), value);
+        T* res = std::construct_at(data() + m_len, value);
         m_len++;
         return res;
     }
@@ -137,7 +117,7 @@ public:
     }
 
     void clear() {
-        std::destroy_n(begin(), m_len);
+        std::destroy_n(data(), m_len);
         m_len = 0;
     }
 
@@ -174,20 +154,29 @@ public:
 
     T& operator[](usize index) {
         assert(index < m_len);
-        return begin()[index];
+        return data()[index];
     }
     const T& operator[](usize index) const {
         assert(index < m_len);
-        return begin()[index];
+        return data()[index];
     }
 
-    using detail::Storage<T, cap>::data;
+    // We never access the raw bytes directly except to immediately call `std::contruct_at`.
+    // This means we don't need to call `std::launder`.
+    // Unfortunately, the reinterpret_cast means this can't be constexpr.
+    [[nodiscard]] T* data() {
+        return reinterpret_cast<T*>(m_storage.data());
+    }
+
+    [[nodiscard]] const T* data() const {
+        return reinterpret_cast<const T*>(m_storage.data());
+    }
 
     [[nodiscard]] iterator begin() {
-        return this->data();
+        return data();
     }
     [[nodiscard]] const_iterator begin() const {
-        return this->data();
+        return data();
     }
     [[nodiscard]] const_iterator cbegin() const {
         return begin();
@@ -205,11 +194,11 @@ public:
 
     T& back() {
         assert(m_len > 0);
-        return begin()[m_len - 1];
+        return data()[m_len - 1];
     }
     const T& back() const {
         assert(m_len > 0);
-        return begin()[m_len - 1];
+        return data()[m_len - 1];
     }
 
     friend auto operator<=>(const StaticVector& lhs, const StaticVector& rhs) {
@@ -223,6 +212,8 @@ public:
 
 private:
     usize m_len = 0;
+
+    alignas(T) std::array<std::byte, cap * sizeof(T)> m_storage;
 };
 
 }  // namespace Clockwork
