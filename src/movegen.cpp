@@ -37,7 +37,7 @@ void MoveGen::generate_moves(MoveList& moves) {
     u16 checkers = m_position.checker_mask();
     switch (std::popcount(checkers)) {
     case 0:
-        return generate_moves_to<true>(moves, ~Bitboard{0});
+        return generate_moves_to<true>(moves, ~Bitboard{0}, true);
     case 1:
         return generate_moves_one_checker(moves, checkers);
     case 2:
@@ -47,7 +47,7 @@ void MoveGen::generate_moves(MoveList& moves) {
 }
 
 template<bool king_moves>
-void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations) {
+void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations, bool can_ep) {
     Color active_color = m_position.active_color();
 
     Bitboard empty = m_position.board().get_empty_bitboard();
@@ -69,7 +69,7 @@ void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations) {
     }
     u16 non_pawn_mask = valid_plist & ~pawn_mask;
 
-    if (Square ep = m_position.en_passant(); ep.is_valid()) {
+    if (Square ep = m_position.en_passant(); can_ep && ep.is_valid()) {
         write(moves, ep, at[ep.raw] & pawn_mask, MoveFlags::EnPassant);
     }
 
@@ -171,7 +171,7 @@ void MoveGen::generate_moves_one_checker(MoveList& moves, u16 checker) {
     Bitboard checker_ray =
       is_slider(checker_ptype) ? rays::infinite_exclusive(king_sq, checker_sq) : Bitboard{};
 
-    generate_moves_to<false>(moves, valid_destinations);
+    generate_moves_to<false>(moves, valid_destinations, checker_ptype == PieceType::Pawn);
     generate_king_moves_to(moves, ~checker_ray);
 }
 

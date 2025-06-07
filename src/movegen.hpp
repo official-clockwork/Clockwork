@@ -21,7 +21,7 @@ public:
 
 private:
     template<bool king_moves>
-    void generate_moves_to(MoveList& moves, Bitboard valid_destinations);
+    void generate_moves_to(MoveList& moves, Bitboard valid_destinations, bool can_ep);
     void generate_king_moves_to(MoveList& moves, Bitboard valid_destinations);
 
     void generate_moves_one_checker(MoveList& moves, u16 checker);
