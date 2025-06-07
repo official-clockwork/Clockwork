@@ -72,6 +72,8 @@ inline constexpr Table infinite_exclusive_table = generate_rays(
            file += file_delta, rank += rank_delta) {
           bb |= Bitboard::from_square(Square::from_file_and_rank(file, rank));
       }
+      file = a_file;
+      rank = a_rank;
       for (; file >= 0 && file <= 7 && rank >= 0 && rank <= 7;
            file -= file_delta, rank -= rank_delta) {
           bb |= Bitboard::from_square(Square::from_file_and_rank(file, rank));
