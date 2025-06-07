@@ -28,8 +28,8 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
     Value                          best_value;
 
     Depth root_depth = settings.depth;
-    for (i32 i = 0; i < MAX_PLY; i++) {
-        ss[i].pv = &(pv[i]);
+    for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
+        ss[i].pv = &pv[i];
     }
     Value score = search(root_position, &ss[0], alpha, beta, root_depth);
     best_value  = score;
