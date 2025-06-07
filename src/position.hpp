@@ -105,6 +105,10 @@ public:
         return std::popcount(piece_list(color).mask_eq(ptype));
     }
 
+    [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceType ptype) const {
+        return attack_table(color).read(sq) & piece_list(color).mask_eq(ptype);
+    }
+
     [[nodiscard]] Position move(Move m) const;
 
     const std::array<Wordboard, 2> calc_attacks_slow();

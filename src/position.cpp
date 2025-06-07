@@ -227,7 +227,7 @@ Position Position::move(Move m) const {
             if (from.raw - to.raw == 16 || to.raw - from.raw == 16) {
                 Color  them = invert(m_active_color);
                 Square ep   = Square{static_cast<u8>((from.raw + to.raw) / 2)};
-                if (attack_table(them).read(ep) & piece_list(them).mask_eq(PieceType::Pawn)) {
+                if (is_square_attacked_by(ep, them, PieceType::Pawn)) {
                     new_pos.m_enpassant = ep;
                 }
             }
