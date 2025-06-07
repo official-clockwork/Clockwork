@@ -186,7 +186,11 @@ struct v256 {
     }
 
     static forceinline u64 reduceor64(v256 a) {
-        return static_cast<u64>(_mm256_reduce_or_epi16(a.raw));
+        __m128i hi = _mm256_extracti128_si256(a.raw, 1);
+        __m128i lo = _mm256_castsi256_si128(a.raw);
+        __m128i x  = _mm_or_si128(hi, lo);
+        __m128i y  = _mm_or_si128(x, _mm_unpackhi_epi64(x, x));
+        return static_cast<u64>(_mm_extract_epi64(y, 0));
     }
 
     static forceinline v256 shl16(v256 a, i32 shift) {
