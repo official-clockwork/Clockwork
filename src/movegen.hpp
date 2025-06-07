@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bitboard.hpp"
 #include "move.hpp"
 #include "position.hpp"
 #include "square.hpp"
@@ -19,6 +20,9 @@ public:
     void generate_moves(MoveList& moves);
 
 private:
+    template<bool king_moves>
+    void generate_moves_to(MoveList& moves, Bitboard valid_destinations);
+
     // Write moves that go to dest. Source are pieces in piecemask.
     void write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf);
 

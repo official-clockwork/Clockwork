@@ -3,7 +3,9 @@
 #include <bit>
 #include <tuple>
 
+#include "bitboard.hpp"
 #include "common.hpp"
+#include "geometry.hpp"
 #include "move.hpp"
 #include "position.hpp"
 #include "util/bit.hpp"
@@ -31,19 +33,29 @@ valid_pawns(Color color, Bitboard bb, Bitboard empty, Bitboard dests) {
 }
 
 void MoveGen::generate_moves(MoveList& moves) {
+    generate_moves_to<true>(moves, ~Bitboard{0});
+}
+
+template<bool king_moves>
+void MoveGen::generate_moves_to(MoveList& moves, Bitboard valid_destinations) {
     Color active_color = m_position.active_color();
 
     Bitboard empty = m_position.board().get_empty_bitboard();
     Bitboard enemy = m_position.board().get_color_bitboard(invert(active_color));
 
-    std::array<u16, 64> at = m_position.attack_table(active_color).to_mailbox();
+    Wordboard           pm = m_position.calc_pin_mask();
+    std::array<u16, 64> at = (m_position.attack_table(active_color) & pm).to_mailbox();
 
     Bitboard active = m_position.attack_table(active_color).get_attacked_bitboard();
     Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
 
-    u16 valid_plist   = m_position.piece_list(active_color).mask_valid();
-    u16 king_mask     = 1;
-    u16 pawn_mask     = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
+    u16 king_mask = 1;
+    u16 pawn_mask = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
+
+    u16 valid_plist = m_position.piece_list(active_color).mask_valid();
+    if constexpr (!king_moves) {
+        valid_plist &= ~king_mask;
+    }
     u16 non_pawn_mask = valid_plist & ~pawn_mask;
 
     if (Square ep = m_position.en_passant(); ep.is_valid()) {

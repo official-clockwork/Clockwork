@@ -107,6 +107,8 @@ public:
 
     [[nodiscard]] Position move(Move m) const;
 
+    Wordboard calc_pin_mask() const;
+
     const std::array<Wordboard, 2> calc_attacks_slow();
     const std::array<u16, 2>       calc_attacks_slow(Square sq);
 

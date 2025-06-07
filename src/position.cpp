@@ -322,6 +322,65 @@ Position Position::move(Move m) const {
     return new_pos;
 }
 
+Wordboard Position::calc_pin_mask() const {
+    Square king_square = king_sq(m_active_color);
+
+    auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);
+    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
+    v512 inverse_perm            = geometry::superpiece_inverse_rays_avx2(king_square);
+
+    // Ignore horse moves
+    ray_valid &= v512::broadcast64(0xFFFFFFFFFFFFFF00);
+
+    v512 occupied = v512::andnot(v512::eq8_vm(ray_places, v512::zero()), ray_valid);
+
+    v512 color_mask  = v512::broadcast8(Place::color_mask);
+    v512 enemy_color = v512::broadcast8(m_active_color == Color::White ? Place::color_mask : 0);
+    v512 enemy       = occupied & v512::eq8_vm(ray_places & color_mask, enemy_color);
+
+    v512 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
+    v512 maybe_pinned = v512::andnot(enemy, closest);
+
+    // Find enemy sliders of the correct type
+    v512 maybe_pinner1 = enemy & geometry::slider_mask(ray_places);
+
+    // Find second-closest pieces along each ray
+    v512 not_closest   = v512::andnot(closest, occupied);
+    v512 pin_raymask   = geometry::superpiece_attacks(not_closest, ray_valid);
+    v512 maybe_pinner2 = not_closest & pin_raymask;
+
+    // Pinners are second-closest pieces that are enemy sliders of the correct type.
+    v512 pinner = maybe_pinner1 & maybe_pinner2;
+
+    // Does this ray have a pinner?
+    v512 no_pinner_mask = v512::eq64_vm(pinner, v512::zero());
+    v512 pinned         = v512::andnot(no_pinner_mask, maybe_pinned);
+
+    v512 nonmasked_pinned_ids = v512::lanebroadcast(pinned & ray_places & v512::broadcast8(0xF));
+    v512 pinned_ids           = pin_raymask & nonmasked_pinned_ids;
+    // Transform into board layout
+    pinned_ids = v512::permute8(inverse_perm, pinned_ids);
+
+    u16 nonpinned_piece_mask =
+      static_cast<u16>(~v512::reduceor64(v512::shl64(v512::broadcast64(1),
+                                                     nonmasked_pinned_ids & v512::broadcast64(0xF)))
+                       | 1);
+
+    // AVX2 doesn't have a variable word shift, so were're doing it this way.
+    // Index zero is invalid here (the king is never pinned), so 0 converts to 0.
+    static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+    v512              at_lo = v512::permute8(pinned_ids, BITS_LO);
+    v512              at_hi = v512::permute8(pinned_ids, BITS_HI);
+
+    v512 at0 = v512::unpacklo8(at_lo, at_hi) | v512::broadcast16(nonpinned_piece_mask);
+    v512 at1 = v512::unpackhi8(at_lo, at_hi) | v512::broadcast16(nonpinned_piece_mask);
+
+    return Wordboard{at0, at1};
+}
+
 const std::array<Wordboard, 2> Position::calc_attacks_slow() {
     std::array<std::array<u16, 64>, 2> result{};
     for (usize i = 0; i < 64; i++) {

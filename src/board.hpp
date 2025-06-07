@@ -35,6 +35,8 @@ struct Place {
         return {};
     }
 
+    static constexpr u8 color_mask = 0x10;
+
     constexpr Place() = default;
 
     constexpr Place(Color color, PieceType pt, PieceId id) {
@@ -46,7 +48,7 @@ struct Place {
         return raw == 0;
     }
     [[nodiscard]] constexpr Color color() const {
-        return static_cast<Color>((raw & 0x10) != 0);
+        return static_cast<Color>((raw & color_mask) != 0);
     }
     [[nodiscard]] constexpr PieceType ptype() const {
         return static_cast<PieceType>((raw >> 5) & 0x7);
@@ -116,6 +118,10 @@ struct Wordboard {
         std::memcpy(&value, reinterpret_cast<const char*>(raw.data()) + sq.raw * sizeof(u16),
                     sizeof(u16));
         return value;
+    }
+
+    friend inline Wordboard operator&(const Wordboard& a, const Wordboard& b) {
+        return Wordboard{{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]}};
     }
 
     bool                 operator==(const Wordboard& other) const = default;

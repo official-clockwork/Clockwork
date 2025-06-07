@@ -160,6 +160,15 @@ struct v256 {
         return {_mm256_shuffle_epi8(x, EXPAND_IDX)};
     }
 
+    static forceinline v256 lanebroadcast(v256 a) {
+        __m256i       x = _mm256_sad_epu8(a.raw, _mm256_setzero_si256());
+        const __m256i EXPAND_IDX{_mm256_setr_epi8(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+                                                  0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                                                  0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18)};
+        return {_mm256_shuffle_epi8(x, EXPAND_IDX)};
+    }
+
     static forceinline v256 permute8(v256 index, v128 a) {
         return {_mm256_shuffle_epi8(v256::broadcast128(a).raw, index.raw)};
     }
@@ -176,8 +185,16 @@ struct v256 {
         return blend8(mask0, x, y);
     }
 
+    static forceinline u64 reduceor64(v256 a) {
+        return static_cast<u64>(_mm256_reduce_or_epi16(a.raw));
+    }
+
     static forceinline v256 shl16(v256 a, i32 shift) {
         return {_mm256_slli_epi16(a.raw, shift)};
+    }
+
+    static forceinline v256 shl64(v256 a, v256 b) {
+        return {_mm256_sllv_epi64(a.raw, b.raw)};
     }
 
     static forceinline v256 shr16(v256 a, i32 shift) {
@@ -311,6 +328,10 @@ struct v512 {
         return v512{v256::sliderbroadcast(a.raw[0]), v256::sliderbroadcast(a.raw[1])};
     }
 
+    static forceinline v512 lanebroadcast(v512 a) {
+        return v512{v256::lanebroadcast(a.raw[0]), v256::lanebroadcast(a.raw[1])};
+    }
+
     static forceinline v512 permute8(v512 index, v512 a) {
         return v512{v256::permute8(index.raw[0], a.raw[0], a.raw[1]),
                     v256::permute8(index.raw[1], a.raw[0], a.raw[1])};
@@ -318,6 +339,14 @@ struct v512 {
 
     static forceinline v512 permute8(v512 index, v128 a) {
         return v512{v256::permute8(index.raw[0], a), v256::permute8(index.raw[1], a)};
+    }
+
+    static forceinline u64 reduceor64(v512 a) {
+        return v256::reduceor64(a.raw[0]) | v256::reduceor64(a.raw[1]);
+    }
+
+    static forceinline v512 shl64(v512 a, v512 b) {
+        return v512{v256::shl64(a.raw[0], b.raw[0]), v256::shl64(a.raw[1], b.raw[1])};
     }
 
     static forceinline v512 shr16(v512 a, i32 shift) {
