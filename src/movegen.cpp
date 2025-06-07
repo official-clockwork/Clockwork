@@ -159,7 +159,7 @@ void MoveGen::generate_king_moves_to(MoveList& moves, Bitboard valid_destination
 
     // Undefended captures
     write(moves, at, active & enemy & ~danger, king_mask, MoveFlags::CaptureBit);
-    // Undefined quiets
+    // Undefended quiets
     write(moves, at, active & empty & ~danger, king_mask, MoveFlags::Normal);
 }
 
