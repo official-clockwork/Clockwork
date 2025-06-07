@@ -23,6 +23,8 @@ private:
     template<bool king_moves>
     void generate_moves_to(MoveList& moves, Bitboard valid_destinations);
 
+    void generate_moves_two_checkers(MoveList& moves);
+
     // Write moves that go to dest. Source are pieces in piecemask.
     void write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf);
 

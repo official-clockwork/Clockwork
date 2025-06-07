@@ -209,6 +209,10 @@ struct v256 {
         return v256::neq8(a & b, v256::zero());
     }
 
+    static forceinline u32 test16(v256 a, v256 b) {
+        return v256::neq8(a & b, v256::zero());
+    }
+
     static forceinline v256 unpacklo8(v256 a, v256 b) {
         return {_mm256_unpacklo_epi8(a.raw, b.raw)};
     }
@@ -361,6 +365,10 @@ struct v512 {
         return concat64(v256::test8(a.raw[0], b.raw[0]), v256::test8(a.raw[1], b.raw[1]));
     }
 
+    static forceinline u32 test16(v512 a, v512 b) {
+        return (a & b).nonzero16();
+    }
+
     static forceinline v512 unpacklo8(v512 a, v512 b) {
         return v512{v256::unpacklo8(a.raw[0], b.raw[0]), v256::unpacklo8(a.raw[1], b.raw[1])};
     }
@@ -389,10 +397,6 @@ struct v512 {
         return concat64(v256::neq8(a.raw[0], b.raw[0]), v256::neq8(a.raw[1], b.raw[1]));
     }
 
-    static forceinline u32 neq16(v512 a, v512 b) {
-        return concat32(v256::neq16(a.raw[0], b.raw[0]), v256::neq16(a.raw[1], b.raw[1]));
-    }
-
     static forceinline u64 testn8(v512 a, v512 b) {
         return (a & b).zero8();
     }
@@ -407,7 +411,10 @@ struct v512 {
         return neq8(*this, zero());
     }
     [[nodiscard]] forceinline u32 nonzero16() const {
-        return neq16(*this, zero());
+        u64 x =
+          concat64(_mm256_movemask_epi8(_mm256_cmpeq_epi16(raw[0].raw, _mm256_setzero_si256())),
+                   _mm256_movemask_epi8(_mm256_cmpeq_epi16(raw[1].raw, _mm256_setzero_si256())));
+        return static_cast<u32>(_pext_u64(~x, 0xAAAAAAAAAAAAAAAA));
     }
 
     friend forceinline v512 operator&(v512 a, v512 b) {
