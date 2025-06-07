@@ -397,6 +397,12 @@ struct v512 {
         return concat64(v256::neq8(a.raw[0], b.raw[0]), v256::neq8(a.raw[1], b.raw[1]));
     }
 
+    static forceinline u32 neq16(v512 a, v512 b) {
+        u64 x = concat64(_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[0].raw, b.raw[0].raw)),
+                         _mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[1].raw, b.raw[1].raw)));
+        return static_cast<u32>(_pext_u64(~x, 0xAAAAAAAAAAAAAAAA));
+    }
+
     static forceinline u64 testn8(v512 a, v512 b) {
         return (a & b).zero8();
     }

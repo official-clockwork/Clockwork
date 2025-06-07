@@ -322,7 +322,7 @@ Position Position::move(Move m) const {
     return new_pos;
 }
 
-Wordboard Position::calc_pin_mask() const {
+std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     Square king_square = king_sq(m_active_color);
 
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);
@@ -375,10 +375,14 @@ Wordboard Position::calc_pin_mask() const {
     v512              at_lo = v512::permute8(pinned_ids, BITS_LO);
     v512              at_hi = v512::permute8(pinned_ids, BITS_HI);
 
-    v512 at0 = v512::unpacklo8(at_lo, at_hi) | v512::broadcast16(nonpinned_piece_mask);
-    v512 at1 = v512::unpackhi8(at_lo, at_hi) | v512::broadcast16(nonpinned_piece_mask);
+    v512 nppm = v512::broadcast16(nonpinned_piece_mask);
 
-    return Wordboard{at0, at1};
+    v512 at0 = v512::unpacklo8(at_lo, at_hi) | nppm;
+    v512 at1 = v512::unpackhi8(at_lo, at_hi) | nppm;
+
+    u64 pinned_bb = concat64(v512::neq16(at0, nppm), v512::neq16(at1, nppm));
+
+    return {Wordboard{at0, at1}, Bitboard{pinned_bb}};
 }
 
 const std::array<Wordboard, 2> Position::calc_attacks_slow() {
