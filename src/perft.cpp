@@ -20,11 +20,12 @@ static u64 core(const Position& position, usize depth) {
     MoveGen  movegen{position};
     movegen.generate_moves(moves);
 
+    if (!print && depth == 1) {
+        return moves.size();
+    }
+
     for (Move m : moves) {
         Position new_position = position.move(m);
-        if (!new_position.is_valid()) {
-            continue;
-        }
 
         u64 child = core<false>(new_position, depth - 1);
 

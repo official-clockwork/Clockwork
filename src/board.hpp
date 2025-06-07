@@ -35,6 +35,8 @@ struct Place {
         return {};
     }
 
+    static constexpr u8 COLOR_MASK = 0x10;
+
     constexpr Place() = default;
 
     constexpr Place(Color color, PieceType pt, PieceId id) {
@@ -46,7 +48,7 @@ struct Place {
         return raw == 0;
     }
     [[nodiscard]] constexpr Color color() const {
-        return static_cast<Color>((raw & 0x10) != 0);
+        return static_cast<Color>((raw & COLOR_MASK) != 0);
     }
     [[nodiscard]] constexpr PieceType ptype() const {
         return static_cast<PieceType>((raw >> 5) & 0x7);
@@ -111,11 +113,20 @@ struct Wordboard {
         return Bitboard{concat64(raw[0].nonzero16(), raw[1].nonzero16())};
     }
 
+    [[nodiscard]] Bitboard get_piece_mask_bitboard(u16 piece_mask) const {
+        v512 pm = v512::broadcast16(piece_mask);
+        return Bitboard{concat64(v512::test16(raw[0], pm), v512::test16(raw[1], pm))};
+    }
+
     [[nodiscard]] u16 read(Square sq) const {
         u16 value;
         std::memcpy(&value, reinterpret_cast<const char*>(raw.data()) + sq.raw * sizeof(u16),
                     sizeof(u16));
         return value;
+    }
+
+    friend inline Wordboard operator&(const Wordboard& a, const Wordboard& b) {
+        return Wordboard{{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]}};
     }
 
     bool                 operator==(const Wordboard& other) const = default;

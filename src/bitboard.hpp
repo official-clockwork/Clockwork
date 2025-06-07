@@ -23,11 +23,13 @@ enum class Direction {
 
 struct Bitboard {
 public:
+    constexpr Bitboard() = default;
+
     constexpr explicit Bitboard(u64 raw) :
         m_raw(raw) {
     }
 
-    static Bitboard from_square(Square sq) {
+    static constexpr Bitboard from_square(Square sq) {
         return Bitboard{static_cast<u64>(1) << sq.raw};
     }
 
@@ -146,32 +148,32 @@ public:
 
     bool operator==(const Bitboard&) const = default;
 
-    friend Bitboard operator~(Bitboard a) {
+    friend constexpr Bitboard operator~(Bitboard a) {
         return Bitboard{~a.m_raw};
     }
-    friend Bitboard operator&(Bitboard a, Bitboard b) {
+    friend constexpr Bitboard operator&(Bitboard a, Bitboard b) {
         return Bitboard{a.m_raw & b.m_raw};
     }
-    friend Bitboard operator|(Bitboard a, Bitboard b) {
+    friend constexpr Bitboard operator|(Bitboard a, Bitboard b) {
         return Bitboard{a.m_raw | b.m_raw};
     }
 
-    friend Bitboard operator>>(Bitboard a, i32 shift) {
+    friend constexpr Bitboard operator>>(Bitboard a, i32 shift) {
         return Bitboard{a.m_raw >> shift};
     }
-    friend Bitboard operator<<(Bitboard a, i32 shift) {
+    friend constexpr Bitboard operator<<(Bitboard a, i32 shift) {
         return Bitboard{a.m_raw << shift};
     }
 
-    friend Bitboard& operator&=(Bitboard& a, Bitboard b) {
+    friend constexpr Bitboard& operator&=(Bitboard& a, Bitboard b) {
         return a = a & b;
     }
-    friend Bitboard& operator|=(Bitboard& a, Bitboard b) {
+    friend constexpr Bitboard& operator|=(Bitboard& a, Bitboard b) {
         return a = a | b;
     }
 
 private:
-    u64 m_raw;
+    u64 m_raw = 0;
 };
 
 }

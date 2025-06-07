@@ -9,4 +9,14 @@ template<typename T>
     return x & (x - 1);
 }
 
+[[nodiscard]] constexpr i32 sign(i32 x) {
+    if (x == 0) {
+        return 0;
+    }
+    if (x < 0) {
+        return -1;
+    }
+    return 1;
+}
+
 }

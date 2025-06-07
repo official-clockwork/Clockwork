@@ -4,6 +4,7 @@
 #include <bit>
 #include <cassert>
 #include <iosfwd>
+#include <tuple>
 
 #include "board.hpp"
 #include "move.hpp"
@@ -97,8 +98,12 @@ public:
         return attack_table(m_active_color).read(king_sq(invert(m_active_color))) == 0;
     }
 
+    [[nodiscard]] u16 checker_mask() const {
+        return attack_table(invert(m_active_color)).read(king_sq(m_active_color));
+    }
+
     [[nodiscard]] bool is_in_check() const {
-        return attack_table(invert(m_active_color)).read(king_sq(m_active_color)) != 0;
+        return checker_mask() != 0;
     }
 
     [[nodiscard]] i32 piece_count(Color color, PieceType ptype) const {
@@ -106,6 +111,8 @@ public:
     }
 
     [[nodiscard]] Position move(Move m) const;
+
+    [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 
     const std::array<Wordboard, 2> calc_attacks_slow();
     const std::array<u16, 2>       calc_attacks_slow(Square sq);

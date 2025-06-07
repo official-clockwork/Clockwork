@@ -160,6 +160,15 @@ struct v256 {
         return {_mm256_shuffle_epi8(x, EXPAND_IDX)};
     }
 
+    static forceinline v256 lanebroadcast(v256 a) {
+        __m256i       x = _mm256_sad_epu8(a.raw, _mm256_setzero_si256());
+        const __m256i EXPAND_IDX{_mm256_setr_epi8(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                  0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,
+                                                  0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                                                  0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18)};
+        return {_mm256_shuffle_epi8(x, EXPAND_IDX)};
+    }
+
     static forceinline v256 permute8(v256 index, v128 a) {
         return {_mm256_shuffle_epi8(v256::broadcast128(a).raw, index.raw)};
     }
@@ -176,8 +185,20 @@ struct v256 {
         return blend8(mask0, x, y);
     }
 
+    static forceinline u64 reduceor64(v256 a) {
+        __m128i hi = _mm256_extracti128_si256(a.raw, 1);
+        __m128i lo = _mm256_castsi256_si128(a.raw);
+        __m128i x  = _mm_or_si128(hi, lo);
+        __m128i y  = _mm_or_si128(x, _mm_unpackhi_epi64(x, x));
+        return static_cast<u64>(_mm_extract_epi64(y, 0));
+    }
+
     static forceinline v256 shl16(v256 a, i32 shift) {
         return {_mm256_slli_epi16(a.raw, shift)};
+    }
+
+    static forceinline v256 shl64(v256 a, v256 b) {
+        return {_mm256_sllv_epi64(a.raw, b.raw)};
     }
 
     static forceinline v256 shr16(v256 a, i32 shift) {
@@ -189,6 +210,10 @@ struct v256 {
     }
 
     static forceinline u32 test8(v256 a, v256 b) {
+        return v256::neq8(a & b, v256::zero());
+    }
+
+    static forceinline u32 test16(v256 a, v256 b) {
         return v256::neq8(a & b, v256::zero());
     }
 
@@ -311,6 +336,10 @@ struct v512 {
         return v512{v256::sliderbroadcast(a.raw[0]), v256::sliderbroadcast(a.raw[1])};
     }
 
+    static forceinline v512 lanebroadcast(v512 a) {
+        return v512{v256::lanebroadcast(a.raw[0]), v256::lanebroadcast(a.raw[1])};
+    }
+
     static forceinline v512 permute8(v512 index, v512 a) {
         return v512{v256::permute8(index.raw[0], a.raw[0], a.raw[1]),
                     v256::permute8(index.raw[1], a.raw[0], a.raw[1])};
@@ -318,6 +347,14 @@ struct v512 {
 
     static forceinline v512 permute8(v512 index, v128 a) {
         return v512{v256::permute8(index.raw[0], a), v256::permute8(index.raw[1], a)};
+    }
+
+    static forceinline u64 reduceor64(v512 a) {
+        return v256::reduceor64(a.raw[0]) | v256::reduceor64(a.raw[1]);
+    }
+
+    static forceinline v512 shl64(v512 a, v512 b) {
+        return v512{v256::shl64(a.raw[0], b.raw[0]), v256::shl64(a.raw[1], b.raw[1])};
     }
 
     static forceinline v512 shr16(v512 a, i32 shift) {
@@ -330,6 +367,10 @@ struct v512 {
 
     static forceinline u64 test8(v512 a, v512 b) {
         return concat64(v256::test8(a.raw[0], b.raw[0]), v256::test8(a.raw[1], b.raw[1]));
+    }
+
+    static forceinline u32 test16(v512 a, v512 b) {
+        return (a & b).nonzero16();
     }
 
     static forceinline v512 unpacklo8(v512 a, v512 b) {
@@ -361,7 +402,10 @@ struct v512 {
     }
 
     static forceinline u32 neq16(v512 a, v512 b) {
-        return concat32(v256::neq16(a.raw[0], b.raw[0]), v256::neq16(a.raw[1], b.raw[1]));
+        u64 x = concat64(
+          static_cast<u32>(_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[0].raw, b.raw[0].raw))),
+          static_cast<u32>(_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[1].raw, b.raw[1].raw))));
+        return static_cast<u32>(_pext_u64(~x, 0xAAAAAAAAAAAAAAAA));
     }
 
     static forceinline u64 testn8(v512 a, v512 b) {
