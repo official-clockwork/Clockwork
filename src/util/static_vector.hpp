@@ -1,13 +1,12 @@
 #pragma once
 
+#include "util/types.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <memory>
 #include <utility>
-
-
-#include "util/types.hpp"
 
 namespace Clockwork {
 
@@ -25,7 +24,10 @@ public:
     using const_iterator = const T*;
     using size_type      = usize;
 
-    StaticVector() = default;
+    StaticVector() :
+        m_len(0) {
+        // don't zero `m_storage`
+    }
     ~StaticVector() {
         clear();
     }
@@ -33,7 +35,7 @@ public:
     StaticVector(std::initializer_list<T> list) :
         m_len(list.size()) {
         assert(m_len <= cap);
-        std::uninitialized_copy(list.begin(), list.end(), begin());
+        std::uninitialized_copy(list.begin(), list.end(), data());
     }
 
     explicit StaticVector(usize len) :
@@ -70,11 +72,11 @@ public:
             return *this;
         }
         if (other.m_len > m_len) {
-            std::move(other.begin(), other.begin() + m_len, begin());
+            std::move(other.begin(), other.begin() + m_len, data());
             std::uninitialized_move(other.begin() + m_len, other.end(), end());
             m_len = other.m_len;
         } else {
-            std::move(other.begin(), other.end(), begin());
+            std::move(other.begin(), other.end(), data());
             resize(other.m_len);
         }
         other.clear();
@@ -211,7 +213,7 @@ public:
     }
 
 private:
-    usize m_len = 0;
+    usize m_len;
 
     alignas(T) std::array<std::byte, cap * sizeof(T)> m_storage;
 };
