@@ -71,10 +71,6 @@ i64 benchmark(Search::Worker& worker, Depth depth) {
 
     for (std::string fen : BENCH_FENS) {
         auto pos = Position::parse(fen);
-        if (!pos) {
-            std::cout << "uhoh\n";
-            exit(-1);
-        }
         worker.launch_search(pos.value(), settings);
         nodes += worker.search_nodes;
     }
