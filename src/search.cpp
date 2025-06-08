@@ -49,9 +49,6 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     movegen.generate_moves(moves);
     for (Move m : moves) {
         Position pos_after = pos.move(m);  // Will require a do_move to handle future features.
-        if (!pos_after.is_valid()) {
-            continue;
-        }
 
         Value value = -search(pos_after, ss + 1, -beta, -alpha, depth - 1);
         if (value > best_value) {
