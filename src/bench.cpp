@@ -81,7 +81,7 @@ i64 benchmark(Search::Worker worker, Depth depth) {
 
     auto end_time = time::Clock::now();
 
-    std::cout << nodes << " nodes " << time::nps(nodes, start_time - end_time) << " nps"
+    std::cout << nodes << " nodes " << time::nps(nodes, end_time - start_time) << " nps"
               << std::endl;
 
     return 0;
