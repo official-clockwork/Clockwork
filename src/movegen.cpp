@@ -41,7 +41,6 @@ void MoveGen::generate_moves(MoveList& moves) {
         return generate_moves_to<true>(moves, ~Bitboard{0}, true);
     case 1:
         return generate_moves_one_checker(moves, checkers);
-    case 2:
     default:
         return generate_moves_two_checkers(moves, checkers);
     }
