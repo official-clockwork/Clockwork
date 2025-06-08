@@ -40,12 +40,14 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
 }
 
 Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
-    if (depth == 0 || ss->ply >= MAX_PLY) {
-        return evaluate(pos);
-    }
     // TODO: search nodes limit condition here
     // ...
     search_nodes++;
+
+    // Return eval (TODO: quiescence) if depth is 0 or we exceed the max ply.
+    if (depth == 0 || ss->ply >= MAX_PLY) {
+        return evaluate(pos);
+    }
 
     MoveList moves;
     MoveGen  movegen{pos};
