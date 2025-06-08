@@ -48,7 +48,7 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
 
         auto curr_time = time::Clock::now();
         
-        std::cout << std::dec << "info score " << format_score() << " depth " << search_depth << " nodes " << search_nodes << " pv " << *ss[0].pv << " nps" << time::nps(search_nodes, curr_time - start_time) << std::endl;
+        std::cout << std::dec << "info score " << format_score() << " depth " << search_depth << " nodes " << search_nodes << " pv " << *ss[0].pv << " nps " << time::nps(search_nodes, curr_time - start_time) << std::endl;
     }
 
     return best_move;
