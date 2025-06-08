@@ -16,6 +16,7 @@ class Worker {
 public:
     Worker() = default;
     void launch_search(Position root_position, UCI::SearchSettings settings);
+    u64 search_nodes;
 
 private:
     Move iterative_deepening(Position root_position, UCI::SearchSettings settings);

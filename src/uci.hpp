@@ -29,6 +29,7 @@ private:
     SearchSettings settings;
 
     void execute_command(const std::string&);
+    void handle_bench(std::istringstream&);
     void handle_go(std::istringstream&);
     void handle_position(std::istringstream&);
     void handle_attacks(std::istringstream&);

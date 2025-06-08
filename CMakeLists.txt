@@ -24,6 +24,8 @@ endif ()
 set(srcs
         src/board.cpp
         src/board.hpp
+        src/bench.cpp
+        src/bench.hpp
         src/common.hpp
         src/geometry.cpp
         src/geometry.hpp

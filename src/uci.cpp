@@ -1,5 +1,6 @@
 #include "uci.hpp"
 #include "search.h"
+#include "bench.hpp"
 
 #include <algorithm>
 #include <ios>
@@ -59,9 +60,21 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_attacks(is);
     } else if (command == "perft") {
         handle_perft(is);
+    } else if (command == "bench") {
+        handle_bench(is);
     } else {
         std::cout << "Unknown command" << std::endl;
     }
+}
+
+void UCIHandler::handle_bench(std::istringstream& is) {
+    Depth depth = 0;
+    if (!(is >> depth)) {
+        is.clear();
+        depth = 2;
+    }
+    Search::Worker worker;
+    Bench::benchmark(worker, depth);
 }
 
 void UCIHandler::handle_go(std::istringstream& is) {

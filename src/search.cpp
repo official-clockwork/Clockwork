@@ -15,6 +15,7 @@ Value mated_in(i32 ply) {
 }
 
 void Worker::launch_search(Position root_position, UCI::SearchSettings settings) {
+    search_nodes = 0;
     // Tm setup (skipped for now)
     Move best_move = iterative_deepening(root_position, settings);
     std::cout << "bestmove " << best_move << std::endl;
@@ -42,6 +43,9 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     if (depth == 0 || ss->ply >= MAX_PLY) {
         return evaluate(pos);
     }
+    // TODO: search nodes limit condition here
+    // ...
+    search_nodes++;
 
     MoveList moves;
     MoveGen  movegen{pos};
