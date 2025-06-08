@@ -163,7 +163,7 @@ public:
         return data()[index];
     }
 
-    // We never access the raw bytes directly except to immediately call `std::contruct_at`.
+    // We never access the raw bytes directly except to immediately call `std::construct_at`.
     // This means we don't need to call `std::launder`.
     // Unfortunately, the reinterpret_cast means this can't be constexpr.
     [[nodiscard]] T* data() {
