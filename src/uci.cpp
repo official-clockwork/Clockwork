@@ -1,6 +1,6 @@
 #include "uci.hpp"
-#include "search.h"
 #include "bench.hpp"
+#include "search.h"
 
 #include <algorithm>
 #include <ios>
