@@ -80,4 +80,3 @@ void benchmark(Search::Worker& worker, Depth depth) {
               << std::endl;
 }
 }
-}
