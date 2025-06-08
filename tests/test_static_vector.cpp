@@ -109,12 +109,7 @@ void special_member_funs() {
 
 void misc() {
     REQUIRE(ctr == 0);
-    // can't use non-empty initializer list with `TestType` because we don't control the lifetime
-    // of the objects in them, so `ctr` becomes unreliable
-    StaticVector<TestType, 11> vec;
-    vec.push_back(TestType(1));
-    vec.push_back(TestType(2));
-    vec.push_back(TestType(3));
+    StaticVector<TestType, 11> vec{TestType(1), TestType(2), TestType(3)};
     REQUIRE(vec.size() == 3);
     vec.emplace_back(4);
     REQUIRE(ctr == 4);
