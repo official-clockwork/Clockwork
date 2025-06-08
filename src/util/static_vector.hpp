@@ -213,9 +213,9 @@ public:
     }
 
 private:
-    usize m_len;
-
     alignas(T) std::array<std::byte, cap * sizeof(T)> m_storage;
+
+    usize m_len;
 };
 
 }  // namespace Clockwork
