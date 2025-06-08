@@ -39,10 +39,7 @@ struct TestType {
         ctr += 1;
     }
 
-    TestType& operator=(const TestType& other) {
-        x = other.x;
-        return *this;
-    }
+    TestType& operator=(const TestType& other) = default;
 
     friend bool operator==(const TestType& lhs, const TestType& rhs) = default;
 };
@@ -82,8 +79,8 @@ void special_member_funs() {
         auto copy = vec;
         REQUIRE(ctr == 6);
         REQUIRE(copy == vec);
-        copy = copy;
-        copy = std::move(copy);
+        copy = copy;             // NOLINT
+        copy = std::move(copy);  // NOLINT
         REQUIRE(ctr == 6);
         REQUIRE(copy.end() - copy.begin() == 3);
         auto copy2 = std::move(copy);
@@ -94,9 +91,9 @@ void special_member_funs() {
         REQUIRE(ctr == 6);
         copy2 = copy;
         REQUIRE(ctr == 9);
-        REQUIRE(vec.size() == copy.size());
+        REQUIRE(vec.size() == copy2.size());
         for (usize i = 0; i < vec.size(); ++i) {
-            REQUIRE(vec[i] == copy[i]);
+            REQUIRE(vec[i] == copy2[i]);
         }
     }
     REQUIRE(ctr == 3);
