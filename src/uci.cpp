@@ -68,7 +68,7 @@ void UCIHandler::execute_command(const std::string& line) {
 }
 
 void UCIHandler::handle_bench(std::istringstream& is) {
-    Depth depth = 0;
+    Depth depth = 2;
     if (!(is >> depth)) {
         is.clear();
         depth = 2;

@@ -61,7 +61,7 @@ const std::array<std::string, 50> BENCH_FENS = {
    "3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
    "2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"}};
 
-i64 benchmark(Search::Worker worker, Depth depth) {
+i64 benchmark(Search::Worker &worker, Depth depth) {
     u64 nodes = 0;
 
     // Mock search limits for bench
