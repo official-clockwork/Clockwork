@@ -41,10 +41,10 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
         best_move   = *ss[0].pv;
 
         auto format_score = [=]() {
-            if (score < -VALUE_ISMATE && score > -VALUE_ISMATE) {
+            if (score < -VALUE_ISMATE && score > -VALUE_MATED) {
                 return "mate " + std::to_string(-(VALUE_MATED + score + 2) / 2);
             }
-            if (score > VALUE_ISMATE && score < VALUE_ISMATE) {
+            if (score > VALUE_ISMATE && score < VALUE_MATED) {
                 return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
             }
             return "cp " + std::to_string(score);
