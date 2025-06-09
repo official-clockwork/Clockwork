@@ -40,6 +40,8 @@ set(srcs
         src/search.cpp
         src/search.hpp
         src/square.hpp
+        src/tm.hpp
+        src/tm.cpp
         src/uci.cpp
         src/uci.hpp
         src/util/bit.hpp

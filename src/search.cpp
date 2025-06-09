@@ -2,10 +2,12 @@
 #include "board.hpp"
 #include "common.hpp"
 #include "movegen.hpp"
+#include "tm.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
 #include <array>
 #include <iostream>
+#include <limits>
 
 namespace Clockwork {
 namespace Search {
@@ -14,30 +16,49 @@ Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
+
+void Worker::check_tm_hard_limit() {
+    time::TimePoint now = time::Clock::now();
+    if (now >= m_search_limits.hard_time_limit) {
+        m_stopped = true;
+    }
+}
+
 void Worker::launch_search(Position root_position, UCI::SearchSettings settings) {
-    search_nodes = 0;
-    // Tm setup (skipped for now)
-    Move best_move = iterative_deepening(root_position, settings);
+    m_search_start = time::Clock::now();
+    search_nodes   = 0;
+    m_stopped      = false;
+    // TODO: time setup only needed by the main worker thread
+    m_search_limits = {
+      .hard_time_limit =
+        TM::compute_hard_limit(m_search_start, settings, root_position.active_color()),
+      .soft_node_limit =
+        settings.soft_nodes > 0 ? settings.soft_nodes : std::numeric_limits<u64>::max(),
+      .hard_node_limit =
+        settings.hard_nodes > 0 ? settings.hard_nodes : std::numeric_limits<u64>::max(),
+      .depth_limit = settings.depth > 0 ? settings.depth : std::numeric_limits<Depth>::max()};
+
+    std::cout << "limits: " << m_search_limits.hard_node_limit << " - "
+              << m_search_limits.soft_node_limit << " - " << m_search_limits.depth_limit
+              << std::endl;
+    Move best_move = iterative_deepening(root_position);
     std::cout << "bestmove " << best_move << std::endl;
 }
 
-Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings settings) {
+Move Worker::iterative_deepening(Position root_position) {
 
     std::array<Stack, MAX_PLY + 1> ss;
     std::array<Move, MAX_PLY + 1>  pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
-    Value                          best_value;
     Move                           best_move;
-    auto                           start_time = time::Clock::now();
 
-    Depth root_depth = settings.depth;
+    Depth root_depth = m_search_limits.depth_limit;
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
         ss[i].pv = &pv[i];
     }
 
     for (Depth search_depth = 1; search_depth <= root_depth; search_depth++) {
         Value score = search(root_position, &ss[0], alpha, beta, search_depth, 0);
-        best_value  = score;
         best_move   = *ss[0].pv;
 
         auto format_score = [=]() {
@@ -52,10 +73,18 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
 
         auto curr_time = time::Clock::now();
 
+        if (m_stopped) {
+            break;
+        }
+
         std::cout << std::dec << "info depth " << search_depth << " score " << format_score()
                   << " nodes " << search_nodes << " nps "
-                  << time::nps(search_nodes, curr_time - start_time) << " pv " << *ss[0].pv
+                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << *ss[0].pv
                   << std::endl;
+
+        if (search_nodes >= m_search_limits.soft_node_limit) {
+            break;
+        }
     }
 
     return best_move;
@@ -69,6 +98,17 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Return eval (TODO: quiescence) if depth is 0 or we exceed the max ply.
     if (depth == 0 || ply >= MAX_PLY) {
         return evaluate(pos);
+    }
+    if ((search_nodes & 2047) == 0) {
+        // TODO: add control for being main search thread here
+        check_tm_hard_limit();
+    }
+    if (search_nodes > m_search_limits.hard_node_limit) {
+        std::cout << "timeout\n";
+        m_stopped = true;
+    }
+    if (m_stopped) {
+        return 0;
     }
 
     MoveList moves;

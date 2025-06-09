@@ -3,17 +3,21 @@
 #include <string>
 #include <vector>
 
+#include "common.hpp"
 #include "position.hpp"
 
 namespace Clockwork::UCI {
 
 struct SearchSettings {
-    i32 depth     = 0;
-    i32 w_time    = 0;
-    i32 b_time    = 0;
-    i32 w_inc     = 0;
-    i32 b_inc     = 0;
-    i32 move_time = 0;
+    Color stm        = Color::White;
+    i32   depth      = 0;
+    u64   w_time     = 0;
+    u64   b_time     = 0;
+    u64   w_inc      = 0;
+    u64   b_inc      = 0;
+    u64   move_time  = 0;
+    u64   hard_nodes = 0;
+    u64   soft_nodes = 0;
 };
 
 class UCIHandler {

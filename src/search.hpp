@@ -11,17 +11,28 @@ struct Stack {
     Move* pv;
 };
 
+struct SearchLimits {
+    time::TimePoint hard_time_limit;
+    u64             soft_node_limit;
+    u64             hard_node_limit;
+    Depth           depth_limit;
+};
+
 class Worker {
 public:
+    u64 search_nodes;
     Worker() = default;
     void launch_search(Position root_position, UCI::SearchSettings settings);
-    u64  search_nodes;
 
 private:
-    Move iterative_deepening(Position root_position, UCI::SearchSettings settings);
+    bool            m_stopped;
+    time::TimePoint m_search_start;
+    SearchLimits    m_search_limits;
+    Move            iterative_deepening(Position root_position);
 
     Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
     Value evaluate(const Position& pos);
+    void  check_tm_hard_limit();
 };
 }
 }
