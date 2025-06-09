@@ -2,8 +2,6 @@
 
 #include <array>
 #include <bit>
-#include <iomanip>
-#include <iostream>
 #include <x86intrin.h>
 
 #include "util/bit.hpp"

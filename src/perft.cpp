@@ -1,9 +1,9 @@
 #include <chrono>
-#include <iomanip>
 #include <iostream>
 
 #include "movegen.hpp"
 #include "position.hpp"
+#include "util/ios_fmt_guard.hpp"
 #include "util/types.hpp"
 
 namespace Clockwork {
@@ -44,6 +44,8 @@ u64 perft(const Position& position, usize depth) {
 }
 
 void split_perft(const Position& position, usize depth) {
+    IosFmtGuard guard{std::cout};
+
     auto start_time = std::chrono::steady_clock::now();
 
     u64 total = core<true>(position, depth);
@@ -53,14 +55,9 @@ void split_perft(const Position& position, usize depth) {
     f64                        elapsed_ms = elapsed.count() * 1000.0;
     f64                        mnps       = static_cast<f64>(total) / elapsed.count() / 1000000.0;
 
-    std::ios state(nullptr);
-    state.copyfmt(std::cout);
-
     std::cout << std::setprecision(1) << std::fixed;
     std::cout << "perft to depth " << depth << " complete in " << elapsed_ms << "ms (" << mnps
               << " Mnps)" << std::endl;
-
-    std::cout.copyfmt(state);
 }
 
 }

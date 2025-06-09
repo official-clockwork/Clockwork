@@ -1,15 +1,14 @@
 #include "board.hpp"
 
-#include <iomanip>
 #include <iostream>
 
 #include "square.hpp"
+#include "util/ios_fmt_guard.hpp"
 
 namespace Clockwork {
 
 std::ostream& operator<<(std::ostream& os, const Wordboard& at) {
-    std::ios state{nullptr};
-    state.copyfmt(os);
+    IosFmtGuard guard{os};
 
     for (i32 rank = 7; rank >= 0; rank--) {
         for (i32 file = 0; file < 8; file++) {
@@ -21,7 +20,6 @@ std::ostream& operator<<(std::ostream& os, const Wordboard& at) {
         os << std::endl;
     }
 
-    os.copyfmt(state);
     return os;
 }
 
