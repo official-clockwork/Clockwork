@@ -11,11 +11,11 @@ namespace Clockwork::UCI {
 struct SearchSettings {
     Color stm        = Color::White;
     i32   depth      = 0;
-    u64   w_time     = 0;
-    u64   b_time     = 0;
-    u64   w_inc      = 0;
-    u64   b_inc      = 0;
-    u64   move_time  = 0;
+    i64   w_time     = -1;
+    i64   b_time     = -1;
+    i64   w_inc      = -1;
+    i64   b_inc      = -1;
+    i64   move_time  = -1;
     u64   hard_nodes = 0;
     u64   soft_nodes = 0;
 };

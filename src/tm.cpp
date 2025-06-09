@@ -13,7 +13,7 @@ time::TimePoint compute_hard_limit(time::TimePoint            search_start,
 
     auto hard_limit = TimePoint::max();
 
-    if (settings.w_time > 0) {
+    if (settings.w_time >= 0) {
         const auto compute_buffer_time = [&]() -> u64 {
             if (stm == Color::White) {
                 return settings.w_time / 20 + settings.w_inc / 2;
@@ -24,7 +24,7 @@ time::TimePoint compute_hard_limit(time::TimePoint            search_start,
         hard_limit = min(hard_limit, search_start + Milliseconds(compute_buffer_time()));
     }
 
-    if (settings.move_time > 0) {
+    if (settings.move_time >= 0) {
         std::cout << "movetime " << settings.move_time << "\n";
         hard_limit = min(hard_limit, search_start + Milliseconds(settings.move_time));
     }

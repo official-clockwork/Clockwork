@@ -86,14 +86,19 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.depth;
         } else if (token == "movetime") {
             is >> settings.move_time;
+            settings.move_time = std::max(i64(0), settings.move_time);
         } else if (token == "wtime") {
             is >> settings.w_time;
+            settings.w_time = std::max(i64(0), settings.w_time);
         } else if (token == "btime") {
             is >> settings.b_time;
+            settings.b_time = std::max(i64(0), settings.b_time);
         } else if (token == "winc") {
             is >> settings.w_inc;
+            settings.w_inc = std::max(i64(0), settings.w_inc);
         } else if (token == "binc") {
             is >> settings.b_inc;
+            settings.b_inc = std::max(i64(0), settings.b_inc);
         } else if (token == "softnodes") {
             is >> settings.soft_nodes;
         } else if (token == "nodes") {
