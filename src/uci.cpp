@@ -44,7 +44,7 @@ void UCIHandler::execute_command(const std::string& line) {
     is >> std::skipws >> command;
 
     if (command == "uci") {
-        std::cout << "id Name Clockwork\n";
+        std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "uciok" << std::endl;
     } else if (command == "isready") {
