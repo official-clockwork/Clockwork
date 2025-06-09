@@ -41,10 +41,10 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
         best_move   = *ss[0].pv;
 
         auto format_score = [=]() {
-            if (score < -VALUE_ISMATE && score > -VALUE_MATED) {
+            if (score < -VALUE_WIN && score > -VALUE_MATED) {
                 return "mate " + std::to_string(-(VALUE_MATED + score + 2) / 2);
             }
-            if (score > VALUE_ISMATE && score < VALUE_MATED) {
+            if (score > VALUE_WIN && score < VALUE_MATED) {
                 return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
             }
             return "cp " + std::to_string(score);
@@ -52,9 +52,10 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
 
         auto curr_time = time::Clock::now();
 
-        std::cout << std::dec << "info score " << format_score() << " depth " << search_depth
-                  << " nodes " << search_nodes << " pv " << *ss[0].pv << " nps "
-                  << time::nps(search_nodes, curr_time - start_time) << std::endl;
+        std::cout << std::dec << "info depth " << search_depth << " score " << format_score()
+                  << " nodes " << search_nodes << " nps "
+                  << time::nps(search_nodes, curr_time - start_time) << " pv " << *ss[0].pv
+                  << std::endl;
     }
 
     return best_move;
