@@ -28,7 +28,7 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
     Value                          best_value;
     Move                           best_move;
-    auto start_time = time::Clock::now();
+    auto                           start_time = time::Clock::now();
 
     Depth root_depth = settings.depth;
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
@@ -41,14 +41,20 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
         best_move   = *ss[0].pv;
 
         auto format_score = [=]() {
-            if (score < -VALUE_ISMATE && score > -VALUE_ISMATE) return "mate " + std::to_string(-(VALUE_MATED + score + 2) / 2);
-            if (score > VALUE_ISMATE && score < VALUE_ISMATE) return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
+            if (score < -VALUE_ISMATE && score > -VALUE_ISMATE) {
+                return "mate " + std::to_string(-(VALUE_MATED + score + 2) / 2);
+            }
+            if (score > VALUE_ISMATE && score < VALUE_ISMATE) {
+                return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
+            }
             return "cp " + std::to_string(score);
         };
 
         auto curr_time = time::Clock::now();
-        
-        std::cout << std::dec << "info score " << format_score() << " depth " << search_depth << " nodes " << search_nodes << " pv " << *ss[0].pv << " nps " << time::nps(search_nodes, curr_time - start_time) << std::endl;
+
+        std::cout << std::dec << "info score " << format_score() << " depth " << search_depth
+                  << " nodes " << search_nodes << " pv " << *ss[0].pv << " nps "
+                  << time::nps(search_nodes, curr_time - start_time) << std::endl;
     }
 
     return best_move;
