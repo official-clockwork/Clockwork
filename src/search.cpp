@@ -16,7 +16,6 @@ Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
-
 void Worker::check_tm_hard_limit() {
     time::TimePoint now = time::Clock::now();
     if (now >= m_search_limits.hard_time_limit) {
@@ -76,7 +75,7 @@ Move Worker::iterative_deepening(Position root_position) {
             }
             return "cp " + std::to_string(score);
         };
-        
+
         // Get current time
         auto curr_time = time::Clock::now();
 
