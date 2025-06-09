@@ -36,7 +36,7 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
     }
 
     for (Depth search_depth = 1; search_depth <= root_depth; search_depth++) {
-        Value score = search(root_position, &ss[0], alpha, beta, root_depth, 0);
+        Value score = search(root_position, &ss[0], alpha, beta, search_depth, 0);
         best_value  = score;
         best_move   = *ss[0].pv;
 
