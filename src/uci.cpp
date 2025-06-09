@@ -78,6 +78,8 @@ void UCIHandler::handle_bench(std::istringstream& is) {
 }
 
 void UCIHandler::handle_go(std::istringstream& is) {
+    // Clear any previous settings
+    settings = {};
     std::string token;
     while (is >> token) {
         if (token == "depth") {

@@ -3,7 +3,7 @@
 #include "util/types.hpp"
 
 namespace Clockwork::TM {
-constexpr time::Duration UCI_LATENCY(50);
+constexpr time::Milliseconds UCI_LATENCY(50);
 time::TimePoint          compute_hard_limit(time::TimePoint            search_start,
                                             const UCI::SearchSettings& settings,
                                             const Color                stm);

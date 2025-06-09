@@ -2,6 +2,7 @@
 #include "uci.hpp"
 #include "util/types.hpp"
 #include <limits>
+#include <ratio>
 
 namespace Clockwork::TM {
 time::TimePoint compute_hard_limit(time::TimePoint            search_start,
@@ -20,11 +21,12 @@ time::TimePoint compute_hard_limit(time::TimePoint            search_start,
                 return settings.b_time / 20 + settings.b_inc / 2;
             }
         };
-        hard_limit = min(hard_limit, search_start + Duration(compute_buffer_time()));
+        hard_limit = min(hard_limit, search_start + Milliseconds(compute_buffer_time()));
     }
 
     if (settings.move_time > 0) {
-        hard_limit = min(hard_limit, search_start + Duration(settings.move_time));
+        std::cout << "movetime " << settings.move_time << "\n";
+        hard_limit = min(hard_limit, search_start + Milliseconds(settings.move_time));
     }
 
     return hard_limit - UCI_LATENCY;

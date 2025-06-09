@@ -33,10 +33,10 @@ void Worker::launch_search(Position root_position, UCI::SearchSettings settings)
       .hard_time_limit =
         TM::compute_hard_limit(m_search_start, settings, root_position.active_color()),
       .soft_node_limit =
-        settings.soft_nodes > 0 ? settings.soft_nodes : std::numeric_limits<u64>::max(),
+        settings.soft_nodes > 0 ? settings.soft_nodes : 999999999,
       .hard_node_limit =
-        settings.hard_nodes > 0 ? settings.hard_nodes : std::numeric_limits<u64>::max(),
-      .depth_limit = settings.depth > 0 ? settings.depth : std::numeric_limits<Depth>::max()};
+        settings.hard_nodes > 0 ? settings.hard_nodes : 999999999,
+      .depth_limit = settings.depth > 0 ? settings.depth : MAX_PLY};
 
     std::cout << "limits: " << m_search_limits.hard_node_limit << " - "
               << m_search_limits.soft_node_limit << " - " << m_search_limits.depth_limit
@@ -59,6 +59,11 @@ Move Worker::iterative_deepening(Position root_position) {
 
     for (Depth search_depth = 1; search_depth <= root_depth; search_depth++) {
         Value score = search(root_position, &ss[0], alpha, beta, search_depth, 0);
+
+        if (m_stopped) {
+            break;
+        }
+
         best_move   = *ss[0].pv;
 
         auto format_score = [=]() {
@@ -72,10 +77,6 @@ Move Worker::iterative_deepening(Position root_position) {
         };
 
         auto curr_time = time::Clock::now();
-
-        if (m_stopped) {
-            break;
-        }
 
         std::cout << std::dec << "info depth " << search_depth << " score " << format_score()
                   << " nodes " << search_nodes << " nps "
