@@ -37,9 +37,6 @@ void Worker::launch_search(Position root_position, UCI::SearchSettings settings)
                                                                   : std::numeric_limits<u64>::max(),
                        .depth_limit     = settings.depth > 0 ? settings.depth : MAX_PLY};
 
-    std::cout << "limits: " << m_search_limits.hard_node_limit << " - "
-              << m_search_limits.soft_node_limit << " - " << m_search_limits.depth_limit
-              << std::endl;
     Move best_move = iterative_deepening(root_position);
     std::cout << "bestmove " << best_move << std::endl;
 }
@@ -104,7 +101,6 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         check_tm_hard_limit();
     }
     if (search_nodes > m_search_limits.hard_node_limit) {
-        std::cout << "timeout\n";
         m_stopped = true;
     }
     if (m_stopped) {
