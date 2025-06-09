@@ -10,7 +10,7 @@ time::TimePoint compute_hard_limit(time::TimePoint            search_start,
     using namespace std;
     using namespace time;
 
-    auto hard_limit = TimePoint{time::Milliseconds{numeric_limits<uint64_t>::max()}};
+    auto hard_limit = TimePoint::max();
 
     if (settings.w_time > 0) {
         const auto compute_buffer_time = [&]() -> u64 {
