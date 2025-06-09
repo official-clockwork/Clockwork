@@ -32,20 +32,20 @@ Move Worker::iterative_deepening(Position root_position, UCI::SearchSettings set
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
         ss[i].pv = &pv[i];
     }
-    Value score = search(root_position, &ss[0], alpha, beta, root_depth);
+    Value score = search(root_position, &ss[0], alpha, beta, root_depth, 0);
     best_value  = score;
 
     Move best_move = *ss[0].pv;
     return best_move;
 }
 
-Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
+Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
     // TODO: search nodes limit condition here
     // ...
     search_nodes++;
 
     // Return eval (TODO: quiescence) if depth is 0 or we exceed the max ply.
-    if (depth == 0 || ss->ply >= MAX_PLY) {
+    if (depth == 0 || ply >= MAX_PLY) {
         return evaluate(pos);
     }
 
@@ -56,11 +56,11 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     for (Move m : moves) {
         Position pos_after = pos.move(m);  // Will require a do_move to handle future features.
 
-        Value value = -search(pos_after, ss + 1, -beta, -alpha, depth - 1);
+        Value value = -search(pos_after, ss + 1, -beta, -alpha, depth - 1, ply + 1);
         if (value > best_value) {
             best_value = value;
-            if (ss->ply == 0) {
-                ss->pv[0] = m;  // No pv update for now, just bestmove
+            if (ply == 0) {
+                ss->pv[ply] = m;  // No pv update for now, just bestmove
             }
             // if (value > alpha) {
             //
@@ -74,7 +74,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
     if (best_value == -VALUE_INF) {
         if (pos.is_in_check()) {
-            return mated_in(ss->ply);
+            return mated_in(ply);
         } else {
             return 0;
         }

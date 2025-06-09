@@ -9,7 +9,6 @@ namespace Clockwork {
 namespace Search {
 struct Stack {
     Move* pv;
-    i32   ply;
 };
 
 class Worker {
@@ -21,7 +20,7 @@ public:
 private:
     Move iterative_deepening(Position root_position, UCI::SearchSettings settings);
 
-    Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth);
+    Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
     Value evaluate(const Position& pos);
 };
 }
