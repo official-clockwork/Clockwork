@@ -122,6 +122,10 @@ public:
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 
+    [[nodiscard]] HashKey get_hash_key() const;
+
+    [[nodiscard]] bool is_reversible(Move move);
+
     const std::array<Wordboard, 2> calc_attacks_slow();
     const std::array<u16, 2>       calc_attacks_slow(Square sq);
 

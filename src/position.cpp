@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "board.hpp"
+#include "common.hpp"
 #include "geometry.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
@@ -623,6 +624,7 @@ std::optional<Position> Position::parse(std::string_view board,
 
 HashKey Position::calc_hash_key_slow() {
     HashKey key = 0;
+
     // Iterate over all the pieces
     for (size_t sq_idx = 0; sq_idx < 64; sq_idx++) {
         Place p = m_board.mailbox[sq_idx];
@@ -711,6 +713,15 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
     os << position.m_50mr << ' ' << (position.m_ply / 2 + 1);
 
     return os;
+}
+
+HashKey Position::get_hash_key() const {
+    return m_hash_key;
+}
+
+bool Position::is_reversible(Move move) {
+    return !(move.is_capture() || move.is_promotion() || move.is_castle()
+             || (m_board.mailbox[move.from().raw].ptype() == PieceType::Pawn));
 }
 
 }
