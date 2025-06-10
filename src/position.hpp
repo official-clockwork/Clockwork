@@ -139,7 +139,7 @@ public:
 
     bool                 operator==(const Position&) const = default;
     friend std::ostream& operator<<(std::ostream& os, const Position& position);
-    HashKey calc_hash_key_slow();
+    HashKey              calc_hash_key_slow();
 
 private:
     std::array<Wordboard, 2>            m_attack_table{};
@@ -160,10 +160,10 @@ private:
     incrementally_mutate_piece(bool old_color, PieceId old_id, Square sq, bool new_color, Place p);
     void incrementally_move_piece(bool color, Square from, Square to, Place p);
 
-    void    remove_attacks(bool color, PieceId id);
-    v512    toggle_rays(Square sq);
-    void    add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
-    void    add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
+    void remove_attacks(bool color, PieceId id);
+    v512 toggle_rays(Square sq);
+    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
+    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
 };
 
 }

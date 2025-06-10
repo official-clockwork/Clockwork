@@ -110,7 +110,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     search_nodes++;
 
     // Repetition check
-    if (m_repetition_info.detect_repetition(ply)){
+    if (m_repetition_info.detect_repetition(ply)) {
         return 0;
     }
 

@@ -69,7 +69,7 @@ void benchmark(Search::Worker& worker, Depth depth) {
     auto start_time = time::Clock::now();
 
     for (std::string fen : BENCH_FENS) {
-        auto pos = Position::parse(fen);
+        auto           pos = Position::parse(fen);
         RepetitionInfo dummy;
         worker.launch_search(pos.value(), dummy, settings);
         nodes += worker.search_nodes;
