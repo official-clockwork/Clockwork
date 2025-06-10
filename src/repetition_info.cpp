@@ -1,4 +1,5 @@
 #include "repetition_info.hpp"
+#include <cstddef>
 
 namespace Clockwork {
 
@@ -27,14 +28,13 @@ bool RepetitionInfo::detect_repetition(size_t root_ply) {
     // Count how many times we encounter the hash
     i32 counter = 0;
 
-    // Start from two moves ago (last move cannot be a repetition)
-    for (size_t idx = 5; idx <= m_index; idx += 2) {
-
+    // Start from two moves ago
+    for (size_t idx = 4; idx < m_index; idx += 2) {
         // Do the hashes match?
-        if (m_repetition_table[m_index - idx].first == query) {
+        if (m_repetition_table[m_index - 1 - idx].first == query) {
 
             // If the match happened inside the search tree, twofold repetition check
-            if (idx < root_ply) {
+            if (idx <= root_ply) {
                 return true;
             }
 
@@ -44,7 +44,7 @@ bool RepetitionInfo::detect_repetition(size_t root_ply) {
             }
 
             // Shortcircuit (only after checking the hash) if the move is nonreversible
-            if (!m_repetition_table[m_index - idx].second) {
+            if (!m_repetition_table[m_index - 1 - idx].second) {
                 return false;
             }
         }

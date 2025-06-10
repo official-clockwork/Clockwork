@@ -15,6 +15,5 @@ public:
 private:
     std::array<std::pair<HashKey, bool>, MAX_PLY * 2> m_repetition_table;
     size_t                                            m_index;
-    size_t                                            m_ply_from_null;
 };
 }
