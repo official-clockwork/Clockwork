@@ -44,6 +44,8 @@ set(srcs
         src/tm.cpp
         src/uci.cpp
         src/uci.hpp
+        src/zobrist.cpp
+        src/zobrist.hpp
         src/util/bit.hpp
         src/util/static_vector.hpp
         src/util/types.hpp

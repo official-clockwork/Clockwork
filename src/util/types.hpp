@@ -27,8 +27,9 @@ using i64 = std::int64_t;
 using i128 = __int128;
 #pragma GCC diagnostic pop
 
-using Value = i32;
-using Depth = i32;
+using Value   = i32;
+using Depth   = i32;
+using HashKey = u64;
 
 using isize = std::intptr_t;
 using usize = std::size_t;
