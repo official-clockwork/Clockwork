@@ -8,7 +8,6 @@ project(
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
-include_directories(src)
 
 #Optimizations
 set(CLOCKWORK_MARCH_TARGET "native" CACHE STRING "Specify the target architecture for -march (e.g., native, skylake, znver2). Set to OFF or empty to disable.")
@@ -57,6 +56,7 @@ set(srcs
 )
 
 add_executable(clockwork ${srcs} src/main.cpp)
+target_include_directories(clockwork PRIVATE src)
 set_target_properties(clockwork PROPERTIES
         CXX_STANDARD 20
         CXX_STANDARD_REQUIRED YES
@@ -67,9 +67,11 @@ enable_testing()
 set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
 function(do_test name)
     add_executable(${name} tests/${name}.cpp ${srcs})
+    target_include_directories(${name} PRIVATE tests src)
     add_test(${name} ${name})
 endfunction()
 
+do_test(test_repetition)
 do_test(test_static_vector)
 do_test(test_perft)
 do_test(test_position)

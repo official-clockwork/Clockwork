@@ -5,10 +5,7 @@
 #include <vector>
 
 #include "position.hpp"
-
-#define REQUIRE(x) \
-    if (!(x)) \
-        std::exit(1);
+#include "test.hpp"
 
 using namespace Clockwork;
 

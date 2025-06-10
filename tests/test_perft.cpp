@@ -4,10 +4,10 @@
 #include <tuple>
 #include <vector>
 
-#include <iomanip>
-
 #include "perft.hpp"
 #include "position.hpp"
+#include <cstdlib>
+#include <iomanip>
 
 using namespace Clockwork;
 
