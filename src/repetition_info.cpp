@@ -27,9 +27,9 @@ bool RepetitionInfo::detect_repetition(size_t root_ply) {
     // Count how many times we encounter the hash
     i32 counter = 0;
 
-    // Start from two moves ago (last move cannot be a repetition) 
+    // Start from two moves ago (last move cannot be a repetition)
     for (size_t idx = 5; idx <= m_index; idx += 2) {
-        
+
         // Do the hashes match?
         if (m_repetition_table[m_index - idx].first == query) {
 
@@ -54,7 +54,7 @@ bool RepetitionInfo::detect_repetition(size_t root_ply) {
     return false;
 }
 
-void RepetitionInfo::reset(){
+void RepetitionInfo::reset() {
     m_index = 0;
 }
 
