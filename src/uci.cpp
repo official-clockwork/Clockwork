@@ -107,7 +107,7 @@ void UCIHandler::handle_go(std::istringstream& is) {
         }
     }
     Search::Worker worker;
-    worker.launch_search(m_position, settings);
+    worker.launch_search(m_position, m_repetition_info, settings);
 }
 
 void UCIHandler::handle_position(std::istringstream& is) {

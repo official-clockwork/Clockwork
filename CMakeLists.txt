@@ -37,6 +37,8 @@ set(srcs
         src/perft.hpp
         src/position.cpp
         src/position.hpp
+        src/repetition_info.hpp
+        src/repetition_info.cpp
         src/search.cpp
         src/search.hpp
         src/square.hpp

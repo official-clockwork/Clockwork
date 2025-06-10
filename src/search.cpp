@@ -23,10 +23,17 @@ void Worker::check_tm_hard_limit() {
     }
 }
 
-void Worker::launch_search(Position root_position, UCI::SearchSettings settings) {
+void Worker::launch_search(Position            root_position,
+                           RepetitionInfo      repetition_info,
+                           UCI::SearchSettings settings) {
+    // Search setup
     m_search_start = time::Clock::now();
     search_nodes   = 0;
     m_stopped      = false;
+
+    // Get a copy of the repetition_info to futureproof for multithreaded search
+    m_repetition_info = repetition_info;
+
     // TODO: time setup only needed by the main worker thread
     m_search_limits = {.hard_time_limit = TM::compute_hard_limit(m_search_start, settings,
                                                                  root_position.active_color()),
@@ -35,8 +42,10 @@ void Worker::launch_search(Position root_position, UCI::SearchSettings settings)
                        .hard_node_limit = settings.hard_nodes > 0 ? settings.hard_nodes
                                                                   : std::numeric_limits<u64>::max(),
                        .depth_limit     = settings.depth > 0 ? settings.depth : MAX_PLY};
+
     // Run iterative deepening search
     Move best_move = iterative_deepening(root_position);
+
     // Print (and make sure to flush) the best move
     std::cout << "bestmove " << best_move << std::endl;
 }
@@ -100,6 +109,11 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // ...
     search_nodes++;
 
+    // Repetition check
+    if (m_repetition_info.detect_repetition(ply)){
+        return 0;
+    }
+
     // Return eval (TODO: quiescence) if depth is 0 or we exceed the max ply.
     if (depth == 0 || ply >= MAX_PLY) {
         return evaluate(pos);
@@ -129,9 +143,18 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
     // Iterate over the move list
     for (Move m : moves) {
-        Position pos_after = pos.move(m);  // Will require a do_move to handle future features.
+        // Do move
+        Position pos_after = pos.move(m);
 
+        // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
+        m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
+
+        // Get search value
         Value value = -search(pos_after, ss + 1, -beta, -alpha, depth - 1, ply + 1);
+
+        // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
+        m_repetition_info.pop();
+
         if (value > best_value) {
             best_value = value;
             if (ply == 0) {

@@ -22,12 +22,15 @@ class Worker {
 public:
     u64 search_nodes;
     Worker() = default;
-    void launch_search(Position root_position, UCI::SearchSettings settings);
+    void launch_search(Position            root_position,
+                       RepetitionInfo      repetition_info,
+                       UCI::SearchSettings settings);
 
 private:
     bool            m_stopped;
     time::TimePoint m_search_start;
     SearchLimits    m_search_limits;
+    RepetitionInfo  m_repetition_info;
     Move            iterative_deepening(Position root_position);
 
     Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
