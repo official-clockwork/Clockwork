@@ -59,6 +59,10 @@ struct Move {
         return raw & static_cast<u16>(MoveFlags::PromotionBit);
     }
 
+    [[nodiscard]] constexpr bool is_castle() const {
+        return raw & static_cast<u16>(MoveFlags::Castle);
+    }
+
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {
         if (!is_promotion()) {
             return std::nullopt;
