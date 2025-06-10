@@ -61,6 +61,10 @@ struct RookInfo {
         return !aside.is_valid() && !hside.is_valid();
     }
 
+    [[nodiscard]] constexpr size_t as_index() const {
+        return static_cast<size_t>(aside.is_valid()) | (static_cast<size_t>(hside.is_valid()) << 1);
+    }
+
     constexpr bool operator==(const RookInfo&) const = default;
 };
 
@@ -143,6 +147,7 @@ private:
     Color                               m_active_color{};
     Square                              m_enpassant = Square::invalid();
     std::array<RookInfo, 2>             m_rook_info;
+    HashKey                             m_hash_key;
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq);
     void incrementally_add_piece(bool color, Place p, Square sq);
@@ -150,10 +155,11 @@ private:
     incrementally_mutate_piece(bool old_color, PieceId old_id, Square sq, bool new_color, Place p);
     void incrementally_move_piece(bool color, Square from, Square to, Place p);
 
-    void remove_attacks(bool color, PieceId id);
-    v512 toggle_rays(Square sq);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
+    void    remove_attacks(bool color, PieceId id);
+    v512    toggle_rays(Square sq);
+    void    add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
+    void    add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
+    HashKey calc_hash_key_slow();
 };
 
 }

@@ -8,6 +8,7 @@
 #include "board.hpp"
 #include "geometry.hpp"
 #include "util/types.hpp"
+#include "zobrist.hpp"
 
 namespace Clockwork {
 
@@ -615,8 +616,39 @@ std::optional<Position> Position::parse(std::string_view board,
     }
 
     result.m_attack_table = result.calc_attacks_slow();
+    result.m_hash_key     = result.calc_hash_key_slow();
 
     return result;
+}
+
+HashKey Position::calc_hash_key_slow() {
+    HashKey key = 0;
+    // Iterate over all the pieces
+    for (size_t sq_idx = 0; sq_idx < 64; sq_idx++) {
+        Place p = m_board.mailbox[sq_idx];
+        if (p.is_empty()) {
+            continue;
+        }
+        key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(p.color())]
+                                            [static_cast<size_t>(p.ptype())][sq_idx];
+    }
+
+    // Add ep if available
+    if (m_enpassant != Square::invalid()) {
+        key ^= Zobrist::en_passant_zobrist[m_enpassant.raw];
+    }
+
+    // Add castling
+    // We may consider putting this as a separate function
+    size_t castle_index = m_rook_info[0].as_index() | (m_rook_info[1].as_index() << 1);
+    key ^= Zobrist::castling_zobrist[castle_index];
+
+    // Add stm
+    if (m_active_color == Color::Black) {
+        key ^= Zobrist::side_key;
+    }
+
+    return key;
 }
 
 std::ostream& operator<<(std::ostream& os, const Position& position) {

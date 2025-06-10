@@ -17,5 +17,5 @@ private:
 };
 
 // Define static member outside the class
-u64 Random::m_state = 3141592653589793238ULL;
+u64 Random::m_state = 9049990082738480776ULL;
 }
