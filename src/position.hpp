@@ -139,6 +139,7 @@ public:
 
     bool                 operator==(const Position&) const = default;
     friend std::ostream& operator<<(std::ostream& os, const Position& position);
+    HashKey calc_hash_key_slow();
 
 private:
     std::array<Wordboard, 2>            m_attack_table{};
@@ -163,7 +164,6 @@ private:
     v512    toggle_rays(Square sq);
     void    add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
     void    add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
-    HashKey calc_hash_key_slow();
 };
 
 }
