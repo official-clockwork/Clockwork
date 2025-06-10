@@ -642,7 +642,7 @@ HashKey Position::calc_hash_key_slow() {
 
     // Add castling
     // We may consider putting this as a separate function
-    size_t castle_index = m_rook_info[0].as_index() | (m_rook_info[1].as_index() << 1);
+    size_t castle_index = m_rook_info[0].as_index() | (m_rook_info[1].as_index() << 2);
     key ^= Zobrist::castling_zobrist[castle_index];
 
     // Add stm
