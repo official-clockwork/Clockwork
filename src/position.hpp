@@ -122,7 +122,7 @@ public:
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 
-    [[nodiscard]] HashKey get_hash_key() const;
+    [[nodiscard]] HashKey get_hash_key();
 
     [[nodiscard]] bool is_reversible(Move move);
 

@@ -715,8 +715,9 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
     return os;
 }
 
-HashKey Position::get_hash_key() const {
-    return m_hash_key;
+HashKey Position::get_hash_key() {
+    // TODO: incremental zobrist
+    return calc_hash_key_slow();
 }
 
 bool Position::is_reversible(Move move) {
