@@ -113,6 +113,8 @@ void UCIHandler::handle_go(std::istringstream& is) {
 void UCIHandler::handle_position(std::istringstream& is) {
     std::string token;
 
+    m_repetition_info.reset();
+
     if (is >> token) {
         if (token == "startpos") {
             m_position = *Position::parse(STARTPOS);
@@ -131,6 +133,8 @@ void UCIHandler::handle_position(std::istringstream& is) {
         }
     }
 
+    m_repetition_info.push(m_position.get_hash_key(), false);
+
     if (is >> token) {
         if (token != "moves") {
             std::cout << "Unexpected token: " << token << std::endl;
@@ -143,6 +147,7 @@ void UCIHandler::handle_position(std::istringstream& is) {
                 return;
             }
             m_position = m_position.move(*move);
+            m_repetition_info.push(m_position.get_hash_key(), m_position.is_reversible(*move));
         }
     }
 }

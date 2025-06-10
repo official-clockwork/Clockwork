@@ -5,6 +5,7 @@
 
 #include "common.hpp"
 #include "position.hpp"
+#include "repetition_info.hpp"
 
 namespace Clockwork::UCI {
 
@@ -28,7 +29,8 @@ public:
     void handle_command_line(i32 argc, char* argv[]);
 
 private:
-    Position m_position;
+    Position       m_position;
+    RepetitionInfo m_repetition_info;
 
     SearchSettings settings;
 
