@@ -756,4 +756,8 @@ bool Position::is_reversible(Move move) {
              || (m_board[move.from()].ptype() == PieceType::Pawn));
 }
 
+u16 Position::get_50mr_counter() const {
+    return m_50mr;
+}
+
 }

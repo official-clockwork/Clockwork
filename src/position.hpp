@@ -125,6 +125,8 @@ public:
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 
+    [[nodiscard]] u16 get_50mr_counter() const;
+
     [[nodiscard]] bool is_reversible(Move move);
 
     const std::array<Wordboard, 2> calc_attacks_slow();

@@ -112,9 +112,16 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // ...
     search_nodes++;
 
-    // Repetition check
-    if (!ROOT_NODE && m_repetition_info.detect_repetition(ply)) {
-        return 0;
+    // Draw checks
+    if (!ROOT_NODE) {
+        // Repetition check
+        if (m_repetition_info.detect_repetition(ply)) {
+            return 0;
+        }
+        // 50 mr check
+        if (pos.get_50mr_counter() >= 100) {
+            return 0;
+        }
     }
 
     // Return eval (TODO: quiescence) if depth is 0 or we exceed the max ply.
@@ -163,13 +170,13 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             if (ply == 0) {
                 ss->pv[ply] = m;  // No pv update for now, just bestmove
             }
-            
+
             if (value > alpha) {
-            
-               if (value >= beta) {
-                   break;
-               }
-               alpha = std::max(alpha, value);
+
+                if (value >= beta) {
+                    break;
+                }
+                alpha = std::max(alpha, value);
             }
         }
     }
@@ -195,6 +202,5 @@ Value Worker::evaluate(const Position& pos) {
          + 500 * (pos.piece_count(us, PieceType::Rook) - pos.piece_count(them, PieceType::Rook))
          + 900 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen));
 }
-
 }
 }
