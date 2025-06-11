@@ -93,6 +93,9 @@ public:
     [[nodiscard]] RookInfo rook_info(Color color) const {
         return m_rook_info[static_cast<usize>(color)];
     }
+    [[nodiscard]] HashKey get_hash_key() const {
+        return m_hash_key;
+    }
 
     [[nodiscard]] Square king_sq(Color color) const {
         return piece_list_sq(color)[PieceId{0}];
@@ -122,12 +125,12 @@ public:
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 
-    [[nodiscard]] HashKey get_hash_key();
-
     [[nodiscard]] bool is_reversible(Move move);
 
     const std::array<Wordboard, 2> calc_attacks_slow();
     const std::array<u16, 2>       calc_attacks_slow(Square sq);
+
+    HashKey calc_hash_key_slow() const;
 
     static std::optional<Position> parse(std::string_view str);
     static std::optional<Position> parse(std::string_view board,
@@ -139,7 +142,6 @@ public:
 
     bool                 operator==(const Position&) const = default;
     friend std::ostream& operator<<(std::ostream& os, const Position& position);
-    HashKey              calc_hash_key_slow();
 
 private:
     std::array<Wordboard, 2>            m_attack_table{};

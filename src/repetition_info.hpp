@@ -1,11 +1,15 @@
+#include <utility>
+#include <vector>
+
 #include "common.hpp"
 #include "util/types.hpp"
-#include <array>
 
 namespace Clockwork {
+
 class RepetitionInfo {
 public:
-    RepetitionInfo();
+    RepetitionInfo() = default;
+
     void push(HashKey key, bool is_reversible);
     void pop();
     void reset();
@@ -13,7 +17,7 @@ public:
     bool detect_repetition(size_t root_ply);
 
 private:
-    std::array<std::pair<HashKey, bool>, MAX_PLY * 4> m_repetition_table;
-    size_t                                            m_index;
+    std::vector<std::pair<HashKey, bool>> m_repetition_table;
 };
+
 }

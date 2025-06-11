@@ -658,7 +658,7 @@ std::optional<Position> Position::parse(std::string_view board,
     return result;
 }
 
-HashKey Position::calc_hash_key_slow() {
+HashKey Position::calc_hash_key_slow() const {
     HashKey key = 0;
 
     // Iterate over all the pieces
@@ -751,13 +751,9 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
     return os;
 }
 
-HashKey Position::get_hash_key() {
-    return m_hash_key;
-}
-
 bool Position::is_reversible(Move move) {
     return !(move.is_capture() || move.is_promotion() || move.is_castle()
-             || (m_board.mailbox[move.from().raw].ptype() == PieceType::Pawn));
+             || (m_board[move.from()].ptype() == PieceType::Pawn));
 }
 
 }

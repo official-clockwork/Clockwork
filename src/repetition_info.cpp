@@ -3,35 +3,31 @@
 
 namespace Clockwork {
 
-RepetitionInfo::RepetitionInfo() :
-    m_index(0) {
-    m_repetition_table.fill(std::make_pair(0, false));
-}
-
 void RepetitionInfo::push(HashKey key, bool is_reversible) {
-    // TODO: we may want to handle overflow here
-    m_repetition_table[m_index++] = std::make_pair(key, is_reversible);
+    m_repetition_table.emplace_back(key, is_reversible);
 }
 
 void RepetitionInfo::pop() {
-    --m_index;
+    m_repetition_table.pop_back();
 }
 
 bool RepetitionInfo::detect_repetition(size_t root_ply) {
     // Short circuit return if move is not reversible
-    if (!m_repetition_table[m_index - 1].second) {
+    if (!m_repetition_table.back().second) {
         return false;
     }
+
     // The hash we will be looking for
-    HashKey query = m_repetition_table[m_index - 1].first;
+    HashKey query  = m_repetition_table.back().first;
+    size_t  height = m_repetition_table.size() - 1;
 
     // Count how many times we encounter the hash
     i32 counter = 0;
 
     // Start from two moves ago
-    for (size_t idx = 4; idx < m_index; idx += 2) {
+    for (size_t idx = 4; idx <= height; idx += 2) {
         // Do the hashes match?
-        if (m_repetition_table[m_index - 1 - idx].first == query) {
+        if (m_repetition_table[height - idx].first == query) {
 
             // If the match happened inside the search tree, twofold repetition check
             if (idx <= root_ply) {
@@ -44,7 +40,7 @@ bool RepetitionInfo::detect_repetition(size_t root_ply) {
             }
 
             // Shortcircuit (only after checking the hash) if the move is nonreversible
-            if (!m_repetition_table[m_index - 1 - idx].second) {
+            if (!m_repetition_table[height - idx].second) {
                 return false;
             }
         }
@@ -55,7 +51,7 @@ bool RepetitionInfo::detect_repetition(size_t root_ply) {
 }
 
 void RepetitionInfo::reset() {
-    m_index = 0;
+    m_repetition_table.clear();
 }
 
 }  // namespace Clockwork
