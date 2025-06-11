@@ -106,6 +106,9 @@ Move Worker::iterative_deepening(Position root_position) {
 }
 
 Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
+    if (depth <= 0) {
+        return quiesce(pos, ss, alpha, beta, ply);
+    }
 
     const bool ROOT_NODE = ply == 0;
 
@@ -125,8 +128,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         }
     }
 
-    // Return eval (TODO: quiescence) if depth is 0 or we exceed the max ply.
-    if (depth == 0 || ply >= MAX_PLY) {
+    // Return eval if we exceed the max ply.
+    if (ply >= MAX_PLY) {
         return evaluate(pos);
     }
 
