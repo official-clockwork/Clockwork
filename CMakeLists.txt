@@ -17,7 +17,42 @@ if (CLOCKWORK_MARCH_TARGET AND NOT CLOCKWORK_MARCH_TARGET STREQUAL "OFF")
     add_compile_options("-march=${CLOCKWORK_MARCH_TARGET}")
 else ()
     message(STATUS "-march flag disabled by user")
-endif ()
+endif()
+
+# LTO
+include(CheckIPOSupported)
+check_ipo_supported(RESULT lto)
+
+# Flags
+function(target_add_flags target)
+
+    # C++ standard version
+    set_target_properties(${target} PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED YES
+        CXX_EXTENSIONS NO)
+
+    # Warnings
+    # We don't support MSVC
+    target_compile_options(${target} PUBLIC -Wall -Wextra -Wconversion)
+
+    target_compile_options(${target} PUBLIC
+        $<$<CONFIG:Debug>:
+        -fsanitize=address,undefined -g3
+        -D_GLIBCXX_DEBUG -D_LIBCPP_DEBUG=1
+        >)
+
+    target_link_options(${target} PUBLIC
+        $<$<CONFIG:Debug>:
+        -fsanitize=address,undefined
+        >)
+
+    # LTO
+    if (lto)
+        set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
+
+endfunction()
 
 # Sorted list of source files
 set(srcs
@@ -55,19 +90,21 @@ set(srcs
         src/util/vec/avx512.hpp
 )
 
-add_executable(clockwork ${srcs} src/main.cpp)
-target_include_directories(clockwork PRIVATE src)
-set_target_properties(clockwork PROPERTIES
-        CXX_STANDARD 20
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS NO)
+add_library(clockwork-lib OBJECT ${srcs})
+target_include_directories(clockwork-lib PUBLIC src)
+target_add_flags(clockwork-lib)
+
+add_executable(clockwork src/main.cpp)
+target_link_libraries(clockwork PUBLIC clockwork-lib)
+target_add_flags(clockwork)
 
 # Tests
 enable_testing()
 set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
 function(do_test name)
-    add_executable(${name} tests/${name}.cpp ${srcs})
-    target_include_directories(${name} PRIVATE tests src)
+    add_executable(${name} tests/${name}.cpp)
+    target_link_libraries(${name} PUBLIC clockwork-lib)
+    target_add_flags(${name})
     add_test(${name} ${name})
 endfunction()
 
@@ -75,25 +112,3 @@ do_test(test_repetition)
 do_test(test_static_vector)
 do_test(test_perft)
 do_test(test_position)
-
-# Warnings
-# We don't support MSVC
-target_compile_options(clockwork PRIVATE -Wall -Wextra -Wconversion)
-
-target_compile_options(clockwork PRIVATE
-        $<$<CONFIG:Debug>:
-        -fsanitize=address,undefined -g3
-        -D_GLIBCXX_DEBUG -D_LIBCPP_DEBUG=1
-        >)
-
-target_link_options(clockwork PRIVATE
-        $<$<CONFIG:Debug>:
-        -fsanitize=address,undefined
-        >)
-
-# LTO
-include(CheckIPOSupported)
-check_ipo_supported(RESULT lto)
-if (lto)
-    set_target_properties(clockwork PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif ()
