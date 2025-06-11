@@ -18,14 +18,17 @@ void Position::incrementally_remove_piece(bool color, PieceId id, Square from) {
     toggle_rays(from);
 
     // TODO: check if some speed left on the table for zobrist here
-    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())][static_cast<size_t>(m_board[from].ptype())][from.raw];
+    m_hash_key ^=
+      Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())]
+                                   [static_cast<size_t>(m_board[from].ptype())][from.raw];
     m_board[from] = Place::empty();
 }
 
 void Position::incrementally_add_piece(bool color, Place p, Square to) {
     // TODO: check if some speed left on the table for zobrist here
     m_board[to] = p;
-    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())][static_cast<size_t>(m_board[to].ptype())][to.raw];
+    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())]
+                                               [static_cast<size_t>(m_board[to].ptype())][to.raw];
 
     v512 m = toggle_rays(to);
     add_attacks(color, p.id(), to, p.ptype(), m);
@@ -34,9 +37,11 @@ void Position::incrementally_add_piece(bool color, Place p, Square to) {
 void Position::incrementally_mutate_piece(
   bool old_color, PieceId old_id, Square sq, bool new_color, Place p) {
     // TODO: check if some speed left on the table for zobrist here
-    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())][static_cast<size_t>(m_board[sq].ptype())][sq.raw];
+    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
+                                               [static_cast<size_t>(m_board[sq].ptype())][sq.raw];
     m_board[sq] = p;
-    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())][static_cast<size_t>(m_board[sq].ptype())][sq.raw];
+    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
+                                               [static_cast<size_t>(m_board[sq].ptype())][sq.raw];
 
     remove_attacks(old_color, old_id);
     add_attacks(new_color, p.id(), sq, p.ptype());
@@ -50,12 +55,15 @@ void Position::incrementally_move_piece(bool color, Square from, Square to, Plac
     v512 src_ray_places                  = v512::permute8(src_ray_coords, m_board.to_vec());
 
     // TODO: check if some speed left on the table for zobrist here
-    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())][static_cast<size_t>(m_board[from].ptype())][from.raw];
-    m_board[from]                        = Place::empty();
-    m_board[to]                          = p;
-    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())][static_cast<size_t>(m_board[to].ptype())][to.raw];
+    m_hash_key ^=
+      Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())]
+                                   [static_cast<size_t>(m_board[from].ptype())][from.raw];
+    m_board[from] = Place::empty();
+    m_board[to]   = p;
+    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())]
+                                               [static_cast<size_t>(m_board[to].ptype())][to.raw];
 
-    v512 dst_ray_places                  = v512::permute8(dst_ray_coords, m_board.to_vec());
+    v512 dst_ray_places = v512::permute8(dst_ray_coords, m_board.to_vec());
 
     v512 src_all_sliders     = geometry::slider_mask(src_ray_places);
     v512 dst_all_sliders     = geometry::slider_mask(dst_ray_places);
@@ -222,7 +230,8 @@ Position Position::move(Move m) const {
     }
 
     // Compute old castle index for zobrist indexing and remove it
-    size_t old_castle_index = new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
+    size_t old_castle_index =
+      new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
     new_pos.m_hash_key ^= Zobrist::castling_zobrist[old_castle_index];
 
     const auto CHECK_SRC_CASTLING_RIGHTS = [&] {
@@ -293,7 +302,8 @@ Position Position::move(Move m) const {
         new_pos.m_piece_list_sq[color][rook_id] = rook_to;
 
         // Calculate the new castling index for zobrist indexing and add it back in
-        size_t new_castle_index = new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
+        size_t new_castle_index =
+          new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
         new_pos.m_hash_key ^= Zobrist::castling_zobrist[new_castle_index];
 
         new_pos.m_50mr++;
