@@ -45,6 +45,9 @@ debug:
 	cmake -DCMAKE_BUILD_TYPE=Debug $(CMAKE_FLAGS) -B build-debug -S . && cmake --build build-debug $(CMAKE_BUILD_FLAGS)
 	$(COPY) $(call MK_PATH,"build-debug/clockwork$(SUFFIX)") $(EXE)
 
+bench: release
+	./$(EXE) bench
+
 test: release
 	ctest --test-dir build-release
 
