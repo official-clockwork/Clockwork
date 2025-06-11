@@ -1,7 +1,7 @@
 CXX  ?= clang++
 EXE  ?= clockwork
 ARCH ?= native
-
+PARALLEL_BUILD ?= yes
 
 ifdef MSYSTEM
 	SUFFIX := .exe
@@ -27,6 +27,9 @@ else
 endif
 
 CMAKE_FLAGS := -DCMAKE_CXX_COMPILER=$(CXX) -DCLOCKWORK_MARCH_TARGET=$(ARCH)
+ifeq ($(PARALLEL_BUILD),yes)
+	CMAKE_BUILD_FLAGS := -j
+endif
 
 EXE := "$(EXE)$(SUFFIX)"
 
@@ -35,11 +38,11 @@ EXE := "$(EXE)$(SUFFIX)"
 all: release
 
 release:
-	cmake -DCMAKE_BUILD_TYPE=Release $(CMAKE_FLAGS) -B build-release -S . && cmake --build build-release -j
+	cmake -DCMAKE_BUILD_TYPE=Release $(CMAKE_FLAGS) -B build-release -S . && cmake --build build-release $(CMAKE_BUILD_FLAGS)
 	$(COPY) $(call MK_PATH,"build-release/clockwork$(SUFFIX)") $(EXE)
 
 debug:
-	cmake -DCMAKE_BUILD_TYPE=Debug $(CMAKE_FLAGS) -B build-debug -S . && cmake --build build-debug -j
+	cmake -DCMAKE_BUILD_TYPE=Debug $(CMAKE_FLAGS) -B build-debug -S . && cmake --build build-debug $(CMAKE_BUILD_FLAGS)
 	$(COPY) $(call MK_PATH,"build-debug/clockwork$(SUFFIX)") $(EXE)
 
 test: release

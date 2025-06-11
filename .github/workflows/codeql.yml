@@ -35,8 +35,8 @@ jobs:
 
       - name: Build
         run: |
-          make
-          make test
+          make PARALLEL_BUILD=no
+          make test PARALLEL_BUILD=no
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
