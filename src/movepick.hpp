@@ -23,15 +23,15 @@ public:
 
 private:
     enum class Stage {
-        generate_moves,
-        emit_noisy,
-        emit_quiet,
-        end,
+        GenerateMoves,
+        EmitNoisy,
+        EmitQuiet,
+        End,
     };
 
     void generate_moves();
 
-    Stage m_stage = Stage::generate_moves;
+    Stage m_stage = Stage::GenerateMoves;
 
     const Position& m_pos;
     MoveGen         m_movegen;
