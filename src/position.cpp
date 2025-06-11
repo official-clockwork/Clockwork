@@ -211,6 +211,68 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v
     m_attack_table[color].raw[1] |= bit & m1;
 }
 
+bool Position::is_pseudo_legal(Move m) const {
+    Square from  = m.from();
+    Square to    = m.to();
+    Place  src   = m_board[from];
+    Place  dst   = m_board[to];
+    bool   color = static_cast<bool>(m_active_color);
+
+    if (src.color() != m_active_color || src.is_empty()) {
+        return false;
+    }
+
+    bool valid_attack = is_square_attacked_by(to, src.color(), src.id());
+
+    if (src.ptype() == PieceType::Pawn) {
+        switch (m.flags()) {
+        case MoveFlags::Normal:
+            if (from.raw - to.raw == 16 || to.raw - from.raw == 16) {
+                Square ep = Square{static_cast<u8>((from.raw + to.raw) / 2)};
+                return dst.is_empty() && m_board[ep].is_empty();
+            } else {
+                return dst.is_empty();
+            }
+        case MoveFlags::Castle:
+            return false;
+        case MoveFlags::CaptureBit:
+            return !dst.is_empty() && dst.color() == invert(m_active_color) && valid_attack;
+        case MoveFlags::EnPassant:
+            return dst.is_empty() && valid_attack && to == m_enpassant;
+        case MoveFlags::PromoKnight:
+        case MoveFlags::PromoBishop:
+        case MoveFlags::PromoRook:
+        case MoveFlags::PromoQueen:
+            return dst.is_empty();
+        case MoveFlags::PromoKnightCapture:
+        case MoveFlags::PromoBishopCapture:
+        case MoveFlags::PromoRookCapture:
+        case MoveFlags::PromoQueenCapture:
+            return !dst.is_empty() && valid_attack && dst.color() == invert(m_active_color);
+        }
+    } else {
+        switch (m.flags()) {
+        case MoveFlags::Normal:
+            return dst.is_empty() && valid_attack;
+        case MoveFlags::Castle:
+            return m_rook_info[color].aside == to || m_rook_info[color].hside == to;
+        case MoveFlags::CaptureBit:
+            return !dst.is_empty() && dst.color() == invert(m_active_color) && valid_attack;
+        case MoveFlags::EnPassant:
+        case MoveFlags::PromoKnight:
+        case MoveFlags::PromoBishop:
+        case MoveFlags::PromoRook:
+        case MoveFlags::PromoQueen:
+        case MoveFlags::PromoKnightCapture:
+        case MoveFlags::PromoBishopCapture:
+        case MoveFlags::PromoRookCapture:
+        case MoveFlags::PromoQueenCapture:
+            return false;
+        }
+    }
+    return false;
+}
+
 Position Position::move(Move m) const {
     Position new_pos = *this;
 
@@ -759,5 +821,4 @@ bool Position::is_reversible(Move move) {
 u16 Position::get_50mr_counter() const {
     return m_50mr;
 }
-
 }

@@ -25,6 +25,8 @@ static u64 core(const Position& position, usize depth) {
     }
 
     for (Move m : moves) {
+        assert(position.is_pseudo_legal(m));
+
         Position new_position = position.move(m);
 
         u64 child = core<false>(new_position, depth - 1);
