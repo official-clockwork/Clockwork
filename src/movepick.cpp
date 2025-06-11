@@ -2,6 +2,10 @@
 
 namespace Clockwork {
 
+bool quiet_move(Move move) {
+    return !move.is_capture() && (!move.is_promotion() || move.promo().value() != PieceType::Queen);
+}
+
 void MovePicker::skip_quiets() {
     m_skip_quiets = true;
     if (m_stage == Stage::EmitQuiet) {
@@ -19,15 +23,20 @@ Move MovePicker::next() {
 
         [[fallthrough]];
     case Stage::EmitTTMove:
-        m_stage = Stage::EmitNoisy;
+        m_stage = Stage::ScoreNoisy;
         if (m_tt_move != Move::none()) {
             return m_tt_move;
         }
 
         [[fallthrough]];
+    case Stage::ScoreNoisy:
+        score_moves(m_noisy);
+        m_stage = Stage::EmitNoisy;
+
+        [[fallthrough]];
     case Stage::EmitNoisy:
         while (m_current_index < m_noisy.size()) {
-            Move curr = m_noisy[m_current_index++];
+            Move curr = pick_next(m_noisy);
             if (curr != m_tt_move) {
                 return curr;
             }
@@ -74,6 +83,35 @@ void MovePicker::generate_moves() {
     }
     // tt move is not legal
     m_tt_move = Move::none();
+}
+
+void MovePicker::score_moves(MoveList& moves) {
+    for (usize i = 0; i < moves.size(); i++) {
+        m_scores[i] = score_move(moves[i]);
+    }
+}
+
+Move MovePicker::pick_next(MoveList& moves) {
+    u32 best_idx = m_current_index;
+    for (u32 i = m_current_index + 1; i < moves.size(); i++) {
+        if (m_scores[i] > m_scores[best_idx]) {
+            best_idx = i;
+        }
+    }
+
+    std::swap(m_scores[m_current_index], m_scores[best_idx]);
+    std::swap(moves[m_current_index], moves[best_idx]);
+    return moves[m_current_index++];
+}
+
+i32 MovePicker::score_move(Move move) const {
+    if (quiet_move(move)) {
+        // to be implemented
+        return 0;
+    } else {
+        return 100 * static_cast<int>(m_pos.piece_at(move.to()))
+             - static_cast<int>(m_pos.piece_at(move.from()));
+    }
 }
 
 }

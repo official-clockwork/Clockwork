@@ -101,6 +101,10 @@ public:
         return piece_list_sq(color)[PieceId{0}];
     }
 
+    [[nodiscard]] PieceType piece_at(Square sq) const {
+        return m_board[sq].ptype();
+    }
+
     [[nodiscard]] bool is_valid() const {
         return attack_table(m_active_color).read(king_sq(invert(m_active_color))) == 0;
     }
