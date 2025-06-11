@@ -163,13 +163,14 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             if (ply == 0) {
                 ss->pv[ply] = m;  // No pv update for now, just bestmove
             }
-            // if (value > alpha) {
-            //
-            //    if (value >= beta) {
-            //        break;
-            //    }
-            //    alpha = std::max(alpha, value);
-            // }
+            
+            if (value > alpha) {
+            
+               if (value >= beta) {
+                   break;
+               }
+               alpha = std::max(alpha, value);
+            }
         }
     }
 
