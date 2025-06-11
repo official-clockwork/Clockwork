@@ -5,7 +5,7 @@ namespace Clockwork {
 uint64_t mulhi64(uint64_t a, uint64_t b) {
     unsigned __int128 result =
       static_cast<unsigned __int128>(a) * static_cast<unsigned __int128>(b);
-    return result >> 64;
+    return static_cast<u64>(result >> 64);
 }
 
 void* aligned_alloc(size_t alignment, size_t size) {
@@ -65,7 +65,7 @@ void TT::resize(size_t mb) {
 }
 
 void TT::clear() {
-    std::memset(m_entries, 0, m_size * sizeof(TTEntry));
+    std::fill(m_entries, m_entries + m_size, TTEntry{});
 }
 
 }

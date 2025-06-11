@@ -56,6 +56,7 @@ Move MovePicker::next() {
     case Stage::End:
         return Move::none();
     }
+    unreachable();
 }
 
 void MovePicker::generate_moves() {
