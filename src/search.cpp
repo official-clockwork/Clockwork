@@ -105,12 +105,15 @@ Move Worker::iterative_deepening(Position root_position) {
 }
 
 Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
+    
+    const bool ROOT_NODE = ply == 0;
+    
     // TODO: search nodes limit condition here
     // ...
     search_nodes++;
 
     // Repetition check
-    if (m_repetition_info.detect_repetition(ply)) {
+    if (!ROOT_NODE && m_repetition_info.detect_repetition(ply)) {
         return 0;
     }
 
