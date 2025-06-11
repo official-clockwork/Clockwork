@@ -301,11 +301,6 @@ Position Position::move(Move m) const {
         new_pos.m_piece_list_sq[color][king_id] = king_to;
         new_pos.m_piece_list_sq[color][rook_id] = rook_to;
 
-        // Calculate the new castling index for zobrist indexing and add it back in
-        size_t new_castle_index =
-          new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
-        new_pos.m_hash_key ^= Zobrist::castling_zobrist[new_castle_index];
-
         new_pos.m_50mr++;
         new_pos.m_rook_info[color].clear();
         break;
@@ -357,6 +352,11 @@ Position Position::move(Move m) const {
         break;
     }
     }
+
+    // Calculate the new castling index for zobrist indexing and add it back in
+    size_t new_castle_index =
+    new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
+  new_pos.m_hash_key ^= Zobrist::castling_zobrist[new_castle_index];
 
     new_pos.m_active_color = invert(m_active_color);
     new_pos.m_ply++;
