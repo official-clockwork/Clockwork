@@ -34,6 +34,7 @@ private:
     Move            iterative_deepening(Position root_position);
 
     Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
+    Value quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
     Value evaluate(const Position& pos);
     void  check_tm_hard_limit();
 };

@@ -18,7 +18,7 @@ static u64 core(const Position& position, usize depth) {
 
     MoveList moves;
     MoveGen  movegen{position};
-    movegen.generate_moves(moves);
+    movegen.generate_moves(moves, moves);
 
     if (!print && depth == 1) {
         return moves.size();

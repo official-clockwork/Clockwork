@@ -32,6 +32,8 @@ set(srcs
         src/move.hpp
         src/movegen.cpp
         src/movegen.hpp
+        src/movepick.cpp
+        src/movepick.hpp
         src/perft.cpp
         src/perft.hpp
         src/position.cpp

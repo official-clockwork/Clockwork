@@ -17,15 +17,15 @@ public:
         m_position(position) {
     }
 
-    void generate_moves(MoveList& moves);
+    void generate_moves(MoveList& noisy, MoveList& quiet);
 
 private:
     template<bool king_moves>
-    void generate_moves_to(MoveList& moves, Bitboard valid_destinations, bool can_ep);
-    void generate_king_moves_to(MoveList& moves, Bitboard valid_destinations);
+    void generate_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests, bool can_ep);
+    void generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests);
 
-    void generate_moves_one_checker(MoveList& moves, u16 checker);
-    void generate_moves_two_checkers(MoveList& moves, u16 checkers);
+    void generate_moves_one_checker(MoveList& noisy, MoveList& quiet, u16 checker);
+    void generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, u16 checkers);
 
     // Write moves that go to dest. Source are pieces in piecemask.
     void write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf);

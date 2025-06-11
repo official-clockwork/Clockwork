@@ -39,6 +39,10 @@ struct Move {
         raw = static_cast<u16>(from.raw | (to.raw << 6) | static_cast<u16>(flags));
     }
 
+    static constexpr Move none() {
+        return {};
+    }
+
     [[nodiscard]] constexpr Square from() const {
         return Square{static_cast<u8>(raw & 0x3F)};
     }

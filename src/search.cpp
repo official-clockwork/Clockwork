@@ -2,6 +2,7 @@
 #include "board.hpp"
 #include "common.hpp"
 #include "movegen.hpp"
+#include "movepick.hpp"
 #include "tm.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
@@ -145,14 +146,11 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return 0;
     }
 
-    MoveList moves;
-    MoveGen  movegen{pos};
-    Value    best_value = -VALUE_INF;
-    // Generate legal moves
-    movegen.generate_moves(moves);
+    MovePicker moves{pos};
+    Value      best_value = -VALUE_INF;
 
     // Iterate over the move list
-    for (Move m : moves) {
+    for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         // Do move
         Position pos_after = pos.move(m);
 
@@ -172,11 +170,11 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             }
 
             if (value > alpha) {
+                alpha = value;
 
                 if (value >= beta) {
                     break;
                 }
-                alpha = std::max(alpha, value);
             }
         }
     }
@@ -193,6 +191,88 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     return best_value;
 }
 
+Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
+    search_nodes++;
+
+    // 50 mr check
+    if (pos.get_50mr_counter() >= 100) {
+        return 0;
+    }
+
+    // Return eval if we exceed the max ply.
+    if (ply >= MAX_PLY) {
+        return evaluate(pos);
+    }
+
+    // Check for hard time limit
+    if ((search_nodes & 2047) == 0) {
+        // TODO: add control for being main search thread here
+        check_tm_hard_limit();
+    }
+
+    // Check for hard nodes limit
+    if (search_nodes > m_search_limits.hard_node_limit) {
+        m_stopped = true;
+    }
+
+    // If search is stopped by any means, immediately return
+    if (m_stopped) {
+        return 0;
+    }
+
+    bool  is_in_check = pos.is_in_check();
+    Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
+
+    // Stand pat
+    if (static_eval >= beta) {
+        return static_eval;
+    }
+    alpha = std::max(alpha, static_eval);
+
+    MovePicker moves{pos};
+    if (!is_in_check) {
+        moves.skip_quiets();
+    }
+
+    Value best_value     = static_eval;
+    u32   moves_searched = 0;
+
+    // Iterate over the move list
+    for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+        // Do move
+        Position pos_after = pos.move(m);
+        moves_searched++;
+
+        // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
+        m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
+
+        // Get search value
+        Value value = -quiesce(pos_after, ss + 1, -beta, -alpha, ply + 1);
+
+        // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
+        m_repetition_info.pop();
+
+        if (value > best_value) {
+            best_value = value;
+
+            if (value > alpha) {
+                alpha = value;
+
+                if (value >= beta) {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Checkmate check
+    if (is_in_check && moves_searched == 0) {
+        return mated_in(ply);
+    }
+
+    return best_value;
+}
+
 Value Worker::evaluate(const Position& pos) {
     const Color us   = pos.active_color();
     const Color them = invert(us);
@@ -200,7 +280,7 @@ Value Worker::evaluate(const Position& pos) {
          + 300 * (pos.piece_count(us, PieceType::Knight) - pos.piece_count(them, PieceType::Knight))
          + 300 * (pos.piece_count(us, PieceType::Bishop) - pos.piece_count(them, PieceType::Bishop))
          + 500 * (pos.piece_count(us, PieceType::Rook) - pos.piece_count(them, PieceType::Rook))
-         + 900 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen)) 
+         + 900 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen))
          + static_cast<i32>(search_nodes & 7) - 3;
 }
 }
