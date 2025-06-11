@@ -17,6 +17,11 @@ Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
+Worker::Worker(TT& tt) :
+    m_tt(tt) {
+}
+
+
 void Worker::check_tm_hard_limit() {
     time::TimePoint now = time::Clock::now();
     if (now >= m_search_limits.hard_time_limit) {
@@ -149,7 +154,10 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return 0;
     }
 
-    MovePicker moves{pos};
+    auto tt_data = m_tt.probe(pos);
+
+    MovePicker moves{pos, tt_data ? tt_data->move : Move::none()};
+    Move       best_move  = Move::none();
     Value      best_value = -VALUE_INF;
 
     // Iterate over the move list
@@ -173,7 +181,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             }
 
             if (value > alpha) {
-                alpha = value;
+                alpha     = value;
+                best_move = m;
 
                 if (value >= beta) {
                     break;
@@ -190,6 +199,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             return 0;
         }
     }
+
+    m_tt.store(pos, best_move);
 
     return best_value;
 }

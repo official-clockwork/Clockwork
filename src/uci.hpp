@@ -6,6 +6,7 @@
 #include "common.hpp"
 #include "position.hpp"
 #include "repetition_info.hpp"
+#include "tt.hpp"
 
 namespace Clockwork::UCI {
 
@@ -31,6 +32,8 @@ public:
 private:
     Position       m_position;
     RepetitionInfo m_repetition_info;
+    // move this somewhere else later
+    TT m_tt;
 
     SearchSettings settings;
 

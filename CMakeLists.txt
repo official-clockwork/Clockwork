@@ -43,8 +43,10 @@ set(srcs
         src/search.cpp
         src/search.hpp
         src/square.hpp
-        src/tm.hpp
         src/tm.cpp
+        src/tm.hpp
+        src/tt.cpp
+        src/tt.hpp
         src/uci.cpp
         src/uci.hpp
         src/zobrist.cpp

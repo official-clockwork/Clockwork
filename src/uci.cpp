@@ -47,6 +47,8 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "uciok" << std::endl;
+    } else if (command == "ucinewgame") {
+        m_tt.clear();
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "quit") {
@@ -74,7 +76,7 @@ void UCIHandler::handle_bench(std::istringstream& is) {
         is.clear();
         depth = 5;
     }
-    Search::Worker worker;
+    Search::Worker worker{m_tt};
     Bench::benchmark(worker, depth);
 }
 
@@ -106,7 +108,7 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.hard_nodes;
         }
     }
-    Search::Worker worker;
+    Search::Worker worker{m_tt};
     worker.launch_search(m_position, m_repetition_info, settings);
 }
 

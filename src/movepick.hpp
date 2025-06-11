@@ -12,9 +12,10 @@ bool quiet_move(Move move);
 
 class MovePicker {
 public:
-    explicit MovePicker(const Position& pos) :
+    explicit MovePicker(const Position& pos, Move tt_move = Move::none()) :
         m_pos(pos),
-        m_movegen(pos) {
+        m_movegen(pos),
+        m_tt_move(tt_move) {
     }
 
     void skip_quiets();
@@ -24,6 +25,7 @@ public:
 private:
     enum class Stage {
         GenerateMoves,
+        EmitTTMove,
         EmitNoisy,
         EmitQuiet,
         End,
@@ -39,6 +41,8 @@ private:
     MoveList        m_quiet;
     usize           m_current_index = 0;
     bool            m_skip_quiets   = false;
+
+    Move m_tt_move;
 };
 
 }
