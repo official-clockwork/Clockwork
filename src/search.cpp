@@ -22,11 +22,13 @@ Worker::Worker(TT& tt) :
 }
 
 
-void Worker::check_tm_hard_limit() {
+bool Worker::check_tm_hard_limit() {
     time::TimePoint now = time::Clock::now();
     if (now >= m_search_limits.hard_time_limit) {
         m_stopped = true;
+        return true;
     }
+    return false;
 }
 
 void Worker::launch_search(Position            root_position,
@@ -155,18 +157,14 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     // Check for hard time limit
-    if ((search_nodes & 2047) == 0) {
-        // TODO: add control for being main search thread here
-        check_tm_hard_limit();
+    // TODO: add control for being main search thread here
+    if ((search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+        return 0;
     }
 
     // Check for hard nodes limit
-    if (search_nodes > m_search_limits.hard_node_limit) {
+    if (search_nodes >= m_search_limits.hard_node_limit) {
         m_stopped = true;
-    }
-
-    // If search is stopped by any means, immediately return
-    if (m_stopped) {
         return 0;
     }
 
@@ -189,6 +187,10 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         m_repetition_info.pop();
+
+        if (m_stopped) {
+            return 0;
+        }
 
         if (value > best_value) {
             best_value = value;
@@ -235,18 +237,13 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
     }
 
     // Check for hard time limit
-    if ((search_nodes & 2047) == 0) {
-        // TODO: add control for being main search thread here
-        check_tm_hard_limit();
+    if ((search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+        return 0;
     }
 
     // Check for hard nodes limit
-    if (search_nodes > m_search_limits.hard_node_limit) {
+    if (search_nodes >= m_search_limits.hard_node_limit) {
         m_stopped = true;
-    }
-
-    // If search is stopped by any means, immediately return
-    if (m_stopped) {
         return 0;
     }
 
@@ -281,6 +278,10 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         m_repetition_info.pop();
+
+        if (m_stopped) {
+            return 0;
+        }
 
         if (value > best_value) {
             best_value = value;
