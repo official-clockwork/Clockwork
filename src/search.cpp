@@ -210,7 +210,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         }
     }
 
-    if (best_value >= beta) {
+    if (best_value >= beta && quiet_move(best_move)) {
         m_td.history.update_quiet_stats(pos, best_move, depth * depth);
     }
 
