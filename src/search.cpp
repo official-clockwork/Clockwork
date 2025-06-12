@@ -179,6 +179,13 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return tt_data->score;
     }
 
+    bool  is_in_check = pos.is_in_check();
+    Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
+
+    if (!ROOT_NODE && !is_in_check && depth <= 6 && static_eval >= beta + 80 * depth) {
+        return static_eval;
+    }
+
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none()};
     Move       best_move  = Move::none();
     Value      best_value = -VALUE_INF;
