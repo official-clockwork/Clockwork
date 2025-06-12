@@ -99,7 +99,7 @@ public:
         return m_raw;
     }
 
-    bool is_set(Square sq) const {
+    [[nodiscard]] bool is_set(Square sq) const {
         return (m_raw >> sq.raw) & 1;
     }
 

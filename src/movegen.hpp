@@ -21,18 +21,19 @@ public:
         std::tie(m_pin_mask, m_pinned) = m_position.calc_pin_mask();
     }
 
-    bool is_legal(Move m) const;
+    [[nodiscard]] bool is_legal(Move m) const;
 
     void generate_moves(MoveList& noisy, MoveList& quiet);
 
 private:
-    std::tuple<Bitboard, Bitboard, bool> valid_destinations_one_checker(u16 checker) const;
-    Bitboard                             valid_destinations_two_checkers(u16 checker) const;
+    [[nodiscard]] std::tuple<Bitboard, Bitboard, bool>
+                           valid_destinations_one_checker(u16 checker) const;
+    [[nodiscard]] Bitboard valid_destinations_two_checkers(u16 checker) const;
 
-    bool is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) const;
-    bool is_legal_king_move(Move m, Bitboard valid_dests) const;
-    bool is_legal_one_checker(Move m, u16 checkers) const;
-    bool is_legal_two_checkers(Move m, u16 checkers) const;
+    [[nodiscard]] bool is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) const;
+    [[nodiscard]] bool is_legal_king_move(Move m, Bitboard valid_dests) const;
+    [[nodiscard]] bool is_legal_one_checker(Move m, u16 checkers) const;
+    [[nodiscard]] bool is_legal_two_checkers(Move m, u16 checkers) const;
 
     template<bool king_moves>
     void generate_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests, bool can_ep);
