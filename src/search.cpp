@@ -17,8 +17,9 @@ Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
-Worker::Worker(TT& tt) :
-    m_tt(tt) {
+Worker::Worker(TT& tt, ThreadData& td) :
+    m_tt(tt),
+    m_td(td) {
 }
 
 
@@ -48,6 +49,8 @@ void Worker::launch_search(Position            root_position,
                        .hard_node_limit = settings.hard_nodes > 0 ? settings.hard_nodes
                                                                   : std::numeric_limits<u64>::max(),
                        .depth_limit     = settings.depth > 0 ? settings.depth : MAX_PLY};
+
+    m_td.history.clear();
 
     // Run iterative deepening search
     Move best_move = iterative_deepening(root_position);
@@ -172,7 +175,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
     auto tt_data = m_tt.probe(pos);
 
-    MovePicker moves{pos, tt_data ? tt_data->move : Move::none()};
+    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none()};
     Move       best_move  = Move::none();
     Value      best_value = -VALUE_INF;
 
@@ -205,6 +208,10 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
                 }
             }
         }
+    }
+
+    if (best_value >= beta) {
+        m_td.history.update_quiet_stats(pos, best_move, depth * depth);
     }
 
     // Checkmate / Stalemate check
@@ -259,7 +266,7 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
     }
     alpha = std::max(alpha, static_eval);
 
-    MovePicker moves{pos};
+    MovePicker moves{pos, m_td.history};
     if (!is_in_check) {
         moves.skip_quiets();
     }

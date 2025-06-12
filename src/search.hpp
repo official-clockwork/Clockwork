@@ -1,9 +1,11 @@
 #pragma once
+#include "history.hpp"
 #include "move.hpp"
 #include "position.hpp"
 #include "tt.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
+
 
 namespace Clockwork {
 
@@ -19,10 +21,14 @@ struct SearchLimits {
     Depth           depth_limit;
 };
 
+struct ThreadData {
+    History history;
+};
+
 class Worker {
 public:
     u64 search_nodes;
-    Worker(TT& tt);
+    Worker(TT& tt, ThreadData& td);
     void launch_search(Position            root_position,
                        RepetitionInfo      repetition_info,
                        UCI::SearchSettings settings);
@@ -33,6 +39,7 @@ private:
     SearchLimits    m_search_limits;
     RepetitionInfo  m_repetition_info;
     TT&             m_tt;
+    ThreadData&     m_td;
 
     Move iterative_deepening(Position root_position);
 

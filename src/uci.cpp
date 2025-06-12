@@ -76,7 +76,8 @@ void UCIHandler::handle_bench(std::istringstream& is) {
         is.clear();
         depth = 6;
     }
-    Search::Worker worker{m_tt};
+    Search::ThreadData td = {};
+    Search::Worker     worker{m_tt, td};
     Bench::benchmark(worker, depth);
 }
 
@@ -108,7 +109,8 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.hard_nodes;
         }
     }
-    Search::Worker worker{m_tt};
+    Search::ThreadData td = {};
+    Search::Worker     worker{m_tt, td};
     worker.launch_search(m_position, m_repetition_info, settings);
 }
 

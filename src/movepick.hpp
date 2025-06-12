@@ -3,8 +3,10 @@
 #include <array>
 #include <optional>
 
+#include "history.hpp"
 #include "movegen.hpp"
 #include "position.hpp"
+
 
 namespace Clockwork {
 
@@ -12,8 +14,9 @@ bool quiet_move(Move move);
 
 class MovePicker {
 public:
-    explicit MovePicker(const Position& pos, Move tt_move = Move::none()) :
+    explicit MovePicker(const Position& pos, const History& history, Move tt_move = Move::none()) :
         m_pos(pos),
+        m_history(history),
         m_movegen(pos),
         m_tt_move(tt_move) {
     }
@@ -28,6 +31,7 @@ private:
         EmitTTMove,
         ScoreNoisy,
         EmitNoisy,
+        ScoreQuiet,
         EmitQuiet,
         End,
     };
@@ -41,6 +45,7 @@ private:
     Stage m_stage = Stage::GenerateMoves;
 
     const Position&      m_pos;
+    const History&       m_history;
     MoveGen              m_movegen;
     MoveList             m_noisy;
     MoveList             m_quiet;

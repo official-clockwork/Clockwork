@@ -47,13 +47,18 @@ Move MovePicker::next() {
             return Move::none();
         }
 
-        m_stage         = Stage::EmitQuiet;
+        m_stage         = Stage::ScoreQuiet;
         m_current_index = 0;
+
+        [[fallthrough]];
+    case Stage::ScoreQuiet:
+        score_moves(m_quiet);
+        m_stage = Stage::EmitQuiet;
 
         [[fallthrough]];
     case Stage::EmitQuiet:
         while (m_current_index < m_quiet.size()) {
-            Move curr = m_quiet[m_current_index++];
+            Move curr = pick_next(m_quiet);
             if (curr != m_tt_move) {
                 return curr;
             }
@@ -106,8 +111,7 @@ Move MovePicker::pick_next(MoveList& moves) {
 
 i32 MovePicker::score_move(Move move) const {
     if (quiet_move(move)) {
-        // to be implemented
-        return 0;
+        return m_history.get_quiet_stats(m_pos, move);
     } else {
         return 100 * static_cast<int>(m_pos.piece_at(move.to()))
              - static_cast<int>(m_pos.piece_at(move.from()));
