@@ -34,6 +34,18 @@ valid_pawns(Color color, Bitboard bb, Bitboard empty, Bitboard valid_dests) {
     unreachable();
 }
 
+bool MoveGen::is_legal(Move m) const {
+    u16 checkers = m_position.checker_mask();
+    switch (std::popcount(checkers)) {
+    case 0:
+        return is_legal_no_checkers(m, ~Bitboard{0}, true);
+    case 1:
+        return is_legal_one_checker(m, checkers);
+    default:
+        return is_legal_two_checkers(m, checkers);
+    }
+}
+
 void MoveGen::generate_moves(MoveList& noisy, MoveList& quiet) {
     u16 checkers = m_position.checker_mask();
     switch (std::popcount(checkers)) {
@@ -46,6 +58,197 @@ void MoveGen::generate_moves(MoveList& noisy, MoveList& quiet) {
     }
 }
 
+std::tuple<Bitboard, Bitboard, bool> MoveGen::valid_destinations_one_checker(u16 checker) const {
+    Color  active_color = m_position.active_color();
+    Square king_sq      = m_position.king_sq(active_color);
+
+    u8        checker_id    = static_cast<u8>(std::countr_zero(checker));
+    Square    checker_sq    = m_position.piece_list_sq(invert(active_color))[checker_id];
+    PieceType checker_ptype = m_position.piece_list(invert(active_color))[checker_id];
+
+    Bitboard valid_dests = rays::inclusive(king_sq, checker_sq);
+    Bitboard checker_ray =
+      is_slider(checker_ptype) ? rays::infinite_exclusive(king_sq, checker_sq) : Bitboard{};
+
+    return {valid_dests, ~checker_ray, checker_ptype == PieceType::Pawn};
+}
+
+Bitboard MoveGen::valid_destinations_two_checkers(u16 checkers) const {
+    Color  active_color = m_position.active_color();
+    Square king_sq      = m_position.king_sq(active_color);
+
+    Bitboard checkers_rays;
+    for (; checkers != 0; checkers = clear_lowest_bit(checkers)) {
+        u8        checker_id    = static_cast<u8>(std::countr_zero(checkers));
+        Square    checker_sq    = m_position.piece_list_sq(invert(active_color))[checker_id];
+        PieceType checker_ptype = m_position.piece_list(invert(active_color))[checker_id];
+
+        if (is_slider(checker_ptype)) {
+            checkers_rays |= rays::infinite_exclusive(king_sq, checker_sq);
+        }
+    }
+
+    return ~checkers_rays;
+}
+
+bool MoveGen::is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) const {
+    Color  active_color = m_position.active_color();
+    Square king_sq      = m_position.king_sq(active_color);
+
+    Place src = m_position.board()[m.from()];
+    if (src.is_empty() || src.color() != active_color) {
+        return false;
+    }
+
+    bool empty_dest = m_position.board()[m.to()].is_empty();
+    bool enemy_dest = !empty_dest && m_position.board()[m.to()].color() != active_color;
+
+    // valid_attack implies valid from square in the move! (exception: quiet pawn moves)
+    u16  at_dest = m_position.attack_table(active_color).read(m.to()) & m_pin_mask.read(m.to());
+    bool valid_attack = (at_dest >> src.id().raw) & 1;
+
+    // There are positions where enpassant is legal but is not set in valid_dests
+    if (src.ptype() == PieceType::Pawn && m.flags() == MoveFlags::EnPassant) {
+        u16 pawn_mask = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
+        return m_position.en_passant().is_valid() && can_ep && empty_dest && valid_attack
+            && m.to() == m_position.en_passant() && !is_ep_clearance_pinned(at_dest & pawn_mask);
+    }
+
+    if (!valid_dests.is_set(m.to())) {
+        return false;
+    }
+
+    if (src.ptype() == PieceType::Pawn) {
+
+        if (m.is_capture()) {
+            Bitboard promo_zone{static_cast<u64>(0xFF) << (active_color == Color::White ? 56 : 0)};
+
+            if (m.is_promotion()) {
+                return promo_zone.is_set(m.to()) && valid_attack && enemy_dest;
+            }
+
+            if (m.flags() == MoveFlags::CaptureBit) {
+                return !promo_zone.is_set(m.to()) && valid_attack && enemy_dest;
+            }
+
+            return false;
+        }
+
+        if (m.flags() == MoveFlags::Normal || m.is_promotion()) {
+            Bitboard empty        = m_position.board().get_empty_bitboard();
+            Bitboard pinned_pawns = m_pinned & ~Bitboard::file_mask(king_sq.file());
+            Bitboard bb =
+              m_position.board().bitboard_for(active_color, PieceType::Pawn) & ~pinned_pawns;
+            auto [single_push, double_push, promo, single_shift, double_shift] =
+              valid_pawns(active_color, bb, empty, valid_dests);
+
+            int move_shift = m.to().raw - m.from().raw;
+
+            if (m.is_promotion()) {
+                return promo.is_set(m.from()) && move_shift == single_shift;
+            } else {
+                return (single_push.is_set(m.from()) && move_shift == single_shift)
+                    || (double_push.is_set(m.from()) && move_shift == double_shift);
+            }
+        }
+
+        return false;
+    } else if (src.ptype() == PieceType::King) {
+        Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
+
+        if (m.flags() == MoveFlags::Castle) {
+            // TODO: FRC
+            Bitboard empty     = m_position.board().get_empty_bitboard();
+            RookInfo rook_info = m_position.rook_info(active_color);
+            if (rook_info.aside == m.to()) {
+                Bitboard clear =
+                  empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.aside);
+                u8 rank_empty = clear.front_rank(active_color);
+                u8 rank_safe  = (~danger).front_rank(active_color);
+                return (rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C;
+            }
+            if (rook_info.hside == m.to()) {
+                Bitboard clear =
+                  empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.hside);
+                u8 rank_empty = clear.front_rank(active_color);
+                u8 rank_safe  = (~danger).front_rank(active_color);
+
+                return (rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70;
+            }
+            return false;
+        }
+
+        if (danger.is_set(m.to())) {
+            // The king cannot walk into danger
+            return false;
+        }
+        // fallthrough
+    }
+
+    // Non-pawn moves or King moves with safe destinations
+
+    if (m.flags() == MoveFlags::CaptureBit) {
+        return valid_attack && enemy_dest;
+    }
+
+    if (m.flags() == MoveFlags::Normal) {
+        return valid_attack && empty_dest;
+    }
+
+    return false;
+}
+
+bool MoveGen::is_legal_king_move(Move m, Bitboard valid_dests) const {
+    Color active_color = m_position.active_color();
+
+    if (m.from() != m_position.king_sq(active_color)) {
+        return false;
+    }
+
+    bool danger = m_position.attack_table(invert(active_color)).read(m.to()) != 0;
+    if (danger) {
+        return false;
+    }
+
+    if (!valid_dests.is_set(m.to())) {
+        return false;
+    }
+
+    bool valid_attack = m_position.attack_table(active_color).read(m.to()) & 1;
+    if (!valid_attack) {
+        return false;
+    }
+
+    bool empty_dest = m_position.board()[m.to()].is_empty();
+    bool enemy_dest = !empty_dest && m_position.board()[m.to()].color() != active_color;
+
+    if (m.flags() == MoveFlags::CaptureBit) {
+        return enemy_dest;
+    }
+
+    if (m.flags() == MoveFlags::Normal) {
+        return empty_dest;
+    }
+
+    return false;
+}
+
+bool MoveGen::is_legal_one_checker(Move m, u16 checkers) const {
+    auto [valid_dests, non_checker_ray, has_ep] = valid_destinations_one_checker(checkers);
+
+    if (m.from() == m_position.king_sq(m_active_color)) {
+        return is_legal_king_move(m, non_checker_ray);
+    } else {
+        return is_legal_no_checkers(m, valid_dests, has_ep);
+    }
+}
+
+bool MoveGen::is_legal_two_checkers(Move m, u16 checkers) const {
+    Bitboard non_checker_ray = valid_destinations_two_checkers(checkers);
+
+    return is_legal_king_move(m, non_checker_ray);
+}
+
 template<bool king_moves>
 void MoveGen::generate_moves_to(MoveList& noisy,
                                 MoveList& quiet,
@@ -56,8 +259,7 @@ void MoveGen::generate_moves_to(MoveList& noisy,
     Bitboard empty = m_position.board().get_empty_bitboard();
     Bitboard enemy = m_position.board().get_color_bitboard(invert(active_color));
 
-    auto [pin_mask, pinned] = m_position.calc_pin_mask();
-    std::array<u16, 64> at  = (m_position.attack_table(active_color) & pin_mask).to_mailbox();
+    std::array<u16, 64> at = (m_position.attack_table(active_color) & m_pin_mask).to_mailbox();
 
     u16 king_mask = 1;
     u16 pawn_mask = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
@@ -131,7 +333,7 @@ void MoveGen::generate_moves_to(MoveList& noisy,
     // Pawn quiets
     {
         Square   king_sq      = m_position.king_sq(active_color);
-        Bitboard pinned_pawns = pinned & ~Bitboard::file_mask(king_sq.file());
+        Bitboard pinned_pawns = m_pinned & ~Bitboard::file_mask(king_sq.file());
 
         Bitboard bb =
           m_position.board().bitboard_for(active_color, PieceType::Pawn) & ~pinned_pawns;
@@ -170,37 +372,16 @@ void MoveGen::generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard 
 }
 
 void MoveGen::generate_moves_one_checker(MoveList& noisy, MoveList& quiet, u16 checker) {
-    Color  active_color = m_position.active_color();
-    Square king_sq      = m_position.king_sq(active_color);
+    auto [valid_dests, non_checker_ray, has_ep] = valid_destinations_one_checker(checker);
 
-    u8        checker_id    = static_cast<u8>(std::countr_zero(checker));
-    Square    checker_sq    = m_position.piece_list_sq(invert(active_color))[checker_id];
-    PieceType checker_ptype = m_position.piece_list(invert(active_color))[checker_id];
-
-    Bitboard valid_dests = rays::inclusive(king_sq, checker_sq);
-    Bitboard checker_ray =
-      is_slider(checker_ptype) ? rays::infinite_exclusive(king_sq, checker_sq) : Bitboard{};
-
-    generate_moves_to<false>(noisy, quiet, valid_dests, checker_ptype == PieceType::Pawn);
-    generate_king_moves_to(noisy, quiet, ~checker_ray);
+    generate_moves_to<false>(noisy, quiet, valid_dests, has_ep);
+    generate_king_moves_to(noisy, quiet, non_checker_ray);
 }
 
 void MoveGen::generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, u16 checkers) {
-    Color  active_color = m_position.active_color();
-    Square king_sq      = m_position.king_sq(active_color);
+    Bitboard non_checker_ray = valid_destinations_two_checkers(checkers);
 
-    Bitboard checkers_rays;
-    for (; checkers != 0; checkers = clear_lowest_bit(checkers)) {
-        u8        checker_id    = static_cast<u8>(std::countr_zero(checkers));
-        Square    checker_sq    = m_position.piece_list_sq(invert(active_color))[checker_id];
-        PieceType checker_ptype = m_position.piece_list(invert(active_color))[checker_id];
-
-        if (is_slider(checker_ptype)) {
-            checkers_rays |= rays::infinite_exclusive(king_sq, checker_sq);
-        }
-    }
-
-    generate_king_moves_to(noisy, quiet, ~checkers_rays);
+    generate_king_moves_to(noisy, quiet, non_checker_ray);
 }
 
 void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {

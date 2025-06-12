@@ -99,6 +99,10 @@ public:
         return m_raw;
     }
 
+    bool is_set(Square sq) const {
+        return (m_raw >> sq.raw) & 1;
+    }
+
     void clear(Square sq) {
         m_raw &= ~from_square(sq).m_raw;
     }

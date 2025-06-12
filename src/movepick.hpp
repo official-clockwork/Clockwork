@@ -22,6 +22,10 @@ public:
 
     Move next();
 
+    [[nodiscard]] bool is_legal(Move m) const {
+        return m_movegen.is_legal(m);
+    }
+
 private:
     enum class Stage {
         GenerateMoves,

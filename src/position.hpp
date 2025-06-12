@@ -125,6 +125,10 @@ public:
         return attack_table(color).read(sq) & piece_list(color).mask_eq(ptype);
     }
 
+    [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceId id) const {
+        return (attack_table(color).read(sq) >> id.raw) & 1;
+    }
+
     [[nodiscard]] Position move(Move m) const;
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
