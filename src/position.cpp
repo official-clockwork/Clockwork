@@ -759,4 +759,5 @@ bool Position::is_reversible(Move move) {
 u16 Position::get_50mr_counter() const {
     return m_50mr;
 }
+
 }
