@@ -291,10 +291,10 @@ Value Worker::evaluate(const Position& pos) {
     const Color us   = pos.active_color();
     const Color them = invert(us);
     return 100 * (pos.piece_count(us, PieceType::Pawn) - pos.piece_count(them, PieceType::Pawn))
-         + 300 * (pos.piece_count(us, PieceType::Knight) - pos.piece_count(them, PieceType::Knight))
-         + 300 * (pos.piece_count(us, PieceType::Bishop) - pos.piece_count(them, PieceType::Bishop))
-         + 500 * (pos.piece_count(us, PieceType::Rook) - pos.piece_count(them, PieceType::Rook))
-         + 900 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen))
+         + 330 * (pos.piece_count(us, PieceType::Knight) - pos.piece_count(them, PieceType::Knight))
+         + 370 * (pos.piece_count(us, PieceType::Bishop) - pos.piece_count(them, PieceType::Bishop))
+         + 550 * (pos.piece_count(us, PieceType::Rook) - pos.piece_count(them, PieceType::Rook))
+         + 1000 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen))
          + static_cast<i32>(search_nodes & 7) - 3;
 }
 }
