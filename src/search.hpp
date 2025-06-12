@@ -12,6 +12,7 @@ namespace Clockwork {
 namespace Search {
 struct Stack {
     Move* pv;
+    Move  killer;
 };
 
 struct SearchLimits {
