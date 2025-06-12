@@ -194,6 +194,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
         Value value = -search(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
 
+        m_repetition_info.pop();
+
         if (value >= beta) {
             return value > VALUE_WIN ? beta : value;
         }
