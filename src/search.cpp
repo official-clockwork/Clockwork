@@ -61,27 +61,19 @@ Move Worker::iterative_deepening(Position root_position) {
     std::array<Stack, MAX_PLY + 1> ss;
     std::array<Move, MAX_PLY + 1>  pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
-    Move                           best_move;
 
     Depth root_depth = m_search_limits.depth_limit;
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
         ss[i].pv = &pv[i];
     }
 
-    for (Depth search_depth = 1; search_depth <= root_depth; search_depth++) {
-        // Call search
-        Value score = search(root_position, &ss[0], alpha, beta, search_depth, 0);
+    Depth last_search_depth = 0;
+    Value last_search_score = -VALUE_INF;
+    Move  last_best_move    = Move::none();
 
-        // If m_stopped is true, then the search exited early. Discard the results for this depth.
-        if (m_stopped) {
-            break;
-        }
-
-        // Get the move only if the last iterative deepening search completed
-        best_move = *ss[0].pv;
-
+    const auto print_info_line = [&] {
         // Lambda to convert internal units score to uci score. TODO: add eval rescaling here once we get one
-        auto format_score = [=]() {
+        auto format_score = [](Value score) {
             if (score < -VALUE_WIN && score > -VALUE_MATED) {
                 return "mate " + std::to_string(-(VALUE_MATED + score + 2) / 2);
             }
@@ -94,20 +86,44 @@ Move Worker::iterative_deepening(Position root_position) {
         // Get current time
         auto curr_time = time::Clock::now();
 
-        std::cout << std::dec << "info depth " << search_depth << " score " << format_score()
-                  << " nodes " << search_nodes << " nps "
-                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << *ss[0].pv
+        std::cout << std::dec << "info depth " << last_search_depth << " score "
+                  << format_score(last_search_score) << " nodes " << search_nodes << " nps "
+                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << last_best_move
                   << std::endl;
+    };
 
+    for (Depth search_depth = 1;; search_depth++) {
+        // Call search
+        Value score = search(root_position, &ss[0], alpha, beta, search_depth, 0);
+
+        // If m_stopped is true, then the search exited early. Discard the results for this depth.
+        if (m_stopped) {
+            break;
+        }
+
+        // Store information only if the last iterative deepening search completed
+        last_search_depth = search_depth;
+        last_search_score = score;
+        last_best_move    = *ss[0].pv;
+
+        // Check depth limit
+        if (search_depth >= root_depth) {
+            break;
+        }
         // Check soft node limit
         if (search_nodes >= m_search_limits.soft_node_limit) {
             break;
         }
-
         // TODO: add any soft time limit check here
+
+        print_info_line();
     }
 
-    return best_move;
+    // Print last info line
+    // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
+    print_info_line();
+
+    return last_best_move;
 }
 
 Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
