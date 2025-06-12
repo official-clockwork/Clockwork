@@ -182,7 +182,6 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none()};
     Move       best_move  = Move::none();
     Value      best_value = -VALUE_INF;
-    Bound      bound      = Bound::Upper;
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
@@ -211,10 +210,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             if (value > alpha) {
                 alpha     = value;
                 best_move = m;
-                bound     = Bound::Exact;
 
                 if (value >= beta) {
-                    bound = Bound::Lower;
                     break;
                 }
             }
@@ -234,9 +231,9 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         }
     }
 
-    // Bound bound = best_value >= beta        ? Bound::Lower
-    //             : best_move != Move::none() ? Bound::Exact
-    //                                         : Bound::Upper;
+    Bound bound = best_value >= beta        ? Bound::Lower
+                : best_move != Move::none() ? Bound::Exact
+                                            : Bound::Upper;
     m_tt.store(pos, ply, best_move, best_value, depth, bound);
 
     return best_value;
