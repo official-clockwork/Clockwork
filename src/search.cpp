@@ -199,7 +199,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
-        Value value = -search(pos_after, ss + 1, -beta, -alpha, depth - 1, ply + 1);
+        Depth new_depth = depth - 1 + pos_after.is_in_check();
+        Value value     = -search(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         m_repetition_info.pop();
