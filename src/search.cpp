@@ -171,7 +171,13 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return 0;
     }
 
-    auto tt_data = m_tt.probe(pos);
+    auto tt_data = m_tt.probe(pos, ply);
+    if (tt_data && tt_data->depth >= depth
+        && (tt_data->bound == Bound::Exact
+            || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
+            || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
+        return tt_data->score;
+    }
 
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none()};
     Move       best_move  = Move::none();
@@ -225,7 +231,10 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         }
     }
 
-    m_tt.store(pos, best_move);
+    Bound bound = best_value >= beta        ? Bound::Lower
+                : best_move != Move::none() ? Bound::Exact
+                                            : Bound::Upper;
+    m_tt.store(pos, ply, best_move, best_value, depth, bound);
 
     return best_value;
 }
