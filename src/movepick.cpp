@@ -15,23 +15,24 @@ void MovePicker::skip_quiets() {
 
 Move MovePicker::next() {
     switch (m_stage) {
-    case Stage::GenerateMoves:
-        generate_moves();
-
-        m_stage         = Stage::EmitTTMove;
-        m_current_index = 0;
-
-        [[fallthrough]];
     case Stage::EmitTTMove:
-        m_stage = Stage::ScoreNoisy;
-        if (m_tt_move != Move::none()) {
+        m_stage = Stage::GenerateMoves;
+        if (m_tt_move != Move::none() && m_movegen.is_legal(m_tt_move)) {
             return m_tt_move;
         }
 
         [[fallthrough]];
+    case Stage::GenerateMoves:
+        generate_moves();
+
+        m_stage = Stage::ScoreNoisy;
+
+        [[fallthrough]];
     case Stage::ScoreNoisy:
         score_moves(m_noisy);
-        m_stage = Stage::EmitNoisy;
+
+        m_stage         = Stage::EmitNoisy;
+        m_current_index = 0;
 
         [[fallthrough]];
     case Stage::EmitNoisy:
@@ -70,19 +71,6 @@ Move MovePicker::next() {
 
 void MovePicker::generate_moves() {
     m_movegen.generate_moves(m_noisy, m_quiet);
-    for (Move mv : m_noisy) {
-        if (mv == m_tt_move) {
-            return;
-        }
-    }
-
-    for (Move mv : m_quiet) {
-        if (mv == m_tt_move) {
-            return;
-        }
-    }
-    // tt move is not legal
-    m_tt_move = Move::none();
 }
 
 void MovePicker::score_moves(MoveList& moves) {

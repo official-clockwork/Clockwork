@@ -28,8 +28,8 @@ public:
 
 private:
     enum class Stage {
-        GenerateMoves,
         EmitTTMove,
+        GenerateMoves,
         ScoreNoisy,
         EmitNoisy,
         EmitQuiet,
@@ -42,7 +42,7 @@ private:
 
     i32 score_move(Move move) const;
 
-    Stage m_stage = Stage::GenerateMoves;
+    Stage m_stage = Stage::EmitTTMove;
 
     const Position&      m_pos;
     MoveGen              m_movegen;
