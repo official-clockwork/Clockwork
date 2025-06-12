@@ -130,6 +130,7 @@ public:
     }
 
     [[nodiscard]] Position move(Move m) const;
+    [[nodiscard]] Position null_move() const;
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 

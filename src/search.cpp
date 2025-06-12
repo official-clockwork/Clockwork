@@ -186,6 +186,19 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return static_eval;
     }
 
+    if (!ROOT_NODE && !is_in_check && depth >= 3) {
+        int      R         = 3;
+        Position pos_after = pos.null_move();
+
+        m_repetition_info.push(pos_after.get_hash_key(), true);
+
+        Value value = -search(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
+
+        if (value >= beta) {
+            return value > VALUE_WIN ? beta : value;
+        }
+    }
+
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none()};
     Move       best_move  = Move::none();
     Value      best_value = -VALUE_INF;

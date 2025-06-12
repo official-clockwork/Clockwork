@@ -364,6 +364,22 @@ Position Position::move(Move m) const {
     return new_pos;
 }
 
+Position Position::null_move() const {
+    Position new_pos = *this;
+    new_pos.m_hash_key ^= Zobrist::side_key;
+
+    if (m_enpassant.is_valid()) {
+        // Remove hash for ep square
+        new_pos.m_hash_key ^= Zobrist::en_passant_zobrist[new_pos.m_enpassant.raw];
+        new_pos.m_enpassant = Square::invalid();
+    }
+
+    new_pos.m_active_color = invert(m_active_color);
+    new_pos.m_ply++;
+
+    return new_pos;
+}
+
 std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     Square king_square = king_sq(m_active_color);
 
