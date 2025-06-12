@@ -183,13 +183,14 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
 
     // Reuse TT score as a better positional evaluation
+    auto tt_adjusted_eval = static_eval;
     if (tt_data
         && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
-        static_eval = tt_data->score;
+        tt_adjusted_eval = tt_data->score;
     }
 
-    if (!ROOT_NODE && !is_in_check && depth <= 6 && static_eval >= beta + 80 * depth) {
-        return static_eval;
+    if (!ROOT_NODE && !is_in_check && depth <= 6 && tt_adjusted_eval >= beta + 80 * depth) {
+        return tt_adjusted_eval;
     }
 
     if (!ROOT_NODE && !is_in_check && depth >= 3) {
