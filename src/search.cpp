@@ -201,9 +201,12 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         }
     }
 
-    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none()};
+    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer};
     Move       best_move  = Move::none();
     Value      best_value = -VALUE_INF;
+
+    // Clear child's killer move.
+    (ss + 1)->killer = Move::none();
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
@@ -242,6 +245,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     if (best_value >= beta && quiet_move(best_move)) {
+        ss->killer = best_move;
+
         m_td.history.update_quiet_stats(pos, best_move, depth * depth);
     }
 

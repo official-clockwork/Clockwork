@@ -48,19 +48,27 @@ Move MovePicker::next() {
             return Move::none();
         }
 
-        m_stage         = Stage::ScoreQuiet;
-        m_current_index = 0;
+        m_stage = Stage::EmitKiller;
+
+        [[fallthrough]];
+    case Stage::EmitKiller:
+        m_stage = Stage::ScoreQuiet;
+        if (m_tt_move != m_killer && m_killer != Move::none() && m_movegen.is_legal(m_killer)) {
+            return m_killer;
+        }
 
         [[fallthrough]];
     case Stage::ScoreQuiet:
         score_moves(m_quiet);
-        m_stage = Stage::EmitQuiet;
+
+        m_stage         = Stage::EmitQuiet;
+        m_current_index = 0;
 
         [[fallthrough]];
     case Stage::EmitQuiet:
         while (m_current_index < m_quiet.size()) {
             Move curr = pick_next(m_quiet);
-            if (curr != m_tt_move) {
+            if (curr != m_tt_move && curr != m_killer) {
                 return curr;
             }
         }
