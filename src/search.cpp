@@ -69,7 +69,7 @@ void Worker::launch_search(Position            root_position,
 Move Worker::iterative_deepening(Position root_position) {
 
     std::array<Stack, MAX_PLY + 1> ss;
-    PV pv;
+    std::array<PV, MAX_PLY + 1> pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
 
     Depth root_depth = m_search_limits.depth_limit;
