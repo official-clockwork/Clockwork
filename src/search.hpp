@@ -5,6 +5,8 @@
 #include "psqt_state.hpp"
 #include "repetition_info.hpp"
 #include "tt.hpp"
+#include "uci.hpp"
+#include "util/static_vector.hpp"
 #include "util/types.hpp"
 #include <barrier>
 #include <memory>
@@ -34,9 +36,11 @@ enum class ThreadType {
     SECONDARY = 0,
 };
 
+using PV = StaticVector<Move, MAX_PLY + 1>;
+
 struct Stack {
     Value          static_eval;
-    Move*          pv;
+    PV*            pv;
     Move           killer;
     ContHistEntry* cont_hist_entry;
     i32            fail_high_count;

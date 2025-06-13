@@ -92,6 +92,12 @@ public:
         return res;
     }
 
+    void append(const StaticVector& other) {
+        assert(m_len + other.m_len <= cap);
+        std::uninitialized_copy(other.begin(), other.end(), end());
+        m_len += other.m_len;
+    }
+
     iterator push_back(const T& value) {
         assert(m_len < cap);
         T* res = std::construct_at(data() + m_len, value);
