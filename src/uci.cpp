@@ -15,9 +15,31 @@
 #include "position.hpp"
 #include "search.hpp"
 
+#ifndef VERSION
+    #define WHITESPACE ""
+
+    #ifndef GIT_COMMIT_HASH
+        #define GIT_COMMIT_HASH ""
+        #define VERSION "-dev"
+    #else
+        #define VERSION "-dev-"
+    #endif
+#else
+    #define WHITESPACE " "
+#endif
+
 namespace Clockwork::UCI {
 
 constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
+
+constexpr std::string_view VERSION_STRING    = VERSION;
+constexpr std::string_view WHITESPACE_STRING = WHITESPACE;
+
+#if defined(GIT_COMMIT_HASH)
+constexpr std::string_view HASH = std::string_view(GIT_COMMIT_HASH).substr(0, 8);
+#else
+constexpr std::string_view HASH = "";
+#endif
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
@@ -44,7 +66,10 @@ void UCIHandler::execute_command(const std::string& line) {
     is >> std::skipws >> command;
 
     if (command == "uci") {
-        std::cout << "id name Clockwork\n";
+        const auto version =
+          std::string(WHITESPACE_STRING) + std::string(VERSION_STRING) + std::string(HASH);
+
+        std::cout << "id name Clockwork" << version << "\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {

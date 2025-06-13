@@ -9,7 +9,14 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
-#Optimizations
+# Get git latest commit hash
+execute_process(
+    COMMAND git rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Optimizations
 set(CLOCKWORK_MARCH_TARGET "native" CACHE STRING "Specify the target architecture for -march (e.g., native, skylake, znver2). Set to OFF or empty to disable.")
 
 if (CLOCKWORK_MARCH_TARGET AND NOT CLOCKWORK_MARCH_TARGET STREQUAL "OFF")
@@ -41,6 +48,14 @@ function(target_add_flags target)
         -fsanitize=address,undefined -g3
         -D_GLIBCXX_DEBUG -D_LIBCPP_DEBUG=1
         >)
+
+    if (CLOCKWORK_VERSION)
+        target_compile_definitions(${target} PRIVATE
+            "-DVERSION=\"${CLOCKWORK_VERSION}\"")
+    else ()
+        target_compile_definitions(${target} PRIVATE
+            "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+    endif()
 
     target_link_options(${target} PUBLIC
         $<$<CONFIG:Debug>:
