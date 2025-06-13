@@ -9,12 +9,21 @@
 #include <array>
 #include <iostream>
 #include <limits>
+#include <string_view>
 
 namespace Clockwork {
 namespace Search {
 
 Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
+}
+
+// Adds current move to current
+void update_pv(Move move, Move* current_pv, Move* child_pv_line) {
+    for (*current_pv++ = move; child_pv_line && *child_pv_line != Move::none();)
+        *current_pv++ = *child_pv_line++;
+    // Finally null terminate the pv
+    *current_pv = Move::none();
 }
 
 Worker::Worker(TT& tt, ThreadData& td) :
@@ -88,12 +97,26 @@ Move Worker::iterative_deepening(Position root_position) {
             return "cp " + std::to_string(score);
         };
 
+        // Lambda to print the mainline
+        auto pv_string = [&] {
+            std::ostringstream oss;
+            Stack* curr = &ss[0];
+
+            while (curr->pv && *curr->pv != Move::none()) {
+                oss << *curr->pv << " ";
+                ++curr;
+            }
+
+            return oss.str();
+        };
+
+
         // Get current time
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
                   << format_score(last_search_score) << " nodes " << search_nodes << " nps "
-                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << last_best_move
+                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << pv_string()
                   << std::endl;
     };
 
@@ -137,6 +160,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     const bool ROOT_NODE = ply == 0;
+    const bool PV_NODE = (beta - alpha) > 1;
 
     // TODO: search nodes limit condition here
     // ...
@@ -237,11 +261,11 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
         if (value > best_value) {
             best_value = value;
-            if (ply == 0) {
-                ss->pv[ply] = m;  // No pv update for now, just bestmove
-            }
 
             if (value > alpha) {
+                if (PV_NODE) {
+                    update_pv(m, ss->pv, (ss+1)->pv);
+                }
                 alpha     = value;
                 best_move = m;
 
