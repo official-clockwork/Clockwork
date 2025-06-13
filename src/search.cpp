@@ -204,6 +204,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer};
     Move       best_move  = Move::none();
     Value      best_value = -VALUE_INF;
+    MoveList   quiets_played;
 
     // Clear child's killer move.
     (ss + 1)->killer = Move::none();
@@ -212,6 +213,10 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         // Do move
         Position pos_after = pos.move(m);
+
+        if (quiet_move(m)) {
+            quiets_played.push_back(m);
+        }
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
         m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
@@ -248,6 +253,12 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         ss->killer = best_move;
 
         m_td.history.update_quiet_stats(pos, best_move, depth * depth);
+        for (Move quiet : quiets_played) {
+            if (quiet == best_move) {
+                continue;
+            }
+            m_td.history.update_quiet_stats(pos, quiet, -depth * depth);
+        }
     }
 
     // Checkmate / Stalemate check
