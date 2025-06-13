@@ -15,7 +15,7 @@ namespace Search {
 using PV = StaticVector<Move, MAX_PLY + 1>;
 
 struct Stack {
-    Move* pv;
+    PV* pv;
     Move  killer;
 };
 
