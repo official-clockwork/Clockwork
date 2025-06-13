@@ -15,14 +15,14 @@
 #include "position.hpp"
 #include "search.hpp"
 
-#ifndef VERSION
+#ifndef CLOCKWORK_VERSION
     #define WHITESPACE ""
 
     #ifndef GIT_COMMIT_HASH
         #define GIT_COMMIT_HASH ""
-        #define VERSION "-dev"
+        #define CLOCKWORK_VERSION "-dev"
     #else
-        #define VERSION "-dev-"
+        #define CLOCKWORK_VERSION "-dev-"
     #endif
 #else
     #define WHITESPACE " "
@@ -32,8 +32,8 @@ namespace Clockwork::UCI {
 
 constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
 
-constexpr std::string_view VERSION_STRING    = VERSION;
-constexpr std::string_view WHITESPACE_STRING = WHITESPACE;
+constexpr std::string_view VERSION   = CLOCKWORK_VERSION;
+constexpr std::string_view SEPARATOR = WHITESPACE;
 
 #if defined(GIT_COMMIT_HASH)
 constexpr std::string_view HASH = std::string_view(GIT_COMMIT_HASH).substr(0, 8);
@@ -66,8 +66,7 @@ void UCIHandler::execute_command(const std::string& line) {
     is >> std::skipws >> command;
 
     if (command == "uci") {
-        const auto version =
-          std::string(WHITESPACE_STRING) + std::string(VERSION_STRING) + std::string(HASH);
+        const auto version = std::string(SEPARATOR) + std::string(VERSION) + std::string(HASH);
 
         std::cout << "id name Clockwork" << version << "\n";
         std::cout << "id author The Clockwork community\n";

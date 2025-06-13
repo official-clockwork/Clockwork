@@ -51,7 +51,7 @@ function(target_add_flags target)
 
     if (CLOCKWORK_VERSION)
         target_compile_definitions(${target} PRIVATE
-            "-DVERSION=\"${CLOCKWORK_VERSION}\"")
+            "-DCLOCKWORK_VERSION=\"${CLOCKWORK_VERSION}\"")
     else ()
         target_compile_definitions(${target} PRIVATE
             "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
