@@ -203,8 +203,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = static_eval;
-    if (tt_data
-        && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
+    if (tt_data && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
 
