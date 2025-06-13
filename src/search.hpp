@@ -5,11 +5,15 @@
 #include "tt.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
+#include "util/static_vector.hpp"
 
 
 namespace Clockwork {
 
 namespace Search {
+
+using PV = StaticVector<Move, MAX_PLY + 1>;
+
 struct Stack {
     Move* pv;
     Move  killer;
