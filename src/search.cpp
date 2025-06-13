@@ -214,10 +214,6 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         // Do move
         Position pos_after = pos.move(m);
 
-        if (quiet_move(m)) {
-            quiets_played.push_back(m);
-        }
-
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
         m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
@@ -247,6 +243,10 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
                 }
             }
         }
+
+        if (best_move != m && quiet_move(m)) {
+            quiets_played.push_back(m);
+        }
     }
 
     if (best_value >= beta && quiet_move(best_move)) {
@@ -254,9 +254,6 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
         m_td.history.update_quiet_stats(pos, best_move, depth * depth);
         for (Move quiet : quiets_played) {
-            if (quiet == best_move) {
-                continue;
-            }
             m_td.history.update_quiet_stats(pos, quiet, -depth * depth);
         }
     }
