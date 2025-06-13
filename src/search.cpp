@@ -1,7 +1,5 @@
 #include "search.hpp"
-#include "board.hpp"
 #include "common.hpp"
-#include "movegen.hpp"
 #include "movepick.hpp"
 #include "tm.hpp"
 #include "uci.hpp"
@@ -15,6 +13,13 @@ namespace Search {
 
 Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
+}
+
+// Adds current move to current
+void update_pv(Move move, PV* current_pv, const PV* child_pv_line) {
+    current_pv->clear();
+    current_pv->push_back(move);
+    current_pv->append(*child_pv_line);
 }
 
 Worker::Worker(TT& tt, ThreadData& td) :
@@ -64,7 +69,7 @@ void Worker::launch_search(Position            root_position,
 Move Worker::iterative_deepening(Position root_position) {
 
     std::array<Stack, MAX_PLY + 1> ss;
-    std::array<Move, MAX_PLY + 1>  pv;
+    std::array<PV, MAX_PLY + 1>    pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
 
     Depth root_depth = m_search_limits.depth_limit;
@@ -88,12 +93,25 @@ Move Worker::iterative_deepening(Position root_position) {
             return "cp " + std::to_string(score);
         };
 
+        // Lambda to print the mainline
+        auto pv_string = [&] {
+            std::ostringstream oss;
+            Stack*             curr = &ss[0];
+
+            for (Move m : *curr->pv) {
+                oss << m << " ";
+            }
+
+            return oss.str();
+        };
+
+
         // Get current time
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
                   << format_score(last_search_score) << " nodes " << search_nodes << " nps "
-                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << last_best_move
+                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << pv_string()
                   << std::endl;
     };
 
@@ -109,7 +127,7 @@ Move Worker::iterative_deepening(Position root_position) {
         // Store information only if the last iterative deepening search completed
         last_search_depth = search_depth;
         last_search_score = score;
-        last_best_move    = *ss[0].pv;
+        last_best_move    = pv[0][0];
 
         // Check depth limit
         if (search_depth >= root_depth) {
@@ -137,6 +155,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     const bool ROOT_NODE = ply == 0;
+    const bool PV_NODE   = (beta - alpha) > 1;
 
     // TODO: search nodes limit condition here
     // ...
@@ -184,8 +203,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = static_eval;
-    if (tt_data
-        && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
+    if (tt_data && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
 
@@ -237,11 +255,11 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
         if (value > best_value) {
             best_value = value;
-            if (ply == 0) {
-                ss->pv[ply] = m;  // No pv update for now, just bestmove
-            }
 
             if (value > alpha) {
+                if (PV_NODE) {
+                    update_pv(m, ss->pv, (ss + 1)->pv);
+                }
                 alpha     = value;
                 best_move = m;
 
