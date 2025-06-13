@@ -98,9 +98,8 @@ Move Worker::iterative_deepening(Position root_position) {
             std::ostringstream oss;
             Stack*             curr = &ss[0];
 
-            while (curr->pv && *curr->pv != Move::none()) {
-                oss << *curr->pv << " ";
-                ++curr;
+            for (Move m : *curr->pv) {
+                oss << m << " ";
             }
 
             return oss.str();
