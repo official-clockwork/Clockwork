@@ -19,7 +19,7 @@ Value mated_in(i32 ply) {
 void update_pv(Move move, PV* current_pv, const PV* child_pv_line) {
     current_pv->clear();
     current_pv->push_back(move);
-    current_pv->append(*child_pv_line);    
+    current_pv->append(*child_pv_line);
 }
 
 Worker::Worker(TT& tt, ThreadData& td) :
@@ -69,7 +69,7 @@ void Worker::launch_search(Position            root_position,
 Move Worker::iterative_deepening(Position root_position) {
 
     std::array<Stack, MAX_PLY + 1> ss;
-    std::array<PV, MAX_PLY + 1> pv;
+    std::array<PV, MAX_PLY + 1>    pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
 
     Depth root_depth = m_search_limits.depth_limit;
@@ -127,7 +127,7 @@ Move Worker::iterative_deepening(Position root_position) {
         // Store information only if the last iterative deepening search completed
         last_search_depth = search_depth;
         last_search_score = score;
-        last_best_move    = *ss[0].pv;
+        last_best_move    = pv[0][0];
 
         // Check depth limit
         if (search_depth >= root_depth) {

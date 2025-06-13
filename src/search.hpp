@@ -4,8 +4,8 @@
 #include "position.hpp"
 #include "tt.hpp"
 #include "uci.hpp"
-#include "util/types.hpp"
 #include "util/static_vector.hpp"
+#include "util/types.hpp"
 
 
 namespace Clockwork {
@@ -15,8 +15,8 @@ namespace Search {
 using PV = StaticVector<Move, MAX_PLY + 1>;
 
 struct Stack {
-    PV* pv;
-    Move  killer;
+    PV*  pv;
+    Move killer;
 };
 
 struct SearchLimits {
