@@ -223,6 +223,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+        bool quiet = quiet_move(m);
         // Do move
         Position pos_after = pos.move(m);
         moves_played++;
@@ -233,13 +234,19 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         // Get search value
         Depth new_depth = depth - 1 + pos_after.is_in_check();
         Value value;
-        if (moves_played == 1) {
-            value = -search<PV_NODE>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
-        } else {
-            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
-            if (PV_NODE && value > alpha) {
-                value = -search<true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
+        if (depth >= 3 && moves_played >= 4 && quiet) {
+            i32   reduction     = 1;
+            Depth reduced_depth = std::min(std::max(new_depth - reduction, 1), new_depth);
+            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth, ply + 1);
+            if (value > alpha && reduced_depth < new_depth) {
+                value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
             }
+        } else if (!PV_NODE || moves_played > 1) {
+            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
+        }
+
+        if (PV_NODE && (moves_played == 1 || value > alpha)) {
+            value = -search<true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
         }
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function

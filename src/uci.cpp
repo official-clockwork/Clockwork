@@ -71,10 +71,10 @@ void UCIHandler::execute_command(const std::string& line) {
 }
 
 void UCIHandler::handle_bench(std::istringstream& is) {
-    Depth depth = 6;
+    Depth depth = 8;
     if (!(is >> depth)) {
         is.clear();
-        depth = 6;
+        depth = 8;
     }
     Search::ThreadData td = {};
     Search::Worker     worker{m_tt, td};
