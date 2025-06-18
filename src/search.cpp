@@ -7,8 +7,10 @@
 #include "uci.hpp"
 #include "util/types.hpp"
 #include <array>
+#include <cmath>
 #include <iostream>
 #include <limits>
+
 
 namespace Clockwork {
 namespace Search {
