@@ -99,7 +99,7 @@ Move Worker::iterative_deepening(Position root_position) {
 
     for (Depth search_depth = 1;; search_depth++) {
         // Call search
-        Value score = search(root_position, &ss[0], alpha, beta, search_depth, 0);
+        Value score = search<true>(root_position, &ss[0], alpha, beta, search_depth, 0);
 
         // If m_stopped is true, then the search exited early. Discard the results for this depth.
         if (m_stopped) {
@@ -131,6 +131,7 @@ Move Worker::iterative_deepening(Position root_position) {
     return last_best_move;
 }
 
+template<bool PV_NODE>
 Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
     if (m_stopped) {
         return 0;
@@ -176,7 +177,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     auto tt_data = m_tt.probe(pos, ply);
-    if (!ROOT_NODE && tt_data && tt_data->depth >= depth
+    if (!PV_NODE && tt_data && tt_data->depth >= depth
         && (tt_data->bound == Bound::Exact
             || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
             || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
@@ -192,17 +193,17 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         tt_adjusted_eval = tt_data->score;
     }
 
-    if (!ROOT_NODE && !is_in_check && depth <= 6 && tt_adjusted_eval >= beta + 80 * depth) {
+    if (!PV_NODE && !is_in_check && depth <= 6 && tt_adjusted_eval >= beta + 80 * depth) {
         return tt_adjusted_eval;
     }
 
-    if (!ROOT_NODE && !is_in_check && depth >= 3) {
+    if (!PV_NODE && !is_in_check && depth >= 3) {
         int      R         = 3;
         Position pos_after = pos.null_move();
 
         m_repetition_info.push(pos_after.get_hash_key(), true);
 
-        Value value = -search(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
+        Value value = -search<false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
 
         m_repetition_info.pop();
 
@@ -212,8 +213,9 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer};
-    Move       best_move  = Move::none();
-    Value      best_value = -VALUE_INF;
+    Move       best_move    = Move::none();
+    Value      best_value   = -VALUE_INF;
+    i32        moves_played = 0;
     MoveList   quiets_played;
 
     // Clear child's killer move.
@@ -223,13 +225,22 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         // Do move
         Position pos_after = pos.move(m);
+        moves_played++;
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
         m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
         Depth new_depth = depth - 1 + pos_after.is_in_check();
-        Value value     = -search(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
+        Value value;
+        if (moves_played == 1) {
+            value = -search<PV_NODE>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
+        } else {
+            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
+            if (PV_NODE && value > alpha) {
+                value = -search<true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
+            }
+        }
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         m_repetition_info.pop();
