@@ -8,6 +8,10 @@
 #include "repetition_info.hpp"
 #include "tt.hpp"
 
+namespace Clockwork::Search {
+    class Searcher;
+}
+
 namespace Clockwork::UCI {
 
 struct SearchSettings {
@@ -33,7 +37,7 @@ private:
     Position       m_position;
     RepetitionInfo m_repetition_info;
     // move this somewhere else later
-    TT m_tt;
+    Search::Searcher *searcher;
 
     SearchSettings settings;
 
