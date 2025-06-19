@@ -21,8 +21,7 @@ constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
-    searcher = new Search::Searcher();
-    searcher->initialize(1);
+    searcher.initialize(1);
 }
 
 void UCIHandler::loop() {
@@ -50,7 +49,7 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "id author The Clockwork community\n";
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
-        searcher->reset();
+        searcher.reset();
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "quit") {
@@ -58,7 +57,7 @@ void UCIHandler::execute_command(const std::string& line) {
     } else if (command == "go") {
         handle_go(is);
     } else if (command == "stop") {
-        searcher->stop_searching();
+        searcher.stop_searching();
     } else if (command == "position") {
         handle_position(is);
     } else if (command == "fen") {
@@ -111,7 +110,7 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.hard_nodes;
         }
     }
-    searcher->launch_search(m_position, m_repetition_info, settings);
+    searcher.launch_search(m_position, m_repetition_info, settings);
 }
 
 void UCIHandler::handle_position(std::istringstream& is) {
