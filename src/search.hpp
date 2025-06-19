@@ -5,11 +5,22 @@
 #include "tt.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
+#include <mutex>
+#include <condition_variable>
 
 
 namespace Clockwork {
 
 namespace Search {
+
+// Forward declare for Searcher
+class Worker;
+
+enum ThreadType {
+    MAIN      = 1,
+    SECONDARY = 0
+};
+
 struct Stack {
     Move* pv;
     Move  killer;
@@ -26,22 +37,85 @@ struct ThreadData {
     History history;
 };
 
-class Worker {
+class Searcher {
 public:
-    u64 search_nodes;
-    Worker(TT& tt, ThreadData& td);
+    SearchLimits            search_limits;
+    RepetitionInfo          repetition_info;
+    UCI::SearchSettings     settings;
+    Position                root_position;
+
+    Searcher();
     void launch_search(Position            root_position,
                        RepetitionInfo      repetition_info,
                        UCI::SearchSettings settings);
+    void stop_searching();
+    void wait_for_search_finished();
+    void wait_for_workers_finished();
+    void initialize(int thread_count);
+    void exit();
+
+    void reset();
+    u64 node_count();
 
 private:
-    bool            m_stopped;
-    time::TimePoint m_search_start;
-    SearchLimits    m_search_limits;
-    RepetitionInfo  m_repetition_info;
-    TT&             m_tt;
-    ThreadData&     m_td;
+    TT                                       m_tt;
+    std::vector<std::unique_ptr<Worker>>     m_workers;
 
+};
+
+class Worker {
+public:
+    u64                     search_nodes;
+    Worker(TT& tt, Searcher *searcher, ThreadType thread_type);
+    void launch_search(Position            root_position,
+                       RepetitionInfo      repetition_info,
+                       UCI::SearchSettings settings);
+    void exit();
+    void idle();
+    void wait_for_search_finished();
+    void start_searching();
+
+    void set_stopped(bool stopped) {
+        m_stopped = stopped;
+    }
+    void set_searching(bool searching) {
+        m_searching = searching;
+    }
+    void set_exiting(bool exiting) {
+        m_exiting = exiting;
+    }
+    void reset_thread_data() {
+        m_td = {};
+    }
+
+    [[nodiscard]] std::mutex& get_mutex() {
+        return m_mutex;
+    };
+    [[nodiscard]] std::condition_variable& get_cv() {
+        return m_cv;
+    }
+    [[nodiscard]] ThreadType thread_type() {
+        return m_thread_type;
+    }
+    [[nodiscard]] bool is_main() {
+        return m_thread_type == ThreadType::MAIN;
+    }
+
+private:
+    time::TimePoint         m_search_start;
+    TT&                     m_tt;
+    Searcher*               m_searcher;
+    std::thread             m_thread;
+    ThreadType              m_thread_type;
+    SearchLimits            m_search_limits;
+    RepetitionInfo          m_repetition_info;
+    ThreadData              m_td;
+    std::mutex              m_mutex;
+    std::condition_variable m_cv;
+    bool                    m_searching;
+    bool                    m_stopped;
+    bool                    m_exiting;
+    
     Move iterative_deepening(Position root_position);
 
     template<bool PV_NODE>
