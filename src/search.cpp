@@ -25,7 +25,7 @@ Searcher::Searcher() {};
 
 void Searcher::launch_search(Position            _root_position,
                              RepetitionInfo      _repetition_info,
-                             UCI::SearchSettings _settings) {
+                             SearchSettings _settings) {
     stop_searching();
     wait_for_search_finished();
 
@@ -34,38 +34,38 @@ void Searcher::launch_search(Position            _root_position,
     settings = _settings;
 
     for (auto& worker : m_workers) {
-        worker.get()->set_stopped(false);
-        std::lock_guard<std::mutex> lock(worker.get()->get_mutex());
-        worker.get()->set_searching(true);
+        worker->set_stopped(false);
+        std::lock_guard<std::mutex> lock(worker->get_mutex());
+        worker->set_searching(true);
     }
 
     for (auto& worker : m_workers) {
-        worker.get()->get_cv().notify_all();
+        worker->get_cv().notify_all();
     }
 }
 
 void Searcher::stop_searching() {
     for (auto& worker : m_workers) {
-        worker.get()->set_stopped(true);
+        worker->set_stopped(true);
     }
 }
 
 void Searcher::wait_for_search_finished() {
     for (auto& worker : m_workers) {
-        worker.get()->wait_for_search_finished();
+        worker->wait_for_search_finished();
     }
 }
 
 void Searcher::wait_for_workers_finished() {
     for (auto& worker : m_workers) {
-        if (worker.get()->is_main()) continue;
-        worker.get()->wait_for_search_finished();
+        if (worker->is_main()) continue;
+        worker->wait_for_search_finished();
     }
 }
 
 void Searcher::exit() {
     for (auto& worker : m_workers) 
-        worker.get()->exit();
+        worker->exit();
 
     m_workers.clear();
 
@@ -87,14 +87,14 @@ void Searcher::initialize(int thread_count) {
 
 void Searcher::reset() {
     for (auto& worker : m_workers)
-        worker.get()->reset_thread_data();
+        worker->reset_thread_data();
     m_tt.clear();
 }
 
 u64 Searcher::node_count() {
     u64 nodes = 0;
     for (auto& worker : m_workers) {
-        nodes += worker.get()->search_nodes;
+        nodes += worker->search_nodes;
     }
     return nodes;
 }
