@@ -2,8 +2,8 @@
 #include "history.hpp"
 #include "move.hpp"
 #include "position.hpp"
+#include "repetition_info.hpp"
 #include "tt.hpp"
-#include "uci.hpp"
 #include "util/types.hpp"
 #include <mutex>
 #include <condition_variable>
@@ -11,7 +11,20 @@
 
 namespace Clockwork {
 
+
 namespace Search {
+
+struct SearchSettings {
+    Color stm        = Color::White;
+    i32   depth      = 0;
+    i64   w_time     = -1;
+    i64   b_time     = -1;
+    i64   w_inc      = -1;
+    i64   b_inc      = -1;
+    i64   move_time  = -1;
+    u64   hard_nodes = 0;
+    u64   soft_nodes = 0;
+};
 
 // Forward declare for Searcher
 class Worker;
@@ -41,13 +54,13 @@ class Searcher {
 public:
     SearchLimits            search_limits;
     RepetitionInfo          repetition_info;
-    UCI::SearchSettings     settings;
+    SearchSettings          settings;
     Position                root_position;
 
     Searcher();
     void launch_search(Position            root_position,
                        RepetitionInfo      repetition_info,
-                       UCI::SearchSettings settings);
+                       SearchSettings settings);
     void stop_searching();
     void wait_for_search_finished();
     void wait_for_workers_finished();
@@ -69,7 +82,7 @@ public:
     Worker(TT& tt, Searcher *searcher, ThreadType thread_type);
     void launch_search(Position            root_position,
                        RepetitionInfo      repetition_info,
-                       UCI::SearchSettings settings);
+                       SearchSettings settings);
     void exit();
     void idle();
     void wait_for_search_finished();

@@ -59,20 +59,20 @@ const std::array<std::string, 50> BENCH_FENS = {
    "3br1k1/p1pn3p/1p3n2/5pNq/2P1p3/1PN3PP/P2Q1PB1/4R1K1 w - - 0 23",
    "2r2b2/5p2/5k2/p1r1pP2/P2pB3/1P3P2/K1P3R1/7R w - - 23 93"}};
 
-void benchmark(Search::Searcher* searcher, Depth depth) {
+void benchmark(Search::Searcher& searcher, Depth depth) {
     u64 nodes = 0;
 
     // Mock search limits for bench
-    UCI::SearchSettings settings = {.depth = depth};
+    Search::SearchSettings settings = {.depth = depth};
 
     auto start_time = time::Clock::now();
-    searcher->wait_for_search_finished();
+    searcher.wait_for_search_finished();
     for (std::string fen : BENCH_FENS) {
         auto           pos = Position::parse(fen);
         RepetitionInfo dummy;
-        searcher->launch_search(pos.value(), dummy, settings);
-        searcher->wait_for_search_finished();
-        nodes += searcher->node_count();
+        searcher.launch_search(pos.value(), dummy, settings);
+        searcher.wait_for_search_finished();
+        nodes += searcher.node_count();
     }
 
     auto end_time = time::Clock::now();
