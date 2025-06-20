@@ -78,9 +78,9 @@ void Searcher::initialize(int thread_count) {
     this->exit();
     m_workers.clear();
 
-    m_workers.push_back(std::make_unique<Worker>(m_tt, this, ThreadType::MAIN));
+    m_workers.push_back(std::make_unique<Worker>(m_tt, *this, ThreadType::MAIN));
     for (int i = 1; i < thread_count; i++) {
-        m_workers.push_back(std::make_unique<Worker>(m_tt, this, ThreadType::SECONDARY));
+        m_workers.push_back(std::make_unique<Worker>(m_tt, *this, ThreadType::SECONDARY));
     }
     
 }
@@ -94,12 +94,12 @@ void Searcher::reset() {
 u64 Searcher::node_count() {
     u64 nodes = 0;
     for (auto& worker : m_workers) {
-        nodes += worker->search_nodes;
+        nodes += worker->search_nodes.load(std::memory_order_relaxed);
     }
     return nodes;
 }
 
-Worker::Worker(TT& tt, Searcher *searcher, ThreadType thread_type) :
+Worker::Worker(TT& tt, Searcher& searcher, ThreadType thread_type) :
     m_tt(tt),
     m_searcher(searcher),
     m_thread_type(thread_type) {
@@ -153,24 +153,24 @@ void Worker::start_searching() {
     search_nodes   = 0;
 
     // Get a copy of the repetition_info to futureproof for multithreaded search
-    m_repetition_info = m_searcher->repetition_info;
+    m_repetition_info = m_searcher.repetition_info;
 
     // TODO: time setup only needed by the main worker thread
-    m_search_limits = {.hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher->settings,
-                                                                 m_searcher->root_position.active_color()),
-                       .soft_node_limit = m_searcher->settings.soft_nodes > 0 ? m_searcher->settings.soft_nodes
+    m_search_limits = {.hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
+                                                                 m_searcher.root_position.active_color()),
+                       .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
                                                                   : std::numeric_limits<u64>::max(),
-                       .hard_node_limit = m_searcher->settings.hard_nodes > 0 ? m_searcher->settings.hard_nodes
+                       .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
                                                                   : std::numeric_limits<u64>::max(),
-                       .depth_limit     = m_searcher->settings.depth > 0 ? m_searcher->settings.depth : MAX_PLY};
+                       .depth_limit     = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
 
     m_td.history.clear();
 
     // Run iterative deepening search
-    Move best_move = iterative_deepening(m_searcher->root_position);
+    Move best_move = iterative_deepening(m_searcher.root_position);
 
     if (is_main()) {
-        m_searcher->stop_searching();
+        m_searcher.stop_searching();
 
         // Print (and make sure to flush) the best move
         std::cout << "bestmove " << best_move << std::endl;
@@ -208,8 +208,8 @@ Move Worker::iterative_deepening(Position root_position) {
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
-                  << format_score(last_search_score) << " nodes " << m_searcher->node_count() << " nps "
-                  << time::nps(m_searcher->node_count(), curr_time - m_search_start) << " pv " << last_best_move
+                  << format_score(last_search_score) << " nodes " << m_searcher.node_count() << " nps "
+                  << time::nps(m_searcher.node_count(), curr_time - m_search_start) << " pv " << last_best_move
                   << std::endl;
     };
 
