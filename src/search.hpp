@@ -78,8 +78,8 @@ private:
 
 class Worker {
 public:
-    u64                     search_nodes;
-    Worker(TT& tt, Searcher *searcher, ThreadType thread_type);
+    std::atomic<u64>                         search_nodes;
+    Worker(TT& tt, Searcher& searcher, ThreadType thread_type);
     void launch_search(Position            root_position,
                        RepetitionInfo      repetition_info,
                        SearchSettings settings);
@@ -117,7 +117,7 @@ public:
 private:
     time::TimePoint         m_search_start;
     TT&                     m_tt;
-    Searcher*               m_searcher;
+    Searcher&               m_searcher;
     std::thread             m_thread;
     ThreadType              m_thread_type;
     SearchLimits            m_search_limits;
