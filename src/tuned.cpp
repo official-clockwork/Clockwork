@@ -30,7 +30,7 @@ bool uci_parse_tunable([[maybe_unused]] std::string_view name,
 #if CLOCKWORK_IS_TUNING
     #define TUNE(NAME, DEFAULTVAL, MINVAL, MAXVAL, ...)         \
         if (name == "tune_" #NAME) {                            \
-            if (auto value = parse_i32(value_str)) {            \
+            if (auto value = parse_number<i32>(value_str)) {    \
                 NAME = std::clamp<i32>(*value, MINVAL, MAXVAL); \
                 return true;                                    \
             } else {                                            \

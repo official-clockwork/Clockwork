@@ -6,8 +6,9 @@
 
 namespace Clockwork {
 
-inline std::optional<i32> parse_i32(std::string_view s) {
-    i32 value = 0;
+template<typename T>
+inline std::optional<T> parse_number(std::string_view s) {
+    T value{};
 #if __cpp_lib_to_chars >= 202306L
     if (std::from_chars(s.data(), s.data() + s.size(), value)) {
 #else
