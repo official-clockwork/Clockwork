@@ -4,13 +4,13 @@
 #include "movegen.hpp"
 #include "movepick.hpp"
 #include "tm.hpp"
+#include "tuned.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <limits>
-
 
 namespace Clockwork {
 namespace Search {
@@ -195,12 +195,13 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         tt_adjusted_eval = tt_data->score;
     }
 
-    if (!PV_NODE && !is_in_check && depth <= 6 && tt_adjusted_eval >= beta + 80 * depth) {
+    if (!PV_NODE && !is_in_check && depth <= tuned::rfp_depth
+        && tt_adjusted_eval >= beta + tuned::rfp_margin * depth) {
         return tt_adjusted_eval;
     }
 
-    if (!PV_NODE && !is_in_check && depth >= 3) {
-        int      R         = 3;
+    if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth) {
+        int      R         = tuned::nmp_base_r;
         Position pos_after = pos.null_move();
 
         m_repetition_info.push(pos_after.get_hash_key(), true);

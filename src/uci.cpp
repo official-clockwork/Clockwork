@@ -1,7 +1,11 @@
 #include "uci.hpp"
 #include "bench.hpp"
+#include "move.hpp"
+#include "perft.hpp"
+#include "position.hpp"
 #include "search.h"
-
+#include "search.hpp"
+#include "tuned.hpp"
 #include <algorithm>
 #include <ios>
 #include <iostream>
@@ -9,11 +13,6 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-
-#include "move.hpp"
-#include "perft.hpp"
-#include "position.hpp"
-#include "search.hpp"
 
 namespace Clockwork::UCI {
 
@@ -46,6 +45,7 @@ void UCIHandler::execute_command(const std::string& line) {
     if (command == "uci") {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
+        tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         m_tt.clear();
@@ -57,10 +57,14 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_go(is);
     } else if (command == "position") {
         handle_position(is);
+    } else if (command == "setoption") {
+        handle_setoption(is);
     } else if (command == "fen") {
         std::cout << m_position << std::endl;
     } else if (command == "attacks") {
         handle_attacks(is);
+    } else if (command == "tunables") {
+        tuned::uci_print_tunable_values();
     } else if (command == "perft") {
         handle_perft(is);
     } else if (command == "bench") {
@@ -156,6 +160,36 @@ void UCIHandler::handle_position(std::istringstream& is) {
     }
 }
 
+void UCIHandler::handle_setoption(std::istringstream& is) {
+    std::string token, name, value_str;
+
+    is >> token;
+    if (token != "name") {
+        std::cout << "Unexpected token: " << token << std::endl;
+        return;
+    }
+
+    is >> name;
+
+    is >> token;
+    if (token != "value") {
+        std::cout << "Unexpected token: " << token << std::endl;
+        return;
+    }
+
+    is >> value_str;
+
+    if (name == "Hash") {
+        // TODO
+    } else if (name == "Threads") {
+        // TODO
+    } else if (tuned::uci_parse_tunable(name, value_str)) {
+        // Successfully parsed tunable
+    } else {
+        std::cout << "Unknown option: " << name << std::endl;
+    }
+}
+
 void UCIHandler::handle_attacks(std::istringstream&) {
     std::cout << m_position.attack_table(Color::White) << std::endl;
     std::cout << m_position.attack_table(Color::Black) << std::endl;
@@ -184,5 +218,4 @@ void UCIHandler::handle_perft(std::istringstream& is) {
 
     split_perft(m_position, static_cast<usize>(depth));
 }
-
 }

@@ -41,6 +41,7 @@ private:
     void handle_bench(std::istringstream&);
     void handle_go(std::istringstream&);
     void handle_position(std::istringstream&);
+    void handle_setoption(std::istringstream&);
     void handle_attacks(std::istringstream&);
     void handle_perft(std::istringstream&);
 };

@@ -82,11 +82,14 @@ set(srcs
         src/tm.hpp
         src/tt.cpp
         src/tt.hpp
+        src/tuned.cpp
+        src/tuned.hpp
         src/uci.cpp
         src/uci.hpp
         src/zobrist.cpp
         src/zobrist.hpp
         src/util/bit.hpp
+        src/util/parse.hpp
         src/util/static_vector.hpp
         src/util/types.hpp
         src/util/vec.hpp
