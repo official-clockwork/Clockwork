@@ -3,7 +3,6 @@
 #include "move.hpp"
 #include "perft.hpp"
 #include "position.hpp"
-#include "search.h"
 #include "search.hpp"
 #include "tuned.hpp"
 #include "util/parse.hpp"

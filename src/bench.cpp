@@ -1,5 +1,4 @@
 #include "bench.hpp"
-#include "search.h"
 #include "search.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
