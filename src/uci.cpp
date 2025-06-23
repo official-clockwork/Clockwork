@@ -6,6 +6,7 @@
 #include "search.h"
 #include "search.hpp"
 #include "tuned.hpp"
+#include "util/parse.hpp"
 #include <algorithm>
 #include <ios>
 #include <iostream>
@@ -45,6 +46,8 @@ void UCIHandler::execute_command(const std::string& line) {
     if (command == "uci") {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
+        std::cout << "option name Threads type spin default 1 min 1 max 1024\n";
+        std::cout << "option name Hash type spin default 16 min 1 max 268435456\n";
         tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
@@ -180,9 +183,17 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
     is >> value_str;
 
     if (name == "Hash") {
-        // TODO
+        if (auto value = parse_i32(value_str)) {
+            m_tt.resize(static_cast<usize>(std::max(1, *value)));
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
     } else if (name == "Threads") {
-        // TODO
+        if (auto value = parse_i32(value_str)) {
+            // TODO: change thread count
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
     } else if (tuned::uci_parse_tunable(name, value_str)) {
         // Successfully parsed tunable
     } else {
