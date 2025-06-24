@@ -20,9 +20,14 @@ void uci_print_tunable_options() {
 }
 
 void uci_print_tunable_values() {
-#define PRINT_VALUE(NAME, ...) std::cout << #NAME << " = " << NAME << std::endl;
-    CLOCKWORK_TUNABLES(PRINT_VALUE, PRINT_VALUE)
-#undef PRINT_VALUE
+#define TUNE(NAME, DEFAULTVAL, MINVAL, MAXVAL, CEND, REND)                                \
+    std::cout << "tune_" #NAME ", int, " #DEFAULTVAL ", " #MINVAL ", " #MAXVAL ", " #CEND \
+                 ", " #REND                                                               \
+              << std::endl;
+#define NO_TUNE(...) /* do nothing */
+    CLOCKWORK_TUNABLES(TUNE, NO_TUNE)
+#undef TUNE
+#undef NO_TUNE
 }
 
 bool uci_parse_tunable([[maybe_unused]] std::string_view name,

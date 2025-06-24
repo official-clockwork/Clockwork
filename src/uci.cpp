@@ -68,7 +68,7 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << m_position << std::endl;
     } else if (command == "attacks") {
         handle_attacks(is);
-    } else if (command == "tunables") {
+    } else if (command == "tunables" || command == "tunestr") {
         tuned::uci_print_tunable_values();
     } else if (command == "perft") {
         handle_perft(is);
