@@ -56,6 +56,7 @@ public:
     RepetitionInfo          repetition_info;
     SearchSettings          settings;
     Position                root_position;
+    TT                      tt;
 
     Searcher();
     void launch_search(Position            root_position,
@@ -67,11 +68,14 @@ public:
     void initialize(int thread_count);
     void exit();
 
-    void reset();
     u64 node_count();
+    void reset();
+    void resize_tt(size_t mb) {
+        tt.resize(mb);
+    }
+    
 
 private:
-    TT                                       m_tt;
     std::vector<std::unique_ptr<Worker>>     m_workers;
 
 };
@@ -79,7 +83,7 @@ private:
 class Worker {
 public:
     std::atomic<u64>                         search_nodes;
-    Worker(TT& tt, Searcher& searcher, ThreadType thread_type);
+    Worker(Searcher& searcher, ThreadType thread_type);
     void launch_search(Position            root_position,
                        RepetitionInfo      repetition_info,
                        SearchSettings settings);
@@ -116,7 +120,6 @@ public:
 
 private:
     time::TimePoint         m_search_start;
-    TT&                     m_tt;
     Searcher&               m_searcher;
     std::thread             m_thread;
     ThreadType              m_thread_type;
