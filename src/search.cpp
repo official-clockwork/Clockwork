@@ -78,9 +78,9 @@ void Searcher::initialize(int thread_count) {
     this->exit();
     m_workers.clear();
 
-    m_workers.push_back(std::make_unique<Worker>(m_tt, *this, ThreadType::MAIN));
+    m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
     for (int i = 1; i < thread_count; i++) {
-        m_workers.push_back(std::make_unique<Worker>(m_tt, *this, ThreadType::SECONDARY));
+        m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::SECONDARY));
     }
     
 }
@@ -88,7 +88,7 @@ void Searcher::initialize(int thread_count) {
 void Searcher::reset() {
     for (auto& worker : m_workers)
         worker->reset_thread_data();
-    m_tt.clear();
+    tt.clear();
 }
 
 u64 Searcher::node_count() {
@@ -99,8 +99,7 @@ u64 Searcher::node_count() {
     return nodes;
 }
 
-Worker::Worker(TT& tt, Searcher& searcher, ThreadType thread_type) :
-    m_tt(tt),
+Worker::Worker(Searcher& searcher, ThreadType thread_type) :
     m_searcher(searcher),
     m_thread_type(thread_type) {
     
@@ -294,7 +293,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return evaluate(pos);
     }
 
-    auto tt_data = m_tt.probe(pos, ply);
+    auto tt_data = m_searcher.tt.probe(pos, ply);
     if (!PV_NODE && tt_data && tt_data->depth >= depth
         && (tt_data->bound == Bound::Exact
             || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
@@ -453,7 +452,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     Bound bound = best_value >= beta        ? Bound::Lower
                 : best_move != Move::none() ? Bound::Exact
                                             : Bound::Upper;
-    m_tt.store(pos, ply, best_move, best_value, depth, bound);
+    m_searcher.tt.store(pos, ply, best_move, best_value, depth, bound);
 
     return best_value;
 }
