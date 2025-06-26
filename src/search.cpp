@@ -216,7 +216,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     // Razoring
-    if (!PV_NODE && depth <= 7 && static_eval + 260 * depth < alpha) {
+    if (!PV_NODE && !is_in_check && depth <= 7 && static_eval + 260 * depth < alpha) {
         const Value razor_score = quiesce(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha)
             return razor_score;
