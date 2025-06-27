@@ -227,6 +227,17 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         bool quiet = quiet_move(m);
+
+        if (quiet) {
+            if (depth <= 4 && !PV_NODE && !is_in_check && static_eval 100 * depth <= alpha) {
+                continue;
+            }
+
+            // TO:DO Suggestion: LMP
+
+            // TO:DO Suggestion: Quiet History Pruning
+        }
+        
         // Do move
         Position pos_after = pos.move(m);
         moves_played++;
