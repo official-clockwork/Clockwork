@@ -228,7 +228,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         bool quiet = quiet_move(m);
 
-        if (quiet && !ROOT_NODE && best_value > -VALUE_WIN) {            
+        if (!ROOT_NODE && best_value > -VALUE_WIN && quiet) {            
             // Late Move Pruning (LMP)
             if (moves_played >= 4 + 3 * depth * depth) {                    
                 continue;
