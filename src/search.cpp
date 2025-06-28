@@ -228,19 +228,11 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         bool quiet = quiet_move(m);
 
-        if (quiet && !ROOT_NODE && best_value > -VALUE_WIN) {
-            int lmp_base = 4;
-            int lmp_multiplier = 3;
-            int lmp_threshold = (lmp_base + lmp_multiplier * depth * depth);
-
+        if (quiet && !ROOT_NODE && best_value > -VALUE_WIN) {            
             // Late Move Pruning (LMP)
-            if (moves_played >= lmp_threshold) {                    
+            if (moves_played >= 4 + 3 * depth * depth) {                    
                 continue;
-            }        
-            // TO:DO Suggestion: FP
-            
-        
-            // TO:DO Suggestion: Quiet History Pruning
+            }                  
         }
         
         // Do move
