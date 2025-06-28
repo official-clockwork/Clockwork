@@ -233,8 +233,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
                 continue;
             }
             // TO:DO Suggestion: LMP
-
-            
+        
             // TO:DO Suggestion: Quiet History Pruning
         }
         
