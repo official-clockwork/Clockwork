@@ -189,6 +189,12 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     bool  is_in_check = pos.is_in_check();
     Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
 
+    // Internal Iterative Reductions
+    if (PV_NODE && depth >= 8 && (!tt_data || tt_data->move == Move::none())) {
+        depth--;
+    }
+    
+
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = static_eval;
     if (tt_data && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
