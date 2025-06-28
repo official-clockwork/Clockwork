@@ -192,8 +192,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Internal Iterative Reductions
     if (PV_NODE && depth >= 8 && (!tt_data || tt_data->move == Move::none())) {
         depth--;
-    }
-    
+    }    
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = static_eval;
