@@ -229,11 +229,12 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         bool quiet = quiet_move(m);
 
         if (quiet && !ROOT_NODE && best_value > -VALUE_WIN) {
-            if (depth <= 4 && !PV_NODE && !is_in_check && static_eval + 100 * depth <= alpha) {
+            if (depth <= 5 && !PV_NODE && !is_in_check && static_eval + 80 * depth <= alpha) {
                 continue;
             }
             // TO:DO Suggestion: LMP
         
+            
             // TO:DO Suggestion: Quiet History Pruning
         }
         
