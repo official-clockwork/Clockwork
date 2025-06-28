@@ -236,7 +236,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             // Late Move Pruning (LMP)
             if (moves_played >= lmp_threshold) {                    
                 continue;
-            }
+            }        
             // TO:DO Suggestion: FP
             
         
