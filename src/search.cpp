@@ -237,8 +237,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
         auto move_history = m_td.history.get_quiet_stats(pos, m);
 
-        if (quiet && !ROOT_NODE && best_value > -VALUE_WIN) {
-            
+        if (quiet && !ROOT_NODE && best_value > -VALUE_WIN) {            
             // Quiet History Pruning
             if (depth <= 4 && !is_in_check && move_history < depth * -2048) {
                 break;
