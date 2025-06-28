@@ -190,7 +190,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
 
     // Internal Iterative Reductions
-    if (PV_NODE && depth >= 8 && tt_data->move != Move::none()) {
+    if (PV_NODE && depth >= 8 && tt_data->move == Move::none()) {
         depth--;
     }
 
