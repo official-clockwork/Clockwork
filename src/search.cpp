@@ -229,7 +229,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         bool quiet = quiet_move(m);
 
         if (quiet) {
-            if (depth <= 4 && !PV_NODE && !is_in_check && static_eval 100 * depth <= alpha) {
+            if (depth <= 4 && !PV_NODE && !is_in_check && static_eval + 100 * depth <= alpha) {
                 continue;
             }
 
