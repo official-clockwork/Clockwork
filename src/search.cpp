@@ -229,10 +229,16 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         bool quiet = quiet_move(m);
 
         if (quiet && !ROOT_NODE && best_value > -VALUE_WIN) {
-            if (depth <= 5 && !PV_NODE && !is_in_check && static_eval + 80 * depth <= alpha) {
+            int lmp_base = 4;
+            int lmp_multiplier = 3;
+            int lmp_threshold = (lmp_base + lmp_multiplier * depth * depth);
+
+            // Late Move Pruning (LMP)
+            if (moves_played >= lmp_threshold) {                    
                 continue;
             }
-            // TO:DO Suggestion: LMP
+            // TO:DO Suggestion: FP
+            
         
             // TO:DO Suggestion: Quiet History Pruning
         }
