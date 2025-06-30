@@ -240,10 +240,17 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         bool quiet = quiet_move(m);
 
+         auto move_history = m_td.history.get_quiet_stats(pos, m);
+
         if (!ROOT_NODE && best_value > -VALUE_WIN && quiet) {
             // Late Move Pruning (LMP)
             if (moves_played >= 4 + 3 * depth * depth) {
                 continue;
+            }
+            
+            // Quiet History Pruning
+            if (depth <= 4 && !is_in_check && move_history < depth * -2048) {
+                break;
             }
         }
 
