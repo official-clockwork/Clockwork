@@ -246,8 +246,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             // Late Move Pruning (LMP)
             if (moves_played >= 4 + 3 * depth * depth) {
                 continue;
-            }
-            
+            }            
             // Quiet History Pruning
             if (depth <= 4 && !is_in_check && move_history < depth * -2048) {
                 break;
