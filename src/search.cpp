@@ -241,6 +241,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         bool quiet = quiet_move(m);
 
          auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m) : 0;
+        
 
         if (!ROOT_NODE && best_value > -VALUE_WIN && quiet) {
             // Late Move Pruning (LMP)
