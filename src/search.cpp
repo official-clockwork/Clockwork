@@ -192,7 +192,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Internal Iterative Reductions
     if (PV_NODE && depth >= 8 && (!tt_data || tt_data->move == Move::none())) {
         depth--;
-    }    
+    }
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = static_eval;
@@ -223,8 +223,9 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Razoring
     if (!PV_NODE && !is_in_check && depth <= 7 && static_eval + 260 * depth < alpha) {
         const Value razor_score = quiesce(pos, ss, alpha, beta, ply);
-        if (razor_score <= alpha)
+        if (razor_score <= alpha) {
             return razor_score;
+        }
     }
 
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer};
@@ -241,12 +242,12 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         bool quiet = quiet_move(m);
 
         auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m) : 0;
-        
+
         if (!ROOT_NODE && best_value > -VALUE_WIN && quiet) {
             // Late Move Pruning (LMP)
             if (moves_played >= 4 + 3 * depth * depth) {
                 continue;
-            }            
+            }
             // Quiet History Pruning
             if (depth <= 4 && !is_in_check && move_history < depth * -2048) {
                 break;
