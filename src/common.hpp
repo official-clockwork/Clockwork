@@ -29,6 +29,10 @@ constexpr Color invert(Color color) {
     return static_cast<Color>(static_cast<i32>(color) ^ 1);
 }
 
+constexpr Color operator~(Color color) {
+    return invert(color);
+}
+
 enum class PieceType : u8 {
     None,
     Pawn,
