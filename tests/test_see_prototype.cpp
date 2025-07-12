@@ -25,8 +25,8 @@ void print8(T x) {
 }
 
 int main() {
-    Position pos   = Position::parse("3r3k/3r4/2n1n3/8/3p4/2PR4/1B1Q4/3R3K w - - 0 1").value();
-    Move     move  = Move::parse("d3d4", pos).value();
+    Position pos   = Position::parse("5rk1/5pp1/2r4p/5b2/2R5/6Q1/R1P1qPP1/5NK1 b - - 0 1").value();
+    Move     move  = Move::parse("f5c2", pos).value();
     Square   focus = move.to();
 
     // Extract all possible attackers to our position
@@ -79,7 +79,7 @@ int main() {
     std::cout << std::setw(16) << std::setfill('0') << ptype_bits[6] << std::endl;
     std::cout << std::setw(16) << std::setfill('0') << ptype_bits[7] << std::endl;
 
-    Color stm = Color::White;
+    Color stm = pos.active_color();
 
     while (true) {
         u64 current = geometry::closest(occupied) & color_bits[static_cast<usize>(stm)];

@@ -11,7 +11,7 @@ void test_see(std::string_view pos_str, std::string_view move_str, i32 value) {
     Position pos  = Position::parse(pos_str).value();
     Move     move = Move::parse(move_str, pos).value();
 
-    std::cout << pos << std::endl;
+    std::cout << pos << " | " << move << " | " << value << std::endl;
 
     REQUIRE(SEE::see(pos, move, value + 1) == false);
     REQUIRE(SEE::see(pos, move, value - 1) == true);
@@ -62,7 +62,6 @@ int main() {
     test_see("1r3r2/5p2/4p2p/2k1n1P1/2PN1nP1/1P3P2/8/2KR1B1R b - - 0 1", "b8b3", -400);
     test_see("1r3r2/5p2/4p2p/4n1P1/kPPN1nP1/5P2/8/2KR1B1R b - - 0 1", "b8b4", 100);
     test_see("2r2rk1/5pp1/pp5p/q2p4/P3n3/1Q3NP1/1P2PP1P/2RR2K1 b - - 0 1", "c8c1", 0);
-    // test_see("5rk1/5pp1/2r4p/5b2/2R5/6Q1/R1P1qPP1/5NK1 b - - 0 1", "f5c2", -100); // Dunno
     test_see("1r3r1k/p4pp1/2p1p2p/qpQP3P/2P5/3R4/PP3PP1/1K1R4 b - - 0 1", "a5a2", -800);
     test_see("1r5k/p4pp1/2p1p2p/qpQP3P/2P2P2/1P1R4/P4rP1/1K1R4 b - - 0 1", "a5a2", 100);
     test_see("r2q1rk1/1b2bppp/p2p1n2/1ppNp3/3nP3/P2P1N1P/BPP2PP1/R1BQR1K1 w - - 0 1", "d5e7", 0);
