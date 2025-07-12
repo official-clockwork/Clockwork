@@ -63,6 +63,9 @@ inline bool see(const Position& pos, Move move, Value threshold) {
 
     // Remove already moved piece
     occupied ^= v512::eq8(ray_coords, v512::broadcast8(move.from().raw));
+    if (move.is_en_passant()) {
+        occupied &= pos.active_color() == Color::Black ? 0xFFFFFFFFFFFFFFFD : 0xFFFFFFFDFFFFFFFF;
+    }
 
     // Extract bitrays for each piece type
     std::array<u64, 8> ptype_bits{
