@@ -14,8 +14,8 @@
 namespace Clockwork::SEE {
 
 inline Value value(PieceType ptype) {
-    constexpr std::array<Value, 7> table{{0, 100, 300, 300, 500, 900, 10000}};
-    return table[static_cast<usize>(ptype)];
+    constexpr std::array<Value, 7> TABLE{{0, 100, 300, 300, 500, 900, 10000}};
+    return TABLE[static_cast<usize>(ptype)];
 }
 
 inline Value gain(const Position& pos, Move move) {

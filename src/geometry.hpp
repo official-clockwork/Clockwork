@@ -51,8 +51,8 @@ inline v512 superpiece_attacks(v512 ray_places, v512 ray_valid) {
 }
 
 inline u64 closest(u64 occupied) {
-    const u64 o = occupied | 0x8181818181818181;
-    const u64 x = o ^ (o - 0x0303030303030303);
+    u64 o = occupied | 0x8181818181818181;
+    u64 x = o ^ (o - 0x0303030303030303);
     return x & occupied;
 }
 
