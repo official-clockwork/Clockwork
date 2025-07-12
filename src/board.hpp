@@ -35,13 +35,17 @@ struct Place {
         return {};
     }
 
-    static constexpr u8 COLOR_MASK = 0x10;
+    static constexpr i32 PTYPE_SHIFT = 5;
+    static constexpr u8  PTYPE_MASK  = 0xE0;
+    static constexpr i32 COLOR_SHIFT = 4;
+    static constexpr u8  COLOR_MASK  = 0x10;
+    static constexpr u8  ID_MASK     = 0x0F;
 
     constexpr Place() = default;
 
     constexpr Place(Color color, PieceType pt, PieceId id) {
-        raw =
-          static_cast<u8>((static_cast<i32>(color) << 4) | (static_cast<i32>(pt) << 5) | id.raw);
+        raw = static_cast<u8>((static_cast<i32>(color) << COLOR_SHIFT)
+                              | (static_cast<i32>(pt) << PTYPE_SHIFT) | id.raw);
     }
 
     [[nodiscard]] constexpr bool is_empty() const {
@@ -51,10 +55,10 @@ struct Place {
         return static_cast<Color>((raw & COLOR_MASK) != 0);
     }
     [[nodiscard]] constexpr PieceType ptype() const {
-        return static_cast<PieceType>((raw >> 5) & 0x7);
+        return static_cast<PieceType>((raw & PTYPE_MASK) >> PTYPE_SHIFT);
     }
     [[nodiscard]] constexpr PieceId id() const {
-        return PieceId{static_cast<u8>(raw & 0xF)};
+        return PieceId{static_cast<u8>(raw & ID_MASK)};
     }
 
     [[nodiscard]] constexpr char to_char() const {
