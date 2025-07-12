@@ -42,7 +42,7 @@ inline bool see(const Position& pos, Move move, Value threshold) {
         return false;
     }
 
-    PieceType next = pos.board()[move.from()].ptype();
+    PieceType next = move.promo().value_or(pos.board()[move.from()].ptype());
     score -= value(next);
     stm = invert(stm);
 
