@@ -3,6 +3,7 @@
 #include "common.hpp"
 #include "movegen.hpp"
 #include "movepick.hpp"
+#include "see.hpp"
 #include "tm.hpp"
 #include "tuned.hpp"
 #include "uci.hpp"
@@ -383,6 +384,11 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+        // QS SEE Pruning
+        if (best_value > -VALUE_WIN && !SEE::see(pos, m, tuned::quiesce_see_threshold)) {
+            continue;
+        }
+
         // Do move
         Position pos_after = pos.move(m);
         moves_searched++;

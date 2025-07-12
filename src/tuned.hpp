@@ -7,16 +7,19 @@
 
 namespace Clockwork::tuned {
 
-#define CLOCKWORK_TUNABLES(TUNE, NO_TUNE)    \
-                                             \
-    /* RFP Values */                         \
-    TUNE(rfp_margin, 80, 40, 160, 4, 0.002)  \
-    NO_TUNE(rfp_depth, 6, 4, 10, .5, 0.002)  \
-                                             \
-    /* NMP Values */                         \
-    NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)  \
-    NO_TUNE(nmp_base_r, 3, 1, 10, .5, 0.002) \
-                                             \
+#define CLOCKWORK_TUNABLES(TUNE, NO_TUNE)                 \
+                                                          \
+    /* RFP Values */                                      \
+    TUNE(rfp_margin, 80, 40, 160, 4, 0.002)               \
+    NO_TUNE(rfp_depth, 6, 4, 10, .5, 0.002)               \
+                                                          \
+    /* NMP Values */                                      \
+    NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)               \
+    NO_TUNE(nmp_base_r, 3, 1, 10, .5, 0.002)              \
+                                                          \
+    /* SEE Values */                                      \
+    TUNE(quiesce_see_threshold, 0, -1000, 100, 20, 0.002) \
+                                                          \
     /* End of Tunables */
 
 #define DEFINE_VARIABLE(NAME, DEFAULT, ...) inline i32 NAME = DEFAULT;
