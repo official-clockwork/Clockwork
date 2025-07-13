@@ -84,12 +84,7 @@ inline bool see(const Position& pos, Move move, Value threshold) {
         return geometry::closest(occupied) & (stm == Color::Black ? color : ~color) & attackers;
     };
 
-    while (true) {
-        u64 current = current_attackers();
-        if (current == 0) {
-            break;
-        }
-
+    while (u64 current = current_attackers()) {
         i32  next  = std::countr_zero((ptype_vec & v512::broadcast64(current)).nonzero64());
         auto ptype = static_cast<PieceType>(next);
         u64  br    = ptype_bits[next] & current;
