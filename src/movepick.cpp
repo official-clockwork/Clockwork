@@ -108,6 +108,8 @@ Move MovePicker::pick_next(MoveList& moves) {
 i32 MovePicker::score_move(Move move) const {
     if (quiet_move(move)) {
         return m_history.get_quiet_stats(m_pos, move);
+    } else if (move.is_promotion()) {
+        return 500;
     } else {
         return 100 * static_cast<int>(m_pos.piece_at(move.to()))
              - static_cast<int>(m_pos.piece_at(move.from()));

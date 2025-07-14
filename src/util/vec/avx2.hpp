@@ -8,6 +8,9 @@
 
 namespace Clockwork {
 
+forceinline u8 concat8(u8 a, u8 b) {
+    return a | (b << 4);
+}
 forceinline u32 concat32(u16 a, u16 b) {
     return static_cast<u32>(a) | (static_cast<u32>(b) << 16);
 }
@@ -248,6 +251,10 @@ struct v256 {
           static_cast<u32>(~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw, b.raw))), 0xAAAAAAAA));
     }
 
+    static forceinline u8 eq64(v256 a, v256 b) {
+        return static_cast<u8>(_mm256_movemask_pd((__m256d)_mm256_cmpeq_epi64(a.raw, b.raw)));
+    }
+
     template<i32 offset>
     [[nodiscard]] forceinline v128 extract128() const {
         return {_mm256_extracti128_si256(raw, offset)};
@@ -291,6 +298,9 @@ struct v512 {
         raw(std::bit_cast<std::array<v256, 2>>(src)) {
     }
     forceinline explicit v512(std::array<u16, 32> src) :
+        raw(std::bit_cast<std::array<v256, 2>>(src)) {
+    }
+    forceinline explicit v512(std::array<u64, 8> src) :
         raw(std::bit_cast<std::array<v256, 2>>(src)) {
     }
 
@@ -406,6 +416,10 @@ struct v512 {
         return static_cast<u32>(_pext_u64(~x, 0xAAAAAAAAAAAAAAAA));
     }
 
+    static forceinline u8 neq64(v512 a, v512 b) {
+        return ~concat8(v256::eq64(a.raw[0], b.raw[0]), v256::eq64(a.raw[1], b.raw[1]));
+    }
+
     static forceinline u64 testn8(v512 a, v512 b) {
         return (a & b).zero8();
     }
@@ -421,6 +435,9 @@ struct v512 {
     }
     [[nodiscard]] forceinline u32 nonzero16() const {
         return neq16(*this, zero());
+    }
+    [[nodiscard]] forceinline u64 nonzero64() const {
+        return neq64(*this, zero());
     }
 
     friend forceinline v512 operator&(v512 a, v512 b) {

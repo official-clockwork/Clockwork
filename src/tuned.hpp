@@ -1,0 +1,40 @@
+#include "util/types.hpp"
+#include <string_view>
+
+#ifndef CLOCKWORK_IS_TUNING
+    #define CLOCKWORK_IS_TUNING 0
+#endif
+
+namespace Clockwork::tuned {
+
+#define CLOCKWORK_TUNABLES(TUNE, NO_TUNE)    \
+                                             \
+    /* RFP Values */                         \
+    TUNE(rfp_margin, 80, 40, 160, 4, 0.002)  \
+    NO_TUNE(rfp_depth, 6, 4, 10, .5, 0.002)  \
+                                             \
+    /* NMP Values */                         \
+    NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)  \
+    NO_TUNE(nmp_base_r, 3, 1, 10, .5, 0.002) \
+                                             \
+    /* End of Tunables */
+
+#define DEFINE_VARIABLE(NAME, DEFAULT, ...) inline i32 NAME = DEFAULT;
+#define DEFINE_CONSTANT(NAME, DEFAULT, ...) constexpr i32 NAME = DEFAULT;
+
+#if CLOCKWORK_IS_TUNING
+// TUNEs are defined as variables, NO_TUNEs are defined as constexpr constants.
+CLOCKWORK_TUNABLES(DEFINE_VARIABLE, DEFINE_CONSTANT)
+#else
+// Both TUNEs and NO_TUNEs are defined as constexpr constants.
+CLOCKWORK_TUNABLES(DEFINE_CONSTANT, DEFINE_CONSTANT)
+#endif
+
+#undef DEFINE_VARIABLE
+#undef DEFINE_CONSTANT
+
+void uci_print_tunable_options();
+void uci_print_tunable_values();
+bool uci_parse_tunable(std::string_view name, std::string_view value);
+
+}

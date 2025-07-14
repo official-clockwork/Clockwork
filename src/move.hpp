@@ -68,7 +68,11 @@ struct Move {
     }
 
     [[nodiscard]] constexpr bool is_castle() const {
-        return raw & static_cast<u16>(MoveFlags::Castle);
+        return flags() == MoveFlags::Castle;
+    }
+
+    [[nodiscard]] constexpr bool is_en_passant() const {
+        return flags() == MoveFlags::EnPassant;
     }
 
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {

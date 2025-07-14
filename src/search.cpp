@@ -4,12 +4,13 @@
 #include "movegen.hpp"
 #include "movepick.hpp"
 #include "tm.hpp"
+#include "tuned.hpp"
+#include "uci.hpp"
 #include "util/types.hpp"
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <limits>
-
 
 namespace Clockwork {
 namespace Search {
@@ -302,18 +303,24 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     bool  is_in_check = pos.is_in_check();
     Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
 
+    // Internal Iterative Reductions
+    if (PV_NODE && depth >= 8 && (!tt_data || tt_data->move == Move::none())) {
+        depth--;
+    }
+
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = static_eval;
     if (tt_data && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
 
-    if (!PV_NODE && !is_in_check && depth <= 6 && tt_adjusted_eval >= beta + 80 * depth) {
+    if (!PV_NODE && !is_in_check && depth <= tuned::rfp_depth
+        && tt_adjusted_eval >= beta + tuned::rfp_margin * depth) {
         return tt_adjusted_eval;
     }
 
-    if (!PV_NODE && !is_in_check && depth >= 3) {
-        int      R         = 3;
+    if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth) {
+        int      R         = tuned::nmp_base_r;
         Position pos_after = pos.null_move();
 
         m_repetition_info.push(pos_after.get_hash_key(), true);
@@ -324,6 +331,14 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
         if (value >= beta) {
             return value > VALUE_WIN ? beta : value;
+        }
+    }
+
+    // Razoring
+    if (!PV_NODE && !is_in_check && depth <= 7 && static_eval + 260 * depth < alpha) {
+        const Value razor_score = quiesce(pos, ss, alpha, beta, ply);
+        if (razor_score <= alpha) {
+            return razor_score;
         }
     }
 
@@ -339,6 +354,20 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         bool quiet = quiet_move(m);
+
+        auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m) : 0;
+
+        if (!ROOT_NODE && best_value > -VALUE_WIN && quiet) {
+            // Late Move Pruning (LMP)
+            if (moves_played >= 4 + 3 * depth * depth) {
+                continue;
+            }
+            // Quiet History Pruning
+            if (depth <= 4 && !is_in_check && move_history < depth * -2048) {
+                break;
+            }
+        }
+
         // Do move
         Position pos_after = pos.move(m);
         moves_played++;
@@ -352,7 +381,8 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         if (depth >= 3 && moves_played >= 4 && quiet) {
             i32 reduction =
               static_cast<i32>(0.77 + std::log(depth) * std::log(moves_played) / 2.36);
-            Depth reduced_depth = std::min(std::max(new_depth - reduction, 1), new_depth);
+            reduction -= PV_NODE;
+            Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
             value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth, ply + 1);
             if (value > alpha && reduced_depth < new_depth) {
                 value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);

@@ -8,6 +8,7 @@
 #include "board.hpp"
 #include "common.hpp"
 #include "geometry.hpp"
+#include "util/parse.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
 
@@ -476,7 +477,8 @@ const std::array<u16, 2> Position::calc_attacks_slow(Square sq) {
 }
 
 std::optional<Position> Position::parse(std::string_view str) {
-    std::istringstream is{std::string{str}};
+    std::string        input{str};
+    std::istringstream is{input};
 
     std::string board, color, castle, enpassant, irreversible_clock, ply;
     is >> board >> color >> castle >> enpassant >> irreversible_clock >> ply;
@@ -655,15 +657,15 @@ std::optional<Position> Position::parse(std::string_view board,
     }
 
     // Parse 50mr clock
-    if (i32 value = std::stoi(std::string{irreversible_clock}); value <= 100) {
-        result.m_50mr = static_cast<u16>(value);
+    if (auto value = parse_number<i32>(irreversible_clock); value && *value <= 100) {
+        result.m_50mr = static_cast<u16>(*value);
     } else {
         return std::nullopt;
     }
 
     // Parse game ply
-    if (i32 value = std::stoi(std::string{ply}); value != 0 && value < 10000) {
-        result.m_ply = static_cast<u16>((value - 1) * 2 + static_cast<i32>(result.m_active_color));
+    if (auto value = parse_number<i32>(ply); value && *value != 0 && *value < 10000) {
+        result.m_ply = static_cast<u16>((*value - 1) * 2 + static_cast<i32>(result.m_active_color));
     } else {
         return std::nullopt;
     }

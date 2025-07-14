@@ -1,7 +1,11 @@
 #include "uci.hpp"
 #include "bench.hpp"
-#include "search.h"
-
+#include "move.hpp"
+#include "perft.hpp"
+#include "position.hpp"
+#include "search.hpp"
+#include "tuned.hpp"
+#include "util/parse.hpp"
 #include <algorithm>
 #include <ios>
 #include <iostream>
@@ -10,14 +14,12 @@
 #include <string>
 #include <string_view>
 
-#include "move.hpp"
-#include "perft.hpp"
-#include "position.hpp"
-#include "search.hpp"
-
 namespace Clockwork::UCI {
 
+
 constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
+constexpr usize            MAX_HASH    = 268435456;
+constexpr usize            MAX_THREADS = 1024;
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
@@ -47,6 +49,9 @@ void UCIHandler::execute_command(const std::string& line) {
     if (command == "uci") {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
+        std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << "\n";
+        std::cout << "option name Hash type spin default 16 min 1 max " << MAX_HASH << "\n";
+        tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         searcher.reset();
@@ -60,10 +65,14 @@ void UCIHandler::execute_command(const std::string& line) {
         searcher.stop_searching();
     } else if (command == "position") {
         handle_position(is);
+    } else if (command == "setoption") {
+        handle_setoption(is);
     } else if (command == "fen") {
         std::cout << m_position << std::endl;
     } else if (command == "attacks") {
         handle_attacks(is);
+    } else if (command == "tunables" || command == "tunestr") {
+        tuned::uci_print_tunable_values();
     } else if (command == "perft") {
         handle_perft(is);
     } else if (command == "bench") {
@@ -155,6 +164,46 @@ void UCIHandler::handle_position(std::istringstream& is) {
     }
 }
 
+void UCIHandler::handle_setoption(std::istringstream& is) {
+    std::string token, name, value_str;
+
+    is >> token;
+    if (token != "name") {
+        std::cout << "Unexpected token: " << token << std::endl;
+        return;
+    }
+
+    is >> name;
+
+    is >> token;
+    if (token != "value") {
+        std::cout << "Unexpected token: " << token << std::endl;
+        return;
+    }
+
+    is >> value_str;
+
+    if (name == "Hash") {
+        if (auto value = parse_number<usize>(value_str)) {
+            usize hash_size = std::clamp<usize>(*value, 1, MAX_HASH);
+            m_tt.resize(hash_size);
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
+    } else if (name == "Threads") {
+        if (auto value = parse_number<usize>(value_str)) {
+            usize thread_count = std::clamp<usize>(*value, 1, MAX_THREADS);
+            // TODO: change thread count
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
+    } else if (tuned::uci_parse_tunable(name, value_str)) {
+        // Successfully parsed tunable
+    } else {
+        std::cout << "Unknown option: " << name << std::endl;
+    }
+}
+
 void UCIHandler::handle_attacks(std::istringstream&) {
     std::cout << m_position.attack_table(Color::White) << std::endl;
     std::cout << m_position.attack_table(Color::Black) << std::endl;
@@ -183,5 +232,4 @@ void UCIHandler::handle_perft(std::istringstream& is) {
 
     split_perft(m_position, static_cast<usize>(depth));
 }
-
 }
