@@ -41,10 +41,16 @@ Move MovePicker::next() {
         while (m_current_index < m_noisy.size()) {
             Move curr = pick_next(m_noisy);
             // Check see
-            if (curr != m_tt_move && SEE::see(m_pos, curr, tuned::movepicker_see_margin)) {
-                return curr;
+            if (curr != m_tt_move)
+            {
+                if (SEE::see(m_pos, curr, tuned::movepicker_see_margin)) {
+                    return curr;
+                }
+                else {
+                    // If the move is not good, add it to the bad noisy moves list.
+                    m_bad_noisy.push_back(curr);
+                }
             }
-            m_bad_noisy.push_back(curr);
         }
 
         if (m_skip_quiets) {
