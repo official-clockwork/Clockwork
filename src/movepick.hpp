@@ -38,10 +38,11 @@ private:
         EmitTTMove,
         GenerateMoves,
         ScoreNoisy,
-        EmitNoisy,
+        EmitGoodNoisy,
         EmitKiller,
         ScoreQuiet,
         EmitQuiet,
+        EmitBadNoisy,
         End,
     };
 
@@ -58,6 +59,7 @@ private:
     MoveGen              m_movegen;
     MoveList             m_noisy;
     MoveList             m_quiet;
+    MoveList             m_bad_noisy;
     usize                m_current_index = 0;
     bool                 m_skip_quiets   = false;
     std::array<i32, 256> m_scores;

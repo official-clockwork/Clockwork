@@ -19,6 +19,7 @@ namespace Clockwork::tuned {
                                                           \
     /* SEE Values */                                      \
     TUNE(quiesce_see_threshold, 0, -1000, 100, 20, 0.002) \
+    TUNE(movepicker_see_margin, -107, -300, 300, 50, 0.002) \
                                                           \
     /* End of Tunables */
 
