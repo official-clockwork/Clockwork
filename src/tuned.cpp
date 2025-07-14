@@ -1,44 +1,52 @@
-#include "util/types.hpp"
+#include "tuned.hpp"
+#include "util/parse.hpp"
+#include <algorithm>
+#include <iostream>
 #include <string_view>
-
-#ifndef CLOCKWORK_IS_TUNING
-    #define CLOCKWORK_IS_TUNING 0
-#endif
 
 namespace Clockwork::tuned {
 
-#define CLOCKWORK_TUNABLES(TUNE, NO_TUNE)                 \
-                                                          \
-    /* RFP Values */                                      \
-    TUNE(rfp_margin, 80, 40, 160, 4, 0.002)               \
-    NO_TUNE(rfp_depth, 6, 4, 10, .5, 0.002)               \
-                                                          \
-    /* NMP Values */                                      \
-    NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)               \
-    NO_TUNE(nmp_base_r, 3, 1, 10, .5, 0.002)              \
-                                                          \
-    /* SEE Values */                                      \
-    TUNE(quiesce_see_threshold, 0, -1000, 100, 20, 0.002) \
-    TUNE(movepicker_see_margin, -107, -300, 300, 50, 0.002) \
-                                                          \
-    /* End of Tunables */
-
-#define DEFINE_VARIABLE(NAME, DEFAULT, ...) inline i32 NAME = DEFAULT;
-#define DEFINE_CONSTANT(NAME, DEFAULT, ...) constexpr i32 NAME = DEFAULT;
-
+void uci_print_tunable_options() {
 #if CLOCKWORK_IS_TUNING
-// TUNEs are defined as variables, NO_TUNEs are defined as constexpr constants.
-CLOCKWORK_TUNABLES(DEFINE_VARIABLE, DEFINE_CONSTANT)
-#else
-// Both TUNEs and NO_TUNEs are defined as constexpr constants.
-CLOCKWORK_TUNABLES(DEFINE_CONSTANT, DEFINE_CONSTANT)
+    #define TUNE(NAME, DEFAULTVAL, MINVAL, MAXVAL, ...)                                          \
+        std::cout << "option name tune_" #NAME " type spin default " #DEFAULTVAL " min " #MINVAL \
+                     " max " #MAXVAL                                                             \
+                  << std::endl;
+    #define NO_TUNE(...) /* do nothing */
+    CLOCKWORK_TUNABLES(TUNE, NO_TUNE)
+    #undef TUNE
+    #undef NO_TUNE
 #endif
+}
 
-#undef DEFINE_VARIABLE
-#undef DEFINE_CONSTANT
+void uci_print_tunable_values() {
+#define TUNE(NAME, DEFAULTVAL, MINVAL, MAXVAL, CEND, REND)                                \
+    std::cout << "tune_" #NAME ", int, " #DEFAULTVAL ", " #MINVAL ", " #MAXVAL ", " #CEND \
+                 ", " #REND                                                               \
+              << std::endl;
+#define NO_TUNE(...) /* do nothing */
+    CLOCKWORK_TUNABLES(TUNE, NO_TUNE)
+#undef TUNE
+#undef NO_TUNE
+}
 
-void uci_print_tunable_options();
-void uci_print_tunable_values();
-bool uci_parse_tunable(std::string_view name, std::string_view value);
-
+bool uci_parse_tunable([[maybe_unused]] std::string_view name,
+                       [[maybe_unused]] std::string_view value_str) {
+#if CLOCKWORK_IS_TUNING
+    #define TUNE(NAME, DEFAULTVAL, MINVAL, MAXVAL, ...)         \
+        if (name == "tune_" #NAME) {                            \
+            if (auto value = parse_number<i32>(value_str)) {    \
+                NAME = std::clamp<i32>(*value, MINVAL, MAXVAL); \
+                return true;                                    \
+            } else {                                            \
+                return false;                                   \
+            }                                                   \
+        }
+    #define NO_TUNE(...) /* do nothing */
+    CLOCKWORK_TUNABLES(TUNE, NO_TUNE)
+    #undef TUNE
+    #undef NO_TUNE
+#endif
+    return false;
+}
 }
