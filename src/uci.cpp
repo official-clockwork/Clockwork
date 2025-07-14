@@ -23,6 +23,7 @@ constexpr usize            MAX_THREADS = 1024;
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
+    searcher.initialize(1);
 }
 
 void UCIHandler::loop() {
@@ -53,13 +54,15 @@ void UCIHandler::execute_command(const std::string& line) {
         tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
-        m_tt.clear();
+        searcher.reset();
     } else if (command == "isready") {
         std::cout << "readyok" << std::endl;
     } else if (command == "quit") {
         std::exit(0);
     } else if (command == "go") {
         handle_go(is);
+    } else if (command == "stop") {
+        searcher.stop_searching();
     } else if (command == "position") {
         handle_position(is);
     } else if (command == "setoption") {
@@ -85,9 +88,7 @@ void UCIHandler::handle_bench(std::istringstream& is) {
         is.clear();
         depth = 8;
     }
-    Search::ThreadData td = {};
-    Search::Worker     worker{m_tt, td};
-    Bench::benchmark(worker, depth);
+    Bench::benchmark(searcher, depth);
 }
 
 void UCIHandler::handle_go(std::istringstream& is) {
@@ -118,9 +119,7 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.hard_nodes;
         }
     }
-    Search::ThreadData td = {};
-    Search::Worker     worker{m_tt, td};
-    worker.launch_search(m_position, m_repetition_info, settings);
+    searcher.launch_search(m_position, m_repetition_info, settings);
 }
 
 void UCIHandler::handle_position(std::istringstream& is) {
