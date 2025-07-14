@@ -1,4 +1,6 @@
 #include "movepick.hpp"
+#include "tuned.hpp"
+#include "see.hpp"
 
 namespace Clockwork {
 
@@ -31,16 +33,18 @@ Move MovePicker::next() {
     case Stage::ScoreNoisy:
         score_moves(m_noisy);
 
-        m_stage         = Stage::EmitNoisy;
+        m_stage         = Stage::EmitGoodNoisy;
         m_current_index = 0;
 
         [[fallthrough]];
-    case Stage::EmitNoisy:
+    case Stage::EmitGoodNoisy:
         while (m_current_index < m_noisy.size()) {
             Move curr = pick_next(m_noisy);
-            if (curr != m_tt_move) {
+            // Check see
+            if (curr != m_tt_move && SEE::see(m_pos, curr, tuned::movepicker_see_margin)) {
                 return curr;
             }
+            m_bad_noisy.push_back(curr);
         }
 
         if (m_skip_quiets) {
@@ -51,6 +55,7 @@ Move MovePicker::next() {
         m_stage = Stage::EmitKiller;
 
         [[fallthrough]];
+
     case Stage::EmitKiller:
         m_stage = Stage::ScoreQuiet;
         if (m_tt_move != m_killer && m_killer != Move::none() && m_movegen.is_legal(m_killer)) {
@@ -58,6 +63,7 @@ Move MovePicker::next() {
         }
 
         [[fallthrough]];
+        
     case Stage::ScoreQuiet:
         score_moves(m_quiet);
 
@@ -73,6 +79,18 @@ Move MovePicker::next() {
             }
         }
 
+        m_stage = Stage::EmitBadNoisy;
+        [[fallthrough]];
+    
+    case Stage::EmitBadNoisy:
+        // Reset the current index to 0 to start from the beginning of the noisy moves again.
+        m_current_index = 0;
+        while (m_current_index < m_bad_noisy.size()) {
+            Move curr = pick_next(m_bad_noisy);
+            if (curr != m_tt_move && curr != m_killer) {
+                return curr;
+            }
+        }
         m_stage = Stage::End;
 
         [[fallthrough]];
@@ -113,7 +131,7 @@ i32 MovePicker::score_move(Move move) const {
     } else {
         return 100 * static_cast<int>(m_pos.piece_at(move.to()))
              - static_cast<int>(m_pos.piece_at(move.from()));
-    }
+}
 }
 
 }
