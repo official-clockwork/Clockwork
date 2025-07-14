@@ -43,11 +43,12 @@ Move MovePicker::next() {
             // Check see
             if (curr != m_tt_move)
             {
-                if (SEE::see(m_pos, curr, tuned::movepicker_see_margin)) {
+                if (SEE::see(m_pos, curr, tuned::movepicker_see_margin)) 
+                {
                     return curr;
                 }
-                else {
-                    // If the move is not good, add it to the bad noisy moves list.
+                else 
+                {
                     m_bad_noisy.push_back(curr);
                 }
             }
@@ -85,12 +86,12 @@ Move MovePicker::next() {
             }
         }
 
+        // Reset the current index to 0 to start from the beginning of the noisy moves again.
+        m_current_index = 0;
         m_stage = Stage::EmitBadNoisy;
         [[fallthrough]];
     
     case Stage::EmitBadNoisy:
-        // Reset the current index to 0 to start from the beginning of the noisy moves again.
-        m_current_index = 0;
         while (m_current_index < m_bad_noisy.size()) {
             Move curr = pick_next(m_bad_noisy);
             if (curr != m_tt_move && curr != m_killer) {
