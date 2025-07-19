@@ -206,7 +206,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return tt_adjusted_eval;
     }
 
-    if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth) {
+    if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth && static_eval >= beta) {
         int      R         = tuned::nmp_base_r;
         Position pos_after = pos.null_move();
 
