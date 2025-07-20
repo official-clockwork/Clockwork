@@ -393,6 +393,9 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
         Position pos_after = pos.move(m);
         moves_searched++;
 
+        // If we've found a legal move, then we can begin skipping quiet moves.
+        moves.skip_quiets();
+
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
         m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
