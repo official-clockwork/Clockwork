@@ -255,8 +255,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             }
         }
         auto see_threshold = quiet ? -67 * depth : -32 * depth;
-        // SEE PVS Pruning
-        
+        // SEE PVS Pruning        
         if (depth <= 10 && !ROOT_NODE && !SEE::see(pos, m, see_threshold)) {
             continue;
         }
