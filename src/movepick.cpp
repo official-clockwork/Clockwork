@@ -90,9 +90,9 @@ Move MovePicker::next() {
         // Reset the current index to 0 to start from the beginning of the noisy moves again.
         m_current_index = 0;
         m_stage = Stage::EmitBadNoisy;
-        [[fallthrough]];
     
 emit_bad_noisy:
+    [[fallthrough]];
     case Stage::EmitBadNoisy:
         while (m_current_index < m_bad_noisy.size()) {
             Move curr = pick_next(m_bad_noisy);
