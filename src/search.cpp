@@ -207,8 +207,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth && static_eval >= beta) {
-        int      R         = tuned::nmp_base_r + std::min(3, (static_eval - beta) / 300);
-        
+        int      R         = tuned::nmp_base_r + std::min(3, (static_eval - beta) / 300);        
         Position pos_after = pos.null_move();
 
         m_repetition_info.push(pos_after.get_hash_key(), true);
