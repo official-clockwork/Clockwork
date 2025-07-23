@@ -37,7 +37,7 @@ Move MovePicker::next() {
             }
         }
 
-        [[fallthrough]]
+        [[fallthrough]];
     case Stage::GenerateMoves:
         generate_moves();
 
