@@ -50,6 +50,11 @@ namespace Clockwork {
             template <typename U> friend ValuePtr<T> operator-(ValuePtr<U> a, ValuePtr<U> b);
             template <typename U> friend ValuePtr<T> operator*(ValuePtr<U> a, ValuePtr<U> b);
             template <typename U> friend ValuePtr<T> operator/(ValuePtr<U> a, ValuePtr<U> b);
+            
+            template <typename U> friend ValuePtr<T> operator+(ValuePtr<U> a, U b);
+            template <typename U> friend ValuePtr<T> operator-(ValuePtr<U> a, U b);
+            template <typename U> friend ValuePtr<T> operator*(ValuePtr<U> a, U b);
+            template <typename U> friend ValuePtr<T> operator/(ValuePtr<U> a, U b);
 
             // Define comparison ops here
             template <typename U> friend bool operator==(ValuePtr<U> a, ValuePtr<U> b);
@@ -179,6 +184,50 @@ namespace Clockwork {
             result->m_backward_func = [a, b, result]() {
                 a->m_gradient += static_cast<T>(1) / static_cast<T>(b->m_data) * result->m_gradient;
                 b->m_gradient += -static_cast<T>(a->m_data) / (static_cast<T>(b->m_data) * static_cast<T>(b->m_data)) * result->m_gradient;
+            };
+            return result;
+        }
+
+        template <typename U>
+        template <typename T>
+        friend ValuePtr<T> operator+(ValuePtr<U> a, U b) {
+            ValuePtr<T> result      = Value<T>::create(static_cast<T>(a->m_data) + static_cast<T>(b));
+            result->m_dependencies  = {a, b};
+            result->m_backward_func = [a, b, result]() {
+                a->m_gradient += static_cast<U>(result->m_gradient);
+            }; 
+            return result;
+        }
+
+        template<typename U>
+        template<typename T>
+        friend ValuePtr<T> operator-(ValuePtr<U> a, U b) {
+            ValuePtr<T> result = Value<T>::create(static_cast<T>(a->m_data) - static_cast<T>(b));
+            result->m_dependencies  = {a, b};
+            result->m_backward_func = [a, b, result]() {
+                a->m_gradient += static_cast<U>(result->m_gradient);
+            };
+            return result;
+        }
+
+        template<typename U>
+        template<typename T>
+        friend ValuePtr<T> operator*(ValuePtr<U> a, U b) { 
+            ValuePtr<T> result = Value<T>::create(static_cast<T>(a->m_data) * static_cast<T>(b));
+            result->m_dependencies  = {a, b};
+            result->m_backward_func = [a, b, result]() {
+                a->m_gradient += b * static_cast<U>(result->m_gradient);
+            };
+            return result;
+        }
+
+        template<typename U>
+        template<typename T>
+        friend ValuePtr<T> operator*(ValuePtr<U> a, U b) { // We are NOT cheaping out with a * (std::pow(b,-1))
+            ValuePtr<T> result = Value<T>::create(static_cast<T>(a->m_data) / static_cast<T>(b));
+            result->m_dependencies  = {a, b};
+            result->m_backward_func = [a, b, result]() {
+                a->m_gradient += static_cast<T>(1) / static_cast<T>(b) * result->m_gradient;
             };
             return result;
         }

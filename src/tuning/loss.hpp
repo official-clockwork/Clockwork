@@ -14,8 +14,8 @@ enum class Reduction {
 };
 
 
-template<typename T = f64, Reduction R = Reduction::Mean>
-auto mse(const std::vector<ValuePtr<T>>& predictions, const std::vector<ValuePtr<T>>& targets) {
+template<typename T = f64, typename Target = f64, Reduction R = Reduction::Mean>
+auto mse(const std::vector<ValuePtr<T>>& predictions, const std::vector<Target>& targets) {
     if (predictions.size() != targets.size()) {
         throw std::invalid_argument("MSE: predictions and targets must have the same size.");
     }
