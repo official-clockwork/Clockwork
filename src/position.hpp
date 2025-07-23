@@ -129,6 +129,23 @@ public:
         return (attack_table(color).read(sq) >> id.raw) & 1;
     }
 
+    Square least_valuable_attacker_sq(Color attacker_color, Square sq) const {
+        u16 attackers = attack_table(attacker_color).read(sq);
+
+        PieceType min_ptype = static_cast<PieceType>(0xFF);
+        Square min_sq = Square::invalid();
+
+        for (; attackers; attackers = clear_lowest_bit(attackers)) {
+        PieceId id{static_cast<u8>(std::countr_zero(attackers))};
+        if (piece_list(attacker_color)[id] < min_ptype) {
+            min_ptype = piece_list(attacker_color)[id];
+            min_sq = piece_list_sq(attacker_color)[id];
+        }
+        }
+
+        return min_sq;
+    }
+
     [[nodiscard]] Position move(Move m) const;
     [[nodiscard]] Position null_move() const;
 

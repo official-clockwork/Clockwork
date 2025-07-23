@@ -17,12 +17,14 @@ public:
     explicit MovePicker(const Position& pos,
                         const History&  history,
                         Move            tt_move = Move::none(),
-                        Move            killer  = Move::none()) :
+                        Move            killer  = Move::none(),
+                        Move            last    = Move::none()) :
         m_pos(pos),
         m_history(history),
         m_movegen(pos),
         m_tt_move(tt_move),
-        m_killer(killer) {
+        m_killer(killer),
+        m_last_move(last) {
     }
 
     void skip_quiets();
@@ -36,6 +38,7 @@ public:
 private:
     enum class Stage {
         EmitTTMove,
+        LVARecapture,
         GenerateMoves,
         ScoreNoisy,
         EmitGoodNoisy,
@@ -66,6 +69,8 @@ private:
 
     Move m_tt_move;
     Move m_killer;
+    Move m_last_move;
+    Move m_lva_recapture;
 };
 
 }

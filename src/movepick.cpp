@@ -11,19 +11,33 @@ bool quiet_move(Move move) {
 void MovePicker::skip_quiets() {
     m_skip_quiets = true;
     if (m_stage == Stage::EmitQuiet) {
-        m_current_index = 0;                    
-        m_stage         = Stage::EmitBadNoisy;  
+        m_current_index = 0;
+        m_stage         = Stage::EmitBadNoisy;
     }
 }
 Move MovePicker::next() {
     switch (m_stage) {
     case Stage::EmitTTMove:
-        m_stage = Stage::GenerateMoves;
+        m_stage = Stage::LVARecapture;
         if (m_tt_move != Move::none() && m_movegen.is_legal(m_tt_move)) {
             return m_tt_move;
         }
 
         [[fallthrough]];
+    case Stage::LVARecapture:
+        m_stage = Stage::GenerateMoves;
+
+        if (m_last_move != Move::none()) {
+            Square last_dst = m_last_move.to();
+            Square lva_sq = m_pos.least_valuable_attacker_sq(m_pos.active_color(), last_dst);
+            Move m_lva_recapture = Move(lva_sq, last_dst, MoveFlags::CaptureBit);
+
+            if (m_lva_recapture != m_tt_move && m_movegen.is_legal(m_lva_recapture)) {
+                return m_lva_recapture;
+            }
+        }
+
+        [[fallthrough]]
     case Stage::GenerateMoves:
         generate_moves();
 
@@ -41,13 +55,13 @@ Move MovePicker::next() {
         while (m_current_index < m_noisy.size()) {
             Move curr = pick_next(m_noisy);
             // Check see
-            if (curr != m_tt_move)
+            if (curr != m_tt_move && curr != m_lva_recapture)
             {
-                if (SEE::see(m_pos, curr, tuned::movepicker_see_margin)) 
+                if (SEE::see(m_pos, curr, tuned::movepicker_see_margin))
                 {
                     return curr;
                 }
-                else 
+                else
                 {
                     m_bad_noisy.push_back(curr);
                 }
@@ -82,7 +96,7 @@ Move MovePicker::next() {
     case Stage::EmitQuiet:
         while (m_current_index < m_quiet.size()) {
             Move curr = pick_next(m_quiet);
-            if (curr != m_tt_move && curr != m_killer) {
+            if (curr != m_tt_move && curr != m_killer && curr != m_lva_recapture) {
                 return curr;
             }
         }
@@ -90,13 +104,13 @@ Move MovePicker::next() {
         // Reset the current index to 0 to start from the beginning of the noisy moves again.
         m_current_index = 0;
         m_stage = Stage::EmitBadNoisy;
-    
+
 emit_bad_noisy:
     [[fallthrough]];
     case Stage::EmitBadNoisy:
         while (m_current_index < m_bad_noisy.size()) {
             Move curr = pick_next(m_bad_noisy);
-            if (curr != m_tt_move && curr != m_killer) {
+            if (curr != m_tt_move && curr != m_killer && curr != m_lva_recapture) {
                 return curr;
             }
         }
