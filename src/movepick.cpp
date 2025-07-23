@@ -35,11 +35,11 @@ Move MovePicker::next() {
     case Stage::ScoreNoisy:
         score_moves(m_noisy);
 
-        m_stage         = Stage::EmitGoodGoodNoisy;
+        m_stage         = Stage::EmitGoodNoisy;
         m_current_index = 0;
 
         [[fallthrough]];
-    case Stage::EmitGoodGoodNoisy:
+    case Stage::EmitGoodNoisy:
         while (m_current_index < m_noisy.size()) {
             Move curr = pick_next(m_noisy);
             // Check see
@@ -107,17 +107,6 @@ Move MovePicker::next() {
         m_current_index = 0;
         m_stage = Stage::EmitBadNoisy;
     
-emit_bad_noisy:
-    [[fallthrough]];
-    case Stage::EmitBadNoisy:
-        while (m_current_index < m_bad_noisy.size()) {
-            Move curr = pick_next(m_bad_noisy);
-            if (curr != m_tt_move && curr != m_killer) {
-                return curr;
-            }
-        }
-        m_stage = Stage::End;
-
         [[fallthrough]];
     case Stage::End:
         return Move::none();
@@ -158,6 +147,4 @@ i32 MovePicker::score_move(Move move) const {
              - static_cast<int>(m_pos.piece_at(move.from()));
 }
 }
-}
-
 }
