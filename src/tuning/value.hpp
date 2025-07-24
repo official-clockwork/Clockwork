@@ -48,6 +48,7 @@ public:
     ValuePtr<T> log();
     ValuePtr<T> sigmoid();
     ValuePtr<T> pow(ValuePtr<T> exponent);
+    ValuePtr<T> pow(T exponent);
 
     // Negation
     template<typename U>
@@ -146,12 +147,22 @@ ValuePtr<T> Value<T>::sigmoid() {
 template<Typename T>
 ValuePtr<T> Value<T>::pow(ValuePtr<T> exponent) {
     auto        this_value  = this->shared_from_this();
-    ValuePtr<T> result      = Value<T>::create(std::pow(this->m_value, exponent->m_value));
+    ValuePtr<T> result      = Value<T>::create(std::pow(this_value->m_value, exponent->m_value));
     result->m_dependencies  = {this_value};
     result->m_backward_func = [this_value, result]() {
-        T grad = exponent->m_value * std::pow(this_value->m_value, exponent->m_value - 1)
-               * result->m_gradient;
-        this_value->m_gradient += grad;
+        this_value->m_gradient += exponent->m_value * std::pow(this_value->m_value, exponent->m_value - 1) * result->m_gradient;
+        exponent->m_gradient += result->m_value * std::log(this_value->m_value) * out_grad;
+    };
+    return result;
+}
+
+template<Typename T>
+ValuePtr<T> Value<T>::pow(T exponent) {
+    auto        this_value  = this->shared_from_this();
+    ValuePtr<T> result      = Value<T>::create(std::pow(this_value->m_value, exponent));
+    result->m_dependencies  = {this_value};
+    result->m_backward_func = [this_value, result]() {
+        this_value->m_gradient += exponent * std::pow(this_value->m_value, exponent - 1) * result->m_gradient;
     };
     return result;
 }
