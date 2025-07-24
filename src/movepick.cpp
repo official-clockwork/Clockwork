@@ -1,6 +1,6 @@
 #include "movepick.hpp"
-#include "tuned.hpp"
 #include "see.hpp"
+#include "tuned.hpp"
 
 namespace Clockwork {
 
@@ -11,8 +11,8 @@ bool quiet_move(Move move) {
 void MovePicker::skip_quiets() {
     m_skip_quiets = true;
     if (m_stage == Stage::EmitQuiet) {
-        m_current_index = 0;                    
-        m_stage         = Stage::EmitBadNoisy;  
+        m_current_index = 0;
+        m_stage         = Stage::EmitBadNoisy;
     }
 }
 Move MovePicker::next() {
@@ -41,22 +41,18 @@ Move MovePicker::next() {
         while (m_current_index < m_noisy.size()) {
             Move curr = pick_next(m_noisy);
             // Check see
-            if (curr != m_tt_move)
-            {
-                if (SEE::see(m_pos, curr, tuned::movepicker_see_margin)) 
-                {
+            if (curr != m_tt_move) {
+                if (SEE::see(m_pos, curr, tuned::movepicker_see_margin)) {
                     return curr;
-                }
-                else 
-                {
+                } else {
                     m_bad_noisy.push_back(curr);
                 }
             }
         }
 
         if (m_skip_quiets) {
-            m_current_index = 0;                   
-            m_stage         = Stage::EmitBadNoisy; 
+            m_current_index = 0;
+            m_stage         = Stage::EmitBadNoisy;
             goto emit_bad_noisy;
         }
 
@@ -71,7 +67,7 @@ Move MovePicker::next() {
         }
 
         [[fallthrough]];
-        
+
     case Stage::ScoreQuiet:
         score_moves(m_quiet);
 
@@ -89,10 +85,10 @@ Move MovePicker::next() {
 
         // Reset the current index to 0 to start from the beginning of the noisy moves again.
         m_current_index = 0;
-        m_stage = Stage::EmitBadNoisy;
-    
+        m_stage         = Stage::EmitBadNoisy;
+
 emit_bad_noisy:
-    [[fallthrough]];
+        [[fallthrough]];
     case Stage::EmitBadNoisy:
         while (m_current_index < m_bad_noisy.size()) {
             Move curr = pick_next(m_bad_noisy);
@@ -140,7 +136,7 @@ i32 MovePicker::score_move(Move move) const {
     } else {
         return 100 * static_cast<int>(m_pos.piece_at(move.to()))
              - static_cast<int>(m_pos.piece_at(move.from()));
-}
+    }
 }
 
 }

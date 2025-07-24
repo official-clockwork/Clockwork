@@ -207,7 +207,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth && tt_adjusted_eval >= beta) {
-        int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 300);        
+        int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 300);
         Position pos_after = pos.null_move();
 
         m_repetition_info.push(pos_after.get_hash_key(), true);
@@ -255,7 +255,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             }
         }
 
-        Value see_threshold = quiet ? -67 * depth : -64 * depth;        
+        Value see_threshold = quiet ? -67 * depth : -64 * depth;
         // SEE PVS Pruning
         if (depth <= 10 && !ROOT_NODE && !SEE::see(pos, m, see_threshold)) {
             continue;
