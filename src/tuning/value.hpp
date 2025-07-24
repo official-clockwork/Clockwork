@@ -28,7 +28,7 @@ private:
     T                        m_value    = 0;
     T                        m_gradient = 0;
     std::vector<ValuePtr<T>> m_dependencies;
-    std::function<void(T, T)> m_backward_func;
+    std::function<void(ValuePtr<T>)> m_backward_func;
 
 
 public:
@@ -63,9 +63,9 @@ public:
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(std::exp(this->m_value));
         result->m_dependencies  = {this_value};
-        result->m_backward_func = [this_value, result](T out_value, T out_grad) {
-            T grad = out_value;  // Avoid recomputing exp val
-            this_value->m_gradient += grad * out_grad;
+        result->m_backward_func = [this_value](ValuePtr<T> out) {
+            T grad = out->m_value;  // Avoid recomputing exp val
+            this_value->m_gradient += grad * out->m_gradient;
         };
         return result;
     }
@@ -75,9 +75,9 @@ public:
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(std::log(this->m_value));
         result->m_dependencies  = {this_value};
-        result->m_backward_func = [this_value, result](T out_value, T out_grad) {
+        result->m_backward_func = [this_value](ValuePtr<T> out) {
             T grad = (1 / this_value->m_value);
-            this_value->m_gradient += grad * out_grad;
+            this_value->m_gradient += grad * out->m_gradient;
         };
         return result;
     }
@@ -87,10 +87,10 @@ public:
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(1 / (1 + std::exp(-this_value->m_value)));
         result->m_dependencies  = {this_value};
-        result->m_backward_func = [this_value, result](T out_value, T out_grad) {
-            T grad = out_value
-                   * (1 - out_value);  // Same trick as before, avoid recomputing sigmoid(x)
-            this_value->m_gradient += grad * out_grad;
+        result->m_backward_func = [this_value](ValuePtr<T> out) {
+            T grad = out->m_value
+                   * (1 - out->m_value);  // Same trick as before, avoid recomputing sigmoid(x)
+            this_value->m_gradient += grad * out->m_gradient;
         };
         return result;
     }
@@ -100,12 +100,12 @@ public:
         auto        this_value = this->shared_from_this();
         ValuePtr<T> result     = Value<T>::create(std::pow(this_value->m_value, exponent->m_value));
         result->m_dependencies = {this_value, exponent};
-        result->m_backward_func = [this_value, exponent, result](T out_value, T out_grad) {
+        result->m_backward_func = [this_value, exponent](ValuePtr<T> out) {
             this_value->m_gradient += exponent->m_value
                                     * std::pow(this_value->m_value, exponent->m_value - 1)
-                                    * out_grad;
+                                    * out->m_gradient;
             exponent->m_gradient +=
-              out_value * std::log(this_value->m_value) * out_grad;
+              out->m_value * std::log(this_value->m_value) * out->m_gradient;
         };
         return result;
     }
@@ -115,9 +115,9 @@ public:
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(std::pow(this_value->m_value, exponent));
         result->m_dependencies  = {this_value};
-        result->m_backward_func = [this_value, exponent, result](T out_value, T out_grad) {
+        result->m_backward_func = [this_value, exponent](ValuePtr<T> out) {
             this_value->m_gradient +=
-              exponent * std::pow(this_value->m_value, exponent - 1) * out_grad;
+              exponent * std::pow(this_value->m_value, exponent - 1) * out->m_gradient;
         };
         return result;
     }
@@ -126,8 +126,8 @@ public:
     friend ValuePtr<T> operator-(ValuePtr<T> a) {
         ValuePtr<T> result      = Value<T>::create(-a->m_value);
         result->m_dependencies  = {a};
-        result->m_backward_func = [a, result](T out_value, T out_grad) {
-            T grad = -out_grad;
+        result->m_backward_func = [a](ValuePtr<T> out) {
+            T grad = -out->m_gradient;
             a->m_gradient += grad;
         };
         return result;
@@ -137,9 +137,9 @@ public:
     friend ValuePtr<T> operator+(ValuePtr<T> a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value + b->m_value);
         result->m_dependencies  = {a, b};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += out_grad;
-            b->m_gradient += out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += out->m_gradient;
+            b->m_gradient += out->m_gradient;
         };
         return result;
     }
@@ -149,9 +149,9 @@ public:
                                  ValuePtr<T> b) {  // We are NOT cheaping out with a + (-b)
         ValuePtr<T> result      = Value<T>::create(a->m_value - b->m_value);
         result->m_dependencies  = {a, b};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += out_grad;
-            b->m_gradient -= out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += out->m_gradient;
+            b->m_gradient -= out->m_gradient;
         };
         return result;
     }
@@ -160,9 +160,9 @@ public:
     friend ValuePtr<T> operator*(ValuePtr<T> a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value * b->m_value);
         result->m_dependencies  = {a, b};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += b->m_value * out_grad;
-            b->m_gradient += a->m_value * out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += b->m_value * out->m_gradient;
+            b->m_gradient += a->m_value * out->m_gradient;
         };
         return result;
     }
@@ -173,9 +173,9 @@ public:
               ValuePtr<T> b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
         ValuePtr<T> result      = Value<T>::create(a->m_value / b->m_value);
         result->m_dependencies  = {a, b};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += 1.0 / b->m_value * out_grad;
-            b->m_gradient += -a->m_value / (b->m_value * b->m_value) * out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += 1.0 / b->m_value * out->m_gradient;
+            b->m_gradient += -a->m_value / (b->m_value * b->m_value) * out->m_gradient;
         };
         return result;
     }
@@ -184,8 +184,8 @@ public:
     friend ValuePtr<T> operator+(ValuePtr<T> a, T b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value + b);
         result->m_dependencies  = {a};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += out->m_gradient;
         };
         return result;
     }
@@ -194,8 +194,8 @@ public:
     friend ValuePtr<T> operator-(ValuePtr<T> a, T b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value - b);
         result->m_dependencies  = {a};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += out->m_gradient;
         };
         return result;
     }
@@ -204,8 +204,8 @@ public:
     friend ValuePtr<T> operator*(ValuePtr<T> a, T b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value * b);
         result->m_dependencies  = {a};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += b * out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += b * out->m_gradient;
         };
         return result;
     }
@@ -215,8 +215,8 @@ public:
                                  T b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
         ValuePtr<T> result      = Value<T>::create(a->m_value / b);
         result->m_dependencies  = {a};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            a->m_gradient += 1.0 / b * out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            a->m_gradient += 1.0 / b * out->m_gradient;
         };
         return result;
     }
@@ -230,8 +230,8 @@ public:
     friend ValuePtr<T> operator-(T a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(b->m_value - a);
         result->m_dependencies  = {b};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            b->m_gradient -= out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            b->m_gradient -= out->m_gradient;
         };
         return result;
     }
@@ -245,8 +245,8 @@ public:
     friend ValuePtr<T> operator/(T a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(a / b->m_value);
         result->m_dependencies  = {b};
-        result->m_backward_func = [a, b, result](T out_value, T out_grad) {
-            b->m_gradient += -a / (b->m_value * b->m_value) * out_grad;
+        result->m_backward_func = [a, b](ValuePtr<T> out) {
+            b->m_gradient += -a / (b->m_value * b->m_value) * out->m_gradient;
         };
         return result;
     }
@@ -290,7 +290,7 @@ public:
 
     void backward() {
         auto this_value = this->shared_from_this();
-        this_value->m_backward_func(this_value->m_value, this_value->m_gradient);
+        this_value->m_backward_func(this_value);
     }
 };
 
