@@ -14,11 +14,11 @@ namespace Clockwork {
 namespace Autograd {
 
 
-template <typename T>
+template<typename T>
 class Value;
-template <typename T>
+template<typename T>
 class Graph;
-template <typename T>
+template<typename T>
 using ValuePtr = std::shared_ptr<Value<T>>;
 
 
@@ -48,14 +48,14 @@ public:
 
 
     // TODO: might replace with std::make_shared for clearer semantics
-    
+
     static ValuePtr<T> create(T data) {
         ValuePtr res = std::shared_ptr<Value<T>>(new Value<T>(data));
         Graph<T>::get()->register_value(res);
         return res;
     }
 
-    
+
     ValuePtr<T> exp() {
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(std::exp(this->m_value));
@@ -70,7 +70,7 @@ public:
         return result;
     }
 
-    
+
     ValuePtr<T> log() {
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(std::log(this->m_value));
@@ -82,7 +82,7 @@ public:
         return result;
     }
 
-    
+
     ValuePtr<T> sigmoid() {
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(1 / (1 + std::exp(-this_value->m_value)));
@@ -95,7 +95,7 @@ public:
         return result;
     }
 
-    
+
     ValuePtr<T> pow(ValuePtr<T> exponent) {
         auto        this_value = this->shared_from_this();
         ValuePtr<T> result     = Value<T>::create(std::pow(this_value->m_value, exponent->m_value));
@@ -110,7 +110,7 @@ public:
         return result;
     }
 
-    
+
     ValuePtr<T> pow(T exponent) {
         auto        this_value  = this->shared_from_this();
         ValuePtr<T> result      = Value<T>::create(std::pow(this_value->m_value, exponent));
@@ -122,7 +122,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator-(ValuePtr<T> a) {
         ValuePtr<T> result      = Value<T>::create(-a->m_value);
         result->m_dependencies  = {a};
@@ -133,7 +133,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator+(ValuePtr<T> a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value + b->m_value);
         result->m_dependencies  = {a, b};
@@ -144,7 +144,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator-(ValuePtr<T> a,
                                  ValuePtr<T> b) {  // We are NOT cheaping out with a + (-b)
         ValuePtr<T> result      = Value<T>::create(a->m_value - b->m_value);
@@ -156,7 +156,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator*(ValuePtr<T> a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value * b->m_value);
         result->m_dependencies  = {a, b};
@@ -167,7 +167,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T>
     operator/(ValuePtr<T> a,
               ValuePtr<T> b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
@@ -180,7 +180,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator+(ValuePtr<T> a, T b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value + b);
         result->m_dependencies  = {a};
@@ -190,7 +190,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator-(ValuePtr<T> a, T b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value - b);
         result->m_dependencies  = {a};
@@ -200,7 +200,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator*(ValuePtr<T> a, T b) {
         ValuePtr<T> result      = Value<T>::create(a->m_value * b);
         result->m_dependencies  = {a};
@@ -210,7 +210,7 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator/(ValuePtr<T> a,
                                  T b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
         ValuePtr<T> result      = Value<T>::create(a->m_value / b);
@@ -221,12 +221,12 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator+(T a, ValuePtr<T> b) {
         return b + a;
     }
 
-    
+
     friend ValuePtr<T> operator-(T a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(b->m_value - a);
         result->m_dependencies  = {b};
@@ -236,12 +236,12 @@ public:
         return result;
     }
 
-    
+
     friend ValuePtr<T> operator*(T a, ValuePtr<T> b) {
         return b * a;
     }
 
-    
+
     friend ValuePtr<T> operator/(T a, ValuePtr<T> b) {
         ValuePtr<T> result      = Value<T>::create(a / b->m_value);
         result->m_dependencies  = {b};
@@ -251,44 +251,43 @@ public:
         return result;
     }
 
-    
+
     friend bool operator==(ValuePtr<T> a, ValuePtr<T> b) {
         return a->m_value == b->m_value;
     }
 
-    
+
     friend bool operator!=(ValuePtr<T> a, ValuePtr<T> b) {
         return a->m_value != b->m_value;
     }
 
-    
+
     friend bool operator<(ValuePtr<T> a, ValuePtr<T> b) {
         return a->m_value < b->m_value;
     }
 
-    
+
     friend bool operator<=(ValuePtr<T> a, ValuePtr<T> b) {
         return a->m_value <= b->m_value;
     }
 
 
-    
     friend bool operator>(ValuePtr<T> a, ValuePtr<T> b) {
         return a->m_value > b->m_value;
     }
 
-    
+
     friend bool operator>=(ValuePtr<T> a, ValuePtr<T> b) {
         return a->m_value >= b->m_value;
     }
 
-    
+
     friend std::ostream& operator<<(std::ostream& os, const ValuePtr<T>& value) {
         os << "Value(data=" << value->get_value() << ", grad=" << value->get_gradient() << ")";
         return os;
     }
 
-    
+
     void backward() {
         auto this_value = this->shared_from_this();
         this_value->m_backward_func();

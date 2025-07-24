@@ -1,8 +1,8 @@
 
+#include "tuning/graph.hpp"
 #include "tuning/loss.hpp"
 #include "tuning/optim.hpp"
-#include "tuning/value.hpp" 
-#include "tuning/graph.hpp"
+#include "tuning/value.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
@@ -73,8 +73,9 @@ int main(int argc, char* argv[]) {
         return std::pow(x, 2) * a + x * y * b + y * c + d;
     };
 
-    auto loss_fn = Clockwork::Autograd::mse<f64>;
-    Clockwork::Autograd::SGD<f64>  optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(), 0.1, 0.9);
+    auto                          loss_fn = Clockwork::Autograd::mse<f64>;
+    Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(),
+                                        0.1, 0.9);
 
     std::vector<std::tuple<f64, f64, f64>> data;
     const f64                              true_a = 3;
