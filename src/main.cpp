@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
     Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(),
                                         10, 0.9);
 
-    i32       epochs = 1000;
+    i32       epochs = 10000;
     const f64 K      = 1.0 / 650;
     for (i32 epoch = 0; epoch < epochs; epoch++) {
         for (size_t i = 0; i < fens.size(); i++) {
