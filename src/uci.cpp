@@ -5,6 +5,7 @@
 #include "position.hpp"
 #include "search.hpp"
 #include "tuned.hpp"
+#include "util/ios_fmt_guard.hpp"
 #include "util/parse.hpp"
 #include <algorithm>
 #include <ios>
@@ -66,6 +67,8 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_setoption(is);
     } else if (command == "fen") {
         std::cout << m_position << std::endl;
+    } else if (command == "d") {
+        handle_d(is);
     } else if (command == "attacks") {
         handle_attacks(is);
     } else if (command == "tunables" || command == "tunestr") {
@@ -163,6 +166,25 @@ void UCIHandler::handle_position(std::istringstream& is) {
             m_repetition_info.push(m_position.get_hash_key(), m_position.is_reversible(*move));
         }
     }
+}
+
+void UCIHandler::handle_d(std::istringstream&) {
+    IosFmtGuard guard{std::cout};
+    std::cout << "   +------------------------+" << std::endl;
+    for (i32 rank = 7; rank >= 0; rank--) {
+        std::cout << " " << static_cast<char>('1' + rank) << " |";
+        for (i32 file = 0; file < 8; file++) {
+            Place place = m_position.board()[Square::from_file_and_rank(file, rank)];
+            std::cout << " " << place.to_char() << " ";
+        }
+        std::cout << "|" << std::endl;
+    }
+    std::cout << "   +------------------------+" << std::endl;
+    std::cout << "     a  b  c  d  e  f  g  h  " << std::endl;
+    std::cout << std::endl;
+    std::cout << "fen: " << m_position << std::endl;
+    std::cout << "key: " << std::hex << std::setw(16) << std::setfill('0')
+              << m_position.get_hash_key() << std::endl;
 }
 
 void UCIHandler::handle_setoption(std::istringstream& is) {
