@@ -31,10 +31,10 @@ public:
         for (size_t i = 0; i < m_parameters.size(); ++i) {
             auto& param = m_parameters[i];
             // Update velocity: v = momentum * v - lr * grad
-            m_velocity[i] = m_momentum * m_velocity[i] - m_lr * param->m_gradient;
+            m_velocity[i] = m_momentum * m_velocity[i] - m_lr * param->get_gradient();
 
             // Update parameter: param += v
-            param->m_value += m_velocity[i];
+            param->change_value(m_velocity[i]);
         }
     }
 };
