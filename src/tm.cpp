@@ -5,7 +5,7 @@
 
 namespace Clockwork::TM {
 time::TimePoint compute_hard_limit(time::TimePoint            search_start,
-                                   const UCI::SearchSettings& settings,
+                                   const Search::SearchSettings& settings,
                                    const Color                stm) {
     using namespace std;
     using namespace time;
