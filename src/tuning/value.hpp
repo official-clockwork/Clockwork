@@ -22,7 +22,7 @@ template<typename T>
 using ValuePtr = std::shared_ptr<Value<T>>;
 
 
-template<typename T = f64>
+template<typename T>
 class Value : public std::enable_shared_from_this<Value<T>> {
 private:
     T                        m_value    = 0;
@@ -33,6 +33,9 @@ private:
     Value(T data);
 
 public:
+    friend class Graph<T>;
+    friend class SGD<T>;
+
     static ValuePtr<T> create(T data);  // We will replace this with a better name
 
     T get_value() const {
@@ -52,45 +55,38 @@ public:
     ValuePtr<T> pow(T exponent);
 
     // Negation
-    template<typename U>
-    friend ValuePtr<T> operator-(ValuePtr<U> a);
+
+    friend ValuePtr<T> operator-(ValuePtr<T> a);
 
     // Define binary ops here
-    template<typename U>
-    friend ValuePtr<T> operator+(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend ValuePtr<T> operator-(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend ValuePtr<T> operator*(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend ValuePtr<T> operator/(ValuePtr<U> a, ValuePtr<U> b);
 
-    template<typename U>
-    friend ValuePtr<T> operator+(ValuePtr<U> a, U b);
-    template<typename U>
-    friend ValuePtr<T> operator-(ValuePtr<U> a, U b);
-    template<typename U>
-    friend ValuePtr<T> operator*(ValuePtr<U> a, U b);
-    template<typename U>
-    friend ValuePtr<T> operator/(ValuePtr<U> a, U b);
+    friend ValuePtr<T> operator+(ValuePtr<T> a, ValuePtr<T> b);
+    friend ValuePtr<T> operator-(ValuePtr<T> a, ValuePtr<T> b);
+    friend ValuePtr<T> operator*(ValuePtr<T> a, ValuePtr<T> b);
+    friend ValuePtr<T> operator/(ValuePtr<T> a, ValuePtr<T> b);
+
+    friend ValuePtr<T> operator+(ValuePtr<T> a, T b);
+    friend ValuePtr<T> operator-(ValuePtr<T> a, T b);
+    friend ValuePtr<T> operator*(ValuePtr<T> a, T b);
+    friend ValuePtr<T> operator/(ValuePtr<T> a, T b);
+
+    friend ValuePtr<T> operator+(T a, ValuePtr<T> b);
+    friend ValuePtr<T> operator-(T a, ValuePtr<T> b);
+    friend ValuePtr<T> operator*(T a, ValuePtr<T> b);
+    friend ValuePtr<T> operator/(T a, ValuePtr<T> b);
 
     // Define comparison ops here
-    template<typename U>
-    friend bool operator==(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend bool operator!=(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend bool operator<(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend bool operator<=(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend bool operator>(ValuePtr<U> a, ValuePtr<U> b);
-    template<typename U>
-    friend bool operator>=(ValuePtr<U> a, ValuePtr<U> b);
+
+    friend bool operator==(ValuePtr<T> a, ValuePtr<T> b);
+    friend bool operator!=(ValuePtr<T> a, ValuePtr<T> b);
+    friend bool operator<(ValuePtr<T> a, ValuePtr<T> b);
+    friend bool operator<=(ValuePtr<T> a, ValuePtr<T> b);
+    friend bool operator>(ValuePtr<T> a, ValuePtr<T> b);
+    friend bool operator>=(ValuePtr<T> a, ValuePtr<T> b);
 
     // Print << operator
-    template<typename U>
-    friend std::ostream& operator<<(std::ostream& os, const Value<U>& value);
+
+    friend std::ostream& operator<<(std::ostream& os, const Value<T>& value);
 };
 
 template<typename T>
@@ -99,9 +95,9 @@ Value<T>::Value(T data) :
 
 // TODO: might replace with std::make_shared for clearer semantics
 template<typename T>
-ValuePtr Value<T>::create(T data) {
+ValuePtr<T> Value<T>::create(T data) {
     ValuePtr res = std::shared_ptr<Value<T>>(new Value<T>(data));
-    Graph::get().register_value(res);
+    Graph<T>::get()->register_value(res);
     return res;
 }
 
@@ -172,154 +168,163 @@ ValuePtr<T> Value<T>::pow(T exponent) {
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator-(ValuePtr<U> a) {
-    auto        this_value  = this->shared_from_this();
-    ValuePtr<T> result      = Value<T>::create(static_cast<T>(-a->m_value));
-    result->m_dependencies  = {this_value};
-    result->m_backward_func = [this_value, result]() {
-        T grad = static_cast<U>(-result->m_gradient);
-        this_value->m_gradient += grad;
+ValuePtr<T> operator-(ValuePtr<T> a) {
+    ValuePtr<T> result      = Value<T>::create(-a->m_value);
+    result->m_dependencies  = {a};
+    result->m_backward_func = [a, result]() {
+        T grad = -result->m_gradient;
+        a->m_gradient += grad;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator+(ValuePtr<U> a, ValuePtr<U> b) {
-    ValuePtr<T> result = Value<T>::create(static_cast<T>(a->m_value) + static_cast<T>(b->m_value));
+ValuePtr<T> operator+(ValuePtr<T> a, ValuePtr<T> b) {
+    ValuePtr<T> result      = Value<T>::create(a->m_value + b->m_value);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += static_cast<U>(result->m_gradient);
-        b->m_gradient += static_cast<U>(result->m_gradient);
+        a->m_gradient += result->m_gradient;
+        b->m_gradient += result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator-(ValuePtr<U> a, ValuePtr<U> b) {  // We are NOT cheaping out with a + (-b)
-    ValuePtr<T> result = Value<T>::create(static_cast<T>(a->m_value) - static_cast<T>(b->m_value));
+ValuePtr<T> operator-(ValuePtr<T> a, ValuePtr<T> b) {  // We are NOT cheaping out with a + (-b)
+    ValuePtr<T> result      = Value<T>::create(a->m_value - b->m_value);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += static_cast<U>(result->m_gradient);
-        b->m_gradient -= static_cast<U>(result->m_gradient);
+        a->m_gradient += result->m_gradient;
+        b->m_gradient -= result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator*(ValuePtr<U> a, ValuePtr<U> b) {
-    ValuePtr<T> result = Value<T>::create(static_cast<T>(a->m_value) * static_cast<T>(b->m_value));
+ValuePtr<T> operator*(ValuePtr<T> a, ValuePtr<T> b) {
+    ValuePtr<T> result      = Value<T>::create(a->m_value * b->m_value);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += b->m_value * static_cast<U>(result->m_gradient);
-        b->m_gradient += a->m_value * static_cast<U>(result->m_gradient);
+        a->m_gradient += b->m_value * result->m_gradient;
+        b->m_gradient += a->m_value * result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator*(ValuePtr<U> a,
-                      ValuePtr<U> b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
-    ValuePtr<T> result = Value<T>::create(static_cast<T>(a->m_value) / static_cast<T>(b->m_value));
+ValuePtr<T> operator/(ValuePtr<T> a,
+                      ValuePtr<T> b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
+    ValuePtr<T> result      = Value<T>::create(a->m_value / b->m_value);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += static_cast<T>(1) / static_cast<T>(b->m_value) * result->m_gradient;
-        b->m_gradient += -static_cast<T>(a->m_value)
-                       / (static_cast<T>(b->m_value) * static_cast<T>(b->m_value))
-                       * result->m_gradient;
+        a->m_gradient += 1.0 / b->m_value * result->m_gradient;
+        b->m_gradient += -a->m_value / (b->m_value * b->m_value) * result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator+(ValuePtr<U> a, U b) {
-    ValuePtr<T> result      = Value<T>::create(static_cast<T>(a->m_value) + static_cast<T>(b));
+ValuePtr<T> operator+(ValuePtr<T> a, T b) {
+    ValuePtr<T> result      = Value<T>::create(a->m_value + b);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += static_cast<U>(result->m_gradient);
+        a->m_gradient += result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator-(ValuePtr<U> a, U b) {
-    ValuePtr<T> result      = Value<T>::create(static_cast<T>(a->m_value) - static_cast<T>(b));
+ValuePtr<T> operator-(ValuePtr<T> a, T b) {
+    ValuePtr<T> result      = Value<T>::create(a->m_value - b);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += static_cast<U>(result->m_gradient);
+        a->m_gradient += result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator*(ValuePtr<U> a, U b) {
-    ValuePtr<T> result      = Value<T>::create(static_cast<T>(a->m_value) * static_cast<T>(b));
+ValuePtr<T> operator*(ValuePtr<T> a, T b) {
+    ValuePtr<T> result      = Value<T>::create(a->m_value * b);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += b * static_cast<U>(result->m_gradient);
+        a->m_gradient += b * result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-ValuePtr<T> operator*(ValuePtr<U> a,
-                      U           b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
-    ValuePtr<T> result      = Value<T>::create(static_cast<T>(a->m_value) / static_cast<T>(b));
+ValuePtr<T> operator/(ValuePtr<T> a,
+                      T           b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
+    ValuePtr<T> result      = Value<T>::create(a->m_value / b);
     result->m_dependencies  = {a, b};
     result->m_backward_func = [a, b, result]() {
-        a->m_gradient += static_cast<T>(1) / static_cast<T>(b) * result->m_gradient;
+        a->m_gradient += 1.0 / b * result->m_gradient;
     };
     return result;
 }
 
-template<typename U>
 template<typename T>
-bool operator==(ValuePtr<U> a, ValuePtr<U> b) {
+ValuePtr<T> operator+(T a, ValuePtr<T> b) {
+    return b + a;
+}
+
+template<typename T>
+ValuePtr<T> operator-(T a, ValuePtr<T> b) {
+    return b - a;
+}
+
+template<typename T>
+ValuePtr<T> operator*(T a, ValuePtr<T> b) {
+    return b * a;
+}
+
+template<typename T>
+ValuePtr<T> operator/(T a,
+                      ValuePtr<T> b) {  
+    ValuePtr<T> result      = Value<T>::create(a / b->m_value);
+    result->m_dependencies  = {b};
+    result->m_backward_func = [a, b, result]() {
+        b->m_gradient += -a / (b->m_value * b->m_value) * result->m_gradient;
+    };
+    return result;
+}
+
+template<typename T>
+bool operator==(ValuePtr<T> a, ValuePtr<T> b) {
     return a->m_value == b->m_value;
 }
 
-template<typename U>
 template<typename T>
-bool operator!=(ValuePtr<U> a, ValuePtr<U> b) {
+bool operator!=(ValuePtr<T> a, ValuePtr<T> b) {
     return a->m_value != b->m_value;
 }
 
-template<typename U>
 template<typename T>
-bool operator<(ValuePtr<U> a, ValuePtr<U> b) {
+bool operator<(ValuePtr<T> a, ValuePtr<T> b) {
     return a->m_value < b->m_value;
 }
 
-template<typename U>
 template<typename T>
-bool operator<=(ValuePtr<U> a, ValuePtr<U> b) {
+bool operator<=(ValuePtr<T> a, ValuePtr<T> b) {
     return a->m_value <= b->m_value;
 }
 
-template<typename U>
+
 template<typename T>
-bool operator>(ValuePtr<U> a, ValuePtr<U> b) {
+bool operator>(ValuePtr<T> a, ValuePtr<T> b) {
     return a->m_value > b->m_value;
 }
 
-template<typename U>
 template<typename T>
-bool operator>=(ValuePtr<U> a, ValuePtr<U> b) {
+bool operator>=(ValuePtr<T> a, ValuePtr<T> b) {
     return a->m_value >= b->m_value;
 }
 
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const ValuePtr<T>& value) {
-    os << "Value(data=" << value->m_value << ", grad=" << value->m_grad << ")";
+    os << "Value(data=" << value->get_value() << ", grad=" << value->get_gradient() << ")";
     return os;
 }
 

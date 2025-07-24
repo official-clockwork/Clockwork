@@ -7,7 +7,7 @@
 namespace Clockwork {
 namespace Autograd {
 
-template<typename T = f64>
+template<typename T>
 class Graph {
 private:
     std::vector<ValuePtr<T>> m_parameters;

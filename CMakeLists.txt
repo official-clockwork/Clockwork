@@ -95,6 +95,10 @@ set(srcs
         src/util/vec.hpp
         src/util/vec/avx2.hpp
         src/util/vec/avx512.hpp
+        src/tuning/graph.hpp
+        src/tuning/loss.hpp
+        src/tuning/optim.hpp
+        src/tuning/value.hpp
 )
 
 add_library(clockwork-lib OBJECT ${srcs})
