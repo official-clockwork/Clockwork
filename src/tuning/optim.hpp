@@ -1,7 +1,7 @@
 #pragma once
 
-#include "value.hpp"
 #include "graph.hpp"
+#include "value.hpp"
 #include <memory>
 #include <vector>
 
@@ -37,7 +37,6 @@ public:
             param->m_value += m_velocity[i];
         }
     }
-
 };
-    }
+}
 }
