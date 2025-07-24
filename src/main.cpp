@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    i32 epochs = 1000;
+    i32 epochs = 10;
 
     for (i32 epoch = 0; epoch < epochs; epoch++) {
         for (auto datapoint : data) {
