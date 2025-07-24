@@ -33,7 +33,6 @@ public:
 
     void register_param(const ValuePtr<T>& param) {
         m_parameters.push_back(param);
-        m_values.push_back(param);
     }
 
     void register_value(const ValuePtr<T>& value) {
