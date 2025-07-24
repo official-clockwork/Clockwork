@@ -30,11 +30,12 @@ private:
     std::vector<ValuePtr<T>> m_dependencies;
     std::function<void()>    m_backward_func;
 
-    Value(T data) :
-        m_value(data) {};
 
 public:
     friend class Graph<T>;
+
+    explicit Value(T data) :
+        m_value(data) {};
 
     T get_value() const {
         return m_value;
@@ -127,7 +128,7 @@ public:
         result->m_dependencies  = {a};
         result->m_backward_func = [a, result]() {
             T grad = -result->m_gradient;
-            a->m_gradient -= grad;
+            a->m_gradient += grad;
         };
         return result;
     }
