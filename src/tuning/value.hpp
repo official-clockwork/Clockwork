@@ -228,7 +228,12 @@ public:
 
     
     friend ValuePtr<T> operator-(T a, ValuePtr<T> b) {
-        return b - a;
+        ValuePtr<T> result      = Value<T>::create(b->m_value - a);
+        result->m_dependencies  = {b};
+        result->m_backward_func = [a, b, result]() {
+            b->m_gradient -= result->m_gradient;
+        };
+        return result;
     }
 
     
