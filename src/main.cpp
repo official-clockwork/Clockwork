@@ -1,8 +1,8 @@
-#include "uci.hpp"
-#include "zobrist.hpp"
-#include "tuning/value.hpp"
 #include "tuning/graph.hpp"
 #include "tuning/loss.hpp"
+#include "tuning/value.hpp"
+#include "uci.hpp"
+#include "zobrist.hpp"
 
 using namespace Clockwork;
 
@@ -21,9 +21,9 @@ int main(int argc, char* argv[]) {
 
 
     // Load fens.
-    std::vector<std::string>                fens;
-    std::vector<f64> results;
-    std::ifstream                           fenFile("fens.book");
+    std::vector<std::string> fens;
+    std::vector<f64>         results;
+    std::ifstream            fenFile("fens.book");
     if (!fenFile) {
         std::cerr << "Error opening fens.book" << std::endl;
         return 1;
@@ -51,7 +51,6 @@ int main(int argc, char* argv[]) {
     }
     fenFile.close();
 
-    
 
     // Print the number of fens loaded
     std::cout << "Loaded " << fens.size() << " FENs." << std::endl;
