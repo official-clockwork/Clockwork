@@ -122,14 +122,15 @@ int main(int argc, char* argv[]) {
             
             optim.step();
 
-            for (auto param : Clockwork::Autograd::Graph<f64>::get()->get_parameters()) {
-                std::cout << param << std::endl;
-            }
-            std::cout << std::endl;
+
 
             Clockwork::Autograd::Graph<f64>::get()->cleanup();
         }
-        
+
+        for (auto param : Clockwork::Autograd::Graph<f64>::get()->get_parameters()) {
+            std::cout << param << std::endl;
+        }
+        std::cout << std::endl;
     }
 
     return 0;
