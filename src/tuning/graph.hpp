@@ -44,7 +44,7 @@ public:
         m_values.back()->m_gradient = static_cast<T>(1);
         for (auto it = m_values.rbegin(); it != m_values.rend(); ++it) {
             if ((*it)->m_backward_func) {
-                (*it)->m_backward_func();
+                (*it)->backward();
             }
         }
     }
