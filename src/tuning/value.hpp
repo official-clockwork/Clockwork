@@ -47,14 +47,12 @@ public:
     }
 
 
-    // TODO: might replace with std::make_shared for clearer semantics
-
     static ValuePtr<T> create_tunable(T data) {
-        return std::shared_ptr<Value<T>>(new Value<T>(data));
+        return std::make_shared<Value<T>>(data);
     }
 
     static ValuePtr<T> create(T data) {
-        ValuePtr res = std::shared_ptr<Value<T>>(new Value<T>(data));
+        ValuePtr<T> res = std::make_shared<Value<T>>(data);
         Graph<T>::get()->register_value(res);
         return res;
     }
@@ -65,10 +63,7 @@ public:
         ValuePtr<T> result      = Value<T>::create(std::exp(this->m_value));
         result->m_dependencies  = {this_value};
         result->m_backward_func = [this_value, result]() {
-            T grad =
-              result->m_value
-              * result
-                  ->m_gradient;  // Avoid recomputing std::exp, since grad of e^x is e^x, we can just use the one stored in the result var
+            T grad = result->m_value;  // Avoid recomputing exp val
             this_value->m_gradient += grad * result->m_gradient;
         };
         return result;
@@ -80,7 +75,7 @@ public:
         ValuePtr<T> result      = Value<T>::create(std::log(this->m_value));
         result->m_dependencies  = {this_value};
         result->m_backward_func = [this_value, result]() {
-            T grad = (1 / this_value->m_value) * result->m_gradient;
+            T grad = (1 / this_value->m_value);
             this_value->m_gradient += grad * result->m_gradient;
         };
         return result;
