@@ -1,7 +1,10 @@
-CXX  ?= clang++
 EXE  ?= clockwork
 ARCH ?= native
 PARALLEL_BUILD ?= yes
+
+ifeq ($(origin CXX), default)
+	CXX = clang++
+endif
 
 ifdef MSYSTEM
 	SUFFIX := .exe
