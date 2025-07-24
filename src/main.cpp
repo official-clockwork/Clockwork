@@ -59,10 +59,10 @@ int main(int argc, char* argv[]) {
     // // Print the number of fens loaded
     // std::cout << "Loaded " << fens.size() << " FENs." << std::endl;
 
-    auto a = Clockwork::Autograd::Value<f64>::create(0);
-    auto b = Clockwork::Autograd::Value<f64>::create(0);
-    auto c = Clockwork::Autograd::Value<f64>::create(0);
-    auto d = Clockwork::Autograd::Value<f64>::create(0);
+    auto a = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto b = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto c = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto d = Clockwork::Autograd::Value<f64>::create_tunable(0);
 
     Clockwork::Autograd::Graph<f64>::get()->register_param(a);
     Clockwork::Autograd::Graph<f64>::get()->register_param(b);

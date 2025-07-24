@@ -49,6 +49,10 @@ public:
 
     // TODO: might replace with std::make_shared for clearer semantics
 
+    static ValuePtr<T> create_tunable(T data) {
+        return std::shared_ptr<Value<T>>(new Value<T>(data));
+    }
+
     static ValuePtr<T> create(T data) {
         ValuePtr res = std::shared_ptr<Value<T>>(new Value<T>(data));
         Graph<T>::get()->register_value(res);
