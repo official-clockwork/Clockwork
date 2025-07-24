@@ -69,7 +69,7 @@ public:
               result->m_value
               * result
                   ->m_gradient;  // Avoid recomputing std::exp, since grad of e^x is e^x, we can just use the one stored in the result var
-            this_value->m_gradient += grad;
+            this_value->m_gradient += grad * result->m_gradient;
         };
         return result;
     }
@@ -81,7 +81,7 @@ public:
         result->m_dependencies  = {this_value};
         result->m_backward_func = [this_value, result]() {
             T grad = (1 / this_value->m_value) * result->m_gradient;
-            this_value->m_gradient += grad;
+            this_value->m_gradient += grad * result->m_gradient;
         };
         return result;
     }
@@ -94,7 +94,7 @@ public:
         result->m_backward_func = [this_value, result]() {
             T grad = result->m_value
                    * (1 - result->m_value);  // Same trick as before, avoid recomputing sigmoid(x)
-            this_value->m_gradient += grad;
+            this_value->m_gradient += grad * result->m_gradient;
         };
         return result;
     }
@@ -132,7 +132,7 @@ public:
         result->m_dependencies  = {a};
         result->m_backward_func = [a, result]() {
             T grad = -result->m_gradient;
-            a->m_gradient += grad;
+            a->m_gradient -= grad;
         };
         return result;
     }
