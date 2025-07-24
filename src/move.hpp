@@ -93,8 +93,7 @@ struct Move {
     friend std::ostream& operator<<(std::ostream& os, Move mv) {
         os << mv.from();
 
-        if (mv.flags() == MoveFlags::Castle) {
-            // TODO: FRC
+        if (!g_frc && mv.flags() == MoveFlags::Castle) {
             if (mv.to().file() < mv.from().file()) {
                 os << 'c';
             } else {

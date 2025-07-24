@@ -154,26 +154,16 @@ bool MoveGen::is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) co
 
         return false;
     } else if (src.ptype() == PieceType::King) {
-        Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
+        Bitboard danger    = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
+        RookInfo rook_info = m_position.rook_info(active_color);
 
         if (m.flags() == MoveFlags::Castle) {
-            // TODO: FRC
-            Bitboard empty     = m_position.board().get_empty_bitboard();
-            RookInfo rook_info = m_position.rook_info(active_color);
+            Bitboard empty = m_position.board().get_empty_bitboard();
             if (rook_info.aside == m.to()) {
-                Bitboard clear =
-                  empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.aside);
-                u8 rank_empty = clear.front_rank(active_color);
-                u8 rank_safe  = (~danger).front_rank(active_color);
-                return (rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C;
+                return is_aside_castling_legal(empty, danger);
             }
             if (rook_info.hside == m.to()) {
-                Bitboard clear =
-                  empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.hside);
-                u8 rank_empty = clear.front_rank(active_color);
-                u8 rank_safe  = (~danger).front_rank(active_color);
-
-                return (rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70;
+                return is_hside_castling_legal(empty, danger);
             }
             return false;
         }
@@ -299,27 +289,14 @@ void MoveGen::generate_moves_to(MoveList& noisy,
     write(noisy, at, pawn_active & enemy & ~promo_zone, pawn_mask, MoveFlags::CaptureBit);
 
     // Castling
-    // TODO: FRC
     if constexpr (king_moves) {
         Square   king_sq   = m_position.king_sq(active_color);
         RookInfo rook_info = m_position.rook_info(active_color);
-        if (rook_info.aside.is_valid()) {
-            Bitboard clear =
-              empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.aside);
-            u8 rank_empty = clear.front_rank(active_color);
-            u8 rank_safe  = (~danger).front_rank(active_color);
-            if ((rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C) {
-                quiet.push_back(Move{king_sq, rook_info.aside, MoveFlags::Castle});
-            }
+        if (is_aside_castling_legal(empty, danger)) {
+            quiet.push_back(Move{king_sq, rook_info.aside, MoveFlags::Castle});
         }
-        if (rook_info.hside.is_valid()) {
-            Bitboard clear =
-              empty | Bitboard::from_square(king_sq) | Bitboard::from_square(rook_info.hside);
-            u8 rank_empty = clear.front_rank(active_color);
-            u8 rank_safe  = (~danger).front_rank(active_color);
-            if ((rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70) {
-                quiet.push_back(Move{king_sq, rook_info.hside, MoveFlags::Castle});
-            }
+        if (is_hside_castling_legal(empty, danger)) {
+            quiet.push_back(Move{king_sq, rook_info.hside, MoveFlags::Castle});
         }
     }
 
@@ -382,6 +359,64 @@ void MoveGen::generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, u16 
     Bitboard non_checker_ray = valid_destinations_two_checkers(checkers);
 
     generate_king_moves_to(noisy, quiet, non_checker_ray);
+}
+
+bool MoveGen::is_aside_castling_legal(Bitboard empty, Bitboard danger) const {
+    Color  active_color = m_position.active_color();
+    Square king_sq      = m_position.king_sq(active_color);
+    Square aside        = m_position.rook_info(active_color).aside;
+
+    if (!aside.is_valid()) {
+        return false;
+    }
+
+    Bitboard clear      = empty | Bitboard::from_square(king_sq) | Bitboard::from_square(aside);
+    u8       rank_empty = clear.front_rank(active_color);
+    u8       rank_safe  = (~danger).front_rank(active_color);
+
+    if (g_frc) {
+        if (m_pinned.is_set(aside)) {
+            return false;
+        }
+        u8 king_ray = rays::inclusive(king_sq, Square::from_file_and_rank(2, king_sq.rank()))
+                        .front_rank(active_color);
+        u8 rook_ray = rays::inclusive(aside, Square::from_file_and_rank(3, aside.rank()))
+                        .front_rank(active_color);
+        u8 should_be_empty = king_ray | rook_ray;
+        return (rank_empty & should_be_empty) == should_be_empty
+            && (rank_safe & king_ray) == king_ray;
+    } else {
+        return (rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C;
+    }
+}
+
+bool MoveGen::is_hside_castling_legal(Bitboard empty, Bitboard danger) const {
+    Color  active_color = m_position.active_color();
+    Square king_sq      = m_position.king_sq(active_color);
+    Square hside        = m_position.rook_info(active_color).hside;
+
+    if (!hside.is_valid()) {
+        return false;
+    }
+
+    Bitboard clear      = empty | Bitboard::from_square(king_sq) | Bitboard::from_square(hside);
+    u8       rank_empty = clear.front_rank(active_color);
+    u8       rank_safe  = (~danger).front_rank(active_color);
+
+    if (g_frc) {
+        if (m_pinned.is_set(hside)) {
+            return false;
+        }
+        u8 king_ray = rays::inclusive(king_sq, Square::from_file_and_rank(6, king_sq.rank()))
+                        .front_rank(active_color);
+        u8 rook_ray = rays::inclusive(hside, Square::from_file_and_rank(5, hside.rank()))
+                        .front_rank(active_color);
+        u8 should_be_empty = king_ray | rook_ray;
+        return (rank_empty & should_be_empty) == should_be_empty
+            && (rank_safe & king_ray) == king_ray;
+    } else {
+        return (rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70;
+    }
 }
 
 void MoveGen::write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf) {

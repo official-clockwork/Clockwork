@@ -17,6 +17,36 @@ void roundtrip_classical_fens() {
       "r4rk1/1Bp1qppp/2np1n2/1pb1p1B1/4P1b1/P1NP1N2/1PP1QPPP/R4RK1 b - b6 1 11",
     }};
 
+    g_frc = false;
+
+    for (std::string_view fen : cases) {
+        Position position = *Position::parse(fen);
+
+        std::ostringstream os;
+        os << position;
+
+        std::cout << fen << std::endl;
+        std::cout << position << std::endl;
+
+        REQUIRE(fen == os.str());
+    }
+}
+
+void roundtrip_dfrc_fens() {
+    std::vector<std::string_view> cases{{
+      "2r1kr2/8/8/8/8/8/8/1R2K1R1 w GBfc - 0 1",
+      "rkr5/8/8/8/8/8/8/5RKR w HFca - 0 1",
+      "2r3kr/8/8/8/8/8/8/2KRR3 w h - 3 2",
+      "5rkr/8/8/8/8/8/8/RKR5 w CAhf - 0 1",
+      "3rkr2/8/8/8/8/8/8/R3K2R w HAfd - 0 1",
+      "4k3/8/8/8/8/8/8/4KR2 w F - 0 1",
+      "4kr2/8/8/8/8/8/8/4K3 w f - 0 1",
+      "4k3/8/8/8/8/8/8/2R1K3 w C - 0 1",
+      "2r1k3/8/8/8/8/8/8/4K3 w c - 0 1",
+    }};
+
+    g_frc = true;
+
     for (std::string_view fen : cases) {
         Position position = *Position::parse(fen);
 
@@ -32,5 +62,6 @@ void roundtrip_classical_fens() {
 
 int main() {
     roundtrip_classical_fens();
+    roundtrip_dfrc_fens();
     return 0;
 }

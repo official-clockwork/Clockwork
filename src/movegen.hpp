@@ -35,6 +35,9 @@ private:
     [[nodiscard]] bool is_legal_one_checker(Move m, u16 checkers) const;
     [[nodiscard]] bool is_legal_two_checkers(Move m, u16 checkers) const;
 
+    [[nodiscard]] bool is_aside_castling_legal(Bitboard empty, Bitboard danger) const;
+    [[nodiscard]] bool is_hside_castling_legal(Bitboard empty, Bitboard danger) const;
+
     template<bool king_moves>
     void generate_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests, bool can_ep);
     void generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests);

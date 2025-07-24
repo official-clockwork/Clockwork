@@ -621,27 +621,57 @@ std::optional<Position> Position::parse(std::string_view board,
     }
 
     // Parse castling rights
-    // TODO: FRC, Error detection
     if (castle != "-") {
+        auto verify_rook = [&](Color color, i32 file) -> Square {
+            Square rook_sq    = Square::from_file_and_rank(file, color_backrank(color));
+            Place  rook_place = result.m_board[rook_sq];
+            if (rook_place.color() == color && rook_place.ptype() == PieceType::Rook) {
+                return rook_sq;
+            }
+            return Square::invalid();
+        };
+        auto scan_for_rook = [&](Color color, i32 file, i32 direction) -> Square {
+            while (file >= 0 && file <= 7) {
+                Square sq    = Square::from_file_and_rank(file, color_backrank(color));
+                Place  place = result.m_board[sq];
+                if (place.color() == color) {
+                    if (place.ptype() == PieceType::Rook) {
+                        return sq;
+                    }
+                    if (place.ptype() == PieceType::King) {
+                        return Square::invalid();
+                    }
+                }
+                file += direction;
+            }
+            return Square::invalid();
+        };
         for (char ch : castle) {
-            switch (ch) {
-            case 'K':
-            case 'H':
-                result.m_rook_info[0].hside = *Square::parse("h1");
-                break;
-            case 'Q':
-            case 'A':
-                result.m_rook_info[0].aside = *Square::parse("a1");
-                break;
-            case 'k':
-            case 'h':
-                result.m_rook_info[1].hside = *Square::parse("h8");
-                break;
-            case 'q':
-            case 'a':
-                result.m_rook_info[1].aside = *Square::parse("a8");
-                break;
-            default:
+            if (ch == 'K') {
+                result.m_rook_info[0].hside = scan_for_rook(Color::White, 7, -1);
+            } else if (ch == 'Q') {
+                result.m_rook_info[0].aside = scan_for_rook(Color::White, 0, +1);
+            } else if (ch == 'k') {
+                result.m_rook_info[1].hside = scan_for_rook(Color::Black, 7, -1);
+            } else if (ch == 'q') {
+                result.m_rook_info[1].aside = scan_for_rook(Color::Black, 0, +1);
+            } else if (ch >= 'A' && ch <= 'H') {
+                i32 rook_file = ch - 'A';
+                i32 king_file = result.king_sq(Color::White).file();
+                if (rook_file < king_file) {
+                    result.m_rook_info[0].aside = verify_rook(Color::White, rook_file);
+                } else {
+                    result.m_rook_info[0].hside = verify_rook(Color::White, rook_file);
+                }
+            } else if (ch >= 'a' && ch <= 'h') {
+                i32 rook_file = ch - 'a';
+                i32 king_file = result.king_sq(Color::Black).file();
+                if (rook_file < king_file) {
+                    result.m_rook_info[1].aside = verify_rook(Color::Black, rook_file);
+                } else {
+                    result.m_rook_info[1].hside = verify_rook(Color::Black, rook_file);
+                }
+            } else {
                 return std::nullopt;
             }
         }
@@ -739,23 +769,22 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
 
     os << ' ' << color_char(position.m_active_color) << ' ';
 
-    // TODO: FRC
     RookInfo white_rook_info = position.rook_info(Color::White);
     RookInfo black_rook_info = position.rook_info(Color::Black);
     if (white_rook_info.is_clear() && black_rook_info.is_clear()) {
         os << '-';
     }
     if (white_rook_info.hside.is_valid()) {
-        os << 'K';
+        os << static_cast<char>(g_frc ? white_rook_info.hside.file() + 'A' : 'K');
     }
     if (white_rook_info.aside.is_valid()) {
-        os << 'Q';
+        os << static_cast<char>(g_frc ? white_rook_info.aside.file() + 'A' : 'Q');
     }
     if (black_rook_info.hside.is_valid()) {
-        os << 'k';
+        os << static_cast<char>(g_frc ? black_rook_info.hside.file() + 'a' : 'k');
     }
     if (black_rook_info.aside.is_valid()) {
-        os << 'q';
+        os << static_cast<char>(g_frc ? black_rook_info.aside.file() + 'a' : 'q');
     }
 
     if (position.m_enpassant.is_valid()) {

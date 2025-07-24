@@ -48,6 +48,7 @@ void UCIHandler::execute_command(const std::string& line) {
     if (command == "uci") {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
+        std::cout << "option name UCI_Chess960 type check default false\n";
         std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << "\n";
         std::cout << "option name Hash type spin default 16 min 1 max " << MAX_HASH << "\n";
         tuned::uci_print_tunable_options();
@@ -184,7 +185,15 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
 
     is >> value_str;
 
-    if (name == "Hash") {
+    if (name == "UCI_Chess960") {
+        if (value_str == "true") {
+            g_frc = true;
+        } else if (value_str == "false") {
+            g_frc = false;
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
+    } else if (name == "Hash") {
         if (auto value = parse_number<usize>(value_str)) {
             usize hash_size = std::clamp<usize>(*value, 1, MAX_HASH);
             m_tt.resize(hash_size);
