@@ -7,8 +7,17 @@
 namespace Clockwork {
 namespace Autograd {
 
+
 template<typename T>
+class Value;
+template<typename T>
+class Graph;
+template<typename T>
+using ValuePtr = std::shared_ptr<Value<T>>;
+
+template<typename T = f64>
 class Graph {
+
 private:
     std::vector<ValuePtr<T>> m_parameters;
     std::vector<ValuePtr<T>> m_values;
@@ -17,9 +26,10 @@ private:
 
 public:
     static std::shared_ptr<Graph<T>> get() {
-        static std::shared_ptr<Graph<T>> instance = std::make_shared<Graph<T>>();
+        static std::shared_ptr<Graph<T>> instance(new Graph<T>());
         return instance;
     }
+
 
     void register_param(const ValuePtr<T>& param) {
         m_parameters.push_back(param);
