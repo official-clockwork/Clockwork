@@ -14,15 +14,15 @@ namespace Clockwork {
 namespace Autograd {
 
 
-template<typename T = f64>
+template<typename T>
 class Value;
-template<typename T = f64>
+template<typename T>
 class Graph;
 template<typename T>
 using ValuePtr = std::shared_ptr<Value<T>>;
 
 
-template<typename T>
+template<typename T = f64>
 class Value : public std::enable_shared_from_this<Value<T>> {
 private:
     T                        m_value    = 0;
@@ -34,12 +34,14 @@ private:
 
 public:
     friend class Graph<T>;
-    friend class SGD<T>;
 
     static ValuePtr<T> create(T data);  // We will replace this with a better name
 
     T get_value() const {
         return m_value;
+    }
+    void change_value(T amount) {
+        m_value += amount;
     }
     T get_gradient() const {
         return m_gradient;
