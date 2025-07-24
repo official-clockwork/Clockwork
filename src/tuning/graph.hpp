@@ -41,16 +41,11 @@ public:
     }
 
     void backward(const ValuePtr<T>& root = nullptr) {
-        if (root) {
-            root->m_gradient = static_cast<T>(1);
-            root->backward();
-        } else {
-            // Last registered value MUST be output of loss (or sum of losses over the output). TODO: maybe add an efficient reduction rather than having batch_sizes nodes?
-            m_values.back()->m_gradient = static_cast<T>(1);
-            for (auto it = m_values.rbegin(); it != m_values.rend(); ++it) {
-                if ((*it)->m_backward_func) {
-                    (*it)->m_backward_func();
-                }
+        // Last registered value MUST be output of loss (or sum of losses over the output). TODO: maybe add an efficient reduction rather than having batch_sizes nodes?
+        m_values.back()->m_gradient = static_cast<T>(1);
+        for (auto it = m_values.rbegin(); it != m_values.rend(); ++it) {
+            if ((*it)->m_backward_func) {
+                (*it)->m_backward_func();
             }
         }
     }
