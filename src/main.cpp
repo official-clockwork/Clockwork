@@ -1,4 +1,5 @@
 
+#include "position.hpp"
 #include "tuning/graph.hpp"
 #include "tuning/loss.hpp"
 #include "tuning/optim.hpp"
@@ -6,11 +7,10 @@
 #include "uci.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
-#include "position.hpp"
-#include <functional>
-#include <tuple>
-#include <iostream>
 #include <fstream>
+#include <functional>
+#include <iostream>
+#include <tuple>
 
 using namespace Clockwork;
 
@@ -62,13 +62,13 @@ int main(int argc, char* argv[]) {
     // Print the number of fens loaded
     std::cout << "Loaded " << fens.size() << " FENs." << std::endl;
 
-    auto PAWN_MAT = Clockwork::Autograd::Value<f64>::create_tunable(0);
-    auto KNIGHT_MAT = Clockwork::Autograd::Value<f64>::create_tunable(0);
-    auto BISHOP_MAT = Clockwork::Autograd::Value<f64>::create_tunable(0);
-    auto ROOK_MAT = Clockwork::Autograd::Value<f64>::create_tunable(0);
-    auto QUEEN_MAT = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto PAWN_MAT     = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto KNIGHT_MAT   = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto BISHOP_MAT   = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto ROOK_MAT     = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto QUEEN_MAT    = Clockwork::Autograd::Value<f64>::create_tunable(0);
     auto MOBILITY_VAL = Clockwork::Autograd::Value<f64>::create_tunable(0);
-    auto TEMPO_VAL = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto TEMPO_VAL    = Clockwork::Autograd::Value<f64>::create_tunable(0);
 
     Clockwork::Autograd::Graph<f64>::get()->register_param(PAWN_MAT);
     Clockwork::Autograd::Graph<f64>::get()->register_param(KNIGHT_MAT);
@@ -78,18 +78,28 @@ int main(int argc, char* argv[]) {
     Clockwork::Autograd::Graph<f64>::get()->register_param(MOBILITY_VAL);
     Clockwork::Autograd::Graph<f64>::get()->register_param(TEMPO_VAL);
 
-    auto tunable_function = [PAWN_MAT, KNIGHT_MAT, BISHOP_MAT, ROOK_MAT, QUEEN_MAT, MOBILITY_VAL, TEMPO_VAL](std::string fen) {
+    auto tunable_function = [PAWN_MAT, KNIGHT_MAT, BISHOP_MAT, ROOK_MAT, QUEEN_MAT, MOBILITY_VAL,
+                             TEMPO_VAL](std::string fen) {
         auto pos = Position::parse(fen).value();
 
         const Color us   = pos.active_color();
         const Color them = invert(us);
 
-        auto material =
-          PAWN_MAT * static_cast<f64>(pos.piece_count(Color::White, PieceType::Pawn) - pos.piece_count(Color::Black, PieceType::Pawn))
-          + KNIGHT_MAT * static_cast<f64>(pos.piece_count(Color::White, PieceType::Knight) - pos.piece_count(Color::Black, PieceType::Knight))
-          + BISHOP_MAT * static_cast<f64>(pos.piece_count(Color::White, PieceType::Bishop) - pos.piece_count(Color::Black, PieceType::Bishop))
-          + ROOK_MAT * static_cast<f64>(pos.piece_count(Color::White, PieceType::Rook) - pos.piece_count(Color::Black, PieceType::Rook))
-          + QUEEN_MAT * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen) - pos.piece_count(Color::Black, PieceType::Queen));
+        auto material = PAWN_MAT
+                        * static_cast<f64>(pos.piece_count(Color::White, PieceType::Pawn)
+                                           - pos.piece_count(Color::Black, PieceType::Pawn))
+                      + KNIGHT_MAT
+                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Knight)
+                                             - pos.piece_count(Color::Black, PieceType::Knight))
+                      + BISHOP_MAT
+                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Bishop)
+                                             - pos.piece_count(Color::Black, PieceType::Bishop))
+                      + ROOK_MAT
+                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Rook)
+                                             - pos.piece_count(Color::Black, PieceType::Rook))
+                      + QUEEN_MAT
+                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
+                                             - pos.piece_count(Color::Black, PieceType::Queen));
 
         auto mobility = Clockwork::Autograd::Value<f64>::create(0);
         for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
@@ -99,29 +109,29 @@ int main(int argc, char* argv[]) {
             mobility = mobility - MOBILITY_VAL * static_cast<f64>(std::popcount(x));
         }
 
-        auto tempo = (us == Color::White)? TEMPO_VAL : -TEMPO_VAL;
+        auto tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
 
         return material + mobility + tempo;
     };
 
     auto                          loss_fn = Clockwork::Autograd::mse<f64>;
-    Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(), 0.1, 0.9);
+    Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(),
+                                        0.0001, 0.9);
 
-    i32 epochs = 10;
-    const f64 K = 1.0 / 650;
+    i32       epochs = 1000;
+    const f64 K      = 1.0 / 650;
     for (i32 epoch = 0; epoch < epochs; epoch++) {
-        for (size_t i = 0; i < fens.size(); i++){
-            std::string fen      = fens[i];
-            f64 y      = results[i];
+        for (size_t i = 0; i < fens.size(); i++) {
+            std::string fen = fens[i];
+            f64         y   = results[i];
 
             auto result = (tunable_function(fen) * K)->sigmoid();
 
             auto loss = loss_fn(std::vector({result}), std::vector({y}));
 
             Clockwork::Autograd::Graph<f64>::get()->backward();
-            
-            optim.step();
 
+            optim.step();
 
 
             Clockwork::Autograd::Graph<f64>::get()->cleanup();
