@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
 
     auto                          loss_fn = Clockwork::Autograd::mse<f64>;
     Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(),
-                                        0.0001, 0.9);
+                                        10, 0.9);
 
     i32       epochs = 1000;
     const f64 K      = 1.0 / 650;
@@ -132,7 +132,6 @@ int main(int argc, char* argv[]) {
             Clockwork::Autograd::Graph<f64>::get()->backward();
 
             optim.step();
-
 
             Clockwork::Autograd::Graph<f64>::get()->cleanup();
         }
