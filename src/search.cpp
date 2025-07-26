@@ -102,7 +102,9 @@ u64 Searcher::node_count() {
 Worker::Worker(Searcher& searcher, ThreadType thread_type) :
     m_searcher(searcher),
     m_thread_type(thread_type) {
-    
+    m_searching = false;
+    m_stopped = false;
+    m_exiting = false;
     m_thread = std::thread(&Worker::idle, this);
 }
 

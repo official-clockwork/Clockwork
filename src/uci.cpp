@@ -51,7 +51,7 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "option name UCI_Chess960 type check default false\n";
-        std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << "\n";
+        std::cout << "option name Threads type spin default 1 min 512 max " << MAX_THREADS << "\n";
         std::cout << "option name Hash type spin default 16 min 1 max " << MAX_HASH << "\n";
         tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
@@ -217,14 +217,14 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
     } else if (name == "Hash") {
         if (auto value = parse_number<usize>(value_str)) {
             usize hash_size = std::clamp<usize>(*value, 1, MAX_HASH);
-            m_tt.resize(hash_size);
+            searcher.resize_tt(hash_size);
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
         }
     } else if (name == "Threads") {
         if (auto value = parse_number<usize>(value_str)) {
             usize thread_count = std::clamp<usize>(*value, 1, MAX_THREADS);
-            // TODO: change thread count
+            searcher.initialize(thread_count);
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
         }
