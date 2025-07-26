@@ -77,6 +77,8 @@ void benchmark(Search::Searcher& searcher, Depth depth) {
 
     auto end_time = time::Clock::now();
 
+    searcher.stop_searching();
+
     std::cout << nodes << " nodes " << time::nps(nodes, end_time - start_time) << " nps"
               << std::endl;
 }

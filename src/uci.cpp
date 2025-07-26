@@ -39,6 +39,7 @@ void UCIHandler::handle_command_line(i32 argc, char* argv[]) {
     for (i32 i = 1; i < argc; ++i) {
         execute_command(argv[i]);
     }
+    searcher.exit();
 }
 
 void UCIHandler::execute_command(const std::string& line) {
