@@ -25,9 +25,9 @@ using ValuePtr = std::shared_ptr<Value<T>>;
 template<typename T = f64>
 class Value : public std::enable_shared_from_this<Value<T>> {
 private:
-    T                        m_value    = 0;
-    T                        m_gradient = 0;
-    std::vector<ValuePtr<T>> m_dependencies;
+    T                                m_value    = 0;
+    T                                m_gradient = 0;
+    std::vector<ValuePtr<T>>         m_dependencies;
     std::function<void(ValuePtr<T>)> m_backward_func;
 
 
@@ -104,8 +104,7 @@ public:
             this_value->m_gradient += exponent->m_value
                                     * std::pow(this_value->m_value, exponent->m_value - 1)
                                     * out->m_gradient;
-            exponent->m_gradient +=
-              out->m_value * std::log(this_value->m_value) * out->m_gradient;
+            exponent->m_gradient += out->m_value * std::log(this_value->m_value) * out->m_gradient;
         };
         return result;
     }
