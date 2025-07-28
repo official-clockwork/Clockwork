@@ -27,7 +27,7 @@ struct SearchSettings {
 };
 
 // Forward declare for Searcher
-class Worker;
+class alignas(128) Worker;
 
 enum ThreadType {
     MAIN      = 1,
@@ -80,7 +80,7 @@ private:
 
 };
 
-class Worker {
+class alignas(128) Worker {
 public:
     std::atomic<u64>                         search_nodes;
     Worker(Searcher& searcher, ThreadType thread_type);
