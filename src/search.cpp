@@ -24,7 +24,12 @@ Value mated_in(i32 ply) {
 
 Searcher::Searcher() :
     idle_barrier(std::make_unique<std::barrier<>>(1)),
-    started_barrier(std::make_unique<std::barrier<>>(1)) {};
+    started_barrier(std::make_unique<std::barrier<>>(1)) {
+}
+
+Searcher::~Searcher() {
+    exit();
+}
 
 void Searcher::set_position(const Position& root_position, const RepetitionInfo& repetition_info) {
     std::unique_lock lock_guard{mutex};

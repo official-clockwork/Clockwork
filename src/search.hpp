@@ -60,6 +60,7 @@ public:
     std::unique_ptr<std::barrier<>> started_barrier;
 
     Searcher();
+    ~Searcher();
     void set_position(const Position& root_position, const RepetitionInfo& repetition_info);
     void launch_search(SearchSettings settings);
     void stop_searching();
