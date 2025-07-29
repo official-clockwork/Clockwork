@@ -28,7 +28,7 @@ struct SearchSettings {
 // Forward declare for Searcher
 class alignas(128) Worker;
 
-enum ThreadType {
+enum class ThreadType {
     MAIN      = 1,
     SECONDARY = 0,
 };
@@ -55,6 +55,10 @@ public:
     SearchSettings settings;
     TT             tt;
 
+    // We use a shared_mutex to ensure proper mutual thread exclusion.and avoid races.
+    // The UCI thread only ever obtains exclusive access (using std::unique_lock);
+    // search threads only ever obtain shared access (using std::shared_lock).
+    // This ensures that the two classes of thread never step on each other.
     std::shared_mutex               mutex;
     std::unique_ptr<std::barrier<>> idle_barrier;
     std::unique_ptr<std::barrier<>> started_barrier;
