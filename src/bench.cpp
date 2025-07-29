@@ -70,7 +70,8 @@ void benchmark(Search::Searcher& searcher, Depth depth) {
     for (std::string fen : BENCH_FENS) {
         auto           pos = Position::parse(fen);
         RepetitionInfo dummy;
-        searcher.launch_search(pos.value(), dummy, settings);
+        searcher.set_position(pos.value(), dummy);
+        searcher.launch_search(settings);
         searcher.wait();
         nodes += searcher.node_count();
     }

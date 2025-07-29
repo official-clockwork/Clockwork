@@ -127,7 +127,7 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.hard_nodes;
         }
     }
-    searcher.launch_search(m_position, m_repetition_info, settings);
+    searcher.launch_search(settings);
 }
 
 void UCIHandler::handle_position(std::istringstream& is) {
@@ -170,6 +170,8 @@ void UCIHandler::handle_position(std::istringstream& is) {
             m_repetition_info.push(m_position.get_hash_key(), m_position.is_reversible(*move));
         }
     }
+
+    searcher.set_position(m_position, m_repetition_info);
 }
 
 void UCIHandler::handle_d(std::istringstream&) {

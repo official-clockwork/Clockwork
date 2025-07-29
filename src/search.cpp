@@ -26,15 +26,20 @@ Searcher::Searcher() :
     idle_barrier(std::make_unique<std::barrier<>>(1)),
     started_barrier(std::make_unique<std::barrier<>>(1)) {};
 
-void Searcher::launch_search(Position       _root_position,
-                             RepetitionInfo _repetition_info,
-                             SearchSettings _settings) {
+void Searcher::set_position(const Position& root_position, const RepetitionInfo& repetition_info) {
+    std::unique_lock lock_guard{mutex};
+
+    for (auto& worker : m_workers) {
+        worker->root_position   = root_position;
+        worker->repetition_info = repetition_info;
+    }
+}
+
+void Searcher::launch_search(SearchSettings settings_) {
     {
         std::unique_lock lock_guard{mutex};
 
-        root_position   = _root_position;
-        repetition_info = _repetition_info;
-        settings        = _settings;
+        settings = settings_;
 
         for (auto& worker : m_workers) {
             worker->prepare();
@@ -139,21 +144,16 @@ void Worker::thread_main() {
 }
 
 void Worker::prepare() {
-    m_stopped    = false;
-    search_nodes = 0;
+    m_search_start = time::Clock::now();
+    m_stopped      = false;
+    search_nodes   = 0;
 }
 
 void Worker::start_searching() {
-    // Search setup
-    m_search_start = time::Clock::now();
-
-    // Get a copy of the repetition_info to futureproof for multithreaded search
-    m_repetition_info = m_searcher.repetition_info;
-
     // TODO: time setup only needed by the main worker thread
     m_search_limits = {
-      .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
-                                                m_searcher.root_position.active_color()),
+      .hard_time_limit =
+        TM::compute_hard_limit(m_search_start, m_searcher.settings, root_position.active_color()),
       .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
                                                             : std::numeric_limits<u64>::max(),
       .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
@@ -163,7 +163,7 @@ void Worker::start_searching() {
     m_td.history.clear();
 
     // Run iterative deepening search
-    Move best_move = iterative_deepening(m_searcher.root_position);
+    Move best_move = iterative_deepening(root_position);
 
     if (is_main()) {
         // Print (and make sure to flush) the best move
@@ -173,7 +173,7 @@ void Worker::start_searching() {
     }
 }
 
-Move Worker::iterative_deepening(Position root_position) {
+Move Worker::iterative_deepening(const Position& root_position) {
 
     std::array<Stack, MAX_PLY + 1> ss;
     std::array<Move, MAX_PLY + 1>  pv;
@@ -248,7 +248,8 @@ Move Worker::iterative_deepening(Position root_position) {
 }
 
 template<bool PV_NODE>
-Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
+Value Worker::search(
+  const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
     if (m_stopped) {
         return 0;
     }
@@ -456,7 +457,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     return best_value;
 }
 
-Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
+Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
     if (m_stopped) {
         return 0;
     }

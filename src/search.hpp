@@ -52,9 +52,7 @@ struct ThreadData {
 class Searcher {
 public:
     SearchLimits   search_limits;
-    RepetitionInfo repetition_info;
     SearchSettings settings;
-    Position       root_position;
     TT             tt;
 
     std::shared_mutex               mutex;
@@ -62,8 +60,8 @@ public:
     std::unique_ptr<std::barrier<>> started_barrier;
 
     Searcher();
-    void
-    launch_search(Position root_position, RepetitionInfo repetition_info, SearchSettings settings);
+    void set_position(const Position& root_position, const RepetitionInfo& repetition_info);
+    void launch_search(SearchSettings settings);
     void stop_searching();
     void wait();
     void initialize(int thread_count);
@@ -82,10 +80,10 @@ private:
 class alignas(128) Worker {
 public:
     std::atomic<u64> search_nodes;
+    Position         root_position;
+    RepetitionInfo   repetition_info;
 
     Worker(Searcher& searcher, ThreadType thread_type);
-    void
-    launch_search(Position root_position, RepetitionInfo repetition_info, SearchSettings settings);
     void exit();
 
     void prepare();
@@ -121,11 +119,11 @@ private:
     std::atomic<bool> m_stopped;
     std::atomic<bool> m_exiting;
 
-    Move iterative_deepening(Position root_position);
+    Move iterative_deepening(const Position& root_position);
 
     template<bool PV_NODE>
-    Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
-    Value quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
+    Value search(const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
+    Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
     Value evaluate(const Position& pos);
     bool  check_tm_hard_limit();
 };
