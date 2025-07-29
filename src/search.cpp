@@ -23,8 +23,8 @@ Value mated_in(i32 ply) {
 
 
 Searcher::Searcher() :
-    idle_barrier(std::make_unique<std::barrier<>>(1)),
-    started_barrier(std::make_unique<std::barrier<>>(1)) {
+    idle_barrier(std::make_shared<std::barrier<>>(1)),
+    started_barrier(std::make_shared<std::barrier<>>(1)) {
 }
 
 Searcher::~Searcher() {
@@ -50,8 +50,8 @@ void Searcher::launch_search(SearchSettings settings_) {
             worker->prepare();
         }
     }
-    idle_barrier->arrive_and_wait();
-    started_barrier->arrive_and_wait();
+    idle_barrier.load()->arrive_and_wait();
+    started_barrier.load()->arrive_and_wait();
 }
 
 void Searcher::stop_searching() {
@@ -75,12 +75,12 @@ void Searcher::initialize(int thread_count) {
         for (auto& worker : m_workers) {
             worker->exit();
         }
-        idle_barrier->arrive_and_wait();
+        idle_barrier.load()->arrive_and_wait();
         m_workers.clear();
     }
 
-    idle_barrier    = std::make_unique<std::barrier<>>(1 + thread_count);
-    started_barrier = std::make_unique<std::barrier<>>(1 + thread_count);
+    idle_barrier    = std::make_shared<std::barrier<>>(1 + thread_count);
+    started_barrier = std::make_shared<std::barrier<>>(1 + thread_count);
 
     if (thread_count > 0) {
         m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
@@ -133,7 +133,7 @@ void Worker::exit() {
 
 void Worker::thread_main() {
     while (true) {
-        m_searcher.idle_barrier->arrive_and_wait();
+        m_searcher.idle_barrier.load()->arrive_and_wait();
 
         if (m_exiting) {
             return;
@@ -141,7 +141,7 @@ void Worker::thread_main() {
 
         {
             std::shared_lock lock_guard{m_searcher.mutex};
-            (void)m_searcher.started_barrier->arrive();
+            (void)m_searcher.started_barrier.load()->arrive();
 
             start_searching();
         }
@@ -149,26 +149,26 @@ void Worker::thread_main() {
 }
 
 void Worker::prepare() {
-    m_search_start = time::Clock::now();
-    m_stopped      = false;
-    search_nodes   = 0;
+    m_stopped    = false;
+    search_nodes = 0;
 }
 
 void Worker::start_searching() {
-    // TODO: time setup only needed by the main worker thread
-    m_search_limits = {
-      .hard_time_limit =
-        TM::compute_hard_limit(m_search_start, m_searcher.settings, root_position.active_color()),
-      .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
-                                                            : std::numeric_limits<u64>::max(),
-      .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
-                                                            : std::numeric_limits<u64>::max(),
-      .depth_limit     = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
-
     m_td.history.clear();
 
     // Run iterative deepening search
     if (m_thread_type == ThreadType::MAIN) {
+        m_search_start = time::Clock::now();
+
+        m_search_limits = {
+          .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
+                                                    root_position.active_color()),
+          .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
+                                                                : std::numeric_limits<u64>::max(),
+          .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
+                                                                : std::numeric_limits<u64>::max(),
+          .depth_limit     = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
+
         Move best_move = iterative_deepening<true>(root_position);
 
         // Print (and make sure to flush) the best move
@@ -186,7 +186,6 @@ Move Worker::iterative_deepening(const Position& root_position) {
     std::array<Move, MAX_PLY + 1>  pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
 
-    Depth root_depth = m_search_limits.depth_limit;
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
         ss[i].pv = &pv[i];
     }
@@ -216,7 +215,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
                   << " pv " << last_best_move << std::endl;
     };
 
-    for (Depth search_depth = 1;; search_depth++) {
+    for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
         Value score = search<IS_MAIN, true>(root_position, &ss[0], alpha, beta, search_depth, 0);
 
@@ -231,23 +230,23 @@ Move Worker::iterative_deepening(const Position& root_position) {
         last_best_move    = *ss[0].pv;
 
         // Check depth limit
-        if (search_depth >= root_depth) {
+        if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
             break;
         }
         // Check soft node limit
-        if (search_nodes >= m_search_limits.soft_node_limit) {
+        if (IS_MAIN && search_nodes >= m_search_limits.soft_node_limit) {
             break;
         }
         // TODO: add any soft time limit check here
 
-        if (m_thread_type == ThreadType::MAIN) {
+        if (IS_MAIN) {
             print_info_line();
         }
     }
 
     // Print last info line
     // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
-    if (m_thread_type == ThreadType::MAIN) {
+    if (IS_MAIN) {
         print_info_line();
     }
 
@@ -278,7 +277,7 @@ Value Worker::search(
     }
 
     // Check for hard nodes limit
-    if (search_nodes >= m_search_limits.hard_node_limit) {
+    if (IS_MAIN && search_nodes >= m_search_limits.hard_node_limit) {
         m_stopped = true;
         return 0;
     }
@@ -482,7 +481,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     }
 
     // Check for hard nodes limit
-    if (search_nodes >= m_search_limits.hard_node_limit) {
+    if (IS_MAIN && search_nodes >= m_search_limits.hard_node_limit) {
         m_stopped = true;
         return 0;
     }

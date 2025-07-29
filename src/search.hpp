@@ -59,9 +59,11 @@ public:
     // The UCI thread only ever obtains exclusive access (using std::unique_lock);
     // search threads only ever obtain shared access (using std::shared_lock).
     // This ensures that the two classes of thread never step on each other.
-    std::shared_mutex               mutex;
-    std::unique_ptr<std::barrier<>> idle_barrier;
-    std::unique_ptr<std::barrier<>> started_barrier;
+    std::shared_mutex mutex;
+
+    using BarrierPtr = std::atomic<std::shared_ptr<std::barrier<>>>;
+    BarrierPtr idle_barrier;
+    BarrierPtr started_barrier;
 
     Searcher();
     ~Searcher();

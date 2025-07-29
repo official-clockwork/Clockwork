@@ -25,6 +25,7 @@ constexpr usize            MAX_THREADS = 1024;
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
     searcher.initialize(1);
+    searcher.set_position(m_position, m_repetition_info);
 }
 
 void UCIHandler::loop() {
@@ -231,6 +232,7 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
         if (auto value = parse_number<usize>(value_str)) {
             usize thread_count = std::clamp<usize>(*value, 1, MAX_THREADS);
             searcher.initialize(thread_count);
+            searcher.set_position(m_position, m_repetition_info);
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
         }
