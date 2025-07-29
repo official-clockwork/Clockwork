@@ -105,9 +105,8 @@ Worker::Worker(Searcher& searcher, ThreadType thread_type) :
     m_thread_type(thread_type) {
     m_stopped = false;
     m_exiting = false;
-    m_thread  = std::jthread(&Worker::threadMain, this);
+    m_thread  = std::jthread(&Worker::thread_main, this);
 }
-
 
 bool Worker::check_tm_hard_limit() {
     time::TimePoint now = time::Clock::now();
@@ -122,7 +121,7 @@ void Worker::exit() {
     m_exiting = true;
 }
 
-void Worker::threadMain() {
+void Worker::thread_main() {
     while (true) {
         m_searcher.idle_barrier->arrive_and_wait();
 

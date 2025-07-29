@@ -109,7 +109,7 @@ public:
     }
 
 private:
-    void threadMain();
+    void thread_main();
 
     time::TimePoint   m_search_start;
     Searcher&         m_searcher;

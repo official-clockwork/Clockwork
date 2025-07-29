@@ -52,14 +52,17 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "option name UCI_Chess960 type check default false\n";
-        std::cout << "option name Threads type spin default 1 min 512 max " << MAX_THREADS << "\n";
+        std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << "\n";
         std::cout << "option name Hash type spin default 16 min 1 max " << MAX_HASH << "\n";
         tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
         searcher.reset();
     } else if (command == "isready") {
+        searcher.wait();
         std::cout << "readyok" << std::endl;
+    } else if (command == "wait") {
+        searcher.wait();
     } else if (command == "quit") {
         std::exit(0);
     } else if (command == "go") {
