@@ -105,7 +105,7 @@ void Searcher::reset() {
 u64 Searcher::node_count() {
     u64 nodes = 0;
     for (auto& worker : m_workers) {
-        nodes += worker->search_nodes.load(std::memory_order_relaxed);
+        nodes += worker->search_nodes();
     }
     return nodes;
 }
@@ -149,8 +149,8 @@ void Worker::thread_main() {
 }
 
 void Worker::prepare() {
-    m_stopped    = false;
-    search_nodes = 0;
+    m_stopped      = false;
+    m_search_nodes = 0;
 }
 
 void Worker::start_searching() {
@@ -234,7 +234,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
             break;
         }
         // Check soft node limit
-        if (IS_MAIN && search_nodes >= m_search_limits.soft_node_limit) {
+        if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit) {
             break;
         }
         // TODO: add any soft time limit check here
@@ -268,16 +268,16 @@ Value Worker::search(
 
     // TODO: search nodes limit condition here
     // ...
-    search_nodes++;
+    increment_search_nodes();
 
     // Check for hard time limit
     // TODO: add control for being main search thread here
-    if (IS_MAIN && (search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+    if (IS_MAIN && (search_nodes() & 2047) == 0 && check_tm_hard_limit()) {
         return 0;
     }
 
     // Check for hard nodes limit
-    if (IS_MAIN && search_nodes >= m_search_limits.hard_node_limit) {
+    if (IS_MAIN && search_nodes() >= m_search_limits.hard_node_limit) {
         m_stopped = true;
         return 0;
     }
@@ -473,15 +473,15 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         return 0;
     }
 
-    search_nodes++;
+    increment_search_nodes();
 
     // Check for hard time limit
-    if (IS_MAIN && (search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+    if (IS_MAIN && (search_nodes() & 2047) == 0 && check_tm_hard_limit()) {
         return 0;
     }
 
     // Check for hard nodes limit
-    if (IS_MAIN && search_nodes >= m_search_limits.hard_node_limit) {
+    if (IS_MAIN && search_nodes() >= m_search_limits.hard_node_limit) {
         m_stopped = true;
         return 0;
     }
@@ -580,7 +580,7 @@ Value Worker::evaluate(const Position& pos) {
         mobility -= 10 * std::popcount(x);
     }
 
-    Value fudge = static_cast<i32>(search_nodes & 7) - 3;
+    Value fudge = static_cast<i32>(search_nodes() & 7) - 3;
 
     return material + mobility + fudge;
 }

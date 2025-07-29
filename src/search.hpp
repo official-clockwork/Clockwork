@@ -86,9 +86,8 @@ private:
 
 class alignas(128) Worker {
 public:
-    std::atomic<u64> search_nodes;
-    Position         root_position;
-    RepetitionInfo   repetition_info;
+    Position       root_position;
+    RepetitionInfo repetition_info;
 
     Worker(Searcher& searcher, ThreadType thread_type);
     void exit();
@@ -103,13 +102,21 @@ public:
         m_td = {};
     }
 
-    [[nodiscard]] ThreadType thread_type() {
+    [[nodiscard]] ThreadType thread_type() const {
         return m_thread_type;
+    }
+    [[nodiscard]] u64 search_nodes() const {
+        return m_search_nodes.load(std::memory_order_relaxed);
     }
 
 private:
     void thread_main();
 
+    void increment_search_nodes() {
+        m_search_nodes.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    std::atomic<u64>  m_search_nodes;
     time::TimePoint   m_search_start;
     Searcher&         m_searcher;
     std::jthread      m_thread;
