@@ -122,7 +122,6 @@ private:
     std::jthread      m_thread;
     ThreadType        m_thread_type;
     SearchLimits      m_search_limits;
-    RepetitionInfo    m_repetition_info;
     ThreadData        m_td;
     std::atomic<bool> m_stopped;
     std::atomic<bool> m_exiting;

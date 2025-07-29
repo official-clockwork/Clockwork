@@ -285,7 +285,7 @@ Value Worker::search(
     // Draw checks
     if (!ROOT_NODE) {
         // Repetition check
-        if (m_repetition_info.detect_repetition(ply)) {
+        if (repetition_info.detect_repetition(ply)) {
             return 0;
         }
         // 50 mr check
@@ -330,12 +330,12 @@ Value Worker::search(
         int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 300);
         Position pos_after = pos.null_move();
 
-        m_repetition_info.push(pos_after.get_hash_key(), true);
+        repetition_info.push(pos_after.get_hash_key(), true);
 
         Value value =
           -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
 
-        m_repetition_info.pop();
+        repetition_info.pop();
 
         if (value >= beta) {
             return value > VALUE_WIN ? beta : value;
@@ -387,7 +387,7 @@ Value Worker::search(
         moves_played++;
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
-        m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
+        repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
         Depth new_depth = depth - 1 + pos_after.is_in_check();
@@ -413,7 +413,7 @@ Value Worker::search(
         }
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
-        m_repetition_info.pop();
+        repetition_info.pop();
 
         if (m_stopped) {
             return 0;
@@ -528,13 +528,13 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         moves.skip_quiets();
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
-        m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
+        repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
         Value value = -quiesce<IS_MAIN>(pos_after, ss + 1, -beta, -alpha, ply + 1);
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
-        m_repetition_info.pop();
+        repetition_info.pop();
 
         if (m_stopped) {
             return 0;
