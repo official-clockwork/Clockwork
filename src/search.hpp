@@ -89,11 +89,8 @@ public:
     void prepare();
     void start_searching();
 
-    void set_stopped(bool stopped) {
-        m_stopped = stopped;
-    }
-    void set_exiting(bool exiting) {
-        m_exiting = exiting;
+    void set_stopped() {
+        m_stopped = true;
     }
     void reset_thread_data() {
         m_td = {};

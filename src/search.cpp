@@ -51,7 +51,7 @@ void Searcher::launch_search(SearchSettings settings_) {
 
 void Searcher::stop_searching() {
     for (auto& worker : m_workers) {
-        worker->set_stopped(true);
+        worker->set_stopped();
     }
 }
 
