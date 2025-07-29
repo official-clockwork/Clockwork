@@ -113,11 +113,11 @@ private:
     std::atomic<bool> m_stopped;
     std::atomic<bool> m_exiting;
 
-    template<bool MAIN_THREAD>
+    template<bool IS_MAIN>
     Move iterative_deepening(const Position& root_position);
-    template<bool MAIN_THREAD, bool PV_NODE>
+    template<bool IS_MAIN, bool PV_NODE>
     Value search(const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
-    template<bool MAIN_THREAD>
+    template<bool IS_MAIN>
     Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
     Value evaluate(const Position& pos);
     bool  check_tm_hard_limit();
