@@ -24,7 +24,6 @@ time::TimePoint compute_hard_limit(time::TimePoint            search_start,
     }
 
     if (settings.move_time >= 0) {
-        std::cout << "movetime " << settings.move_time << "\n";
         hard_limit = min(hard_limit, search_start + Milliseconds(settings.move_time));
     }
 
