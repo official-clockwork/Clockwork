@@ -163,18 +163,20 @@ void Worker::start_searching() {
     m_td.history.clear();
 
     // Run iterative deepening search
-    Move best_move = iterative_deepening(root_position);
+    if (m_thread_type == ThreadType::MAIN) {
+        Move best_move = iterative_deepening<true>(root_position);
 
-    if (is_main()) {
         // Print (and make sure to flush) the best move
         std::cout << "bestmove " << best_move << std::endl;
 
         m_searcher.stop_searching();
+    } else {
+        iterative_deepening<false>(root_position);
     }
 }
 
+template<bool MAIN_THREAD>
 Move Worker::iterative_deepening(const Position& root_position) {
-
     std::array<Stack, MAX_PLY + 1> ss;
     std::array<Move, MAX_PLY + 1>  pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
@@ -211,7 +213,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
     for (Depth search_depth = 1;; search_depth++) {
         // Call search
-        Value score = search<true>(root_position, &ss[0], alpha, beta, search_depth, 0);
+        Value score =
+          search<MAIN_THREAD, true>(root_position, &ss[0], alpha, beta, search_depth, 0);
 
         // If m_stopped is true, then the search exited early. Discard the results for this depth.
         if (m_stopped) {
@@ -247,7 +250,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
     return last_best_move;
 }
 
-template<bool PV_NODE>
+template<bool MAIN_THREAD, bool PV_NODE>
 Value Worker::search(
   const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
     if (m_stopped) {
@@ -255,7 +258,7 @@ Value Worker::search(
     }
 
     if (depth <= 0) {
-        return quiesce(pos, ss, alpha, beta, ply);
+        return quiesce<MAIN_THREAD>(pos, ss, alpha, beta, ply);
     }
 
     const bool ROOT_NODE = ply == 0;
@@ -266,7 +269,7 @@ Value Worker::search(
 
     // Check for hard time limit
     // TODO: add control for being main search thread here
-    if (is_main() && (search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+    if (MAIN_THREAD && (search_nodes & 2047) == 0 && check_tm_hard_limit()) {
         return 0;
     }
 
@@ -326,7 +329,8 @@ Value Worker::search(
 
         m_repetition_info.push(pos_after.get_hash_key(), true);
 
-        Value value = -search<false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
+        Value value =
+          -search<MAIN_THREAD, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
 
         m_repetition_info.pop();
 
@@ -337,7 +341,7 @@ Value Worker::search(
 
     // Razoring
     if (!PV_NODE && !is_in_check && depth <= 7 && static_eval + 260 * depth < alpha) {
-        const Value razor_score = quiesce(pos, ss, alpha, beta, ply);
+        const Value razor_score = quiesce<MAIN_THREAD>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
         }
@@ -390,16 +394,20 @@ Value Worker::search(
               static_cast<i32>(0.77 + std::log(depth) * std::log(moves_played) / 2.36);
             reduction -= PV_NODE;
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
-            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth, ply + 1);
+            value               = -search<MAIN_THREAD, false>(pos_after, ss + 1, -alpha - 1, -alpha,
+                                                              reduced_depth, ply + 1);
             if (value > alpha && reduced_depth < new_depth) {
-                value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
+                value = -search<MAIN_THREAD, false>(pos_after, ss + 1, -alpha - 1, -alpha,
+                                                    new_depth, ply + 1);
             }
         } else if (!PV_NODE || moves_played > 1) {
-            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
+            value = -search<MAIN_THREAD, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
+                                                ply + 1);
         }
 
         if (PV_NODE && (moves_played == 1 || value > alpha)) {
-            value = -search<true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
+            value =
+              -search<MAIN_THREAD, true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
         }
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
@@ -457,6 +465,7 @@ Value Worker::search(
     return best_value;
 }
 
+template<bool MAIN_THREAD>
 Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
     if (m_stopped) {
         return 0;
@@ -465,7 +474,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     search_nodes++;
 
     // Check for hard time limit
-    if (is_main() && (search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+    if (MAIN_THREAD && (search_nodes & 2047) == 0 && check_tm_hard_limit()) {
         return 0;
     }
 
@@ -520,7 +529,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
-        Value value = -quiesce(pos_after, ss + 1, -beta, -alpha, ply + 1);
+        Value value = -quiesce<MAIN_THREAD>(pos_after, ss + 1, -beta, -alpha, ply + 1);
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         m_repetition_info.pop();
