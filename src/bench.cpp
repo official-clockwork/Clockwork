@@ -66,12 +66,12 @@ void benchmark(Search::Searcher& searcher, Depth depth) {
     Search::SearchSettings settings = {.depth = depth};
 
     auto start_time = time::Clock::now();
-    searcher.wait_for_search_finished();
+    searcher.wait();
     for (std::string fen : BENCH_FENS) {
         auto           pos = Position::parse(fen);
         RepetitionInfo dummy;
         searcher.launch_search(pos.value(), dummy, settings);
-        searcher.wait_for_search_finished();
+        searcher.wait();
         nodes += searcher.node_count();
     }
 

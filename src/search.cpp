@@ -12,6 +12,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <mutex>
 
 namespace Clockwork {
 namespace Search {
@@ -21,27 +22,26 @@ Value mated_in(i32 ply) {
 }
 
 
-Searcher::Searcher() {};
+Searcher::Searcher() :
+    idle_barrier(std::make_unique<std::barrier<>>(1)),
+    started_barrier(std::make_unique<std::barrier<>>(1)) {};
 
-void Searcher::launch_search(Position            _root_position,
-                             RepetitionInfo      _repetition_info,
+void Searcher::launch_search(Position       _root_position,
+                             RepetitionInfo _repetition_info,
                              SearchSettings _settings) {
-    stop_searching();
-    wait_for_search_finished();
+    {
+        std::unique_lock lock_guard{mutex};
 
-    root_position = _root_position;
-    repetition_info = _repetition_info;
-    settings = _settings;
+        root_position   = _root_position;
+        repetition_info = _repetition_info;
+        settings        = _settings;
 
-    for (auto& worker : m_workers) {
-        worker->set_stopped(false);
-        std::lock_guard<std::mutex> lock(worker->get_mutex());
-        worker->set_searching(true);
+        for (auto& worker : m_workers) {
+            worker->prepare();
+        }
     }
-
-    for (auto& worker : m_workers) {
-        worker->get_cv().notify_all();
-    }
+    idle_barrier->arrive_and_wait();
+    started_barrier->arrive_and_wait();
 }
 
 void Searcher::stop_searching() {
@@ -50,44 +50,45 @@ void Searcher::stop_searching() {
     }
 }
 
-void Searcher::wait_for_search_finished() {
-    for (auto& worker : m_workers) {
-        worker->wait_for_search_finished();
-    }
+void Searcher::wait() {
+    // Wait for ability to acquire exclusive access to mutex.
+    std::unique_lock lock_guard{mutex};
 }
 
-void Searcher::wait_for_workers_finished() {
-    for (auto& worker : m_workers) {
-        if (worker->is_main()) continue;
-        worker->wait_for_search_finished();
+void Searcher::initialize(int thread_count) {
+    if (m_workers.size() == thread_count) {
+        return;
+    }
+
+    {
+        std::unique_lock lock_guard{mutex};
+        for (auto& worker : m_workers) {
+            worker->exit();
+        }
+        idle_barrier->arrive_and_wait();
+        m_workers.clear();
+    }
+
+    idle_barrier    = std::make_unique<std::barrier<>>(1 + thread_count);
+    started_barrier = std::make_unique<std::barrier<>>(1 + thread_count);
+
+    if (thread_count > 0) {
+        m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
+        for (int i = 1; i < thread_count; i++) {
+            m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::SECONDARY));
+        }
     }
 }
 
 void Searcher::exit() {
-    for (auto& worker : m_workers) 
-        worker->exit();
-
-    m_workers.clear();
-
-}
-
-void Searcher::initialize(int thread_count) {
-    if (m_workers.size() == thread_count)
-        return;
-
-    this->exit();
-    m_workers.clear();
-
-    m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
-    for (int i = 1; i < thread_count; i++) {
-        m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::SECONDARY));
-    }
-    
+    initialize(0);
 }
 
 void Searcher::reset() {
-    for (auto& worker : m_workers)
+    std::unique_lock lock_guard{mutex};
+    for (auto& worker : m_workers) {
         worker->reset_thread_data();
+    }
     tt.clear();
 }
 
@@ -102,10 +103,9 @@ u64 Searcher::node_count() {
 Worker::Worker(Searcher& searcher, ThreadType thread_type) :
     m_searcher(searcher),
     m_thread_type(thread_type) {
-    m_searching = false;
     m_stopped = false;
     m_exiting = false;
-    m_thread = std::thread(&Worker::idle, this);
+    m_thread  = std::jthread(&Worker::threadMain, this);
 }
 
 
@@ -119,51 +119,47 @@ bool Worker::check_tm_hard_limit() {
 }
 
 void Worker::exit() {
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_searching = true;
-        m_exiting = true;
-    }
-    m_cv.notify_all();
-    if (m_thread.joinable())
-        m_thread.join();
+    m_exiting = true;
 }
 
-void Worker::idle() {
-    while (!m_exiting) {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_cv.wait(lock, [&] { return m_searching; });
+void Worker::threadMain() {
+    while (true) {
+        m_searcher.idle_barrier->arrive_and_wait();
 
-        if (m_exiting)
+        if (m_exiting) {
             return;
+        }
 
-        start_searching();
-        m_searching = false;
-        m_cv.notify_all();
+        {
+            std::shared_lock lock_guard{m_searcher.mutex};
+            (void)m_searcher.started_barrier->arrive();
+
+            start_searching();
+        }
     }
 }
 
-void Worker::wait_for_search_finished() {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    m_cv.wait(lock, [&] { return !m_searching; });
+void Worker::prepare() {
+    m_stopped    = false;
+    search_nodes = 0;
 }
 
 void Worker::start_searching() {
     // Search setup
     m_search_start = time::Clock::now();
-    search_nodes   = 0;
 
     // Get a copy of the repetition_info to futureproof for multithreaded search
     m_repetition_info = m_searcher.repetition_info;
 
     // TODO: time setup only needed by the main worker thread
-    m_search_limits = {.hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
-                                                                 m_searcher.root_position.active_color()),
-                       .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
-                                                                  : std::numeric_limits<u64>::max(),
-                       .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
-                                                                  : std::numeric_limits<u64>::max(),
-                       .depth_limit     = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
+    m_search_limits = {
+      .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
+                                                m_searcher.root_position.active_color()),
+      .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
+                                                            : std::numeric_limits<u64>::max(),
+      .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
+                                                            : std::numeric_limits<u64>::max(),
+      .depth_limit     = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
 
     m_td.history.clear();
 
@@ -171,10 +167,10 @@ void Worker::start_searching() {
     Move best_move = iterative_deepening(m_searcher.root_position);
 
     if (is_main()) {
-        m_searcher.stop_searching();
-
         // Print (and make sure to flush) the best move
         std::cout << "bestmove " << best_move << std::endl;
+
+        m_searcher.stop_searching();
     }
 }
 
@@ -209,9 +205,9 @@ Move Worker::iterative_deepening(Position root_position) {
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
-                  << format_score(last_search_score) << " nodes " << m_searcher.node_count() << " nps "
-                  << time::nps(m_searcher.node_count(), curr_time - m_search_start) << " pv " << last_best_move
-                  << std::endl;
+                  << format_score(last_search_score) << " nodes " << m_searcher.node_count()
+                  << " nps " << time::nps(m_searcher.node_count(), curr_time - m_search_start)
+                  << " pv " << last_best_move << std::endl;
     };
 
     for (Depth search_depth = 1;; search_depth++) {
@@ -238,14 +234,16 @@ Move Worker::iterative_deepening(Position root_position) {
         }
         // TODO: add any soft time limit check here
 
-        if (m_thread_type == ThreadType::MAIN)
+        if (m_thread_type == ThreadType::MAIN) {
             print_info_line();
+        }
     }
 
     // Print last info line
     // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
-    if (m_thread_type == ThreadType::MAIN)
+    if (m_thread_type == ThreadType::MAIN) {
         print_info_line();
+    }
 
     return last_best_move;
 }
@@ -323,7 +321,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth && tt_adjusted_eval >= beta) {
-        int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 300);        
+        int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 300);
         Position pos_after = pos.null_move();
 
         m_repetition_info.push(pos_after.get_hash_key(), true);
@@ -371,7 +369,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             }
         }
 
-        Value see_threshold = quiet ? -67 * depth : -64 * depth;        
+        Value see_threshold = quiet ? -67 * depth : -64 * depth;
         // SEE PVS Pruning
         if (depth <= 10 && !ROOT_NODE && !SEE::see(pos, m, see_threshold)) {
             continue;
