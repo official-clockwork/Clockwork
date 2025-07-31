@@ -229,7 +229,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         }
     }
 
-    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer};
+    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer, ply != 0 ? (ss - 1)->applied : Move::none()};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
     i32        moves_played = 0;
@@ -397,6 +397,7 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
 
         // Do move
         Position pos_after = pos.move(m);
+        ss[ply].applied = m;
         moves_searched++;
 
         // If we've found a legal move, then we can begin skipping quiet moves.
