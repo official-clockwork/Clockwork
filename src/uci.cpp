@@ -53,6 +53,7 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "id name Clockwork\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "option name UCI_Chess960 type check default false\n";
+        std::cout << "option name UseSoftNodes type check default false\n";
         std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << "\n";
         std::cout << "option name Hash type spin default 16 min 1 max " << MAX_HASH << "\n";
         tuned::uci_print_tunable_options();
@@ -242,7 +243,13 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
             std::cout << "Invalid value " << value_str << std::endl;
         }
     } else if (name == "UseSoftNodes") {
-        m_use_soft_nodes = true;
+        if (value_str == "true") {
+            m_use_soft_nodes = true;
+        } else if (value_str == "false") {
+            m_use_soft_nodes = false;
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
     } else if (tuned::uci_parse_tunable(name, value_str)) {
         // Successfully parsed tunable
     } else {
