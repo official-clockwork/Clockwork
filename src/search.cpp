@@ -23,8 +23,8 @@ Value mated_in(i32 ply) {
 
 
 Searcher::Searcher() :
-    idle_barrier(std::make_shared<std::barrier<>>(1)),
-    started_barrier(std::make_shared<std::barrier<>>(1)) {
+    idle_barrier(std::make_unique<std::barrier<>>(1)),
+    started_barrier(std::make_unique<std::barrier<>>(1)) {
 }
 
 Searcher::~Searcher() {
@@ -50,8 +50,8 @@ void Searcher::launch_search(SearchSettings settings_) {
             worker->prepare();
         }
     }
-    idle_barrier.load()->arrive_and_wait();
-    started_barrier.load()->arrive_and_wait();
+    idle_barrier->arrive_and_wait();
+    started_barrier->arrive_and_wait();
 }
 
 void Searcher::stop_searching() {
@@ -75,12 +75,12 @@ void Searcher::initialize(int thread_count) {
         for (auto& worker : m_workers) {
             worker->exit();
         }
-        idle_barrier.load()->arrive_and_wait();
+        idle_barrier->arrive_and_wait();
         m_workers.clear();
     }
 
-    idle_barrier    = std::make_shared<std::barrier<>>(1 + thread_count);
-    started_barrier = std::make_shared<std::barrier<>>(1 + thread_count);
+    idle_barrier    = std::make_unique<std::barrier<>>(1 + thread_count);
+    started_barrier = std::make_unique<std::barrier<>>(1 + thread_count);
 
     if (thread_count > 0) {
         m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
@@ -115,7 +115,11 @@ Worker::Worker(Searcher& searcher, ThreadType thread_type) :
     m_thread_type(thread_type) {
     m_stopped = false;
     m_exiting = false;
-    m_thread  = std::jthread(&Worker::thread_main, this);
+    m_thread  = std::thread(&Worker::thread_main, this);
+}
+
+Worker::~Worker() {
+    m_thread.join();
 }
 
 bool Worker::check_tm_hard_limit() {
@@ -133,7 +137,7 @@ void Worker::exit() {
 
 void Worker::thread_main() {
     while (true) {
-        m_searcher.idle_barrier.load()->arrive_and_wait();
+        m_searcher.idle_barrier->arrive_and_wait();
 
         if (m_exiting) {
             return;
@@ -141,7 +145,7 @@ void Worker::thread_main() {
 
         {
             std::shared_lock lock_guard{m_searcher.mutex};
-            (void)m_searcher.started_barrier.load()->arrive();
+            (void)m_searcher.started_barrier->arrive();
 
             start_searching();
         }

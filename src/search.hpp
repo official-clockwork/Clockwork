@@ -61,7 +61,7 @@ public:
     // This ensures that the two classes of thread never step on each other.
     std::shared_mutex mutex;
 
-    using BarrierPtr = std::atomic<std::shared_ptr<std::barrier<>>>;
+    using BarrierPtr = std::unique_ptr<std::barrier<>>;
     BarrierPtr idle_barrier;
     BarrierPtr started_barrier;
 
@@ -90,6 +90,8 @@ public:
     RepetitionInfo repetition_info;
 
     Worker(Searcher& searcher, ThreadType thread_type);
+    ~Worker();
+
     void exit();
 
     void prepare();
@@ -119,7 +121,7 @@ private:
     std::atomic<u64>  m_search_nodes;
     time::TimePoint   m_search_start;
     Searcher&         m_searcher;
-    std::jthread      m_thread;
+    std::thread       m_thread;
     ThreadType        m_thread_type;
     SearchLimits      m_search_limits;
     ThreadData        m_td;
