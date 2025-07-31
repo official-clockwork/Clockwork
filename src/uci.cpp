@@ -127,7 +127,7 @@ void UCIHandler::handle_go(std::istringstream& is) {
         } else if (token == "nodes") {
             if (m_use_soft_nodes) {
                 is >> settings.soft_nodes;
-                settings.hard_nodes = settings.soft_nodes * 4;
+                settings.hard_nodes = settings.soft_nodes * 16;
             } else {
                 is >> settings.hard_nodes;
             }
