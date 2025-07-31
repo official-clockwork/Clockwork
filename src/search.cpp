@@ -12,6 +12,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <mutex>
 
 namespace Clockwork {
 namespace Search {
@@ -20,11 +21,106 @@ Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
-Worker::Worker(TT& tt, ThreadData& td) :
-    m_tt(tt),
-    m_td(td) {
+
+Searcher::Searcher() :
+    idle_barrier(std::make_unique<std::barrier<>>(1)),
+    started_barrier(std::make_unique<std::barrier<>>(1)) {
 }
 
+Searcher::~Searcher() {
+    exit();
+}
+
+void Searcher::set_position(const Position& root_position, const RepetitionInfo& repetition_info) {
+    std::unique_lock lock_guard{mutex};
+
+    for (auto& worker : m_workers) {
+        worker->root_position   = root_position;
+        worker->repetition_info = repetition_info;
+    }
+}
+
+void Searcher::launch_search(SearchSettings settings_) {
+    {
+        std::unique_lock lock_guard{mutex};
+
+        settings = settings_;
+
+        for (auto& worker : m_workers) {
+            worker->prepare();
+        }
+    }
+    idle_barrier->arrive_and_wait();
+    started_barrier->arrive_and_wait();
+}
+
+void Searcher::stop_searching() {
+    for (auto& worker : m_workers) {
+        worker->set_stopped();
+    }
+}
+
+void Searcher::wait() {
+    // Wait for ability to acquire exclusive access to mutex.
+    std::unique_lock lock_guard{mutex};
+}
+
+void Searcher::initialize(int thread_count) {
+    if (m_workers.size() == thread_count) {
+        return;
+    }
+
+    {
+        std::unique_lock lock_guard{mutex};
+        for (auto& worker : m_workers) {
+            worker->exit();
+        }
+        idle_barrier->arrive_and_wait();
+        m_workers.clear();
+    }
+
+    idle_barrier    = std::make_unique<std::barrier<>>(1 + thread_count);
+    started_barrier = std::make_unique<std::barrier<>>(1 + thread_count);
+
+    if (thread_count > 0) {
+        m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
+        for (int i = 1; i < thread_count; i++) {
+            m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::SECONDARY));
+        }
+    }
+}
+
+void Searcher::exit() {
+    initialize(0);
+}
+
+void Searcher::reset() {
+    std::unique_lock lock_guard{mutex};
+    for (auto& worker : m_workers) {
+        worker->reset_thread_data();
+    }
+    tt.clear();
+}
+
+u64 Searcher::node_count() {
+    u64 nodes = 0;
+    for (auto& worker : m_workers) {
+        nodes += worker->search_nodes();
+    }
+    return nodes;
+}
+
+Worker::Worker(Searcher& searcher, ThreadType thread_type) :
+    m_searcher(searcher),
+    m_thread_type(thread_type) {
+    m_stopped = false;
+    m_exiting = false;
+    m_thread  = std::thread(&Worker::thread_main, this);
+}
+
+Worker::~Worker() {
+    m_thread.join();
+}
 
 bool Worker::check_tm_hard_limit() {
     time::TimePoint now = time::Clock::now();
@@ -35,42 +131,65 @@ bool Worker::check_tm_hard_limit() {
     return false;
 }
 
-void Worker::launch_search(Position            root_position,
-                           RepetitionInfo      repetition_info,
-                           UCI::SearchSettings settings) {
-    // Search setup
-    m_search_start = time::Clock::now();
-    search_nodes   = 0;
+void Worker::exit() {
+    m_exiting = true;
+}
+
+void Worker::thread_main() {
+    while (true) {
+        m_searcher.idle_barrier->arrive_and_wait();
+
+        if (m_exiting) {
+            return;
+        }
+
+        {
+            std::shared_lock lock_guard{m_searcher.mutex};
+            (void)m_searcher.started_barrier->arrive();
+
+            start_searching();
+        }
+    }
+}
+
+void Worker::prepare() {
     m_stopped      = false;
+    m_search_nodes = 0;
+}
 
-    // Get a copy of the repetition_info to futureproof for multithreaded search
-    m_repetition_info = repetition_info;
-
-    // TODO: time setup only needed by the main worker thread
-    m_search_limits = {.hard_time_limit = TM::compute_hard_limit(m_search_start, settings,
-                                                                 root_position.active_color()),
-                       .soft_node_limit = settings.soft_nodes > 0 ? settings.soft_nodes
-                                                                  : std::numeric_limits<u64>::max(),
-                       .hard_node_limit = settings.hard_nodes > 0 ? settings.hard_nodes
-                                                                  : std::numeric_limits<u64>::max(),
-                       .depth_limit     = settings.depth > 0 ? settings.depth : MAX_PLY};
-
+void Worker::start_searching() {
     m_td.history.clear();
 
     // Run iterative deepening search
-    Move best_move = iterative_deepening(root_position);
+    if (m_thread_type == ThreadType::MAIN) {
+        m_search_start = time::Clock::now();
 
-    // Print (and make sure to flush) the best move
-    std::cout << "bestmove " << best_move << std::endl;
+        m_search_limits = {
+          .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
+                                                    root_position.active_color()),
+          .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
+                                                                : std::numeric_limits<u64>::max(),
+          .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
+                                                                : std::numeric_limits<u64>::max(),
+          .depth_limit     = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
+
+        Move best_move = iterative_deepening<true>(root_position);
+
+        // Print (and make sure to flush) the best move
+        std::cout << "bestmove " << best_move << std::endl;
+
+        m_searcher.stop_searching();
+    } else {
+        iterative_deepening<false>(root_position);
+    }
 }
 
-Move Worker::iterative_deepening(Position root_position) {
-
+template<bool IS_MAIN>
+Move Worker::iterative_deepening(const Position& root_position) {
     std::array<Stack, MAX_PLY + 1> ss;
     std::array<Move, MAX_PLY + 1>  pv;
     Value                          alpha = -VALUE_INF, beta = +VALUE_INF;
 
-    Depth root_depth = m_search_limits.depth_limit;
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
         ss[i].pv = &pv[i];
     }
@@ -95,14 +214,14 @@ Move Worker::iterative_deepening(Position root_position) {
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
-                  << format_score(last_search_score) << " nodes " << search_nodes << " nps "
-                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << last_best_move
-                  << std::endl;
+                  << format_score(last_search_score) << " nodes " << m_searcher.node_count()
+                  << " nps " << time::nps(m_searcher.node_count(), curr_time - m_search_start)
+                  << " pv " << last_best_move << std::endl;
     };
 
-    for (Depth search_depth = 1;; search_depth++) {
+    for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
-        Value score = search<true>(root_position, &ss[0], alpha, beta, search_depth, 0);
+        Value score = search<IS_MAIN, true>(root_position, &ss[0], alpha, beta, search_depth, 0);
 
         // If m_stopped is true, then the search exited early. Discard the results for this depth.
         if (m_stopped) {
@@ -115,49 +234,54 @@ Move Worker::iterative_deepening(Position root_position) {
         last_best_move    = *ss[0].pv;
 
         // Check depth limit
-        if (search_depth >= root_depth) {
+        if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
             break;
         }
         // Check soft node limit
-        if (search_nodes >= m_search_limits.soft_node_limit) {
+        if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit) {
             break;
         }
         // TODO: add any soft time limit check here
 
-        print_info_line();
+        if (IS_MAIN) {
+            print_info_line();
+        }
     }
 
     // Print last info line
     // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
-    print_info_line();
+    if (IS_MAIN) {
+        print_info_line();
+    }
 
     return last_best_move;
 }
 
-template<bool PV_NODE>
-Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
+template<bool IS_MAIN, bool PV_NODE>
+Value Worker::search(
+  const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
     if (m_stopped) {
         return 0;
     }
 
     if (depth <= 0) {
-        return quiesce(pos, ss, alpha, beta, ply);
+        return quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
     }
 
     const bool ROOT_NODE = ply == 0;
 
     // TODO: search nodes limit condition here
     // ...
-    search_nodes++;
+    increment_search_nodes();
 
     // Check for hard time limit
     // TODO: add control for being main search thread here
-    if ((search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+    if (IS_MAIN && (search_nodes() & 2047) == 0 && check_tm_hard_limit()) {
         return 0;
     }
 
     // Check for hard nodes limit
-    if (search_nodes >= m_search_limits.hard_node_limit) {
+    if (IS_MAIN && search_nodes() >= m_search_limits.hard_node_limit) {
         m_stopped = true;
         return 0;
     }
@@ -165,7 +289,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // Draw checks
     if (!ROOT_NODE) {
         // Repetition check
-        if (m_repetition_info.detect_repetition(ply)) {
+        if (repetition_info.detect_repetition(ply)) {
             return 0;
         }
         // 50 mr check
@@ -179,7 +303,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         return evaluate(pos);
     }
 
-    auto tt_data = m_tt.probe(pos, ply);
+    auto tt_data = m_searcher.tt.probe(pos, ply);
     if (!PV_NODE && tt_data && tt_data->depth >= depth
         && (tt_data->bound == Bound::Exact
             || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
@@ -207,14 +331,15 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
 
     if (!PV_NODE && !is_in_check && depth >= tuned::nmp_depth && tt_adjusted_eval >= beta) {
-        int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 300);        
+        int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 300);
         Position pos_after = pos.null_move();
 
-        m_repetition_info.push(pos_after.get_hash_key(), true);
+        repetition_info.push(pos_after.get_hash_key(), true);
 
-        Value value = -search<false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
+        Value value =
+          -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
 
-        m_repetition_info.pop();
+        repetition_info.pop();
 
         if (value >= beta) {
             return value > VALUE_WIN ? beta : value;
@@ -223,7 +348,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
     // Razoring
     if (!PV_NODE && !is_in_check && depth <= 7 && static_eval + 260 * depth < alpha) {
-        const Value razor_score = quiesce(pos, ss, alpha, beta, ply);
+        const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
         }
@@ -255,7 +380,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             }
         }
 
-        Value see_threshold = quiet ? -67 * depth : -64 * depth;        
+        Value see_threshold = quiet ? -67 * depth : -64 * depth;
         // SEE PVS Pruning
         if (depth <= 10 && !ROOT_NODE && !SEE::see(pos, m, see_threshold)) {
             continue;
@@ -266,7 +391,7 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         moves_played++;
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
-        m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
+        repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
         Depth new_depth = depth - 1 + pos_after.is_in_check();
@@ -276,20 +401,23 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
               static_cast<i32>(0.77 + std::log(depth) * std::log(moves_played) / 2.36);
             reduction -= PV_NODE;
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
-            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth, ply + 1);
+            value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
+                                            ply + 1);
             if (value > alpha && reduced_depth < new_depth) {
-                value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
+                value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
+                                                ply + 1);
             }
         } else if (!PV_NODE || moves_played > 1) {
-            value = -search<false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
+            value =
+              -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
         }
 
         if (PV_NODE && (moves_played == 1 || value > alpha)) {
-            value = -search<true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
+            value = -search<IS_MAIN, true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
         }
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
-        m_repetition_info.pop();
+        repetition_info.pop();
 
         if (m_stopped) {
             return 0;
@@ -338,25 +466,26 @@ Value Worker::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     Bound bound = best_value >= beta        ? Bound::Lower
                 : best_move != Move::none() ? Bound::Exact
                                             : Bound::Upper;
-    m_tt.store(pos, ply, best_move, best_value, depth, bound);
+    m_searcher.tt.store(pos, ply, best_move, best_value, depth, bound);
 
     return best_value;
 }
 
-Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
+template<bool IS_MAIN>
+Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
     if (m_stopped) {
         return 0;
     }
 
-    search_nodes++;
+    increment_search_nodes();
 
     // Check for hard time limit
-    if ((search_nodes & 2047) == 0 && check_tm_hard_limit()) {
+    if (IS_MAIN && (search_nodes() & 2047) == 0 && check_tm_hard_limit()) {
         return 0;
     }
 
     // Check for hard nodes limit
-    if (search_nodes >= m_search_limits.hard_node_limit) {
+    if (IS_MAIN && search_nodes() >= m_search_limits.hard_node_limit) {
         m_stopped = true;
         return 0;
     }
@@ -403,13 +532,13 @@ Value Worker::quiesce(Position& pos, Stack* ss, Value alpha, Value beta, i32 ply
         moves.skip_quiets();
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
-        m_repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
+        repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
-        Value value = -quiesce(pos_after, ss + 1, -beta, -alpha, ply + 1);
+        Value value = -quiesce<IS_MAIN>(pos_after, ss + 1, -beta, -alpha, ply + 1);
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
-        m_repetition_info.pop();
+        repetition_info.pop();
 
         if (m_stopped) {
             return 0;
@@ -455,7 +584,7 @@ Value Worker::evaluate(const Position& pos) {
         mobility -= 10 * std::popcount(x);
     }
 
-    Value fudge = static_cast<i32>(search_nodes & 7) - 3;
+    Value fudge = static_cast<i32>(search_nodes() & 7) - 3;
 
     return material + mobility + fudge;
 }

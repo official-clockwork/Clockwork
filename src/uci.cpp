@@ -24,6 +24,8 @@ constexpr usize            MAX_THREADS = 1024;
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
+    searcher.initialize(1);
+    searcher.set_position(m_position, m_repetition_info);
 }
 
 void UCIHandler::loop() {
@@ -38,6 +40,7 @@ void UCIHandler::handle_command_line(i32 argc, char* argv[]) {
     for (i32 i = 1; i < argc; ++i) {
         execute_command(argv[i]);
     }
+    searcher.exit();
 }
 
 void UCIHandler::execute_command(const std::string& line) {
@@ -55,13 +58,18 @@ void UCIHandler::execute_command(const std::string& line) {
         tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
-        m_tt.clear();
+        searcher.reset();
     } else if (command == "isready") {
+        searcher.wait();
         std::cout << "readyok" << std::endl;
+    } else if (command == "wait") {
+        searcher.wait();
     } else if (command == "quit") {
         std::exit(0);
     } else if (command == "go") {
         handle_go(is);
+    } else if (command == "stop") {
+        searcher.stop_searching();
     } else if (command == "position") {
         handle_position(is);
     } else if (command == "setoption") {
@@ -89,9 +97,7 @@ void UCIHandler::handle_bench(std::istringstream& is) {
         is.clear();
         depth = 8;
     }
-    Search::ThreadData td = {};
-    Search::Worker     worker{m_tt, td};
-    Bench::benchmark(worker, depth);
+    Bench::benchmark(searcher, depth);
 }
 
 void UCIHandler::handle_go(std::istringstream& is) {
@@ -122,9 +128,7 @@ void UCIHandler::handle_go(std::istringstream& is) {
             is >> settings.hard_nodes;
         }
     }
-    Search::ThreadData td = {};
-    Search::Worker     worker{m_tt, td};
-    worker.launch_search(m_position, m_repetition_info, settings);
+    searcher.launch_search(settings);
 }
 
 void UCIHandler::handle_position(std::istringstream& is) {
@@ -167,6 +171,8 @@ void UCIHandler::handle_position(std::istringstream& is) {
             m_repetition_info.push(m_position.get_hash_key(), m_position.is_reversible(*move));
         }
     }
+
+    searcher.set_position(m_position, m_repetition_info);
 }
 
 void UCIHandler::handle_d(std::istringstream&) {
@@ -218,14 +224,15 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
     } else if (name == "Hash") {
         if (auto value = parse_number<usize>(value_str)) {
             usize hash_size = std::clamp<usize>(*value, 1, MAX_HASH);
-            m_tt.resize(hash_size);
+            searcher.resize_tt(hash_size);
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
         }
     } else if (name == "Threads") {
         if (auto value = parse_number<usize>(value_str)) {
             usize thread_count = std::clamp<usize>(*value, 1, MAX_THREADS);
-            // TODO: change thread count
+            searcher.initialize(thread_count);
+            searcher.set_position(m_position, m_repetition_info);
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
         }
