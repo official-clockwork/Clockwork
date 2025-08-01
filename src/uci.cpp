@@ -351,6 +351,7 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
         }
     }
 
+    // Safety checks
     if (lines.empty()) {
         std::cout << "Book file is empty." << std::endl;
         return;
