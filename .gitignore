@@ -39,3 +39,6 @@ build*/
 # IDEs
 .idea/*
 .vscode/*
+
+# Other common folders
+books/*
