@@ -7,13 +7,16 @@
 #include "tuned.hpp"
 #include "util/ios_fmt_guard.hpp"
 #include "util/parse.hpp"
+#include "util/random.hpp"
 #include <algorithm>
+#include <fstream>
 #include <ios>
 #include <iostream>
 #include <istream>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 
 namespace Clockwork::UCI {
 
@@ -87,10 +90,13 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_perft(is);
     } else if (command == "bench") {
         handle_bench(is);
+    } else if (command == "genfens") {
+        handle_genfens(is);
     } else {
         std::cout << "Unknown command" << std::endl;
     }
 }
+
 
 void UCIHandler::handle_bench(std::istringstream& is) {
     Depth depth = 8;
@@ -285,4 +291,93 @@ void UCIHandler::handle_perft(std::istringstream& is) {
 
     split_perft(m_position, static_cast<usize>(depth));
 }
+
+void UCIHandler::handle_genfens(std::istringstream& is) {
+    int         N             = 0;
+    uint64_t    seed          = 0;
+    bool        seed_provided = false;
+    std::string book          = "None";
+    std::string token;
+
+    // Parse arguments
+    if (!(is >> N) || N <= 0) {
+        std::cout << "Invalid or missing number of positions (N)." << std::endl;
+        return;
+    }
+
+    while (is >> token) {
+        if (token == "seed") {
+            if (!(is >> seed)) {
+                std::cout << "Invalid seed value." << std::endl;
+                return;
+            }
+            seed_provided = true;
+        } else if (token == "book") {
+            if (!(is >> book)) {
+                std::cout << "Missing book filename after 'book'." << std::endl;
+                return;
+            }
+        } else {
+            std::cout << "Invalid genfens argument: " << token << std::endl;
+            return;
+        }
+    }
+
+    // Require book file
+    if (book == "None") {
+        std::cout << "Please specify a book file using 'book <filename>'." << std::endl;
+        return;
+    }
+
+    // Set RNG state
+    if (!seed_provided) {
+        std::cout << "Seed not provided. Defaulting to 0." << std::endl;
+    }
+    Clockwork::Random::state = seed;
+
+    // Open the book file
+    std::ifstream file(book);
+    if (!file) {
+        std::cout << "Could not open file: " << book << std::endl;
+        return;
+    }
+
+    // Load all lines
+    std::vector<std::string> lines;
+    std::string              line;
+    while (std::getline(file, line)) {
+        if (!line.empty()) {
+            lines.push_back(line);
+        }
+    }
+
+    if (lines.empty()) {
+        std::cout << "Book file is empty." << std::endl;
+        return;
+    }
+
+    if (N > static_cast<int>(lines.size())) {
+        std::cout << "Requested " << N << " positions, but only " << lines.size() << " available."
+                  << std::endl;
+        return;
+    }
+
+    // Pick N unique random indices
+    std::unordered_set<size_t> selected_indices;
+    while (selected_indices.size() < static_cast<size_t>(N)) {
+        uint64_t rand_val = Clockwork::Random::rand_64();
+        selected_indices.insert(rand_val % lines.size());
+    }
+
+    // Output the selected FENs
+    for (size_t idx : selected_indices) {
+        auto pos = Position::parse(lines[idx]);
+        if (!pos) {
+            std::cout << "Invalid FEN in book: " << lines[idx] << std::endl;
+            exit(-1);
+        }
+        std::cout << "info string genfens " << *pos << std::endl;
+    }
+}
+
 }
