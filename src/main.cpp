@@ -77,6 +77,14 @@ int main(int argc, char* argv[]) {
     auto MOBILITY_VAL = Clockwork::Autograd::Value<f64>::create_tunable(0);
     auto TEMPO_VAL    = Clockwork::Autograd::Value<f64>::create_tunable(0);
 
+    auto PAWN_MAT_EG     = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto KNIGHT_MAT_EG   = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto BISHOP_MAT_EG   = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto ROOK_MAT_EG     = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto QUEEN_MAT_EG    = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto MOBILITY_VAL_EG = Clockwork::Autograd::Value<f64>::create_tunable(0);
+    auto TEMPO_VAL_EG    = Clockwork::Autograd::Value<f64>::create_tunable(0);
+
     Clockwork::Autograd::Graph<f64>::get()->register_param(PAWN_MAT);
     Clockwork::Autograd::Graph<f64>::get()->register_param(KNIGHT_MAT);
     Clockwork::Autograd::Graph<f64>::get()->register_param(BISHOP_MAT);
@@ -84,13 +92,33 @@ int main(int argc, char* argv[]) {
     Clockwork::Autograd::Graph<f64>::get()->register_param(QUEEN_MAT);
     Clockwork::Autograd::Graph<f64>::get()->register_param(MOBILITY_VAL);
     Clockwork::Autograd::Graph<f64>::get()->register_param(TEMPO_VAL);
+    Clockwork::Autograd::Graph<f64>::get()->register_param(PAWN_MAT_EG);
+    Clockwork::Autograd::Graph<f64>::get()->register_param(KNIGHT_MAT_EG);
+    Clockwork::Autograd::Graph<f64>::get()->register_param(BISHOP_MAT_EG);
+    Clockwork::Autograd::Graph<f64>::get()->register_param(ROOK_MAT_EG);
+    Clockwork::Autograd::Graph<f64>::get()->register_param(QUEEN_MAT_EG);
+    Clockwork::Autograd::Graph<f64>::get()->register_param(MOBILITY_VAL_EG);
+    Clockwork::Autograd::Graph<f64>::get()->register_param(TEMPO_VAL_EG);
 
     auto tunable_function = [PAWN_MAT, KNIGHT_MAT, BISHOP_MAT, ROOK_MAT, QUEEN_MAT, MOBILITY_VAL,
-                             TEMPO_VAL](std::string fen) {
+                             TEMPO_VAL, PAWN_MAT_EG, KNIGHT_MAT_EG, BISHOP_MAT_EG, ROOK_MAT_EG,
+                             QUEEN_MAT_EG, MOBILITY_VAL_EG, TEMPO_VAL_EG](std::string fen) {
         auto pos = Position::parse(fen).value();
 
         const Color us   = pos.active_color();
         const Color them = invert(us);
+
+        i32 phase = pos.piece_count(Color::White, PieceType::Knight)
+                  + pos.piece_count(Color::Black, PieceType::Knight)
+                  + pos.piece_count(Color::White, PieceType::Bishop)
+                  + pos.piece_count(Color::Black, PieceType::Bishop)
+                  + 2
+                      * (pos.piece_count(Color::White, PieceType::Rook)
+                         + pos.piece_count(Color::Black, PieceType::Rook))
+                  + 4
+                      * (pos.piece_count(Color::White, PieceType::Queen)
+                         + pos.piece_count(Color::Black, PieceType::Queen));
+        phase = std::min<i32>(phase, 24);
 
         auto material = PAWN_MAT
                         * static_cast<f64>(pos.piece_count(Color::White, PieceType::Pawn)
@@ -108,17 +136,38 @@ int main(int argc, char* argv[]) {
                           * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
                                              - pos.piece_count(Color::Black, PieceType::Queen));
 
-        auto mobility = Clockwork::Autograd::Value<f64>::create(0);
+        auto material_eg = PAWN_MAT_EG
+                           * static_cast<f64>(pos.piece_count(Color::White, PieceType::Pawn)
+                                              - pos.piece_count(Color::Black, PieceType::Pawn))
+                         + KNIGHT_MAT_EG
+                             * static_cast<f64>(pos.piece_count(Color::White, PieceType::Knight)
+                                                - pos.piece_count(Color::Black, PieceType::Knight))
+                         + BISHOP_MAT_EG
+                             * static_cast<f64>(pos.piece_count(Color::White, PieceType::Bishop)
+                                                - pos.piece_count(Color::Black, PieceType::Bishop))
+                         + ROOK_MAT_EG
+                             * static_cast<f64>(pos.piece_count(Color::White, PieceType::Rook)
+                                                - pos.piece_count(Color::Black, PieceType::Rook))
+                         + QUEEN_MAT_EG
+                             * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
+                                                - pos.piece_count(Color::Black, PieceType::Queen));
+
+        auto mobility    = Clockwork::Autograd::Value<f64>::create(0);
+        auto mobility_eg = Clockwork::Autograd::Value<f64>::create(0);
         for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
-            mobility = mobility + MOBILITY_VAL * static_cast<f64>(std::popcount(x));
+            mobility    = mobility + MOBILITY_VAL * static_cast<f64>(std::popcount(x));
+            mobility_eg = mobility_eg + MOBILITY_VAL_EG * static_cast<f64>(std::popcount(x));
         }
         for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::Black))) {
-            mobility = mobility - MOBILITY_VAL * static_cast<f64>(std::popcount(x));
+            mobility    = mobility - MOBILITY_VAL * static_cast<f64>(std::popcount(x));
+            mobility_eg = mobility_eg + MOBILITY_VAL_EG * static_cast<f64>(std::popcount(x));
         }
 
-        auto tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
+        auto tempo    = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
+        auto tempo_eg = (us == Color::White) ? TEMPO_VAL_EG : -TEMPO_VAL_EG;
 
-        return material + mobility + tempo;
+        return (material + mobility + tempo) * (static_cast<f64>(phase)) / 24
+             + (material_eg + mobility_eg + tempo_eg) * (24 - static_cast<f64>(phase)) / 24;
     };
 
     auto                            loss_fn = Clockwork::Autograd::mse<f64>;
