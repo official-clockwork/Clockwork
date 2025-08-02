@@ -5,11 +5,15 @@
 #include "tuning/optim.hpp"
 #include "tuning/value.hpp"
 #include "uci.hpp"
+#include "util/pretty.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
+#include <algorithm>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <numeric>
+#include <random>
 #include <tuple>
 
 using namespace Clockwork;
@@ -31,32 +35,35 @@ int main(int argc, char* argv[]) {
     // Load fens.
     std::vector<std::string> fens;
     std::vector<f64>         results;
-    std::ifstream            fenFile("fens.book");
+    std::ifstream            fenFile("data/filtered_positions.fen");
     if (!fenFile) {
         std::cerr << "Error opening fens.book" << std::endl;
         return 1;
     };
     std::string line;
     while (std::getline(fenFile, line)) {
-        // The line is : FEN;(w/d/b)
         size_t pos = line.find(';');
         if (pos != std::string::npos) {
             std::string fen = line.substr(0, pos);
             fens.push_back(fen);
             std::string result = line.substr(pos + 1);
+            result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
+
             if (result == "w") {
-                results.push_back(1.0);  // Win
+                results.push_back(1.0);
             } else if (result == "d") {
-                results.push_back(0.5);  // Draw
+                results.push_back(0.5);
             } else if (result == "b") {
-                results.push_back(0.0);  // Loss
+                results.push_back(0.0);
             } else {
-                std::cerr << "Invalid result in line: " << line << std::endl;
+                std::cerr << "Invalid result in line: " << line << " result is (" << result << ")"
+                          << std::endl;
             }
         } else {
             std::cerr << "Invalid line format: " << line << std::endl;
         }
     }
+
     fenFile.close();
 
     // Print the number of fens loaded
@@ -114,33 +121,66 @@ int main(int argc, char* argv[]) {
         return material + mobility + tempo;
     };
 
-    auto                          loss_fn = Clockwork::Autograd::mse<f64>;
-    Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(),
-                                        10, 0.9);
+    auto                            loss_fn = Clockwork::Autograd::mse<f64>;
+    Clockwork::Autograd::AdamW<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(),
+                                          10, 0.9, 0.999, 1e-8, 0.0);
+    //Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(), 10, 0.9);
 
-    i32       epochs = 10000;
-    const f64 K      = 1.0 / 650;
+    i32       epochs     = 10000;
+    const f64 K          = 1.0 / 250;
+    size_t    batch_size = 16384;  // Set batch size here
+
+    std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
+
     for (i32 epoch = 0; epoch < epochs; epoch++) {
-        for (size_t i = 0; i < fens.size(); i++) {
-            std::string fen = fens[i];
-            f64         y   = results[i];
+        // Print epoch header
+        std::cout << "Epoch " << (epoch + 1) << "/" << epochs << std::endl;
 
-            auto result = (tunable_function(fen) * K)->sigmoid();
+        std::vector<size_t> indices(fens.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::shuffle(indices.begin(), indices.end(), rng);
 
-            auto loss = loss_fn(std::vector({result}), std::vector({y}));
+        size_t total_batches = (fens.size() + batch_size - 1) / batch_size;
+
+        for (size_t batch_idx = 0, start = 0; start < fens.size();
+             start += batch_size, ++batch_idx) {
+            size_t end = std::min(start + batch_size, fens.size());
+
+            std::vector<Clockwork::Autograd::ValuePtr<f64>> batch_outputs;
+            std::vector<f64>                                batch_targets;
+
+            for (size_t j = start; j < end; ++j) {
+                size_t      idx = indices[j];
+                std::string fen = fens[idx];
+                f64         y   = results[idx];
+
+                auto result = (tunable_function(fen) * K)->sigmoid();
+                batch_outputs.push_back(result);
+                batch_targets.push_back(y);
+            }
+
+            auto loss = loss_fn(batch_outputs, batch_targets);
 
             Clockwork::Autograd::Graph<f64>::get()->backward();
-
             optim.step();
-
             Clockwork::Autograd::Graph<f64>::get()->cleanup();
+
+            // Print batch progress bar
+            print_progress(batch_idx + 1, total_batches);
         }
+
+        std::cout << std::endl;  // Finish progress bar line
 
         for (auto param : Clockwork::Autograd::Graph<f64>::get()->get_parameters()) {
             std::cout << param << std::endl;
         }
         std::cout << std::endl;
+
+        if (epoch > 5) {
+            optim.set_lr(optim.get_lr() * 0.97)
+        }
     }
+
 
     return 0;
 }
