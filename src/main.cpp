@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
         std::cout << std::endl;
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.97)
+            optim.set_lr(optim.get_lr() * 0.97);
         }
     }
 
