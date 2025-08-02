@@ -90,11 +90,16 @@ set(srcs
         src/zobrist.hpp
         src/util/bit.hpp
         src/util/parse.hpp
+        src/util/pretty.hpp
         src/util/static_vector.hpp
         src/util/types.hpp
         src/util/vec.hpp
         src/util/vec/avx2.hpp
         src/util/vec/avx512.hpp
+        src/tuning/graph.hpp
+        src/tuning/loss.hpp
+        src/tuning/optim.hpp
+        src/tuning/value.hpp
 )
 
 add_library(clockwork-lib OBJECT ${srcs})
