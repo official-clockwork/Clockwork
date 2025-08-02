@@ -90,6 +90,7 @@ set(srcs
         src/zobrist.hpp
         src/util/bit.hpp
         src/util/parse.hpp
+        src/util/pretty.hpp
         src/util/static_vector.hpp
         src/util/types.hpp
         src/util/vec.hpp
