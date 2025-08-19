@@ -13,7 +13,6 @@ enum class Reduction {
     Mean
 };
 
-
 template<typename T = f64, typename Target = f64, Reduction R = Reduction::Mean>
 auto mse(const std::vector<ValuePtr<T>>& predictions, const std::vector<Target>& targets) {
     if (predictions.size() != targets.size()) {
@@ -30,20 +29,22 @@ auto mse(const std::vector<ValuePtr<T>>& predictions, const std::vector<Target>&
         }
         return losses;
     } else {
-        // Compute sum of squared errors in one accumulated node:
+        // Compute sum of squared errors in one accumulated node
         ValuePtr<T> total_loss = Value<T>::create(0.0);
+
         for (size_t i = 0; i < predictions.size(); ++i) {
             ValuePtr<T> diff = predictions[i] - targets[i];
-            // Accumulate squared error directly to minimize nodes:
-            total_loss = total_loss + diff * diff;
+            total_loss       = total_loss + diff * diff;
         }
+
         if constexpr (R == Reduction::Mean) {
             T n = static_cast<T>(predictions.size());
-            return total_loss * Value<T>::create(1.0 / n);
-        } else {  // Reduction::Sum
+            return total_loss * Value<T>::create(static_cast<T>(1) / n);
+        } else {
             return total_loss;
         }
     }
 }
-}
-}
+
+}  // namespace Autograd
+}  // namespace Clockwork
