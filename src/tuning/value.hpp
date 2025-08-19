@@ -36,13 +36,13 @@ public:
     explicit Value(T data) :
         m_value(data) {};
 
-    T get_value() const {
+    inline T get_value() const {
         return m_value;
     }
-    void change_value(T amount) {
+    inline void change_value(T amount) {
         m_value += amount;
     }
-    T get_gradient() const {
+    inline T get_gradient() const {
         return m_gradient;
     }
 
