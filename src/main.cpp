@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
                           * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
                                              - pos.piece_count(Color::Black, PieceType::Queen));
 
-        auto mobility = Clockwork::Autograd::Pair<f64>::create(0,0);
+        auto mobility = Clockwork::Autograd::Pair<f64>::create(0, 0);
         for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
             mobility = mobility + MOBILITY_VAL * static_cast<f64>(std::popcount(x));
         }

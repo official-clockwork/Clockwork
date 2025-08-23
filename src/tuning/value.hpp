@@ -392,6 +392,7 @@ public:
         return result;
     }
 
+    // ------------------- Scalar / Pair -------------------
     friend PairPtr<T> operator/(T scalar, const PairPtr<T>& a) {
         PairPtr<T> result       = Pair<T>::create(scalar / a->m_first, scalar / a->m_second);
         result->m_backward_func = [a, scalar](PairPtr<T> out) {
@@ -414,6 +415,7 @@ public:
         return result;
     }
 
+    // ------------------- Value / Pair -------------------
     friend PairPtr<T> operator/(const ValuePtr<T>& v, const PairPtr<T>& a) {
         PairPtr<T> result =
           Pair<T>::create(v->get_value() / a->m_first, v->get_value() / a->m_second);
@@ -425,6 +427,7 @@ public:
         return result;
     }
 
+    // ------------------- Unary negation -------------------
     friend PairPtr<T> operator-(PairPtr<T> a) {
         PairPtr<T> result       = Pair<T>::create(-a->m_first, -a->m_second);
         result->m_backward_func = [a](PairPtr<T> out) {
