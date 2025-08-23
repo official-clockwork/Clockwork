@@ -16,22 +16,24 @@
 #include <random>
 #include <tuple>
 
+#define EVAL_TUNING
+
 using namespace Clockwork;
 
 int main(int argc, char* argv[]) {
 
     // Initialize all necessary tables (TODO: we may need to move this to a dedicated file)
-    // Zobrist::init_zobrist_keys();
+    #ifndef EVAL_TUNING
+    Zobrist::init_zobrist_keys();
 
-    // UCI::UCIHandler uci;
+    UCI::UCIHandler uci;
 
-    // if (argc > 1) {
-    //     uci.handle_command_line(argc, argv);
-    // } else {
-    //     uci.loop();
-    // }
-
-
+    if (argc > 1) {
+        uci.handle_command_line(argc, argv);
+    } else {
+        uci.loop();
+    }
+    #else
     // Load fens.
     std::vector<std::string> fens;
     std::vector<f64>         results;
@@ -119,14 +121,16 @@ int main(int argc, char* argv[]) {
                       + QUEEN_MAT
                           * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
                                              - pos.piece_count(Color::Black, PieceType::Queen));
-
-        auto mobility = Clockwork::Autograd::Pair<f64>::create(0, 0);
+        
+        i32 mob_count = 0;
         for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
-            mobility = mobility + MOBILITY_VAL * static_cast<f64>(std::popcount(x));
+            mob_count += std::popcount(x);
         }
         for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::Black))) {
-            mobility = mobility - MOBILITY_VAL * static_cast<f64>(std::popcount(x));
+            mob_count -= std::popcount(x);
         }
+
+        auto mobility = MOBILITY_VAL * static_cast<f64>(mob_count);
 
         auto tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
 
@@ -137,9 +141,9 @@ int main(int argc, char* argv[]) {
     Clockwork::Autograd::AdamW<f64> optim(10, 0.9, 0.999, 1e-8, 0.0);
     //Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(), 10, 0.9);
 
-    i32       epochs     = 10000;
+    i32       epochs     = 1;
     const f64 K          = 1.0 / 250;
-    size_t    batch_size = 2048;  // Set batch size here
+    size_t    batch_size = 16384;  // Set batch size here
 
     std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
 
@@ -195,5 +199,6 @@ int main(int argc, char* argv[]) {
             optim.set_lr(optim.get_lr() * 0.97);
         }
     }
+    #endif
     return 0;
 }
