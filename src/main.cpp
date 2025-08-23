@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
 
     i32       epochs     = 10000;
     const f64 K          = 1.0 / 250;
-    size_t    batch_size = 256;  // Set batch size here
+    size_t    batch_size = 2048;  // Set batch size here
 
     std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
 
