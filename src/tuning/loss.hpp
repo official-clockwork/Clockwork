@@ -30,12 +30,13 @@ auto mse(const std::vector<ValuePtr<T>>& predictions, const std::vector<Target>&
         return losses;
     } else {
         // Compute sum of squared errors in one accumulated node
-        ValuePtr<T> total_loss = Value<T>::create(0.0);
-
+        std::vector<ValuePtr<T>> losses;
+        losses.reserve(predictions.size());
         for (size_t i = 0; i < predictions.size(); ++i) {
             ValuePtr<T> diff = predictions[i] - targets[i];
-            total_loss       = total_loss + diff * diff;
+            losses.push_back(diff * diff);
         }
+        ValuePtr<T> total_loss = Value<T>::sum(losses);
 
         if constexpr (R == Reduction::Mean) {
             T n = static_cast<T>(predictions.size());

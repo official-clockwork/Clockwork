@@ -239,6 +239,28 @@ public:
         return result;
     }
 
+    static ValuePtr<T> sum(const std::vector<ValuePtr<T>>& inputs) {
+        if (inputs.empty()) {
+            return Value<T>::create(0.0);
+        }
+
+        T sum = 0;
+        for (auto& v : inputs) {
+            sum += v->m_value;
+        }
+
+        ValuePtr<T> result = Value<T>::create(sum);
+
+        result->m_backward_func = [inputs](ValuePtr<T> out) {
+            for (auto& v : inputs) {
+                v->m_gradient += out->m_gradient;
+            }
+        };
+
+        return result;
+    }
+
+
     friend bool operator==(ValuePtr<T> a, ValuePtr<T> b) {
         return a->m_value == b->m_value;
     }
