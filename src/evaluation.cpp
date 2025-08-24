@@ -54,7 +54,7 @@ Score evaluate(Position pos) {
 #ifdef EVAL_TUNING
     return (material + mobility + tempo)->phase<24.0>(static_cast<f64>(phase));
 #else
-    return (us == Color::White) ? (material + mobility + tempo).phase<24>(static_cast<f64>(phase)) : -(material + mobility + tempo).phase<24>(static_cast<f64>(phase));
+    return (us == Color::White) ? (material + mobility + tempo).phase<24>(phase) : -(material + mobility + tempo).phase<24>(phase);
 #endif
 };
 
