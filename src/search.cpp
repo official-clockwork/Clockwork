@@ -13,6 +13,7 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include "evaluation.hpp"
 #include <mutex>
 
 namespace Clockwork {
@@ -572,27 +573,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 }
 
 Value Worker::evaluate(const Position& pos) {
-    const Color us   = pos.active_color();
-    const Color them = invert(us);
-
-    Value material =
-      100 * (pos.piece_count(us, PieceType::Pawn) - pos.piece_count(them, PieceType::Pawn))
-      + 330 * (pos.piece_count(us, PieceType::Knight) - pos.piece_count(them, PieceType::Knight))
-      + 370 * (pos.piece_count(us, PieceType::Bishop) - pos.piece_count(them, PieceType::Bishop))
-      + 550 * (pos.piece_count(us, PieceType::Rook) - pos.piece_count(them, PieceType::Rook))
-      + 1000 * (pos.piece_count(us, PieceType::Queen) - pos.piece_count(them, PieceType::Queen));
-
-    Value mobility = 0;
-    for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(us))) {
-        mobility += 10 * std::popcount(x);
-    }
-    for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(them))) {
-        mobility -= 10 * std::popcount(x);
-    }
-
-    Value fudge = static_cast<i32>(search_nodes() & 7) - 3;
-
-    return material + mobility + fudge;
+    return static_cast<Value>(evaluate(pos));
 }
 }
 }
