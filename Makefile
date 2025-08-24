@@ -36,7 +36,7 @@ endif
 
 EXE := "$(EXE)$(SUFFIX)"
 
-.PHONY: all release debug test clean format
+.PHONY: all release debug tune test clean format
 
 all: release
 
@@ -48,6 +48,10 @@ debug:
 	cmake -DCMAKE_BUILD_TYPE=Debug $(CMAKE_FLAGS) -B build-debug -S . && cmake --build build-debug $(CMAKE_BUILD_FLAGS)
 	$(COPY) $(call MK_PATH,"build-debug/clockwork$(SUFFIX)") $(EXE)
 
+tune:
+	cmake -DCMAKE_BUILD_TYPE=Release $(CMAKE_FLAGS) -DCMAKE_CXX_FLAGS=-DEVAL_TUNING -B build-tune -S . && cmake --build build-tune $(CMAKE_BUILD_FLAGS)
+	$(COPY) $(call MK_PATH,"build-tune/clockwork$(SUFFIX)") $(EXE)
+
 bench: release
 	./$(EXE) bench
 
@@ -55,7 +59,7 @@ test: release
 	ctest --test-dir build-release
 
 clean:
-	-$(RM_DIR) build-debug build-release
+	-$(RM_DIR) build-debug build-release build-tune
 	-$(RM) $(EXE)
 
 format:

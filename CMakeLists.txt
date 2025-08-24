@@ -61,6 +61,9 @@ set(srcs
         src/bench.cpp
         src/bench.hpp
         src/common.hpp
+        src/evaluation.cpp
+        src/evaluation.hpp
+        src/eval_types.hpp
         src/geometry.cpp
         src/geometry.hpp
         src/move.cpp
