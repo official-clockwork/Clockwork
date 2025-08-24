@@ -71,7 +71,9 @@ public:
     }
 
     static ValuePtr<T> create_tunable(T data) {
-        return std::make_shared<Value<T>>(data);
+        ValuePtr<T> res = std::make_shared<Value<T>>(data);
+        Graph<T>::get()->register_param(res);
+        return res;
     }
 
     static ValuePtr<T> create(T data) {
@@ -319,7 +321,9 @@ public:
 
     // Create tunable (does not register in graph)
     static PairPtr<T> create_tunable(T first, T second) {
-        return std::make_shared<Pair<T>>(first, second);
+        PairPtr<T> res = std::make_shared<Pair<T>>(first, second);
+        Graph<T>::get()->register_param(res);
+        return res;
     }
 
     // Create and register in graph
@@ -460,7 +464,9 @@ public:
     }
 
     // ------------------- Phasing -------------------
+    template<f64 max>
     ValuePtr<T> phase(T alpha) {
+        alpha /= max;
         auto        self   = this->shared_from_this();
         ValuePtr<T> result = Value<T>::create(alpha * m_first + (1 - alpha) * m_second);
 
