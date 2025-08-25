@@ -16,6 +16,7 @@
 #include <numeric>
 #include <random>
 #include <tuple>
+#include "evaluation.hpp"
 using namespace Clockwork;
 
 int main(int argc, char* argv[]) {
@@ -69,62 +70,11 @@ int main(int argc, char* argv[]) {
     // Print the number of fens loaded
     std::cout << "Loaded " << fens.size() << " FENs." << std::endl;
 
-
-    auto tunable_function = [PAWN_MAT, KNIGHT_MAT, BISHOP_MAT, ROOK_MAT, QUEEN_MAT, MOBILITY_VAL,
-                             TEMPO_VAL](std::string fen) {
-        auto pos = Position::parse(fen).value();
-
-        const Color us   = pos.active_color();
-        const Color them = invert(us);
-
-        i32 phase = pos.piece_count(Color::White, PieceType::Knight)
-                  + pos.piece_count(Color::Black, PieceType::Knight)
-                  + pos.piece_count(Color::White, PieceType::Bishop)
-                  + pos.piece_count(Color::Black, PieceType::Bishop)
-                  + 2
-                      * (pos.piece_count(Color::White, PieceType::Rook)
-                         + pos.piece_count(Color::Black, PieceType::Rook))
-                  + 4
-                      * (pos.piece_count(Color::White, PieceType::Queen)
-                         + pos.piece_count(Color::Black, PieceType::Queen));
-        phase = std::min<i32>(phase, 24);
-
-        PScore material = PAWN_MAT
-                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Pawn)
-                                             - pos.piece_count(Color::Black, PieceType::Pawn))
-                        + KNIGHT_MAT
-                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Knight)
-                                               - pos.piece_count(Color::Black, PieceType::Knight))
-                        + BISHOP_MAT
-                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Bishop)
-                                               - pos.piece_count(Color::Black, PieceType::Bishop))
-                        + ROOK_MAT
-                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Rook)
-                                               - pos.piece_count(Color::Black, PieceType::Rook))
-                        + QUEEN_MAT
-                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
-                                               - pos.piece_count(Color::Black, PieceType::Queen));
-
-        i32 mob_count = 0;
-        for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
-            mob_count += std::popcount(x);
-        }
-        for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::Black))) {
-            mob_count -= std::popcount(x);
-        }
-
-        PScore mobility = MOBILITY_VAL * static_cast<f64>(mob_count);
-
-        PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-
-        return (material + mobility + tempo)->phase<24.0>(static_cast<f64>(phase));
-    };
-
     auto loss_fn = Clockwork::Autograd::mse<f64>;
 
     Clockwork::Autograd::AdamW<f64> optim(10, 0.9, 0.999, 1e-8, 0.0);
 
-    i32       epochs     = 10000;
+    i32       epochs     = 1;
     const f64 K          = 1.0 / 400;
     size_t    batch_size = 16384;  // Set batch size here
 
@@ -150,9 +100,9 @@ int main(int argc, char* argv[]) {
             for (size_t j = start; j < end; ++j) {
                 size_t      idx = indices[j];
                 std::string fen = fens[idx];
-                f64         y   = results[idx];
-
-                auto result = (tunable_function(fen) * K)->sigmoid();
+                f64         y      = results[idx];
+                auto        pos    = Position::parse(fen);
+                auto result = (evaluate(pos.value()) * K)->sigmoid();
                 batch_outputs.push_back(result);
                 batch_targets.push_back(y);
             }

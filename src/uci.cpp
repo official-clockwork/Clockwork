@@ -87,9 +87,12 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_perft(is);
     } else if (command == "bench") {
         handle_bench(is);
-    } else if (command == "eval") {
+    }
+    #ifndef EVAL_TUNING 
+    else if (command == "eval") {
         std::cout << "Evaluation: " << evaluate(m_position) << std::endl;
     }
+    #endif
     else {
         std::cout << "Unknown command" << std::endl;
     }

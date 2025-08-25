@@ -573,7 +573,11 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 }
 
 Value Worker::evaluate(const Position& pos) {
+    #ifndef EVAL_TUNING
     return static_cast<Value>(Clockwork::evaluate(pos));
+    #else
+    return -VALUE_INF; // Not implemented in tune mode
+    #endif
 }
 }
 }
