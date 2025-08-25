@@ -1,7 +1,9 @@
 #pragma once
 
+#include "../util/types.hpp"
 #include "graph.hpp"
-#include "value.hpp"
+#include "util/vec/sse2.hpp"
+
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -9,82 +11,83 @@
 namespace Clockwork {
 namespace Autograd {
 
-template<typename T = f64>
 class SGD {
 private:
-    std::vector<ValuePtr<T>> m_value_params;
-    std::vector<PairPtr<T>>  m_pair_params;
+    std::vector<ValuePtr> m_value_params;
+    std::vector<PairPtr>  m_pair_params;
 
     f64 m_lr;
     f64 m_momentum;
 
-    // Velocity vectors
-    std::vector<T>               m_value_velocity;
-    std::vector<std::pair<T, T>> m_pair_velocity;
+    std::vector<f64>  m_value_velocity;
+    std::vector<f128> m_pair_velocity;
 
 public:
-    SGD(f64 lr, f64 momentum = 0.9) :
+    explicit SGD(f64 lr, f64 momentum = 0.9) :
         m_lr(lr),
         m_momentum(momentum) {
-        auto graph     = Graph<T>::get();
+        auto graph     = Graph::get();
         m_value_params = graph->get_parameters();
         m_pair_params  = graph->get_pair_parameters();
 
-        m_value_velocity.resize(m_value_params.size(), 0);
-        m_pair_velocity.resize(m_pair_params.size(), {0, 0});
+        m_value_velocity.resize(m_value_params.size(), 0.0);
+        m_pair_velocity.resize(m_pair_params.size(), f128::zero());
     }
 
     void step() {
-        // Update Value<T> parameters
+        // ---- Value parameters ----
         for (size_t i = 0; i < m_value_params.size(); ++i) {
-            auto& param         = m_value_params[i];
-            m_value_velocity[i] = m_momentum * m_value_velocity[i] - m_lr * param->get_gradient();
-            param->change_value(m_value_velocity[i]);
+            auto& p = m_value_params[i];
+            auto& v = m_value_velocity[i];
+
+            // Corrected momentum formula: v = momentum * v + lr * grad
+            v = m_momentum * v + m_lr * p->get_gradient();
+            p->change_value(-v);  // Apply negative velocity (gradient descent)
         }
 
-        // Update Pair<T> parameters
+        // ---- Pair parameters ----
         for (size_t i = 0; i < m_pair_params.size(); ++i) {
-            auto& param = m_pair_params[i];
-            auto& vel   = m_pair_velocity[i];
+            auto& p = m_pair_params[i];
+            auto& v = m_pair_velocity[i];
 
-            vel.first  = m_momentum * vel.first - m_lr * param->grad_first();
-            vel.second = m_momentum * vel.second - m_lr * param->grad_second();
+            const f128 grad = f128::make(m_lr * p->grad_first(), m_lr * p->grad_second());
 
-            param->m_first += vel.first;
-            param->m_second += vel.second;
+            // v = momentum * v + lr * grad
+            v = f128::madd(v, f128::broadcast(m_momentum), grad);
+
+            // p -= v (gradient descent)
+            p->m_values = f128::sub(p->m_values, v);
         }
     }
 
-    void set_lr(T lr) {
+    void set_lr(f64 lr) {
         m_lr = lr;
     }
-    T get_lr() const {
+    f64 get_lr() const {
         return m_lr;
     }
 };
 
 
-template<typename T = f64>
 class AdamW {
 private:
-    std::vector<ValuePtr<T>> m_value_params;
-    std::vector<PairPtr<T>>  m_pair_params;
+    std::vector<ValuePtr> m_value_params;
+    std::vector<PairPtr>  m_pair_params;
 
-    f64 m_lr;
-    f64 m_beta1;
-    f64 m_beta2;
-    f64 m_eps;
-    f64 m_weight_decay;
-    i64 m_t;
+    f64       m_lr;
+    f64       m_beta1;
+    f64       m_beta2;
+    f64       m_eps;
+    f64       m_weight_decay;
+    long long m_t;
 
-    std::vector<T> m_m;
-    std::vector<T> m_v;
-
-    std::vector<std::pair<T, T>> m_pair_m;
-    std::vector<std::pair<T, T>> m_pair_v;
+    std::vector<f64>  m_m;
+    std::vector<f64>  m_v;
+    std::vector<f128> m_pair_m;
+    std::vector<f128> m_pair_v;
 
 public:
-    AdamW(
+    explicit AdamW(
       f64 lr = 1e-3, f64 beta1 = 0.9, f64 beta2 = 0.999, f64 eps = 1e-8, f64 weight_decay = 0.01) :
         m_lr(lr),
         m_beta1(beta1),
@@ -92,75 +95,94 @@ public:
         m_eps(eps),
         m_weight_decay(weight_decay),
         m_t(0) {
-        auto graph     = Graph<T>::get();
+        auto graph     = Graph::get();
         m_value_params = graph->get_parameters();
         m_pair_params  = graph->get_pair_parameters();
 
-        m_m.resize(m_value_params.size(), 0);
-        m_v.resize(m_value_params.size(), 0);
+        m_m.resize(m_value_params.size(), 0.0);
+        m_v.resize(m_value_params.size(), 0.0);
 
-        m_pair_m.resize(m_pair_params.size(), {0, 0});
-        m_pair_v.resize(m_pair_params.size(), {0, 0});
+        m_pair_m.resize(m_pair_params.size(), f128::zero());
+        m_pair_v.resize(m_pair_params.size(), f128::zero());
     }
 
     void step() {
         m_t += 1;
 
-        // ---------------- Value<T> parameters ----------------
+        const f64 b1t      = std::pow(m_beta1, static_cast<f64>(m_t));
+        const f64 b2t      = std::pow(m_beta2, static_cast<f64>(m_t));
+        const f64 inv1mb1t = 1.0 / (1.0 - b1t);
+        const f64 inv1mb2t = 1.0 / (1.0 - b2t);
+
+        // ---------------- Value parameters ----------------
         for (size_t i = 0; i < m_value_params.size(); ++i) {
-            auto& param = m_value_params[i];
-            T     grad  = param->get_gradient();
+            auto&     p = m_value_params[i];
+            const f64 g = p->get_gradient();
 
-            m_m[i] = m_beta1 * m_m[i] + (1 - m_beta1) * grad;
-            m_v[i] = m_beta2 * m_v[i] + (1 - m_beta2) * grad * grad;
+            // Update biased first moment estimate
+            m_m[i] = m_beta1 * m_m[i] + (1.0 - m_beta1) * g;
 
-            T m_hat = m_m[i] / (1 - std::pow(m_beta1, m_t));
-            T v_hat = m_v[i] / (1 - std::pow(m_beta2, m_t));
+            // Update biased second raw moment estimate
+            m_v[i] = m_beta2 * m_v[i] + (1.0 - m_beta2) * g * g;
 
-            T update = -m_lr * (m_hat / (std::sqrt(v_hat) + m_eps));
-            update -= m_lr * m_weight_decay * param->get_value();
+            // Compute bias-corrected first moment estimate
+            const f64 m_hat = m_m[i] * inv1mb1t;
 
-            param->change_value(update);
+            // Compute bias-corrected second raw moment estimate
+            const f64 v_hat = m_v[i] * inv1mb2t;
+
+            // Compute Adam update
+            const f64 adam_update = m_lr * m_hat / (std::sqrt(v_hat) + m_eps);
+
+            // Apply weight decay (decoupled from gradient-based update)
+            const f64 weight_decay_update = m_weight_decay * p->get_value();
+
+            // Combined update (both negative for gradient descent)
+            const f64 total_update = -(adam_update + weight_decay_update);
+
+            p->change_value(total_update);
         }
 
-        // ---------------- Pair<T> parameters ----------------
+        // ---------------- Pair parameters ----------------
         for (size_t i = 0; i < m_pair_params.size(); ++i) {
-            auto& param = m_pair_params[i];
-            auto& m     = m_pair_m[i];
-            auto& v     = m_pair_v[i];
+            auto& p = m_pair_params[i];
+            auto& m = m_pair_m[i];
+            auto& v = m_pair_v[i];
 
-            T grad_f = param->grad_first();
-            T grad_s = param->grad_second();
+            const f128 g_vec = f128::make(p->grad_first(), p->grad_second());
+            const f128 g2_vec =
+              f128::make(p->grad_first() * p->grad_first(), p->grad_second() * p->grad_second());
 
-            // Update biased first moment
-            m.first  = m_beta1 * m.first + (1 - m_beta1) * grad_f;
-            m.second = m_beta1 * m.second + (1 - m_beta1) * grad_s;
+            // Update biased first moment estimate: m = β1*m + (1-β1)*g
+            m = f128::madd(m, f128::broadcast(m_beta1), f128::mul_scalar(g_vec, (1.0 - m_beta1)));
 
-            // Update biased second moment
-            v.first  = m_beta2 * v.first + (1 - m_beta2) * grad_f * grad_f;
-            v.second = m_beta2 * v.second + (1 - m_beta2) * grad_s * grad_s;
+            // Update biased second raw moment estimate: v = β2*v + (1-β2)*g²
+            v = f128::madd(v, f128::broadcast(m_beta2), f128::mul_scalar(g2_vec, (1.0 - m_beta2)));
 
-            // Bias-corrected
-            T m_hat_f = m.first / (1 - std::pow(m_beta1, m_t));
-            T m_hat_s = m.second / (1 - std::pow(m_beta1, m_t));
+            // Compute bias-corrected estimates
+            const f128 m_hat = f128::mul_scalar(m, inv1mb1t);
+            const f128 v_hat = f128::mul_scalar(v, inv1mb2t);
 
-            T v_hat_f = v.first / (1 - std::pow(m_beta2, m_t));
-            T v_hat_s = v.second / (1 - std::pow(m_beta2, m_t));
+            // Compute Adam updates
+            const f64 adam_upd_f = m_lr * m_hat.first() / (std::sqrt(v_hat.first()) + m_eps);
+            const f64 adam_upd_s = m_lr * m_hat.second() / (std::sqrt(v_hat.second()) + m_eps);
 
-            T update_f = -m_lr * (m_hat_f / (std::sqrt(v_hat_f) + m_eps))
-                       - m_lr * m_weight_decay * param->first();
-            T update_s = -m_lr * (m_hat_s / (std::sqrt(v_hat_s) + m_eps))
-                       - m_lr * m_weight_decay * param->second();
+            // Apply weight decay (decoupled)
+            const f64 decay_upd_f = m_weight_decay * p->first();
+            const f64 decay_upd_s = m_weight_decay * p->second();
 
-            param->m_first += update_f;
-            param->m_second += update_s;
+            // Combined updates (negative for gradient descent)
+            const f64 total_upd_f = -(adam_upd_f + decay_upd_f);
+            const f64 total_upd_s = -(adam_upd_s + decay_upd_s);
+
+            p->m_values = f128::add(p->m_values, f128::make(total_upd_f, total_upd_s));
         }
     }
 
-    void set_lr(T lr) {
+    void set_lr(f64 lr) {
         m_lr = lr;
     }
-    T get_lr() const {
+    f64 get_lr() const {
         return m_lr;
     }
 };

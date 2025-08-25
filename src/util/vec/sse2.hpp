@@ -150,6 +150,15 @@ struct f128 {
         return {s / a.lo, s / a.hi};
 #endif
     }
+    
+    // ---- Math functions ----
+    static inline f128 sqrt(const f128& a) {
+    #if F128_USE_SSE2
+        f128 r; r.v = _mm_sqrt_pd(a.v); return r;
+    #else
+        return { std::sqrt(a.lo), std::sqrt(a.hi) };
+    #endif
+    }
 
     // ---- FMA-style (useful for gradient updates) ----
     static inline f128 madd(const f128& a, const f128& b, const f128& c) {

@@ -101,13 +101,13 @@ public:
 
 
 #else
-using Score  = Autograd::ValuePtr<f64>;
-using PScore = Autograd::PairPtr<f64>;
+using Score  = Autograd::ValuePtr;
+using PScore = Autograd::PairPtr;
 
 #endif
 
 #ifdef EVAL_TUNING
-    #define S(a, b) Autograd::Pair<f64>::create_tunable((a), (b))  // Defines a tunable pscore
+    #define S(a, b) Autograd::Pair::create_tunable((a), (b))  // Defines a tunable pscore
 #else
     #define S(a, b) PScore((a), (b))  // Defines a constant pscore when not tuning
 #endif

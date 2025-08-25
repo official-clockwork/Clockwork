@@ -9,7 +9,7 @@
 namespace Clockwork {
 
 forceinline u8 concat8(u8 a, u8 b) {
-    return a | (b << 4);
+    return static_cast<u8>(a | (b << 4));
 }
 forceinline u32 concat32(u16 a, u16 b) {
     return static_cast<u32>(a) | (static_cast<u32>(b) << 16);

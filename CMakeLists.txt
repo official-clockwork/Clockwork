@@ -102,6 +102,7 @@ set(srcs
         src/tuning/graph.hpp
         src/tuning/loss.hpp
         src/tuning/optim.hpp
+        src/tuning/value.cpp
         src/tuning/value.hpp
 )
 

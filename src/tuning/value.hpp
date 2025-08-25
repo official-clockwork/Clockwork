@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../util/types.hpp"
+#include "util/vec/sse2.hpp"
 #include <iostream>
 
 #include <cmath>
@@ -13,111 +14,102 @@ namespace Clockwork {
 namespace Autograd {
 
 // Forward declarations
-template<typename T>
+
 class Backwardable;
-template<typename TuneType, typename T>
+template<typename TuneType>
 class SmartBackwardable;
-template<typename T>
 class Value;
-template<typename T>
 class Pair;
-template<typename T>
 class Graph;
 
-template<typename T>
-using ValuePtr = std::shared_ptr<Value<T>>;
-template<typename T>
-using PairPtr = std::shared_ptr<Pair<T>>;
-template<typename T>
-using BackwardablePtr = std::shared_ptr<Backwardable<T>>;
 
-template<typename T>
+using ValuePtr = std::shared_ptr<Value>;
+
+using PairPtr = std::shared_ptr<Pair>;
+
+using BackwardablePtr = std::shared_ptr<Backwardable>;
+
+
 class Backwardable {
 public:
-    friend class Graph<T>;
+    friend class Graph;
     std::function<void()> m_backward_func;
     virtual ~Backwardable() = default;
     virtual void backward() = 0;
 };
 
-template<typename TuneType, typename T>
-class SmartBackwardable : public Backwardable<T>, public std::enable_shared_from_this<TuneType> {
+template<typename TuneType>
+class SmartBackwardable : public Backwardable, public std::enable_shared_from_this<TuneType> {
 public:
     virtual ~SmartBackwardable() = default;
 };
 
-template<typename T = f64>
-class Value : public SmartBackwardable<Value<T>, T> {
+
+class Value : public SmartBackwardable<Value> {
 private:
-    T                                m_value    = 0;
-    T                                m_gradient = 0;
-    std::function<void(ValuePtr<T>)> m_backward_func;
+    f64                                m_value    = 0;
+    f64                                m_gradient = 0;
+    std::function<void(ValuePtr)> m_backward_func;
 
 public:
-    friend class Graph<T>;
-    friend class Pair<T>;
+    friend class Graph;
+    friend class Pair;
 
-    explicit Value(T data) :
+    explicit Value(f64 data) :
         m_value(data) {};
 
-    inline T get_value() const {
+    inline f64 get_value() const {
         return m_value;
     }
-    inline void change_value(T amount) {
+    inline void change_value(f64 amount) {
         m_value += amount;
     }
-    inline T get_gradient() const {
+    inline f64 get_gradient() const {
         return m_gradient;
     }
 
-    static ValuePtr<T> create_tunable(T data) {
-        ValuePtr<T> res = std::make_shared<Value<T>>(data);
-        Graph<T>::get()->register_param(res);
-        return res;
+    inline void zero_grad() {
+        m_gradient = 0.0;
     }
 
-    static ValuePtr<T> create(T data) {
-        ValuePtr<T> res = std::make_shared<Value<T>>(data);
-        Graph<T>::get()->register_value(res);
-        return res;
-    }
+    static ValuePtr create_tunable(f64 data);
+    static ValuePtr create(f64 data);
 
-
-    ValuePtr<T> exp() {
+    ValuePtr exp() {
         auto        this_value  = this->shared_from_this();
-        ValuePtr<T> result      = Value<T>::create(std::exp(this->m_value));
-        result->m_backward_func = [this_value](ValuePtr<T> out) {
-            T grad = out->m_value;  // Avoid recomputing exp val
+        ValuePtr result      = Value::create(std::exp(this->m_value));
+        result->m_backward_func = [this_value](ValuePtr out) {
+            f64 grad = out->m_value;  // Avoid recomputing exp val
             this_value->m_gradient += grad * out->m_gradient;
         };
         return result;
     }
 
-    ValuePtr<T> log() {
+    ValuePtr log() {
         auto        this_value  = this->shared_from_this();
-        ValuePtr<T> result      = Value<T>::create(std::log(this->m_value));
-        result->m_backward_func = [this_value](ValuePtr<T> out) {
-            T grad = (1 / this_value->m_value);
+        ValuePtr result      = Value::create(std::log(this->m_value));
+        result->m_backward_func = [this_value](ValuePtr out) {
+            f64 grad = (1 / this_value->m_value);
             this_value->m_gradient += grad * out->m_gradient;
         };
         return result;
     }
 
-    ValuePtr<T> sigmoid() {
+    ValuePtr sigmoid() {
         auto        this_value  = this->shared_from_this();
-        ValuePtr<T> result      = Value<T>::create(1 / (1 + std::exp(-this_value->m_value)));
-        result->m_backward_func = [this_value](ValuePtr<T> out) {
-            T grad = out->m_value
+        ValuePtr result      = Value::create(1 / (1 + std::exp(-this_value->m_value)));
+        result->m_backward_func = [this_value](ValuePtr out) {
+            f64 grad = out->m_value
                    * (1 - out->m_value);  // Same trick as before, avoid recomputing sigmoid(x)
             this_value->m_gradient += grad * out->m_gradient;
         };
         return result;
     }
 
-    ValuePtr<T> pow(ValuePtr<T> exponent) {
+    ValuePtr pow(ValuePtr exponent) {
         auto        this_value = this->shared_from_this();
-        ValuePtr<T> result     = Value<T>::create(std::pow(this_value->m_value, exponent->m_value));
-        result->m_backward_func = [this_value, exponent](ValuePtr<T> out) {
+        ValuePtr result     = Value::create(std::pow(this_value->m_value, exponent->m_value));
+        result->m_backward_func = [this_value, exponent](ValuePtr out) {
             this_value->m_gradient += exponent->m_value
                                     * std::pow(this_value->m_value, exponent->m_value - 1)
                                     * out->m_gradient;
@@ -126,134 +118,134 @@ public:
         return result;
     }
 
-    ValuePtr<T> pow(T exponent) {
+    ValuePtr pow(f64 exponent) {
         auto        this_value  = this->shared_from_this();
-        ValuePtr<T> result      = Value<T>::create(std::pow(this_value->m_value, exponent));
-        result->m_backward_func = [this_value, exponent](ValuePtr<T> out) {
+        ValuePtr result      = Value::create(std::pow(this_value->m_value, exponent));
+        result->m_backward_func = [this_value, exponent](ValuePtr out) {
             this_value->m_gradient +=
               exponent * std::pow(this_value->m_value, exponent - 1) * out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator-(ValuePtr<T> a) {
-        ValuePtr<T> result      = Value<T>::create(-a->m_value);
-        result->m_backward_func = [a](ValuePtr<T> out) {
-            T grad = -out->m_gradient;
+    friend ValuePtr operator-(ValuePtr a) {
+        ValuePtr result      = Value::create(-a->m_value);
+        result->m_backward_func = [a](ValuePtr out) {
+            f64 grad = -out->m_gradient;
             a->m_gradient += grad;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator+(ValuePtr<T> a, ValuePtr<T> b) {
-        ValuePtr<T> result      = Value<T>::create(a->m_value + b->m_value);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator+(ValuePtr a, ValuePtr b) {
+        ValuePtr result      = Value::create(a->m_value + b->m_value);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += out->m_gradient;
             b->m_gradient += out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator-(ValuePtr<T> a,
-                                 ValuePtr<T> b) {  // We are NOT cheaping out with a + (-b)
-        ValuePtr<T> result      = Value<T>::create(a->m_value - b->m_value);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator-(ValuePtr a,
+                                 ValuePtr b) {  // We are NOT cheaping out with a + (-b)
+        ValuePtr result      = Value::create(a->m_value - b->m_value);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += out->m_gradient;
             b->m_gradient -= out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator*(ValuePtr<T> a, ValuePtr<T> b) {
-        ValuePtr<T> result      = Value<T>::create(a->m_value * b->m_value);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator*(ValuePtr a, ValuePtr b) {
+        ValuePtr result      = Value::create(a->m_value * b->m_value);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += b->m_value * out->m_gradient;
             b->m_gradient += a->m_value * out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T>
-    operator/(ValuePtr<T> a,
-              ValuePtr<T> b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
-        ValuePtr<T> result      = Value<T>::create(a->m_value / b->m_value);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr
+    operator/(ValuePtr a,
+              ValuePtr b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
+        ValuePtr result      = Value::create(a->m_value / b->m_value);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += 1.0 / b->m_value * out->m_gradient;
             b->m_gradient += -a->m_value / (b->m_value * b->m_value) * out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator+(ValuePtr<T> a, T b) {
-        ValuePtr<T> result      = Value<T>::create(a->m_value + b);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator+(ValuePtr a, f64 b) {
+        ValuePtr result      = Value::create(a->m_value + b);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator-(ValuePtr<T> a, T b) {
-        ValuePtr<T> result      = Value<T>::create(a->m_value - b);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator-(ValuePtr a, f64 b) {
+        ValuePtr result      = Value::create(a->m_value - b);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator*(ValuePtr<T> a, T b) {
-        ValuePtr<T> result      = Value<T>::create(a->m_value * b);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator*(ValuePtr a, f64 b) {
+        ValuePtr result      = Value::create(a->m_value * b);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += b * out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator/(ValuePtr<T> a,
-                                 T b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
-        ValuePtr<T> result      = Value<T>::create(a->m_value / b);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator/(ValuePtr a,
+                                 f64 b) {  // We are NOT cheaping out with a * (std::pow(b,-1))
+        ValuePtr result      = Value::create(a->m_value / b);
+        result->m_backward_func = [a, b](ValuePtr out) {
             a->m_gradient += 1.0 / b * out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator+(T a, ValuePtr<T> b) {
+    friend ValuePtr operator+(f64 a, ValuePtr b) {
         return b + a;
     }
 
-    friend ValuePtr<T> operator-(T a, ValuePtr<T> b) {
-        ValuePtr<T> result      = Value<T>::create(a - b->m_value);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator-(f64 a, ValuePtr b) {
+        ValuePtr result      = Value::create(a - b->m_value);
+        result->m_backward_func = [a, b](ValuePtr out) {
             b->m_gradient -= out->m_gradient;
         };
         return result;
     }
 
-    friend ValuePtr<T> operator*(T a, ValuePtr<T> b) {
+    friend ValuePtr operator*(f64 a, ValuePtr b) {
         return b * a;
     }
 
-    friend ValuePtr<T> operator/(T a, ValuePtr<T> b) {
-        ValuePtr<T> result      = Value<T>::create(a / b->m_value);
-        result->m_backward_func = [a, b](ValuePtr<T> out) {
+    friend ValuePtr operator/(f64 a, ValuePtr b) {
+        ValuePtr result      = Value::create(a / b->m_value);
+        result->m_backward_func = [a, b](ValuePtr out) {
             b->m_gradient += -a / (b->m_value * b->m_value) * out->m_gradient;
         };
         return result;
     }
 
-    static ValuePtr<T> sum(const std::vector<ValuePtr<T>>& inputs) {
+    static ValuePtr sum(const std::vector<ValuePtr>& inputs) {
         if (inputs.empty()) {
-            return Value<T>::create(0.0);
+            return Value::create(0.0);
         }
 
-        T sum = 0;
+        f64 sum = 0;
         for (auto& v : inputs) {
             sum += v->m_value;
         }
 
-        ValuePtr<T> result = Value<T>::create(sum);
+        ValuePtr result = Value::create(sum);
 
-        result->m_backward_func = [inputs](ValuePtr<T> out) {
+        result->m_backward_func = [inputs](ValuePtr out) {
             for (auto& v : inputs) {
                 v->m_gradient += out->m_gradient;
             }
@@ -263,31 +255,31 @@ public:
     }
 
 
-    friend bool operator==(ValuePtr<T> a, ValuePtr<T> b) {
+    friend bool operator==(ValuePtr a, ValuePtr b) {
         return a->m_value == b->m_value;
     }
 
-    friend bool operator!=(ValuePtr<T> a, ValuePtr<T> b) {
+    friend bool operator!=(ValuePtr a, ValuePtr b) {
         return a->m_value != b->m_value;
     }
 
-    friend bool operator<(ValuePtr<T> a, ValuePtr<T> b) {
+    friend bool operator<(ValuePtr a, ValuePtr b) {
         return a->m_value < b->m_value;
     }
 
-    friend bool operator<=(ValuePtr<T> a, ValuePtr<T> b) {
+    friend bool operator<=(ValuePtr a, ValuePtr b) {
         return a->m_value <= b->m_value;
     }
 
-    friend bool operator>(ValuePtr<T> a, ValuePtr<T> b) {
+    friend bool operator>(ValuePtr a, ValuePtr b) {
         return a->m_value > b->m_value;
     }
 
-    friend bool operator>=(ValuePtr<T> a, ValuePtr<T> b) {
+    friend bool operator>=(ValuePtr a, ValuePtr b) {
         return a->m_value >= b->m_value;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const ValuePtr<T>& value) {
+    friend std::ostream& operator<<(std::ostream& os, const ValuePtr& value) {
         os << "Value(data=" << value->get_value() << ", grad=" << value->get_gradient() << ")";
         return os;
     }
@@ -300,51 +292,52 @@ public:
     }
 };
 
-template<typename T = f64>
-class Pair : public SmartBackwardable<Pair<T>, T> {
+class Pair : public SmartBackwardable<Pair> {
 private:
-    std::function<void(PairPtr<T>)> m_backward_func;
+    std::function<void(PairPtr)> m_backward_func;
 
 public:
-    friend class Graph<T>;
-    friend class Value<T>;
+    friend class Graph;
+    friend class Value;
 
-    T m_first;
-    T m_second;
-    T m_grad_first  = 0;
-    T m_grad_second = 0;
+    f128 m_values;     // stores (first, second)
+    f128 m_gradients;  // stores (grad_first, grad_second)
 
-    explicit Pair(T first, T second) :
-        m_first(first),
-        m_second(second) {
+    explicit Pair(f64 first, f64 second) :
+        m_values(f128::make(first, second)),
+        m_gradients(f128::zero()) {
     }
 
-    // Create tunable (does not register in graph)
-    static PairPtr<T> create_tunable(T first, T second) {
-        PairPtr<T> res = std::make_shared<Pair<T>>(first, second);
-        Graph<T>::get()->register_param(res);
-        return res;
+    explicit Pair(const f128& values) :
+        m_values(values),
+        m_gradients(f128::zero()) {
     }
 
-    // Create and register in graph
-    static PairPtr<T> create(T first, T second) {
-        PairPtr<T> res = std::make_shared<Pair<T>>(first, second);
-        Graph<T>::get()->register_value(res);
-        return res;
+    static PairPtr create_tunable(f64 first, f64 second);
+
+    static PairPtr create(f64 first, f64 second);
+
+    static PairPtr create(const f128& values);
+
+
+    inline f64 first() const {
+        return m_values.first();
     }
 
-    inline T first() const {
-        return m_first;
-    }
-    inline T second() const {
-        return m_second;
+    inline f64 second() const {
+        return m_values.second();
     }
 
-    inline T grad_first() const {
-        return m_grad_first;
+    inline f64 grad_first() const {
+        return m_gradients.first();
     }
-    inline T grad_second() const {
-        return m_grad_second;
+
+    inline f64 grad_second() const {
+        return m_gradients.second();
+    }
+
+    inline void zero_grad() {
+        m_gradients = f128::zero();
     }
 
     // ------------------- Backward -------------------
@@ -356,136 +349,166 @@ public:
     }
 
     // ------------------- Arithmetic -------------------
-    friend PairPtr<T> operator+(const PairPtr<T>& a, const PairPtr<T>& b) {
-        PairPtr<T> result = Pair<T>::create(a->m_first + b->m_first, a->m_second + b->m_second);
-        result->m_backward_func = [a, b](PairPtr<T> out) {
-            a->m_grad_first += out->m_grad_first;
-            a->m_grad_second += out->m_grad_second;
-            b->m_grad_first += out->m_grad_first;
-            b->m_grad_second += out->m_grad_second;
+    friend PairPtr operator+(const PairPtr& a, const PairPtr& b) {
+        f128    result_values = f128::add(a->m_values, b->m_values);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, b](PairPtr out) {
+            a->m_gradients = f128::add(a->m_gradients, out->m_gradients);
+            b->m_gradients = f128::add(b->m_gradients, out->m_gradients);
         };
         return result;
     }
 
-    friend PairPtr<T> operator-(const PairPtr<T>& a, const PairPtr<T>& b) {
-        PairPtr<T> result = Pair<T>::create(a->m_first - b->m_first, a->m_second - b->m_second);
-        result->m_backward_func = [a, b](PairPtr<T> out) {
-            a->m_grad_first += out->m_grad_first;
-            a->m_grad_second += out->m_grad_second;
-            b->m_grad_first -= out->m_grad_first;
-            b->m_grad_second -= out->m_grad_second;
+    friend PairPtr operator-(const PairPtr& a, const PairPtr& b) {
+        f128    result_values = f128::sub(a->m_values, b->m_values);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, b](PairPtr out) {
+            a->m_gradients = f128::add(a->m_gradients, out->m_gradients);
+            b->m_gradients = f128::sub(b->m_gradients, out->m_gradients);
         };
         return result;
     }
 
     // ------------------- Scalar multiplication -------------------
-    friend PairPtr<T> operator*(const PairPtr<T>& a, T scalar) {
-        PairPtr<T> result       = Pair<T>::create(a->m_first * scalar, a->m_second * scalar);
-        result->m_backward_func = [a, scalar](PairPtr<T> out) {
-            a->m_grad_first += scalar * out->m_grad_first;
-            a->m_grad_second += scalar * out->m_grad_second;
+    friend PairPtr operator*(const PairPtr& a, f64 scalar) {
+        f128    result_values = f128::mul_scalar(a->m_values, scalar);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, scalar](PairPtr out) {
+            f128 scaled_grad = f128::mul_scalar(out->m_gradients, scalar);
+            a->m_gradients   = f128::add(a->m_gradients, scaled_grad);
         };
         return result;
     }
 
-    friend PairPtr<T> operator*(T scalar, const PairPtr<T>& a) {
+    friend PairPtr operator*(f64 scalar, const PairPtr& a) {
         return a * scalar;
     }
 
     // ------------------- Pair * Value -------------------
-    friend PairPtr<T> operator*(const PairPtr<T>& a, const ValuePtr<T>& v) {
-        PairPtr<T> result =
-          Pair<T>::create(a->m_first * v->get_value(), a->m_second * v->get_value());
-        result->m_backward_func = [a, v](PairPtr<T> out) {
-            a->m_grad_first += v->get_value() * out->m_grad_first;
-            a->m_grad_second += v->get_value() * out->m_grad_second;
-            v->m_gradient += a->m_first * out->m_grad_first + a->m_second * out->m_grad_second;
+    friend PairPtr operator*(const PairPtr& a, const ValuePtr& v) {
+        f64  v_val         = v->get_value();
+        f128    result_values = f128::mul_scalar(a->m_values, v_val);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, v](PairPtr out) {
+            f64 v_val       = v->get_value();
+            f128   scaled_grad = f128::mul_scalar(out->m_gradients, v_val);
+            a->m_gradients     = f128::add(a->m_gradients, scaled_grad);
+
+            f128 contribution = f128::mul(a->m_values, out->m_gradients);
+            v->m_gradient += contribution.first() + contribution.second();
         };
         return result;
     }
 
-    friend PairPtr<T> operator*(const ValuePtr<T>& v, const PairPtr<T>& a) {
+    friend PairPtr operator*(const ValuePtr& v, const PairPtr& a) {
         return a * v;
     }
 
     // ------------------- Pair / scalar -------------------
-    friend PairPtr<T> operator/(const PairPtr<T>& a, T scalar) {
-        PairPtr<T> result       = Pair<T>::create(a->m_first / scalar, a->m_second / scalar);
-        result->m_backward_func = [a, scalar](PairPtr<T> out) {
-            a->m_grad_first += out->m_grad_first / scalar;
-            a->m_grad_second += out->m_grad_second / scalar;
+    friend PairPtr operator/(const PairPtr& a, f64 scalar) {
+        f128    result_values = f128::div_scalar(a->m_values, scalar);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, scalar](PairPtr out) {
+            f128 scaled_grad = f128::div_scalar(out->m_gradients, scalar);
+            a->m_gradients   = f128::add(a->m_gradients, scaled_grad);
         };
         return result;
     }
 
     // ------------------- Scalar / Pair -------------------
-    friend PairPtr<T> operator/(T scalar, const PairPtr<T>& a) {
-        PairPtr<T> result       = Pair<T>::create(scalar / a->m_first, scalar / a->m_second);
-        result->m_backward_func = [a, scalar](PairPtr<T> out) {
-            a->m_grad_first -= scalar / (a->m_first * a->m_first) * out->m_grad_first;
-            a->m_grad_second -= scalar / (a->m_second * a->m_second) * out->m_grad_second;
+    friend PairPtr operator/(f64 scalar, const PairPtr& a) {
+        f128    result_values = f128::scalar_div(scalar, a->m_values);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, scalar](PairPtr out) {
+            f128 a_squared            = f128::mul(a->m_values, a->m_values);
+            f128 neg_scalar_over_a_sq = f128::neg(f128::scalar_div(scalar, a_squared));
+            f128 grad_update          = f128::mul(neg_scalar_over_a_sq, out->m_gradients);
+            a->m_gradients            = f128::add(a->m_gradients, grad_update);
         };
         return result;
     }
 
     // ------------------- Pair / Value -------------------
-    friend PairPtr<T> operator/(const PairPtr<T>& a, const ValuePtr<T>& v) {
-        PairPtr<T> result =
-          Pair<T>::create(a->m_first / v->get_value(), a->m_second / v->get_value());
-        result->m_backward_func = [a, v](PairPtr<T> out) {
-            a->m_grad_first += out->m_grad_first / v->get_value();
-            a->m_grad_second += out->m_grad_second / v->get_value();
-            v->m_gradient -= (a->m_first * out->m_grad_first + a->m_second * out->m_grad_second)
-                           / (v->get_value() * v->get_value());
+    friend PairPtr operator/(const PairPtr& a, const ValuePtr& v) {
+        f64  v_val         = v->get_value();
+        f128    result_values = f128::div_scalar(a->m_values, v_val);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, v](PairPtr out) {
+            f64 v_val = v->get_value();
+            f128 scaled_grad = f128::div_scalar(out->m_gradients, v_val);
+            a->m_gradients   = f128::add(a->m_gradients, scaled_grad);
+
+            f128   numerator        = f128::mul(a->m_values, out->m_gradients);
+            f64 sum_contribution = numerator.first() + numerator.second();
+            v->m_gradient -= sum_contribution / (v_val * v_val);
         };
         return result;
     }
 
     // ------------------- Value / Pair -------------------
-    friend PairPtr<T> operator/(const ValuePtr<T>& v, const PairPtr<T>& a) {
-        PairPtr<T> result =
-          Pair<T>::create(v->get_value() / a->m_first, v->get_value() / a->m_second);
-        result->m_backward_func = [a, v](PairPtr<T> out) {
-            a->m_grad_first -= v->get_value() / (a->m_first * a->m_first) * out->m_grad_first;
-            a->m_grad_second -= v->get_value() / (a->m_second * a->m_second) * out->m_grad_second;
-            v->m_gradient += out->m_grad_first / a->m_first + out->m_grad_second / a->m_second;
+    friend PairPtr operator/(const ValuePtr& v, const PairPtr& a) {
+        f64  v_val         = v->get_value();
+        f128    result_values = f128::scalar_div(v_val, a->m_values);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a, v](PairPtr out) {
+            f64 v_val = v->get_value();
+            f128 a_squared       = f128::mul(a->m_values, a->m_values);
+            f128 neg_v_over_a_sq = f128::neg(f128::scalar_div(v_val, a_squared));
+            f128 grad_update     = f128::mul(neg_v_over_a_sq, out->m_gradients);
+            a->m_gradients       = f128::add(a->m_gradients, grad_update);
+
+            f128 v_grad_contrib = f128::div(out->m_gradients, a->m_values);
+            v->m_gradient += v_grad_contrib.first() + v_grad_contrib.second();
         };
         return result;
     }
 
     // ------------------- Unary negation -------------------
-    friend PairPtr<T> operator-(PairPtr<T> a) {
-        PairPtr<T> result       = Pair<T>::create(-a->m_first, -a->m_second);
-        result->m_backward_func = [a](PairPtr<T> out) {
-            a->m_grad_first -= out->m_grad_first;
-            a->m_grad_second -= out->m_grad_second;
+    friend PairPtr operator-(PairPtr a) {
+        f128    result_values = f128::neg(a->m_values);
+        PairPtr result        = Pair::create(result_values);
+
+        result->m_backward_func = [a](PairPtr out) {
+            a->m_gradients = f128::sub(a->m_gradients, out->m_gradients);
         };
         return result;
     }
 
     // ------------------- Phasing -------------------
     template<f64 max>
-    ValuePtr<T> phase(T alpha) {
+    ValuePtr phase(f64 alpha) {
         alpha /= max;
-        auto        self   = this->shared_from_this();
-        ValuePtr<T> result = Value<T>::create(alpha * m_first + (1 - alpha) * m_second);
+        auto self = this->shared_from_this();
 
-        result->m_backward_func = [self, alpha](ValuePtr<T> out) {
+        // Linear interpolation: alpha * first + (1-alpha) * second
+        f64   result_val = alpha * first() + (1.0 - alpha) * second();
+        ValuePtr result     = Value::create(result_val);
+
+        result->m_backward_func = [self, alpha](ValuePtr out) {
             // Gradient of output w.r.t first and second
-            self->m_grad_first += alpha * out->m_gradient;
-            self->m_grad_second += (1 - alpha) * out->m_gradient;
+            f64 grad_first  = alpha * out->m_gradient;
+            f64 grad_second = (1.0 - alpha) * out->m_gradient;
+            f128   grad_update = f128::make(grad_first, grad_second);
+            self->m_gradients  = f128::add(self->m_gradients, grad_update);
         };
 
         return result;
     }
 
     // ------------------- Print -------------------
-    friend std::ostream& operator<<(std::ostream& os, const PairPtr<T>& p) {
-        os << "Pair(first=" << p->m_first << ", second=" << p->m_second
-           << ", grad_first=" << p->m_grad_first << ", grad_second=" << p->m_grad_second << ")";
+    friend std::ostream& operator<<(std::ostream& os, const PairPtr& p) {
+        os << "Pair(first=" << p->first() << ", second=" << p->second()
+           << ", grad_first=" << p->grad_first() << ", grad_second=" << p->grad_second() << ")";
         return os;
     }
 };
-
 }
 }

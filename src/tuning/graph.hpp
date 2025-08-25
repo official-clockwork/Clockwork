@@ -7,65 +7,58 @@
 namespace Clockwork {
 namespace Autograd {
 
-template<typename T>
 class Backwardable;
-template<typename T>
-using BackwardablePtr = std::shared_ptr<Backwardable<T>>;
+using BackwardablePtr = std::shared_ptr<Backwardable>;
 
-template<typename TuneType, typename T>
+template<typename TuneType>
 class SmartBackwardable;
-template<typename TuneType, typename T>
-using SmartBackwardablePtr = std::shared_ptr<SmartBackwardable<TuneType, T>>;
+template<typename TuneType>
+using SmartBackwardablePtr = std::shared_ptr<SmartBackwardable<TuneType>>;
 
-template<typename T>
 class Value;
-template<typename T>
-using ValuePtr = std::shared_ptr<Value<T>>;
+using ValuePtr = std::shared_ptr<Value>;
 
-template<typename T>
 class Pair;
-template<typename T>
-using PairPtr = std::shared_ptr<Pair<T>>;
+using PairPtr = std::shared_ptr<Pair>;
 
-template<typename T = f64>
 class Graph {
 private:
     // Tunable parameters
-    std::vector<ValuePtr<T>> m_parameters;
-    std::vector<PairPtr<T>>  m_pair_parameters;
+    std::vector<ValuePtr> m_parameters;
+    std::vector<PairPtr>  m_pair_parameters;
 
     // All backwardable nodes in insertion order (intermediates + outputs + parameters)
-    std::vector<BackwardablePtr<T>> m_backwardables;
+    std::vector<BackwardablePtr> m_backwardables;
 
     Graph() = default;
 
 public:
-    static std::shared_ptr<Graph<T>> get() {
-        static std::shared_ptr<Graph<T>> instance(new Graph<T>());
+    static std::shared_ptr<Graph> get() {
+        static std::shared_ptr<Graph> instance(new Graph());
         return instance;
     }
 
     // ------------------ Registration ------------------
-    void register_param(const ValuePtr<T>& param) {
+    void register_param(const ValuePtr& param) {
         m_parameters.push_back(param);
-        m_backwardables.push_back(std::static_pointer_cast<Backwardable<T>>(param));
+        m_backwardables.push_back(std::static_pointer_cast<Backwardable>(param));
     }
 
-    void register_param(const PairPtr<T>& param) {
+    void register_param(const PairPtr& param) {
         m_pair_parameters.push_back(param);
-        m_backwardables.push_back(std::static_pointer_cast<Backwardable<T>>(param));
+        m_backwardables.push_back(std::static_pointer_cast<Backwardable>(param));
     }
 
-    void register_value(const BackwardablePtr<T>& node) {
+    void register_value(const BackwardablePtr& node) {
         m_backwardables.push_back(node);
     }
 
-    void register_value(const ValuePtr<T>& node) {
-        m_backwardables.push_back(std::static_pointer_cast<Backwardable<T>>(node));
+    void register_value(const ValuePtr& node) {
+        m_backwardables.push_back(std::static_pointer_cast<Backwardable>(node));
     }
 
-    void register_value(const PairPtr<T>& node) {
-        m_backwardables.push_back(std::static_pointer_cast<Backwardable<T>>(node));
+    void register_value(const PairPtr& node) {
+        m_backwardables.push_back(std::static_pointer_cast<Backwardable>(node));
     }
 
     // ------------------ Backward Pass ------------------
@@ -75,8 +68,8 @@ public:
         }
 
         // Initialize gradient on last node (loss node)
-        auto last        = std::static_pointer_cast<Value<T>>(m_backwardables.back());
-        last->m_gradient = static_cast<T>(1);
+        auto last        = std::static_pointer_cast<Value>(m_backwardables.back());
+        last->m_gradient = static_cast<f64>(1);
 
         // Reverse pass
         for (auto it = m_backwardables.rbegin(); it != m_backwardables.rend(); ++it) {
@@ -87,21 +80,20 @@ public:
     // ------------------ Cleanup ------------------
     void cleanup() {
         for (auto& param : m_parameters) {
-            param->m_gradient = static_cast<T>(0);
+            param->zero_grad();
         }
         for (auto& param : m_pair_parameters) {
-            param->m_grad_first  = static_cast<T>(0);
-            param->m_grad_second = static_cast<T>(0);
+            param->zero_grad();
         }
 
         m_backwardables.clear();
     }
 
     // ------------------ Accessors ------------------
-    const std::vector<ValuePtr<T>>& get_parameters() const {
+    const std::vector<ValuePtr>& get_parameters() const {
         return m_parameters;
     }
-    const std::vector<PairPtr<T>>& get_pair_parameters() const {
+    const std::vector<PairPtr>& get_pair_parameters() const {
         return m_pair_parameters;
     }
 };
