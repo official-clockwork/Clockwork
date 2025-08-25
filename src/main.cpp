@@ -33,46 +33,65 @@ int main(int argc, char* argv[]) {
         uci.loop();
     }
 #else
-    // Load fens.
+    // Load fens from multiple files.
     std::vector<Position> positions;
     std::vector<f64>      results;
-    std::ifstream         fenFile("data/filtered_positions.fen");
-    if (!fenFile) {
-        std::cerr << "Error opening fens.book" << std::endl;
-        return 1;
-    };
-    std::string line;
-    while (std::getline(fenFile, line)) {
-        size_t pos = line.find(';');
-        if (pos != std::string::npos) {
-            std::string fen = line.substr(0, pos);
-            positions.push_back(Position::parse(fen).value());
-            std::string result = line.substr(pos + 1);
-            result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
 
-            if (result == "w") {
-                results.push_back(1.0);
-            } else if (result == "d") {
-                results.push_back(0.5);
-            } else if (result == "b") {
-                results.push_back(0.0);
-            } else {
-                std::cerr << "Invalid result in line: " << line << " result is (" << result << ")"
-                          << std::endl;
-            }
-        } else {
-            std::cerr << "Invalid line format: " << line << std::endl;
+    // List of files to load
+    std::vector<std::string> fenFiles = {"data/v1_filtered/sampled_positions_294539.txt",
+                                         "data/v1_filtered/sampled_positions_852973.txt",
+                                         "data/v1_filtered/sampled_positions_909857.txt",
+                                         "data/v1_filtered/sampled_positions_3268132.txt"};
+
+    for (const auto& filename : fenFiles) {
+        std::ifstream fenFile(filename);
+        if (!fenFile) {
+            std::cerr << "Error opening " << filename << std::endl;
+            continue;  // skip to the next file
         }
+
+        std::string line;
+        while (std::getline(fenFile, line)) {
+            size_t pos = line.find(';');
+            if (pos != std::string::npos) {
+                std::string fen    = line.substr(0, pos);
+                auto        parsed = Position::parse(fen);
+                if (parsed) {
+                    positions.push_back(*parsed);
+                } else {
+                    std::cerr << "Failed to parse FEN in file " << filename << ": " << fen
+                              << std::endl;
+                    continue;
+                }
+
+                std::string result = line.substr(pos + 1);
+                result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
+
+                if (result == "w") {
+                    results.push_back(1.0);
+                } else if (result == "d") {
+                    results.push_back(0.5);
+                } else if (result == "b") {
+                    results.push_back(0.0);
+                } else {
+                    std::cerr << "Invalid result in file " << filename << " line: " << line
+                              << " (result is '" << result << "')" << std::endl;
+                }
+            } else {
+                std::cerr << "Invalid line format in " << filename << ": " << line << std::endl;
+            }
+        }
+
+        fenFile.close();
     }
 
-    fenFile.close();
-
     // Print the number of positions loaded
-    std::cout << "Loaded " << positions.size() << " FENs." << std::endl;
+    std::cout << "Loaded " << positions.size() << " FENs from " << fenFiles.size() << " files."
+              << std::endl;
 
     Clockwork::Autograd::AdamW optim(10, 0.9, 0.999, 1e-8, 0.0);
 
-    i32       epochs     = 10;
+    i32       epochs     = 1000;
     const f64 K          = 1.0 / 400;
     size_t    batch_size = 16384;  // Set batch size here
 
