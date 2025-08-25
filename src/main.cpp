@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
                 size_t   idx    = indices[j];
                 f64      y      = results[idx];
                 Position pos    = positions[idx];
-                auto     result = (evaluate(pos) * K)->sigmoid();
+                auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
                 batch_outputs.push_back(result);
                 batch_targets.push_back(y);
             }

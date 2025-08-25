@@ -12,5 +12,6 @@ extern const PScore ROOK_MAT;
 extern const PScore QUEEN_MAT;
 extern const PScore MOBILITY_VAL;
 extern const PScore TEMPO_VAL;
-Score               evaluate(Position pos);
+Score               evaluate_white_pov(Position pos);
+Score               evaluate_stm_pov(Position pos);
 };
