@@ -88,9 +88,9 @@ public:
 
     // Phasing between two scores
     template<i32 max>
-    Score phase(i32 alpha) const {
+    Value phase(i32 alpha) const {
         assert(0 <= alpha && alpha <= max);
-        return static_cast<Score>((mg() * alpha + eg() * (max - alpha)) / max);
+        return static_cast<Value>((mg() * alpha + eg() * (max - alpha)) / max);
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {

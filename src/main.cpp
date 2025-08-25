@@ -1,4 +1,5 @@
 
+#include "eval_types.hpp"
 #include "position.hpp"
 #include "tuning/graph.hpp"
 #include "tuning/loss.hpp"
@@ -15,15 +16,12 @@
 #include <numeric>
 #include <random>
 #include <tuple>
-
-#define EVAL_TUNING
-
 using namespace Clockwork;
 
 int main(int argc, char* argv[]) {
 
-    // Initialize all necessary tables (TODO: we may need to move this to a dedicated file)
-    #ifndef EVAL_TUNING
+// Initialize all necessary tables (TODO: we may need to move this to a dedicated file)
+#ifndef EVAL_TUNING
     Zobrist::init_zobrist_keys();
 
     UCI::UCIHandler uci;
@@ -33,7 +31,7 @@ int main(int argc, char* argv[]) {
     } else {
         uci.loop();
     }
-    #else
+#else
     // Load fens.
     std::vector<std::string> fens;
     std::vector<f64>         results;
@@ -71,21 +69,6 @@ int main(int argc, char* argv[]) {
     // Print the number of fens loaded
     std::cout << "Loaded " << fens.size() << " FENs." << std::endl;
 
-    auto PAWN_MAT     = Clockwork::Autograd::Pair<f64>::create_tunable(0, 0);
-    auto KNIGHT_MAT   = Clockwork::Autograd::Pair<f64>::create_tunable(0, 0);
-    auto BISHOP_MAT   = Clockwork::Autograd::Pair<f64>::create_tunable(0, 0);
-    auto ROOK_MAT     = Clockwork::Autograd::Pair<f64>::create_tunable(0, 0);
-    auto QUEEN_MAT    = Clockwork::Autograd::Pair<f64>::create_tunable(0, 0);
-    auto MOBILITY_VAL = Clockwork::Autograd::Pair<f64>::create_tunable(0, 0);
-    auto TEMPO_VAL    = Clockwork::Autograd::Pair<f64>::create_tunable(0, 0);
-
-    Clockwork::Autograd::Graph<f64>::get()->register_param(PAWN_MAT);
-    Clockwork::Autograd::Graph<f64>::get()->register_param(KNIGHT_MAT);
-    Clockwork::Autograd::Graph<f64>::get()->register_param(BISHOP_MAT);
-    Clockwork::Autograd::Graph<f64>::get()->register_param(ROOK_MAT);
-    Clockwork::Autograd::Graph<f64>::get()->register_param(QUEEN_MAT);
-    Clockwork::Autograd::Graph<f64>::get()->register_param(MOBILITY_VAL);
-    Clockwork::Autograd::Graph<f64>::get()->register_param(TEMPO_VAL);
 
     auto tunable_function = [PAWN_MAT, KNIGHT_MAT, BISHOP_MAT, ROOK_MAT, QUEEN_MAT, MOBILITY_VAL,
                              TEMPO_VAL](std::string fen) {
@@ -106,22 +89,22 @@ int main(int argc, char* argv[]) {
                          + pos.piece_count(Color::Black, PieceType::Queen));
         phase = std::min<i32>(phase, 24);
 
-        auto material = PAWN_MAT
-                        * static_cast<f64>(pos.piece_count(Color::White, PieceType::Pawn)
-                                           - pos.piece_count(Color::Black, PieceType::Pawn))
-                      + KNIGHT_MAT
-                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Knight)
-                                             - pos.piece_count(Color::Black, PieceType::Knight))
-                      + BISHOP_MAT
-                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Bishop)
-                                             - pos.piece_count(Color::Black, PieceType::Bishop))
-                      + ROOK_MAT
-                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Rook)
-                                             - pos.piece_count(Color::Black, PieceType::Rook))
-                      + QUEEN_MAT
-                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
-                                             - pos.piece_count(Color::Black, PieceType::Queen));
-        
+        PScore material = PAWN_MAT
+                          * static_cast<f64>(pos.piece_count(Color::White, PieceType::Pawn)
+                                             - pos.piece_count(Color::Black, PieceType::Pawn))
+                        + KNIGHT_MAT
+                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Knight)
+                                               - pos.piece_count(Color::Black, PieceType::Knight))
+                        + BISHOP_MAT
+                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Bishop)
+                                               - pos.piece_count(Color::Black, PieceType::Bishop))
+                        + ROOK_MAT
+                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Rook)
+                                               - pos.piece_count(Color::Black, PieceType::Rook))
+                        + QUEEN_MAT
+                            * static_cast<f64>(pos.piece_count(Color::White, PieceType::Queen)
+                                               - pos.piece_count(Color::Black, PieceType::Queen));
+
         i32 mob_count = 0;
         for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
             mob_count += std::popcount(x);
@@ -130,19 +113,19 @@ int main(int argc, char* argv[]) {
             mob_count -= std::popcount(x);
         }
 
-        auto mobility = MOBILITY_VAL * static_cast<f64>(mob_count);
+        PScore mobility = MOBILITY_VAL * static_cast<f64>(mob_count);
 
-        auto tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
+        PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
 
-        return (material + mobility + tempo)->phase(static_cast<f64>(phase) / 24.0);
+        return (material + mobility + tempo)->phase<24.0>(static_cast<f64>(phase));
     };
 
-    auto                            loss_fn = Clockwork::Autograd::mse<f64>;
-    Clockwork::Autograd::AdamW<f64> optim(10, 0.9, 0.999, 1e-8, 0.0);
-    //Clockwork::Autograd::SGD<f64> optim(Clockwork::Autograd::Graph<f64>::get()->get_parameters(), 10, 0.9);
+    auto loss_fn = Clockwork::Autograd::mse<f64>;
 
-    i32       epochs     = 1;
-    const f64 K          = 1.0 / 250;
+    Clockwork::Autograd::AdamW<f64> optim(10, 0.9, 0.999, 1e-8, 0.0);
+
+    i32       epochs     = 10000;
+    const f64 K          = 1.0 / 400;
     size_t    batch_size = 16384;  // Set batch size here
 
     std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
@@ -199,6 +182,6 @@ int main(int argc, char* argv[]) {
             optim.set_lr(optim.get_lr() * 0.97);
         }
     }
-    #endif
+#endif
     return 0;
 }

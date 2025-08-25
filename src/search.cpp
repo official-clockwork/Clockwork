@@ -573,7 +573,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 }
 
 Value Worker::evaluate(const Position& pos) {
-    return static_cast<Value>(evaluate(pos));
+    return static_cast<Value>(Clockwork::evaluate(pos));
 }
 }
 }
