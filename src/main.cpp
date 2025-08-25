@@ -35,8 +35,8 @@ int main(int argc, char* argv[]) {
 #else
     // Load fens.
     std::vector<Position> positions;
-    std::vector<f64>         results;
-    std::ifstream            fenFile("data/filtered_positions.fen");
+    std::vector<f64>      results;
+    std::ifstream         fenFile("data/filtered_positions.fen");
     if (!fenFile) {
         std::cerr << "Error opening fens.book" << std::endl;
         return 1;
@@ -93,15 +93,15 @@ int main(int argc, char* argv[]) {
             size_t end = std::min(start + batch_size, positions.size());
 
             std::vector<Clockwork::Autograd::ValuePtr> batch_outputs;
-            std::vector<f64>                                batch_targets;
+            std::vector<f64>                           batch_targets;
             batch_outputs.reserve(end - start);
             batch_targets.reserve(end - start);
 
             for (size_t j = start; j < end; ++j) {
-                size_t      idx    = indices[j];
-                f64         y      = results[idx];
-                Position    pos    = positions[idx];
-                auto        result = (evaluate(pos) * K)->sigmoid();
+                size_t   idx    = indices[j];
+                f64      y      = results[idx];
+                Position pos    = positions[idx];
+                auto     result = (evaluate(pos) * K)->sigmoid();
                 batch_outputs.push_back(result);
                 batch_targets.push_back(y);
             }

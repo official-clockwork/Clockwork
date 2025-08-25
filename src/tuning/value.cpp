@@ -1,8 +1,8 @@
 #pragma once
-#include "../util/types.hpp"
-#include "util/vec/sse2.hpp"
 #include "value.hpp"
+#include "../util/types.hpp"
 #include "graph.hpp"
+#include "util/vec/sse2.hpp"
 #include <iostream>
 
 namespace Clockwork {
@@ -39,5 +39,5 @@ PairPtr Pair::create(const f128& values) {
 }
 
 
-} // namespace Autograd
-} // namespace Clockwork
+}  // namespace Autograd
+}  // namespace Clockwork
