@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,9 @@ public:
 private:
     Position       m_position;
     RepetitionInfo m_repetition_info;
+    // move this somewhere else later
+    TT   m_tt;
+    bool m_use_soft_nodes = false;
 
     Search::Searcher searcher;
 
@@ -34,6 +38,8 @@ private:
     void handle_d(std::istringstream&);
     void handle_attacks(std::istringstream&);
     void handle_perft(std::istringstream&);
+
+    void handle_genfens(std::istringstream&);
 };
 
 }
