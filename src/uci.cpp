@@ -1,11 +1,11 @@
 #include "uci.hpp"
 #include "bench.hpp"
+#include "evaluation.hpp"
 #include "move.hpp"
 #include "perft.hpp"
 #include "position.hpp"
 #include "search.hpp"
 #include "tuned.hpp"
-#include "evaluation.hpp"
 #include "util/ios_fmt_guard.hpp"
 #include "util/parse.hpp"
 #include <algorithm>
@@ -88,11 +88,11 @@ void UCIHandler::execute_command(const std::string& line) {
     } else if (command == "bench") {
         handle_bench(is);
     }
-    #ifndef EVAL_TUNING 
+#ifndef EVAL_TUNING
     else if (command == "eval") {
         std::cout << "Evaluation: " << evaluate(m_position) << std::endl;
     }
-    #endif
+#endif
     else {
         std::cout << "Unknown command" << std::endl;
     }

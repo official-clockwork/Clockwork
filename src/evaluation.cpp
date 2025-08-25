@@ -8,11 +8,11 @@ namespace Clockwork {
 
 const PScore PAWN_MAT     = S(212, 423);
 const PScore KNIGHT_MAT   = S(856, 781);
-const PScore     BISHOP_MAT   = S(965, 785);
+const PScore BISHOP_MAT   = S(965, 785);
 const PScore ROOK_MAT     = S(1094, 1441);
 const PScore QUEEN_MAT    = S(2667, 2573);
 const PScore MOBILITY_VAL = S(15, 28);
-const PScore     TEMPO_VAL    = S(13, -8);
+const PScore TEMPO_VAL    = S(13, -8);
 
 Score evaluate(Position pos) {
 
@@ -62,7 +62,8 @@ Score evaluate(Position pos) {
 #ifdef EVAL_TUNING
     return (material + mobility + tempo)->phase<24.0>(static_cast<f64>(phase));
 #else
-    return (us == Color::White) ? (material + mobility + tempo).phase<24>(phase) : -(material + mobility + tempo).phase<24>(phase);
+    return (us == Color::White) ? (material + mobility + tempo).phase<24>(phase)
+                                : -(material + mobility + tempo).phase<24>(phase);
 #endif
 };
 

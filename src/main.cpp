@@ -1,5 +1,6 @@
 
 #include "eval_types.hpp"
+#include "evaluation.hpp"
 #include "position.hpp"
 #include "tuning/graph.hpp"
 #include "tuning/loss.hpp"
@@ -16,7 +17,6 @@
 #include <numeric>
 #include <random>
 #include <tuple>
-#include "evaluation.hpp"
 using namespace Clockwork;
 
 int main(int argc, char* argv[]) {
@@ -98,11 +98,11 @@ int main(int argc, char* argv[]) {
             std::vector<f64>                                batch_targets;
 
             for (size_t j = start; j < end; ++j) {
-                size_t      idx = indices[j];
-                std::string fen = fens[idx];
+                size_t      idx    = indices[j];
+                std::string fen    = fens[idx];
                 f64         y      = results[idx];
                 auto        pos    = Position::parse(fen);
-                auto result = (evaluate(pos.value()) * K)->sigmoid();
+                auto        result = (evaluate(pos.value()) * K)->sigmoid();
                 batch_outputs.push_back(result);
                 batch_targets.push_back(y);
             }

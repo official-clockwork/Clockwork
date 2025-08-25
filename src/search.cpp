@@ -1,6 +1,7 @@
 #include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
+#include "evaluation.hpp"
 #include "movegen.hpp"
 #include "movepick.hpp"
 #include "see.hpp"
@@ -13,7 +14,6 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
-#include "evaluation.hpp"
 #include <mutex>
 
 namespace Clockwork {
@@ -22,7 +22,6 @@ namespace Search {
 Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
-
 
 Searcher::Searcher() :
     idle_barrier(std::make_unique<std::barrier<>>(1)),
@@ -573,11 +572,11 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 }
 
 Value Worker::evaluate(const Position& pos) {
-    #ifndef EVAL_TUNING
+#ifndef EVAL_TUNING
     return static_cast<Value>(Clockwork::evaluate(pos));
-    #else
-    return -VALUE_INF; // Not implemented in tune mode
-    #endif
+#else
+    return -VALUE_INF;  // Not implemented in tune mode
+#endif
 }
 }
 }

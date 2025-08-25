@@ -1,9 +1,9 @@
 #pragma once
+#include "util/types.hpp"
 #include <cassert>
 #include <cstring>
 #include <iostream>
 #include <limits>
-#include "util/types.hpp"
 
 #ifdef EVAL_TUNING
     #include "tuning/loss.hpp"
@@ -107,9 +107,9 @@ using PScore = Autograd::PairPtr<f64>;
 #endif
 
 #ifdef EVAL_TUNING
-#define S(a, b) Autograd::Pair<f64>::create_tunable((a), (b))  // Defines a tunable pscore
+    #define S(a, b) Autograd::Pair<f64>::create_tunable((a), (b))  // Defines a tunable pscore
 #else
-#define S(a, b) PScore((a), (b))                  // Defines a constant pscore when not tuning
+    #define S(a, b) PScore((a), (b))  // Defines a constant pscore when not tuning
 #endif
 #define PSCORE_ZERO S(0, 0)
 
