@@ -40,10 +40,8 @@ public:
             auto& p = m_value_params[i];
             auto& v = m_value_velocity[i];
 
-            // Correct momentum formula: v = momentum * v - lr * grad
             v = m_momentum * v - m_lr * p->get_gradient();
 
-            // Apply velocity (already carries sign for descent)
             p->change_value(v);
         }
 
@@ -52,18 +50,15 @@ public:
             auto& p = m_pair_params[i];
             auto& v = m_pair_velocity[i];
 
-            // compute lr * grad for each component
             const f128 lr_grad = f128::make(
                 m_lr * p->grad_first(),
                 m_lr * p->grad_second()
             );
 
-            // want: v = momentum * v - lr * grad
-            const f128 mom_v = f128::mul_scalar(v, m_momentum);   // momentum * v
-            const f128 neg_lr_grad = f128::neg(lr_grad);          // - lr * grad
-            v = f128::add(mom_v, neg_lr_grad);                    // momentum*v + (-lr*grad)
+            const f128 mom_v = f128::mul_scalar(v, m_momentum);
+            const f128 neg_lr_grad = f128::neg(lr_grad);
+            v = f128::add(mom_v, neg_lr_grad);
 
-            // Apply velocity to parameters (param += v)
             p->m_values = f128::add(p->m_values, v);
         }
     }
@@ -127,23 +122,17 @@ public:
             auto&     p = m_value_params[i];
             const f64 g = p->get_gradient();
 
-            // Update biased first moment estimate: m = beta1*m + (1-beta1)*g
             m_m[i] = m_beta1 * m_m[i] + (1.0 - m_beta1) * g;
 
-            // Update biased second raw moment estimate: v = beta2*v + (1-beta2)*g^2
             m_v[i] = m_beta2 * m_v[i] + (1.0 - m_beta2) * g * g;
 
-            // Bias-corrected estimates
             const f64 m_hat = m_m[i] * inv1mb1t;
             const f64 v_hat = m_v[i] * inv1mb2t;
 
-            // Adam step
             const f64 adam_update = m_lr * m_hat / (std::sqrt(v_hat) + m_eps);
 
-            // Weight decay scaled by lr (decoupled)
             const f64 weight_decay_update = m_lr * m_weight_decay * p->get_value();
 
-            // Combined (negative since it's descent)
             const f64 total_update = -(adam_update + weight_decay_update);
 
             p->change_value(total_update);
@@ -159,33 +148,26 @@ public:
             const f128 g2_vec = f128::make(p->grad_first() * p->grad_first(),
                                            p->grad_second() * p->grad_second());
 
-            // Update biased first moment: m = beta1*m + (1-beta1)*g
             const f128 m_scaled = f128::mul_scalar(m, m_beta1);
             const f128 g_scaled = f128::mul_scalar(g_vec, (1.0 - m_beta1));
             m = f128::add(m_scaled, g_scaled);
 
-            // Update biased second moment: v = beta2*v + (1-beta2)*g^2
             const f128 v_scaled = f128::mul_scalar(v, m_beta2);
             const f128 g2_scaled = f128::mul_scalar(g2_vec, (1.0 - m_beta2));
             v = f128::add(v_scaled, g2_scaled);
 
-            // Bias-corrected (component-wise)
             const f128 m_hat = f128::mul_scalar(m, inv1mb1t);
             const f128 v_hat = f128::mul_scalar(v, inv1mb2t);
 
-            // Adam updates (component-wise)
             const f64 adam_upd_f = m_lr * m_hat.first() / (std::sqrt(v_hat.first()) + m_eps);
             const f64 adam_upd_s = m_lr * m_hat.second() / (std::sqrt(v_hat.second()) + m_eps);
 
-            // Weight decay (scaled by lr) for pair components
             const f64 decay_upd_f = m_lr * m_weight_decay * p->first();
             const f64 decay_upd_s = m_lr * m_weight_decay * p->second();
 
-            // Combined updates (negative for descent)
             const f64 total_upd_f = -(adam_upd_f + decay_upd_f);
             const f64 total_upd_s = -(adam_upd_s + decay_upd_s);
 
-            // Apply updates
             p->m_values = f128::add(p->m_values, f128::make(total_upd_f, total_upd_s));
         }
     }
