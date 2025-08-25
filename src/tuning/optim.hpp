@@ -50,14 +50,11 @@ public:
             auto& p = m_pair_params[i];
             auto& v = m_pair_velocity[i];
 
-            const f128 lr_grad = f128::make(
-                m_lr * p->grad_first(),
-                m_lr * p->grad_second()
-            );
+            const f128 lr_grad = f128::make(m_lr * p->grad_first(), m_lr * p->grad_second());
 
-            const f128 mom_v = f128::mul_scalar(v, m_momentum);
+            const f128 mom_v       = f128::mul_scalar(v, m_momentum);
             const f128 neg_lr_grad = f128::neg(lr_grad);
-            v = f128::add(mom_v, neg_lr_grad);
+            v                      = f128::add(mom_v, neg_lr_grad);
 
             p->m_values = f128::add(p->m_values, v);
         }
@@ -145,16 +142,16 @@ public:
             auto& v = m_pair_v[i];
 
             const f128 g_vec = f128::make(p->grad_first(), p->grad_second());
-            const f128 g2_vec = f128::make(p->grad_first() * p->grad_first(),
-                                           p->grad_second() * p->grad_second());
+            const f128 g2_vec =
+              f128::make(p->grad_first() * p->grad_first(), p->grad_second() * p->grad_second());
 
             const f128 m_scaled = f128::mul_scalar(m, m_beta1);
             const f128 g_scaled = f128::mul_scalar(g_vec, (1.0 - m_beta1));
-            m = f128::add(m_scaled, g_scaled);
+            m                   = f128::add(m_scaled, g_scaled);
 
-            const f128 v_scaled = f128::mul_scalar(v, m_beta2);
+            const f128 v_scaled  = f128::mul_scalar(v, m_beta2);
             const f128 g2_scaled = f128::mul_scalar(g2_vec, (1.0 - m_beta2));
-            v = f128::add(v_scaled, g2_scaled);
+            v                    = f128::add(v_scaled, g2_scaled);
 
             const f128 m_hat = f128::mul_scalar(m, inv1mb1t);
             const f128 v_hat = f128::mul_scalar(v, inv1mb2t);

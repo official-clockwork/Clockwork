@@ -16,8 +16,8 @@ const PScore TEMPO_VAL    = S(13, -8);
 
 Score evaluate_white_pov(Position pos) {
 
-    const Color us   = pos.active_color();
-    i32 phase = pos.piece_count(Color::White, PieceType::Knight)
+    const Color us    = pos.active_color();
+    i32         phase = pos.piece_count(Color::White, PieceType::Knight)
               + pos.piece_count(Color::Black, PieceType::Knight)
               + pos.piece_count(Color::White, PieceType::Bishop)
               + pos.piece_count(Color::Black, PieceType::Bishop)
@@ -57,7 +57,7 @@ Score evaluate_white_pov(Position pos) {
     PScore mobility = MOBILITY_VAL * mob_count;
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-    PScore sum = material + mobility + tempo;
+    PScore sum   = material + mobility + tempo;
 #ifdef EVAL_TUNING
     return sum->phase<24.0>(static_cast<f64>(phase));
 #else
@@ -66,7 +66,7 @@ Score evaluate_white_pov(Position pos) {
 };
 
 Score evaluate_stm_pov(Position pos) {
-    const Color us   = pos.active_color();
+    const Color us = pos.active_color();
     return (us == Color::White) ? evaluate_white_pov(pos) : -evaluate_white_pov(pos);
 }
 
