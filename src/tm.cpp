@@ -4,9 +4,9 @@
 #include <iostream>
 
 namespace Clockwork::TM {
-time::TimePoint compute_hard_limit(time::TimePoint            search_start,
+time::TimePoint compute_hard_limit(time::TimePoint               search_start,
                                    const Search::SearchSettings& settings,
-                                   const Color                stm) {
+                                   const Color                   stm) {
     using namespace std;
     using namespace time;
 
