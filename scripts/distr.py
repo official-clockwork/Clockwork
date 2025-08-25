@@ -1,9 +1,9 @@
 from collections import Counter
 import matplotlib.pyplot as plt
 
-def count_piece_distribution(fen_file):
+def count_piece_distribution(fen_files):
     """
-    Reads a file containing FEN strings (one per line)
+    Reads a list of files containing FEN strings (one per line)
     Returns:
       - piece_counts: total count of each piece across all positions
       - piece_totals: list of total piece counts per FEN
@@ -11,28 +11,38 @@ def count_piece_distribution(fen_file):
     piece_counts = Counter()
     piece_totals = []
 
-    with open(fen_file, "r") as f:
-        for line in f:
-            fen = line.strip()
-            if not fen:
-                continue
+    for fen_file in fen_files:
+        try:
+            with open(fen_file, "r") as f:
+                for line in f:
+                    fen = line.strip()
+                    if not fen:
+                        continue
 
-            board_part = fen.split(" ")[0]
+                    board_part = fen.split(" ")[0]
 
-            count_this_fen = 0
-            for ch in board_part:
-                if ch.isalpha():
-                    piece_counts[ch] += 1
-                    count_this_fen += 1
+                    count_this_fen = 0
+                    for ch in board_part:
+                        if ch.isalpha():
+                            piece_counts[ch] += 1
+                            count_this_fen += 1
 
-            piece_totals.append(count_this_fen)
+                    piece_totals.append(count_this_fen)
+        except FileNotFoundError:
+            print(f"⚠️ Skipping missing file: {fen_file}")
 
     return piece_counts, piece_totals
 
 
 if __name__ == "__main__":
-    filename = "data/filtered_positions.fen"  # change this to your file
-    piece_counts, piece_totals = count_piece_distribution(filename)
+    # List of files
+    fen_files = [
+        "data/v1_filtered/sampled_positions_294539.txt",
+                                         "data/v1_filtered/sampled_positions_852973.txt",
+                                         "data/v1_filtered/sampled_positions_909857.txt",
+                                         "data/v1_filtered/sampled_positions_3268132.txt"]
+
+    piece_counts, piece_totals = count_piece_distribution(fen_files)
 
     # --- Print counts ---
     print("Piece count distribution:")

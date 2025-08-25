@@ -2,15 +2,21 @@ import os
 import random
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 import chess
 import chess.pgn
 import io
 from tqdm import tqdm
 
 
+
+def is_capture_or_promotion(board: chess.Board, move: chess.Move) -> bool:
+    """Check if a move is a capture or promotion."""
+    return board.is_capture(move) or move.promotion is not None
+
+
 def extract_positions_from_game(game_data: str, n_positions: int = 5) -> List[str]:
-    """Extract N sampled positions from a game, labeled with final result (w/d/b)."""
+    """Extract N sampled positions from a game, with original restrictions, labeled with final result (w/d/b)."""
     try:
         pgn_io = io.StringIO(game_data)
         game = chess.pgn.read_game(pgn_io)
@@ -29,26 +35,37 @@ def extract_positions_from_game(game_data: str, n_positions: int = 5) -> List[st
             return []  # Skip unfinished/invalid games
 
         board = game.board()
-        positions = []
+        valid_positions = []
         move_number = 0
 
-        # Collect all candidate positions
-        all_positions = []
-        for move in game.mainline_moves():
-            board.push(move)
-            move_number += 1
-            if not board.is_check() and any(board.legal_moves):
-                all_positions.append(board.fen())
+        # Iterate through all moves in the game
+        for node in game.mainline():
+            move = node.move
+            if move:
+                board.push(move)
+                move_number += 1
 
-        if not all_positions:
+            # Skip if in check or no legal moves
+            if board.is_check() or not any(board.legal_moves):
+                continue
+
+            next_node = node.next()
+            best_move = next_node.move if next_node else None
+
+            # Skip if best move is capture or promotion
+            if best_move and is_capture_or_promotion(board, best_move):
+                continue
+
+            valid_positions.append(board.fen())
+
+        if not valid_positions:
             return []
 
-        # Sample up to n_positions
-        if len(all_positions) > n_positions:
-            all_positions = random.sample(all_positions, n_positions)
+        # Randomly select up to n_positions
+        if len(valid_positions) > n_positions:
+            valid_positions = random.sample(valid_positions, n_positions)
 
-        # Label with outcome
-        return [f"{fen};{outcome}" for fen in all_positions]
+        return [f"{fen};{outcome}" for fen in valid_positions]
 
     except Exception:
         return []
@@ -140,9 +157,9 @@ def save_positions_to_file(positions: List[str], output_file: str = "sampled_pos
 def main():
     folder_path = input("Enter the path to the folder containing PGN files: ").strip()
     try:
-        positions_per_game = int(input("Enter number of positions per game (default 10): ") or "10")
+        positions_per_game = int(input("Enter number of positions per game (default 5): ") or "5")
     except ValueError:
-        positions_per_game = 10
+        positions_per_game = 5
 
     try:
         max_workers = int(input("Enter maximum number of worker threads (default 4): ") or "4")
