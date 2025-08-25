@@ -97,8 +97,7 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "Evaluation: " << evaluate(m_position) << std::endl;
     }
 #endif
-    else {
-    } else if (command == "genfens") {
+    else if (command == "genfens") {
         handle_genfens(is);
     } else {
         std::cout << "Unknown command" << std::endl;
