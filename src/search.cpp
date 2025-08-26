@@ -208,14 +208,14 @@ Move Worker::iterative_deepening(const Position& root_position) {
             if (score > VALUE_WIN && score < VALUE_MATED) {
                 return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
             }
-            return "cp " + std::to_string(score);
+            return "cp " + std::to_string(score / 4);
         };
 
         // Get current time
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
-                  << format_score(last_search_score / 4) << " nodes " << m_searcher.node_count()
+                  << format_score(last_search_score) << " nodes " << m_searcher.node_count()
                   << " nps " << time::nps(m_searcher.node_count(), curr_time - m_search_start)
                   << " pv " << last_best_move << std::endl;
     };
