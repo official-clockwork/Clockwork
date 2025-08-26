@@ -108,9 +108,10 @@ using PScore = Autograd::PairPtr;
 
 #ifdef EVAL_TUNING
     #define S(a, b) Autograd::Pair::create_tunable((a), (b))  // Defines a tunable pscore
+    #define PSCORE_ZERO Autograd::Pair::create(0,0)
 #else
     #define S(a, b) PScore((a), (b))  // Defines a constant pscore when not tuning
+    #define PSCORE_ZERO S(0, 0)
 #endif
-#define PSCORE_ZERO S(0, 0)
 
 }  // namespace Clockwork

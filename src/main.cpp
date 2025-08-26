@@ -137,14 +137,31 @@ int main(int argc, char* argv[]) {
 
         std::cout << std::endl;  // Finish progress bar line
 
-        for (auto param : Clockwork::Autograd::Graph::get()->get_parameters()) {
-            std::cout << param << std::endl;
-        }
-        std::cout << std::endl;
-        for (auto param : Clockwork::Autograd::Graph::get()->get_pair_parameters()) {
-            std::cout << param << std::endl;
-        }
-        std::cout << std::endl;
+        std::cout << "Pawn mat " << PAWN_MAT << std::endl;
+        std::cout << "Knight mat " << KNIGHT_MAT << std::endl;
+        std::cout << "Bishop mat " << BISHOP_MAT << std::endl;
+        std::cout << "Rook mat " << ROOK_MAT << std::endl;
+        std::cout << "Queen mat " << QUEEN_MAT << std::endl;
+
+        std::cout << "Mobility " << MOBILITY_VAL << std::endl;
+        std::cout << "Tempo " << TEMPO_VAL << std::endl;
+
+        auto printPsqtArray = [](const auto& arr) {
+            for (std::size_t i = 0; i < arr.size(); ++i) {
+                std::cout << arr[i] << ",\t";
+                if ((i & 7) == 7) {
+                    std::cout << std::endl;
+                }
+            }
+            std::cout << std::endl;
+        };
+
+        printPsqtArray(PAWN_PSQT);
+        printPsqtArray(KNIGHT_PSQT);
+        printPsqtArray(BISHOP_PSQT);
+        printPsqtArray(ROOK_PSQT);
+        printPsqtArray(QUEEN_PSQT);
+        printPsqtArray(KING_PSQT);
 
         if (epoch > 5) {
             optim.set_lr(optim.get_lr() * 0.97);

@@ -504,8 +504,12 @@ public:
 
     // ------------------- Print -------------------
     friend std::ostream& operator<<(std::ostream& os, const PairPtr& p) {
+        #ifdef VERBOSE_AUTOGRAD
         os << "Pair(first=" << p->first() << ", second=" << p->second()
            << ", grad_first=" << p->grad_first() << ", grad_second=" << p->grad_second() << ")";
+        #else
+        os << "S(" << static_cast<i32>(p->first() + 0.5) << "," << static_cast<i32>(p->second() + 0.5) << ")";
+        #endif
         return os;
     }
 };

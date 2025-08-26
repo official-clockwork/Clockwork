@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 
 #include "position.hpp"
 
@@ -14,4 +15,11 @@ extern const PScore MOBILITY_VAL;
 extern const PScore TEMPO_VAL;
 Score               evaluate_white_pov(Position pos);
 Score               evaluate_stm_pov(Position pos);
+
+extern const std::array<PScore, 48> PAWN_PSQT;
+extern const std::array<PScore, 64> KNIGHT_PSQT;
+extern const std::array<PScore, 64> BISHOP_PSQT;
+extern const std::array<PScore, 64> ROOK_PSQT;
+extern const std::array<PScore, 64> QUEEN_PSQT;
+extern const std::array<PScore, 64> KING_PSQT;
 };
