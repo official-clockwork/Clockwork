@@ -40,10 +40,11 @@ public:
             unreachable();
             break;
         }
+        // TODO: change this to +=/-= after adding this operators
         if (color == Color::White) {
-            m_score += diff;
+            m_score = m_score + diff;
         } else {
-            m_score -= diff;
+            m_score = m_score - diff;
         }
     }
 
@@ -75,10 +76,11 @@ public:
             unreachable();
             break;
         }
+        // TODO: change this to +=/-= after adding this operators
         if (color == Color::White) {
-            m_score -= diff;
+            m_score = m_score - diff;
         } else {
-            m_score += diff;
+            m_score = m_score + diff;
         }
     }
 
@@ -86,8 +88,8 @@ public:
         return m_score;
     }
 
-    constexpr bool operator==(const PsqtState& other) const noexcept = default;
-    constexpr bool operator!=(const PsqtState& other) const noexcept = default;
+    bool operator==(const PsqtState& other) const noexcept = default;
+    bool operator!=(const PsqtState& other) const noexcept = default;
 
 private:
     PScore m_score = PSCORE_ZERO;
