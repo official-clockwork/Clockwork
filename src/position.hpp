@@ -129,6 +129,19 @@ public:
         return (attack_table(color).read(sq) >> id.raw) & 1;
     }
 
+    [[nodiscard]] i32 piece_count(Color color) const {
+        return 16 - piece_count(color, PieceType::None);
+    }
+
+    [[nodiscard]] bool is_kp_endgame() const {
+        for (Color color : {Color::White, Color::Black}) {
+            if (!(piece_count(color) == 1 + piece_count(color, PieceType::Pawn))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     [[nodiscard]] Position move(Move m) const;
     [[nodiscard]] Position null_move() const;
 
