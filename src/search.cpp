@@ -215,7 +215,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
-                  << format_score(last_search_score) << " nodes " << m_searcher.node_count()
+                  << format_score(last_search_score / 4) << " nodes " << m_searcher.node_count()
                   << " nps " << time::nps(m_searcher.node_count(), curr_time - m_search_start)
                   << " pv " << last_best_move << std::endl;
     };
