@@ -8,6 +8,7 @@
 
 #include "board.hpp"
 #include "move.hpp"
+#include "psqt_state.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
@@ -96,6 +97,9 @@ public:
     [[nodiscard]] HashKey get_hash_key() const {
         return m_hash_key;
     }
+    [[nodiscard]] PsqtState psqt_state() const {
+        return m_psqt_state;
+    }
 
     [[nodiscard]] Square king_sq(Color color) const {
         return piece_list_sq(color)[PieceId{0}];
@@ -179,6 +183,8 @@ private:
     Square                              m_enpassant = Square::invalid();
     std::array<RookInfo, 2>             m_rook_info;
     HashKey                             m_hash_key;
+    PsqtState                           m_psqt_state;
+
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq);
     void incrementally_add_piece(bool color, Place p, Square sq);

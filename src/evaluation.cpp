@@ -84,7 +84,7 @@ const std::array<PScore, 64> KING_PSQT = {
 };
 // clang-format on
 
-Score evaluate_white_pov(Position pos) {
+Score evaluate_white_pov(const Position& pos) {
 
     const Color us    = pos.active_color();
     i32         phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -168,6 +168,10 @@ Score evaluate_white_pov(Position pos) {
         }
     }
 
+    if (material + psqt != pos.psqt_state().score()) {
+        std::cout << material + psqt << ' ' << pos.psqt_state().score() << "WTF" << std::endl;
+    }
+
     PScore mobility = MOBILITY_VAL * mob_count;
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
@@ -179,7 +183,7 @@ Score evaluate_white_pov(Position pos) {
 #endif
 };
 
-Score evaluate_stm_pov(Position pos) {
+Score evaluate_stm_pov(const Position& pos) {
     const Color us = pos.active_color();
     return (us == Color::White) ? evaluate_white_pov(pos) : -evaluate_white_pov(pos);
 }

@@ -22,6 +22,7 @@ void Position::incrementally_remove_piece(bool color, PieceId id, Square from) {
     m_hash_key ^=
       Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())]
                                    [static_cast<size_t>(m_board[from].ptype())][from.raw];
+    m_psqt_state.remove_piece(m_board[from].color(), m_board[from].ptype(), from);
     m_board[from] = Place::empty();
 }
 
@@ -30,6 +31,7 @@ void Position::incrementally_add_piece(bool color, Place p, Square to) {
     m_board[to] = p;
     m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())]
                                                [static_cast<size_t>(m_board[to].ptype())][to.raw];
+    m_psqt_state.add_piece(p.color(), p.ptype(), to);
 
     v512 m = toggle_rays(to);
     add_attacks(color, p.id(), to, p.ptype(), m);
@@ -40,9 +42,11 @@ void Position::incrementally_mutate_piece(
     // TODO: check if some speed left on the table for zobrist here
     m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
                                                [static_cast<size_t>(m_board[sq].ptype())][sq.raw];
+    m_psqt_state.remove_piece(m_board[sq].color(), m_board[sq].ptype(), sq);
     m_board[sq] = p;
     m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
                                                [static_cast<size_t>(m_board[sq].ptype())][sq.raw];
+    m_psqt_state.add_piece(p.color(), p.ptype(), sq);
 
     remove_attacks(old_color, old_id);
     add_attacks(new_color, p.id(), sq, p.ptype());
@@ -59,10 +63,12 @@ void Position::incrementally_move_piece(bool color, Square from, Square to, Plac
     m_hash_key ^=
       Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())]
                                    [static_cast<size_t>(m_board[from].ptype())][from.raw];
+    m_psqt_state.remove_piece(m_board[from].color(), m_board[from].ptype(), from);
     m_board[from] = Place::empty();
     m_board[to]   = p;
     m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())]
                                                [static_cast<size_t>(m_board[to].ptype())][to.raw];
+    m_psqt_state.add_piece(p.color(), p.ptype(), to);
 
     v512 dst_ray_places = v512::permute8(dst_ray_coords, m_board.to_vec());
 
@@ -509,6 +515,7 @@ std::optional<Position> Position::parse(std::string_view board,
                 result.m_board.mailbox[sq.raw] = Place{color, ptype, PieceId{current_id}};
                 result.m_piece_list_sq[static_cast<usize>(color)].array[current_id] = sq;
                 result.m_piece_list[static_cast<usize>(color)].array[current_id]    = ptype;
+                result.m_psqt_state.add_piece(color, ptype, sq);
                 place_index++;
             };
 

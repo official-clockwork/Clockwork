@@ -51,6 +51,10 @@ struct Square {
         return {file(), rank()};
     }
 
+    constexpr Square flip_vertical() const {
+        return Square{static_cast<u8>(raw ^ 56)};
+    }
+
     [[nodiscard]] constexpr bool is_valid() const {
         return (raw & 0x80) == 0;
     }
