@@ -331,7 +331,8 @@ Value Worker::search(
         return tt_adjusted_eval;
     }
 
-    if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && tt_adjusted_eval >= beta) {
+    if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth
+        && tt_adjusted_eval >= beta) {
         int      R         = tuned::nmp_base_r + std::min(3, (tt_adjusted_eval - beta) / 816);
         Position pos_after = pos.null_move();
 
