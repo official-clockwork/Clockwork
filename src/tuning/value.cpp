@@ -1,4 +1,3 @@
-#pragma once
 #include "value.hpp"
 #include "../util/types.hpp"
 #include "graph.hpp"

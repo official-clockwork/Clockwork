@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
         printPsqtArray(KING_PSQT);
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.97);
+            optim.set_lr(optim.get_lr() * 0.985);
         }
     }
 #endif
