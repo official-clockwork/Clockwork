@@ -100,22 +100,6 @@ Score evaluate_white_pov(const Position& pos) {
 
     phase = std::min<i32>(phase, 24);
 
-    PScore material = PAWN_MAT
-                      * (pos.piece_count(Color::White, PieceType::Pawn)
-                         - pos.piece_count(Color::Black, PieceType::Pawn))
-                    + KNIGHT_MAT
-                        * (pos.piece_count(Color::White, PieceType::Knight)
-                           - pos.piece_count(Color::Black, PieceType::Knight))
-                    + BISHOP_MAT
-                        * (pos.piece_count(Color::White, PieceType::Bishop)
-                           - pos.piece_count(Color::Black, PieceType::Bishop))
-                    + ROOK_MAT
-                        * (pos.piece_count(Color::White, PieceType::Rook)
-                           - pos.piece_count(Color::Black, PieceType::Rook))
-                    + QUEEN_MAT
-                        * (pos.piece_count(Color::White, PieceType::Queen)
-                           - pos.piece_count(Color::Black, PieceType::Queen));
-
     i32 mob_count = 0;
     for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
         mob_count += std::popcount(x);
@@ -124,58 +108,10 @@ Score evaluate_white_pov(const Position& pos) {
         mob_count -= std::popcount(x);
     }
 
-    PScore psqt = PSCORE_ZERO;
-
-    for (Color c : {Color::Black, Color::White}) {
-        auto& pieces  = pos.piece_list(c);
-        auto& squares = pos.piece_list_sq(c);
-
-        for (size_t i = 0; i < 16; ++i) {
-            PieceType pt = pieces[i];
-            if (pt == PieceType::None) {
-                continue;
-            }
-
-            u8 sq = squares[i].raw;
-
-            // Mirror board for White
-            if (c == Color::White) {
-                sq ^= 56;
-            }
-
-            switch (pt) {
-            case PieceType::Pawn:
-                psqt = psqt + (c == Color::White ? PAWN_PSQT[sq - 8] : -PAWN_PSQT[sq - 8]);
-                break;
-            case PieceType::Knight:
-                psqt = psqt + (c == Color::White ? KNIGHT_PSQT[sq] : -KNIGHT_PSQT[sq]);
-                break;
-            case PieceType::Bishop:
-                psqt = psqt + (c == Color::White ? BISHOP_PSQT[sq] : -BISHOP_PSQT[sq]);
-                break;
-            case PieceType::Rook:
-                psqt = psqt + (c == Color::White ? ROOK_PSQT[sq] : -ROOK_PSQT[sq]);
-                break;
-            case PieceType::Queen:
-                psqt = psqt + (c == Color::White ? QUEEN_PSQT[sq] : -QUEEN_PSQT[sq]);
-                break;
-            case PieceType::King:
-                psqt = psqt + (c == Color::White ? KING_PSQT[sq] : -KING_PSQT[sq]);
-                break;
-            default:
-                break;
-            }
-        }
-    }
-
-    if (material + psqt != pos.psqt_state().score()) {
-        std::cout << material + psqt << ' ' << pos.psqt_state().score() << "WTF" << std::endl;
-    }
-
     PScore mobility = MOBILITY_VAL * mob_count;
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-    PScore sum   = material + mobility + tempo + psqt;
+    PScore sum   = pos.psqt_state().score() + mobility + tempo;
 #ifdef EVAL_TUNING
     return sum->phase<24.0>(static_cast<f64>(phase));
 #else
