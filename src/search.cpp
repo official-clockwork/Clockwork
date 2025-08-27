@@ -403,6 +403,10 @@ Value Worker::search(
               static_cast<i32>(0.77 + std::log(depth) * std::log(moves_played) / 2.36);
             reduction -= PV_NODE;
 
+            if (tt_data && tt_data->move.is_capture()) {
+                reduction += 1;
+            }
+
             if (!quiet) {
                 reduction = std::min(reduction, 1);
             }
