@@ -89,6 +89,17 @@ public:
         m_backwardables.clear();
     }
 
+    // ------------------ Reset ------------------
+    void init_zeros() {
+        for (auto& param : m_parameters) {
+            param->set_value(0.0);
+        }
+        for (auto& param : m_pair_parameters) {
+            param->set_values(0.0, 0.0);
+        }
+        cleanup();
+    }
+
     // ------------------ Accessors ------------------
     const std::vector<ValuePtr>& get_parameters() const {
         return m_parameters;

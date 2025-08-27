@@ -102,7 +102,7 @@ public:
     }
 
     [[nodiscard]] size_t king_side(Color color) const {
-        return king_sq(color).file() >= 3;
+        return king_sq(color).file() >= 4;
     }
 
     [[nodiscard]] PieceType piece_at(Square sq) const {
