@@ -130,6 +130,8 @@ Score evaluate_white_pov(Position pos) {
         auto& pieces  = pos.piece_list(c);
         auto& squares = pos.piece_list_sq(c);
 
+        auto king_side = pos.king_side(c);
+
         for (size_t i = 0; i < 16; ++i) {
             PieceType pt = pieces[i];
             if (pt == PieceType::None) {
@@ -141,6 +143,9 @@ Score evaluate_white_pov(Position pos) {
             // Mirror board for White
             if (c == Color::White) {
                 sq ^= 56;
+            }
+            if (king_side) {
+                sq ^= 7;
             }
 
             switch (pt) {
