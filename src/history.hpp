@@ -1,10 +1,11 @@
 #pragma once
 
+#include "common.hpp"
 #include "position.hpp"
 
 namespace Clockwork {
 
-using MainHistory = std::array<std::array<i32, 4096>, 2>;
+using MainHistory = std::array<std::array<std::array<i32, 2>, 4096>, 2>;
 
 constexpr i32 HISTORY_MAX = 16384;
 
@@ -13,12 +14,15 @@ public:
     History() = default;
 
     i32 get_quiet_stats(const Position& pos, Move move) const {
-        return m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()];
+        auto to_attacked = pos.attack_table(Color::White).read(move.to()) != 0;
+        return m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()][to_attacked];
     }
 
     void update_quiet_stats(const Position& pos, Move move, i32 bonus) {
-        update_hist_entry(m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()],
-                          bonus);
+        auto to_attacked = pos.attack_table(Color::White).read(move.to()) != 0;
+        update_hist_entry(
+          m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()][to_attacked],
+          bonus);
     }
 
     void clear() {
