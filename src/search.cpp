@@ -371,21 +371,21 @@ Value Worker::search(
 
         auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m) : 0;
 
-        if (!ROOT_NODE && best_value > -VALUE_WIN && quiet) {
+        if (!ROOT_NODE && best_value > -VALUE_WIN) {
             // Late Move Pruning (LMP)
             if (moves_played >= 3 + 2 * depth * depth) {
                 continue;
             }
             // Quiet History Pruning
-            if (depth <= 4 && !is_in_check && move_history < depth * -2048) {
+            if (depth <= 4 && !is_in_check && quiet && move_history < depth * -2048) {
                 break;
             }
-        }
 
-        Value see_threshold = quiet ? -67 * depth : -64 * depth;
-        // SEE PVS Pruning
-        if (depth <= 10 && !ROOT_NODE && !SEE::see(pos, m, see_threshold)) {
-            continue;
+            Value see_threshold = quiet ? -67 * depth : -64 * depth;
+            // SEE PVS Pruning
+            if (depth <= 10 && !SEE::see(pos, m, see_threshold)) {
+                continue;
+            }
         }
 
         // Do move
