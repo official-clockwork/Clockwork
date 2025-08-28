@@ -14,6 +14,9 @@
 
 namespace Clockwork {
 
+struct PsqtState;
+struct PsqtUpdates;
+
 template<typename T>
 struct alignas(16) PieceList {
     std::array<T, 16> array{};
@@ -146,8 +149,16 @@ public:
         return true;
     }
 
-    [[nodiscard]] Position move(Move m) const;
+    template<bool UPDATE_PSQT>
+    [[nodiscard]] Position move(Move m, PsqtState* psqt_state) const;
     [[nodiscard]] Position null_move() const;
+
+    [[nodiscard]] Position move(Move m) const {
+        return move<false>(m, nullptr);
+    }
+    [[nodiscard]] Position move(Move m, PsqtState& psqt_state) const {
+        return move<true>(m, &psqt_state);
+    }
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 
@@ -184,11 +195,13 @@ private:
     std::array<RookInfo, 2>             m_rook_info;
     HashKey                             m_hash_key;
 
-    void incrementally_remove_piece(bool color, PieceId id, Square sq);
-    void incrementally_add_piece(bool color, Place p, Square sq);
+
+    void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates& updates);
+    void incrementally_add_piece(bool color, Place p, Square sq, PsqtUpdates& updates);
+    void incrementally_mutate_piece(
+      bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates& updates);
     void
-    incrementally_mutate_piece(bool old_color, PieceId old_id, Square sq, bool new_color, Place p);
-    void incrementally_move_piece(bool color, Square from, Square to, Place p);
+    incrementally_move_piece(bool color, Square from, Square to, Place p, PsqtUpdates& updates);
 
     void remove_attacks(bool color, PieceId id);
     v512 toggle_rays(Square sq);

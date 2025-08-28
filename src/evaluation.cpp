@@ -2,6 +2,7 @@
 
 #include "common.hpp"
 #include "position.hpp"
+#include "psqt_state.hpp"
 
 #include "evaluation.hpp"
 
@@ -85,7 +86,7 @@ const std::array<PScore, 64> KING_PSQT = {
 
 // clang-format on
 
-Score evaluate_white_pov(Position pos, const PsqtState& psqt_state) {
+Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
 
     const Color us    = pos.active_color();
     i32         phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -109,54 +110,6 @@ Score evaluate_white_pov(Position pos, const PsqtState& psqt_state) {
         mob_count -= std::popcount(x);
     }
 
-    // PScore psqt = PSCORE_ZERO;
-
-    // for (Color c : {Color::Black, Color::White}) {
-    //     auto& pieces  = pos.piece_list(c);
-    //     auto& squares = pos.piece_list_sq(c);
-
-    //     auto king_side = pos.king_side(c);
-
-    //     for (size_t i = 0; i < 16; ++i) {
-    //         PieceType pt = pieces[i];
-    //         if (pt == PieceType::None) {
-    //             continue;
-    //         }
-
-    //         u8 sq = squares[i].raw;
-
-    //         // Mirror board for White
-    //         if (c == Color::White) {
-    //             sq ^= 56;
-    //         }
-    //         if (king_side) {
-    //             sq ^= 7;
-    //         }
-    //         switch (pt) {
-    //         case PieceType::Pawn:
-    //             psqt = psqt + (c == Color::White ? PAWN_PSQT[sq - 8] : -PAWN_PSQT[sq - 8]);
-    //             break;
-    //         case PieceType::Knight:
-    //             psqt = psqt + (c == Color::White ? KNIGHT_PSQT[sq] : -KNIGHT_PSQT[sq]);
-    //             break;
-    //         case PieceType::Bishop:
-    //             psqt = psqt + (c == Color::White ? BISHOP_PSQT[sq] : -BISHOP_PSQT[sq]);
-    //             break;
-    //         case PieceType::Rook:
-    //             psqt = psqt + (c == Color::White ? ROOK_PSQT[sq] : -ROOK_PSQT[sq]);
-    //             break;
-    //         case PieceType::Queen:
-    //             psqt = psqt + (c == Color::White ? QUEEN_PSQT[sq] : -QUEEN_PSQT[sq]);
-    //             break;
-    //         case PieceType::King:
-    //             psqt = psqt + (c == Color::White ? KING_PSQT[sq] : -KING_PSQT[sq]);
-    //             break;
-    //         default:
-    //             break;
-    //         }
-    //     }
-    // }
-
     PScore mobility = MOBILITY_VAL * mob_count;
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
@@ -164,7 +117,7 @@ Score evaluate_white_pov(Position pos, const PsqtState& psqt_state) {
     return sum->phase<24>(phase);
 };
 
-Score evaluate_stm_pov(Position pos, const PsqtState& psqt_state) {
+Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us = pos.active_color();
     return (us == Color::White) ? evaluate_white_pov(pos, psqt_state)
                                 : -evaluate_white_pov(pos, psqt_state);
