@@ -64,6 +64,7 @@ set(srcs
         src/common.hpp
         src/evaluation.cpp
         src/evaluation.hpp
+        src/eval_constants.hpp
         src/eval_types.hpp
         src/geometry.cpp
         src/geometry.hpp
@@ -77,6 +78,7 @@ set(srcs
         src/perft.hpp
         src/position.cpp
         src/position.hpp
+        src/psqt_state.hpp
         src/repetition_info.hpp
         src/repetition_info.cpp
         src/search.cpp

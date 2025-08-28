@@ -160,6 +160,9 @@ void Worker::prepare() {
 
 void Worker::start_searching() {
     m_td.history.clear();
+    m_td.psqt_states.reserve(MAX_PLY + 1);
+    m_td.psqt_states.clear();
+    m_td.psqt_states.push_back(PsqtState(root_position));
 
     // Run iterative deepening search
     if (m_thread_type == ThreadType::MAIN) {
@@ -411,7 +414,7 @@ Value Worker::search(
         }
 
         // Do move
-        Position pos_after = pos.move(m);
+        Position pos_after = pos.move(m, m_td.push_psqt_state());
         moves_played++;
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
@@ -462,6 +465,7 @@ Value Worker::search(
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         repetition_info.pop();
+        m_td.pop_psqt_state();
 
         if (m_stopped) {
             return 0;
@@ -569,7 +573,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         }
 
         // Do move
-        Position pos_after = pos.move(m);
+        Position pos_after = pos.move(m, m_td.push_psqt_state());
         moves_searched++;
 
         // If we've found a legal move, then we can begin skipping quiet moves.
@@ -583,6 +587,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         repetition_info.pop();
+        m_td.pop_psqt_state();
 
         if (m_stopped) {
             return 0;
@@ -611,7 +616,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
 Value Worker::evaluate(const Position& pos) {
 #ifndef EVAL_TUNING
-    return static_cast<Value>(Clockwork::evaluate_stm_pov(pos));
+    return static_cast<Value>(Clockwork::evaluate_stm_pov(pos, m_td.psqt_states.back()));
 #else
     return -VALUE_INF;  // Not implemented in tune mode
 #endif

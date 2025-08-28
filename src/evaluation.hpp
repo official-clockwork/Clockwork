@@ -4,22 +4,19 @@
 #include "position.hpp"
 
 #include "eval_types.hpp"
+#include "psqt_state.hpp"
 
 namespace Clockwork {
-extern const PScore PAWN_MAT;
-extern const PScore KNIGHT_MAT;
-extern const PScore BISHOP_MAT;
-extern const PScore ROOK_MAT;
-extern const PScore QUEEN_MAT;
-extern const PScore MOBILITY_VAL;
-extern const PScore TEMPO_VAL;
-Score               evaluate_white_pov(Position pos);
-Score               evaluate_stm_pov(Position pos);
 
-extern const std::array<PScore, 48> PAWN_PSQT;
-extern const std::array<PScore, 64> KNIGHT_PSQT;
-extern const std::array<PScore, 64> BISHOP_PSQT;
-extern const std::array<PScore, 64> ROOK_PSQT;
-extern const std::array<PScore, 64> QUEEN_PSQT;
-extern const std::array<PScore, 64> KING_PSQT;
+Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state);
+Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state);
+
+inline Score evaluate_white_pov(const Position& pos) {
+    return evaluate_white_pov(pos, PsqtState{pos});
+}
+
+inline Score evaluate_stm_pov(const Position& pos) {
+    return evaluate_stm_pov(pos, PsqtState{pos});
+}
+
 };
