@@ -222,7 +222,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
     for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
         Value alpha = -VALUE_INF, beta = VALUE_INF;
-        Value delta = 25;
+        Value delta = 75;
         if (search_depth >= 5) {
             alpha = last_search_score - delta;
             beta  = last_search_score + delta;
