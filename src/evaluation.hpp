@@ -4,6 +4,7 @@
 #include "position.hpp"
 
 #include "eval_types.hpp"
+#include "psqt_state.hpp"
 
 namespace Clockwork {
 
