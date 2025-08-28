@@ -9,6 +9,8 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
+option(CLOCKWORK_ENABLE_EVALTUNE "Enable building of evaltune executable" OFF)
+
 #Optimizations
 set(CLOCKWORK_MARCH_TARGET "native" CACHE STRING "Specify the target architecture for -march (e.g., native, skylake, znver2). Set to OFF or empty to disable.")
 
@@ -106,28 +108,39 @@ set(srcs
         src/tuning/value.hpp
 )
 
-add_library(clockwork-lib OBJECT ${srcs})
-target_include_directories(clockwork-lib PUBLIC src)
-target_add_flags(clockwork-lib)
+if(CLOCKWORK_ENABLE_EVALTUNE)
 
-add_executable(clockwork src/main.cpp)
-target_link_libraries(clockwork PUBLIC clockwork-lib)
-target_add_flags(clockwork)
+    add_executable(clockwork-evaltune src/evaltune_main.cpp ${srcs})
+    target_include_directories(clockwork-evaltune PUBLIC src)
+    target_compile_options(clockwork-evaltune PUBLIC -DEVAL_TUNING=1)
+    target_add_flags(clockwork-evaltune)
 
-# Tests
-enable_testing()
-set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
-function(do_test name)
-    add_executable(${name} tests/${name}.cpp)
-    target_link_libraries(${name} PUBLIC clockwork-lib)
-    target_add_flags(${name})
-    add_test(${name} ${name})
-endfunction()
+else()
 
-do_test(test_see)
-do_test(test_see_prototype)
-do_test(test_is_legal)
-do_test(test_repetition)
-do_test(test_static_vector)
-do_test(test_perft)
-do_test(test_position)
+    add_library(clockwork-lib OBJECT ${srcs})
+    target_include_directories(clockwork-lib PUBLIC src)
+    target_add_flags(clockwork-lib)
+
+    add_executable(clockwork src/main.cpp)
+    target_link_libraries(clockwork PUBLIC clockwork-lib)
+    target_add_flags(clockwork)
+
+    # Tests
+    enable_testing()
+    set(CMAKE_SKIP_TEST_ALL_DEPENDENCY FALSE)
+    function(do_test name)
+        add_executable(${name} tests/${name}.cpp)
+        target_link_libraries(${name} PUBLIC clockwork-lib)
+        target_add_flags(${name})
+        add_test(${name} ${name})
+    endfunction()
+
+    do_test(test_see)
+    do_test(test_see_prototype)
+    do_test(test_is_legal)
+    do_test(test_repetition)
+    do_test(test_static_vector)
+    do_test(test_perft)
+    do_test(test_position)
+
+endif()

@@ -34,33 +34,31 @@ ifeq ($(PARALLEL_BUILD),yes)
 	CMAKE_BUILD_FLAGS := -j
 endif
 
-EXE := "$(EXE)$(SUFFIX)"
-
-.PHONY: all release debug tune test clean format
+.PHONY: all release debug evaltune test clean format
 
 all: release
 
 release:
 	cmake -DCMAKE_BUILD_TYPE=Release $(CMAKE_FLAGS) -B build-release -S . && cmake --build build-release $(CMAKE_BUILD_FLAGS)
-	$(COPY) $(call MK_PATH,"build-release/clockwork$(SUFFIX)") $(EXE)
+	$(COPY) $(call MK_PATH,"build-release/clockwork$(SUFFIX)") $(EXE)$(SUFFIX)
 
 debug:
 	cmake -DCMAKE_BUILD_TYPE=Debug $(CMAKE_FLAGS) -B build-debug -S . && cmake --build build-debug $(CMAKE_BUILD_FLAGS)
-	$(COPY) $(call MK_PATH,"build-debug/clockwork$(SUFFIX)") $(EXE)
+	$(COPY) $(call MK_PATH,"build-debug/clockwork$(SUFFIX)") $(EXE)$(SUFFIX)
 
-tune:
-	cmake -DCMAKE_BUILD_TYPE=Release $(CMAKE_FLAGS) -DCMAKE_CXX_FLAGS=-DEVAL_TUNING -B build-tune -S . && cmake --build build-tune $(CMAKE_BUILD_FLAGS)
-	$(COPY) $(call MK_PATH,"build-tune/clockwork$(SUFFIX)") $(EXE)
+evaltune:
+	cmake -DCMAKE_BUILD_TYPE=Release $(CMAKE_FLAGS) -DCLOCKWORK_ENABLE_EVALTUNE=ON -B build-evaltune -S . && cmake --build build-evaltune $(CMAKE_BUILD_FLAGS)
+	$(COPY) $(call MK_PATH,"build-evaltune/clockwork-evaltune$(SUFFIX)") $(EXE)-evaltune$(SUFFIX)
 
 bench: release
-	./$(EXE) bench
+	./$(EXE)$(SUFFIX) bench
 
 test: release
 	ctest --test-dir build-release
 
 clean:
-	-$(RM_DIR) build-debug build-release build-tune
-	-$(RM) $(EXE)
+	-$(RM_DIR) build-debug build-release build-evaltune
+	-$(RM) $(EXE)$(SUFFIX)
 
 format:
 	./scripts/auto_format.sh
