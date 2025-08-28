@@ -151,22 +151,22 @@ Score evaluate_white_pov(Position pos) {
 
             switch (pt) {
             case PieceType::Pawn:
-                psqt = psqt + (c == Color::White ? PAWN_PSQT[sq - 8] : -PAWN_PSQT[sq - 8]);
+                psqt += (c == Color::White ? PAWN_PSQT[sq - 8] : -PAWN_PSQT[sq - 8]);
                 break;
             case PieceType::Knight:
-                psqt = psqt + (c == Color::White ? KNIGHT_PSQT[sq] : -KNIGHT_PSQT[sq]);
+                psqt += (c == Color::White ? KNIGHT_PSQT[sq] : -KNIGHT_PSQT[sq]);
                 break;
             case PieceType::Bishop:
-                psqt = psqt + (c == Color::White ? BISHOP_PSQT[sq] : -BISHOP_PSQT[sq]);
+                psqt += (c == Color::White ? BISHOP_PSQT[sq] : -BISHOP_PSQT[sq]);
                 break;
             case PieceType::Rook:
-                psqt = psqt + (c == Color::White ? ROOK_PSQT[sq] : -ROOK_PSQT[sq]);
+                psqt += (c == Color::White ? ROOK_PSQT[sq] : -ROOK_PSQT[sq]);
                 break;
             case PieceType::Queen:
-                psqt = psqt + (c == Color::White ? QUEEN_PSQT[sq] : -QUEEN_PSQT[sq]);
+                psqt += (c == Color::White ? QUEEN_PSQT[sq] : -QUEEN_PSQT[sq]);
                 break;
             case PieceType::King:
-                psqt = psqt + (c == Color::White ? KING_PSQT[sq] : -KING_PSQT[sq]);
+                psqt += (c == Color::White ? KING_PSQT[sq] : -KING_PSQT[sq]);
                 break;
             default:
                 break;

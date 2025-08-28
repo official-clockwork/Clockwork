@@ -524,5 +524,92 @@ public:
         return os;
     }
 };
+
+// Inplace ops (we can't do them as member functions because we use shared pointers)
+
+// ValuePtr += ValuePtr
+inline ValuePtr& operator+=(ValuePtr& a, const ValuePtr& b) {
+    a = a + b;
+    return a;
+}
+
+// ValuePtr -= ValuePtr
+inline ValuePtr& operator-=(ValuePtr& a, const ValuePtr& b) {
+    a = a - b;
+    return a;
+}
+
+// ValuePtr *= ValuePtr
+inline ValuePtr& operator*=(ValuePtr& a, const ValuePtr& b) {
+    a = a * b;
+    return a;
+}
+
+// ValuePtr /= ValuePtr
+inline ValuePtr& operator/=(ValuePtr& a, const ValuePtr& b) {
+    a = a / b;
+    return a;
+}
+
+
+// ValuePtr += scalar
+inline ValuePtr& operator+=(ValuePtr& a, f64 b) {
+    a = a + b;
+    return a;
+}
+
+// ValuePtr -= scalar
+inline ValuePtr& operator-=(ValuePtr& a, f64 b) {
+    a = a - b;
+    return a;
+}
+
+// ValuePtr *= scalar
+inline ValuePtr& operator*=(ValuePtr& a, f64 b) {
+    a = a * b;
+    return a;
+}
+
+// ValuePtr /= scalar
+inline ValuePtr& operator/=(ValuePtr& a, f64 b) {
+    a = a / b;
+    return a;
+}
+
+// PairPtr += PairPtr
+inline PairPtr& operator+=(PairPtr& a, const PairPtr& b) {
+    a = a + b;
+    return a;
+}
+
+// PairPtr -= PairPtr
+inline PairPtr& operator-=(PairPtr& a, const PairPtr& b) {
+    a = a - b;
+    return a;
+}
+
+// PairPtr *= scalar
+inline PairPtr& operator*=(PairPtr& a, f64 scalar) {
+    a = a * scalar;
+    return a;
+}
+
+// PairPtr *= ValuePtr
+inline PairPtr& operator*=(PairPtr& a, const ValuePtr& v) {
+    a = a * v;
+    return a;
+}
+
+// PairPtr /= scalar
+inline PairPtr& operator/=(PairPtr& a, f64 scalar) {
+    a = a / scalar;
+    return a;
+}
+
+// PairPtr /= ValuePtr
+inline PairPtr& operator/=(PairPtr& a, const ValuePtr& v) {
+    a = a / v;
+    return a;
+}
 }
 }
