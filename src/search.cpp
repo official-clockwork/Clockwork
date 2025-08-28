@@ -222,7 +222,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
     for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
-        Value score = search<IS_MAIN, true>(root_position, &ss[0], alpha, beta, search_depth, 0);
+        Value score = search<IS_MAIN, true>(root_position, &ss[0], alpha, beta, search_depth, 0, false);
 
         // If m_stopped is true, then the search exited early. Discard the results for this depth.
         if (m_stopped) {
@@ -260,7 +260,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
 template<bool IS_MAIN, bool PV_NODE>
 Value Worker::search(
-  const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply) {
+  const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode) {
     if (m_stopped) {
         return 0;
     }
@@ -339,7 +339,7 @@ Value Worker::search(
         repetition_info.push(pos_after.get_hash_key(), true);
 
         Value value =
-          -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1);
+          -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1, !cutnode);
 
         repetition_info.pop();
 
@@ -403,6 +403,10 @@ Value Worker::search(
               static_cast<i32>(0.77 + std::log(depth) * std::log(moves_played) / 2.36);
             reduction -= PV_NODE;
 
+            if (cutnode) {
+                reduction += 1;
+            }
+
             if (tt_data && tt_data->move.is_capture()) {
                 reduction += 1;
             }
@@ -413,18 +417,18 @@ Value Worker::search(
 
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
             value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
-                                            ply + 1);
+                                            ply + 1, true);
             if (value > alpha && reduced_depth < new_depth) {
                 value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
-                                                ply + 1);
+                                                ply + 1, !cutnode);
             }
         } else if (!PV_NODE || moves_played > 1) {
             value =
-              -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1);
+              -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1, !cutnode);
         }
 
         if (PV_NODE && (moves_played == 1 || value > alpha)) {
-            value = -search<IS_MAIN, true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1);
+            value = -search<IS_MAIN, true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1, false);
         }
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function

@@ -131,7 +131,7 @@ private:
     template<bool IS_MAIN>
     Move iterative_deepening(const Position& root_position);
     template<bool IS_MAIN, bool PV_NODE>
-    Value search(const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply);
+    Value search(const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode);
     template<bool IS_MAIN>
     Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
     Value evaluate(const Position& pos);
