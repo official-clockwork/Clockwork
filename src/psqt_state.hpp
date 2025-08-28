@@ -7,6 +7,8 @@
 #include "square.hpp"
 #include "util/static_vector.hpp"
 
+#include <bit>
+
 namespace Clockwork {
 
 struct PsqtUpdates {
@@ -24,10 +26,12 @@ public:
     PsqtState() = default;
     PsqtState(const Position& pos) {
         for (Color c : {Color::White, Color::Black}) {
-            auto& pieces  = pos.piece_list(c);
-            auto& squares = pos.piece_list_sq(c);
+            m_accumulators[static_cast<usize>(c)] = PSCORE_ZERO;
+            m_king_sides[static_cast<usize>(c)]   = pos.king_side(c);
+            auto& pieces                          = pos.piece_list(c);
+            auto& squares                         = pos.piece_list_sq(c);
 
-            for (size_t i = 0; i < 16; i) {
+            for (size_t i = 0; i < 16; i++) {
                 PieceType pt = pieces[i];
                 if (pt == PieceType::None) {
                     continue;
@@ -38,35 +42,112 @@ public:
         }
     }
 
+    void apply_updates(const Position& pos, const PsqtUpdates& updates) {
+        m_king_sides[static_cast<usize>(Color::White)] = pos.king_side(Color::White);
+        reload_accumulator(pos, Color::White);
+        m_king_sides[static_cast<usize>(Color::Black)] = pos.king_side(Color::Black);
+        reload_accumulator(pos, Color::Black);
+        // if (pos.king_side(Color::White) != m_king_sides[static_cast<usize>(Color::White)]) {
+        //     m_king_sides[static_cast<usize>(Color::White)] = pos.king_side(Color::White);
+        //     reload_accumulator(pos, Color::White);
+
+        //     for (const auto& add : updates.adds) {
+        //         if (add.color != Color::White) {
+        //             add_piece(add.color, add.pt, add.sq);
+        //         }
+        //     }
+
+        //     for (const auto& remove : updates.removes) {
+        //         if (remove.color != Color::White) {
+        //             remove_piece(remove.color, remove.pt, remove.sq);
+        //         }
+        //     }
+        // } else if (pos.king_side(Color::Black) != m_king_sides[static_cast<usize>(Color::Black)]) {
+        //     m_king_sides[static_cast<usize>(Color::Black)] = pos.king_side(Color::Black);
+        //     reload_accumulator(pos, Color::Black);
+
+        //     for (const auto& add : updates.adds) {
+        //         if (add.color != Color::Black) {
+        //             add_piece(add.color, add.pt, add.sq);
+        //         }
+        //     }
+
+        //     for (const auto& remove : updates.removes) {
+        //         if (remove.color != Color::Black) {
+        //             remove_piece(remove.color, remove.pt, remove.sq);
+        //         }
+        //     }
+        // } else {
+        //     for (const auto& add : updates.adds) {
+        //         add_piece(add.color, add.pt, add.sq);
+        //     }
+
+        //     for (const auto& remove : updates.removes) {
+        //         remove_piece(remove.color, remove.pt, remove.sq);
+        //     }
+        // }
+    }
+
+    PScore score() const {
+        return m_accumulators[static_cast<usize>(Color::White)]
+             - m_accumulators[static_cast<usize>(Color::Black)];
+    }
+
+    bool operator==(const PsqtState& other) const noexcept = default;
+    bool operator!=(const PsqtState& other) const noexcept = default;
+
+private:
+    void reload_accumulator(const Position& pos, Color c) {
+        m_accumulators[static_cast<usize>(c)] = PSCORE_ZERO;
+        auto& pieces                          = pos.piece_list(c);
+        auto& squares                         = pos.piece_list_sq(c);
+        // u16   valid_pieces = pieces.mask_valid();
+
+        // while (valid_pieces) {
+        //     int       i  = std::countr_zero(valid_pieces);
+        //     PieceType pt = pieces[i];
+        //     add_piece(c, pt, squares[i]);
+        //     valid_pieces &= valid_pieces - 1;
+        // }
+
+        for (size_t i = 0; i < 16; i++) {
+            PieceType pt = pieces[i];
+            if (pt == PieceType::None) {
+                continue;
+            }
+
+            add_piece(c, pt, squares[i]);
+        }
+    }
+
     void add_piece(Color color, PieceType pt, Square sq) {
         if (color == Color::White) {
             sq = sq.flip_vertical();
         }
+
+        if (m_king_sides[static_cast<usize>(color)]) {
+            sq = sq.flip_horizontal();
+        }
+
         auto& accumulator = m_accumulators[static_cast<usize>(color)];
         switch (pt) {
         case PieceType::Pawn:
-            accumulator[0] += PAWN_MAT + PAWN_PSQT[sq.raw - 8];
-            accumulator[1] += PAWN_MAT + PAWN_PSQT[sq.flip_horizontal().raw - 8];
+            accumulator += PAWN_MAT + PAWN_PSQT[sq.raw - 8];
             break;
         case PieceType::Knight:
-            accumulator[0] += KNIGHT_MAT + KNIGHT_PSQT[sq.raw];
-            accumulator[1] += KNIGHT_MAT + KNIGHT_PSQT[sq.flip_horizontal().raw];
+            accumulator += KNIGHT_MAT + KNIGHT_PSQT[sq.raw];
             break;
         case PieceType::Bishop:
-            accumulator[0] += BISHOP_MAT + BISHOP_PSQT[sq.raw];
-            accumulator[1] += BISHOP_MAT + BISHOP_PSQT[sq.flip_horizontal().raw];
+            accumulator += BISHOP_MAT + BISHOP_PSQT[sq.raw];
             break;
         case PieceType::Rook:
-            accumulator[0] += ROOK_MAT + ROOK_PSQT[sq.raw];
-            accumulator[1] += ROOK_MAT + ROOK_PSQT[sq.flip_horizontal().raw];
+            accumulator += ROOK_MAT + ROOK_PSQT[sq.raw];
             break;
         case PieceType::Queen:
-            accumulator[0] += QUEEN_MAT + QUEEN_PSQT[sq.raw];
-            accumulator[1] += QUEEN_MAT + QUEEN_PSQT[sq.flip_horizontal().raw];
+            accumulator += QUEEN_MAT + QUEEN_PSQT[sq.raw];
             break;
         case PieceType::King:
-            accumulator[0] += KING_PSQT[sq.raw];
-            accumulator[1] += KING_PSQT[sq.flip_horizontal().raw];
+            accumulator += KING_PSQT[sq.raw];
             break;
         default:
             unreachable();
@@ -78,31 +159,30 @@ public:
         if (color == Color::White) {
             sq = sq.flip_vertical();
         }
+
+        if (m_king_sides[static_cast<usize>(color)]) {
+            sq = sq.flip_horizontal();
+        }
+
         auto& accumulator = m_accumulators[static_cast<usize>(color)];
         switch (pt) {
         case PieceType::Pawn:
-            accumulator[0] -= PAWN_MAT + PAWN_PSQT[sq.raw - 8];
-            accumulator[1] -= PAWN_MAT + PAWN_PSQT[sq.flip_horizontal().raw - 8];
+            accumulator -= PAWN_MAT + PAWN_PSQT[sq.raw - 8];
             break;
         case PieceType::Knight:
-            accumulator[0] -= KNIGHT_MAT + KNIGHT_PSQT[sq.raw];
-            accumulator[1] -= KNIGHT_MAT + KNIGHT_PSQT[sq.flip_horizontal().raw];
+            accumulator -= KNIGHT_MAT + KNIGHT_PSQT[sq.raw];
             break;
         case PieceType::Bishop:
-            accumulator[0] -= BISHOP_MAT + BISHOP_PSQT[sq.raw];
-            accumulator[1] -= BISHOP_MAT + BISHOP_PSQT[sq.flip_horizontal().raw];
+            accumulator -= BISHOP_MAT + BISHOP_PSQT[sq.raw];
             break;
         case PieceType::Rook:
-            accumulator[0] -= ROOK_MAT + ROOK_PSQT[sq.raw];
-            accumulator[1] -= ROOK_MAT + ROOK_PSQT[sq.flip_horizontal().raw];
+            accumulator -= ROOK_MAT + ROOK_PSQT[sq.raw];
             break;
         case PieceType::Queen:
-            accumulator[0] -= QUEEN_MAT + QUEEN_PSQT[sq.raw];
-            accumulator[1] -= QUEEN_MAT + QUEEN_PSQT[sq.flip_horizontal().raw];
+            accumulator -= QUEEN_MAT + QUEEN_PSQT[sq.raw];
             break;
         case PieceType::King:
-            accumulator[0] -= KING_PSQT[sq.raw];
-            accumulator[1] -= KING_PSQT[sq.flip_horizontal().raw];
+            accumulator -= KING_PSQT[sq.raw];
             break;
         default:
             unreachable();
@@ -110,23 +190,8 @@ public:
         }
     }
 
-    void apply_updates(const PsqtUpdates& updates) {
-        for (const auto& add : updates.adds) {
-            add_piece(add.color, add.pt, add.sq);
-        }
-
-        for (const auto& remove : updates.removes) {
-            remove_piece(remove.color, remove.pt, remove.sq);
-        }
-    }
-
-    PScore score(const Position& pos) const;
-
-    bool operator==(const PsqtState& other) const noexcept = default;
-    bool operator!=(const PsqtState& other) const noexcept = default;
-
-private:
-    std::array<std::array<PScore, 2>, 2> m_accumulators;
+    std::array<PScore, 2> m_accumulators;
+    std::array<bool, 2>   m_king_sides;
 };
 
 }

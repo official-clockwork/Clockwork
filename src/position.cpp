@@ -376,7 +376,7 @@ Position Position::move(Move m, PsqtState* psqtState) const {
     new_pos.m_ply++;
 
     if constexpr (UPDATE_PSQT) {
-        psqtState->apply_updates(updates);
+        psqtState->apply_updates(new_pos, updates);
     }
 
     return new_pos;

@@ -113,7 +113,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore mobility = MOBILITY_VAL * mob_count;
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-    PScore sum   = psqt_state.score(pos) + mobility + tempo;
+    PScore sum   = psqt_state.score() + mobility + tempo;
     return sum->phase<24>(phase);
 };
 
