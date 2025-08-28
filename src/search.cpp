@@ -421,21 +421,27 @@ Value Worker::search(
         Depth new_depth = depth - 1 + pos_after.is_in_check();
         Value value;
         if (depth >= 3 && moves_played >= 4) {
-            i32 reduction =
-              static_cast<i32>(0.77 + std::log(depth) * std::log(moves_played) / 2.36);
-            reduction -= PV_NODE;
+            i32 reduction = static_cast<i32>(
+              std::round(1024 * (0.77 + std::log(depth) * std::log(moves_played) / 2.36)));
+            reduction -= 1024 * PV_NODE;
 
             if (cutnode) {
-                reduction += 1;
+                reduction += 1024;
             }
 
             if (tt_data && tt_data->move.is_capture()) {
-                reduction += 1;
+                reduction += 1024;
+            }
+
+            if (quiet) {
+                reduction -= move_history / 8;
             }
 
             if (!quiet) {
-                reduction = std::min(reduction, 1);
+                reduction = std::min(reduction, 1024);
             }
+            
+            reduction /= 1024;
 
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
             value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
