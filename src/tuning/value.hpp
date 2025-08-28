@@ -64,6 +64,9 @@ public:
     inline void change_value(f64 amount) {
         m_value += amount;
     }
+    inline void set_value(f64 value) {
+        m_value = value;
+    }
     inline f64 get_gradient() const {
         return m_gradient;
     }
@@ -337,6 +340,13 @@ public:
 
     inline void zero_grad() {
         m_gradients = f128::zero();
+    }
+
+    inline void set_values(const f128& values) {
+        m_values = values;
+    }
+    inline void set_values(f64 first, f64 second) {
+        m_values = f128::make(first, second);
     }
 
     // ------------------- Backward -------------------

@@ -89,6 +89,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Loaded " << positions.size() << " FENs from " << fenFiles.size() << " files."
               << std::endl;
 
+    // Initialize parameters
+    Clockwork::Autograd::Graph::get()->init_zeros();
     Clockwork::Autograd::AdamW optim(10, 0.9, 0.999, 1e-8, 0.0);
 
     i32       epochs     = 1000;
