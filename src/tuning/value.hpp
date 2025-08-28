@@ -492,7 +492,7 @@ public:
     }
 
     // ------------------- Phasing -------------------
-    template<f64 max>
+    template<i32 max>
     ValuePtr phase(f64 alpha) {
         alpha /= max;
         auto self = this->shared_from_this();
