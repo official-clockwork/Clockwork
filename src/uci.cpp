@@ -106,10 +106,10 @@ void UCIHandler::execute_command(const std::string& line) {
 
 
 void UCIHandler::handle_bench(std::istringstream& is) {
-    Depth depth = 8;
+    Depth depth = 12;
     if (!(is >> depth)) {
         is.clear();
-        depth = 8;
+        depth = 12;
     }
     Bench::benchmark(searcher, depth);
 }
