@@ -43,49 +43,30 @@ public:
     }
 
     void apply_updates(const Position& pos, const PsqtUpdates& updates) {
-        m_king_sides[static_cast<usize>(Color::White)] = pos.king_side(Color::White);
-        reload_accumulator(pos, Color::White);
-        m_king_sides[static_cast<usize>(Color::Black)] = pos.king_side(Color::Black);
-        reload_accumulator(pos, Color::Black);
-        // if (pos.king_side(Color::White) != m_king_sides[static_cast<usize>(Color::White)]) {
-        //     m_king_sides[static_cast<usize>(Color::White)] = pos.king_side(Color::White);
-        //     reload_accumulator(pos, Color::White);
+        Color reload_side;
+        if (pos.king_side(Color::White) != m_king_sides[static_cast<usize>(Color::White)]) {
+            reload_side = Color::White;
+        } else if (pos.king_side(Color::Black) != m_king_sides[static_cast<usize>(Color::Black)]) {
+            reload_side = Color::Black;
+        } else {
+            for (const auto& add : updates.adds) {
+                add_piece(add.color, add.pt, add.sq);
+            }
 
-        //     for (const auto& add : updates.adds) {
-        //         if (add.color != Color::White) {
-        //             add_piece(add.color, add.pt, add.sq);
-        //         }
-        //     }
+            for (const auto& remove : updates.removes) {
+                remove_piece(remove.color, remove.pt, remove.sq);
+            }
+            return;
+        }
 
-        //     for (const auto& remove : updates.removes) {
-        //         if (remove.color != Color::White) {
-        //             remove_piece(remove.color, remove.pt, remove.sq);
-        //         }
-        //     }
-        // } else if (pos.king_side(Color::Black) != m_king_sides[static_cast<usize>(Color::Black)]) {
-        //     m_king_sides[static_cast<usize>(Color::Black)] = pos.king_side(Color::Black);
-        //     reload_accumulator(pos, Color::Black);
+        m_king_sides[static_cast<usize>(reload_side)] = pos.king_side(reload_side);
+        reload_accumulator(pos, reload_side);
 
-        //     for (const auto& add : updates.adds) {
-        //         if (add.color != Color::Black) {
-        //             add_piece(add.color, add.pt, add.sq);
-        //         }
-        //     }
-
-        //     for (const auto& remove : updates.removes) {
-        //         if (remove.color != Color::Black) {
-        //             remove_piece(remove.color, remove.pt, remove.sq);
-        //         }
-        //     }
-        // } else {
-        //     for (const auto& add : updates.adds) {
-        //         add_piece(add.color, add.pt, add.sq);
-        //     }
-
-        //     for (const auto& remove : updates.removes) {
-        //         remove_piece(remove.color, remove.pt, remove.sq);
-        //     }
-        // }
+        for (const auto& remove : updates.removes) {
+            if (remove.color != reload_side) {
+                remove_piece(remove.color, remove.pt, remove.sq);
+            }
+        }
     }
 
     PScore score() const {
@@ -101,22 +82,13 @@ private:
         m_accumulators[static_cast<usize>(c)] = PSCORE_ZERO;
         auto& pieces                          = pos.piece_list(c);
         auto& squares                         = pos.piece_list_sq(c);
-        // u16   valid_pieces = pieces.mask_valid();
+        u16   valid_pieces                    = pieces.mask_valid();
 
-        // while (valid_pieces) {
-        //     int       i  = std::countr_zero(valid_pieces);
-        //     PieceType pt = pieces[i];
-        //     add_piece(c, pt, squares[i]);
-        //     valid_pieces &= valid_pieces - 1;
-        // }
-
-        for (size_t i = 0; i < 16; i++) {
+        while (valid_pieces) {
+            int       i  = std::countr_zero(valid_pieces);
             PieceType pt = pieces[i];
-            if (pt == PieceType::None) {
-                continue;
-            }
-
             add_piece(c, pt, squares[i]);
+            valid_pieces &= valid_pieces - 1;
         }
     }
 
