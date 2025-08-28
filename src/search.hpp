@@ -2,6 +2,7 @@
 #include "history.hpp"
 #include "move.hpp"
 #include "position.hpp"
+#include "psqt_state.hpp"
 #include "repetition_info.hpp"
 #include "tt.hpp"
 #include "util/types.hpp"
@@ -46,7 +47,17 @@ struct SearchLimits {
 };
 
 struct ThreadData {
-    History history;
+    History                history;
+    std::vector<PsqtState> psqt_states;
+
+    PsqtState& push_psqt_state() {
+        psqt_states.push_back(psqt_states.back());
+        return psqt_states.back();
+    }
+
+    void pop_psqt_state() {
+        psqt_states.pop_back();
+    }
 };
 
 class Searcher {
@@ -131,7 +142,8 @@ private:
     template<bool IS_MAIN>
     Move iterative_deepening(const Position& root_position);
     template<bool IS_MAIN, bool PV_NODE>
-    Value search(const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode);
+    Value search(
+      const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode);
     template<bool IS_MAIN>
     Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
     Value evaluate(const Position& pos);
