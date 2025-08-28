@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(
-        clockwork
+project(clockwork
         VERSION 0.1
         DESCRIPTION "HCE Community Engine"
         LANGUAGES CXX)

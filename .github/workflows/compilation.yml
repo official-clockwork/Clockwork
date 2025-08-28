@@ -50,6 +50,12 @@ jobs:
       - name: Clean build
         run: make clean
 
+      - name: Build Evaltune
+        run: make evaltune CXX=${{ matrix.compiler }} ARCH=${{ matrix.arch }}
+
+      - name: Clean build
+        run: make clean
+
       - name: Build Release
         run: make CXX=${{ matrix.compiler }} ARCH=${{ matrix.arch }}
 
@@ -123,6 +129,12 @@ jobs:
       - name: Build Debug
         if: matrix.compiler == 'clang++'
         run: make debug CXX=${{ matrix.compiler }} ARCH=${{ matrix.arch }}
+
+      - name: Clean Build
+        run: make clean
+
+      - name: Build Evaltune
+        run: make evaltune CXX=${{ matrix.compiler }} ARCH=${{ matrix.arch }}
 
       - name: Clean Build
         run: make clean
