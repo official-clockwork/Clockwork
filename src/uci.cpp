@@ -111,7 +111,6 @@ void UCIHandler::handle_bench(std::istringstream& is) {
         is.clear();
         depth = 12;
     }
-    std::cout << "weiofjiew" << std::endl;
     Bench::benchmark(searcher, depth);
 }
 
