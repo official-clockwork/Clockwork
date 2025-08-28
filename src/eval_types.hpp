@@ -86,6 +86,10 @@ public:
 
     [[nodiscard]] constexpr bool operator==(const PScore& other) const = default;
 
+    [[nodiscard]] constexpr const PScore* operator->() const {
+        return this;
+    }
+
     // Phasing between two scores
     template<i32 max>
     Value phase(i32 alpha) const {

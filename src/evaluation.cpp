@@ -178,11 +178,7 @@ Score evaluate_white_pov(Position pos) {
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     PScore sum   = material + mobility + tempo + psqt;
-#ifdef EVAL_TUNING
-    return sum->phase<24.0>(static_cast<f64>(phase));
-#else
-    return sum.phase<24>(phase);
-#endif
+    return sum->phase<24>(phase);
 };
 
 Score evaluate_stm_pov(Position pos) {
