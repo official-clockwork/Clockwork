@@ -373,7 +373,7 @@ Value Worker::search(
 
         if (!ROOT_NODE && best_value > -VALUE_WIN && quiet) {
             // Late Move Pruning (LMP)
-            if (moves_played >= 4 + 3 * depth * depth) {
+            if (moves_played >= 3 + 2 * depth * depth) {
                 continue;
             }
             // Quiet History Pruning
