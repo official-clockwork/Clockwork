@@ -90,11 +90,8 @@ Move MovePicker::next() {
 emit_bad_noisy:
         [[fallthrough]];
     case Stage::EmitBadNoisy:
-        while (m_current_index < m_bad_noisy.size()) {
-            Move curr = pick_next(m_bad_noisy);
-            if (curr != m_tt_move && curr != m_killer) {
-                return curr;
-            }
+        if (m_current_index < m_bad_noisy.size()) {
+            return m_bad_noisy[m_current_index++];
         }
         m_stage = Stage::End;
 
