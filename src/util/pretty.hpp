@@ -15,7 +15,7 @@ inline void print_progress(size_t current, size_t total, size_t bar_width = 40) 
         progress = 1.0f;  // clamp if overshoot
     }
 
-    size_t pos = static_cast<size_t>(bar_width * progress);
+    size_t pos = static_cast<size_t>(static_cast<f32>(bar_width) * progress);
 
     std::cout << "\r[";
     for (size_t i = 0; i < bar_width; ++i) {
