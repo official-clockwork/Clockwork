@@ -341,7 +341,7 @@ Value Worker::search(
     Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
 
     // Internal Iterative Reductions
-    if (PV_NODE && depth >= 8 && (!tt_data || tt_data->move == Move::none())) {
+    if ((PV_NODE || cutnode) && depth >= 8 && (!tt_data || tt_data->move == Move::none())) {
         depth--;
     }
 
@@ -443,7 +443,7 @@ Value Worker::search(
             if (!quiet) {
                 reduction = std::min(reduction, 1024);
             }
-            
+
             reduction /= 1024;
 
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
