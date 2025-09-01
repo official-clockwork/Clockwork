@@ -132,6 +132,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Mobility " << MOBILITY_VAL << std::endl;
         std::cout << "Tempo " << TEMPO_VAL << std::endl;
 
+        std::cout << "Bishop pair " << BISHOP_PAIR_VAL << std::endl;
+
         auto printPsqtArray = [](const auto& arr) {
             for (std::size_t i = 0; i < arr.size(); ++i) {
                 std::cout << arr[i] << ",\t";

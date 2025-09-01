@@ -11,6 +11,7 @@ extern const PScore ROOK_MAT;
 extern const PScore QUEEN_MAT;
 extern const PScore MOBILITY_VAL;
 extern const PScore TEMPO_VAL;
+extern const PScore BISHOP_PAIR_VAL;
 
 extern const std::array<PScore, 48> PAWN_PSQT;
 extern const std::array<PScore, 64> KNIGHT_PSQT;
