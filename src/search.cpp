@@ -194,7 +194,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
     std::array<Move, MAX_PLY + 1>  pv;
 
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
-        ss[i].pv = &pv[i];
+        ss[i].pv              = &pv[i];
+        ss[i].cont_hist_entry = nullptr;
     }
 
     Depth last_search_depth = 0;
@@ -381,7 +382,7 @@ Value Worker::search(
         }
     }
 
-    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ss->killer};
+    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
     i32        moves_played = 0;
@@ -394,7 +395,7 @@ Value Worker::search(
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         bool quiet = quiet_move(m);
 
-        auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m) : 0;
+        auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m, ply, ss) : 0;
 
         if (!ROOT_NODE && best_value > -VALUE_WIN) {
             // Late Move Pruning (LMP)
@@ -414,6 +415,8 @@ Value Worker::search(
         }
 
         // Do move
+        ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
+
         Position pos_after = pos.move(m, m_td.push_psqt_state());
         moves_played++;
 
@@ -466,6 +469,7 @@ Value Worker::search(
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         repetition_info.pop();
         m_td.pop_psqt_state();
+        ss->cont_hist_entry = nullptr;
 
         if (m_stopped) {
             return 0;
@@ -496,9 +500,9 @@ Value Worker::search(
         ss->killer = best_move;
 
         const i32 bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
-        m_td.history.update_quiet_stats(pos, best_move, bonus);
+        m_td.history.update_quiet_stats(pos, best_move, ply, ss, bonus);
         for (Move quiet : quiets_played) {
-            m_td.history.update_quiet_stats(pos, quiet, -bonus);
+            m_td.history.update_quiet_stats(pos, quiet, ply, ss, -bonus);
         }
     }
 
@@ -557,7 +561,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     }
     alpha = std::max(alpha, static_eval);
 
-    MovePicker moves{pos, m_td.history};
+    MovePicker moves{pos, m_td.history, Move::none(), ply, ss};
     if (!is_in_check) {
         moves.skip_quiets();
     }
@@ -573,7 +577,8 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         }
 
         // Do move
-        Position pos_after = pos.move(m, m_td.push_psqt_state());
+        ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
+        Position pos_after  = pos.move(m, m_td.push_psqt_state());
         moves_searched++;
 
         // If we've found a legal move, then we can begin skipping quiet moves.
@@ -588,6 +593,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         repetition_info.pop();
         m_td.pop_psqt_state();
+        ss->cont_hist_entry = nullptr;
 
         if (m_stopped) {
             return 0;

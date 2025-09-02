@@ -68,6 +68,8 @@ set(srcs
         src/eval_types.hpp
         src/geometry.cpp
         src/geometry.hpp
+        src/history.cpp
+        src/history.hpp
         src/move.cpp
         src/move.hpp
         src/movegen.cpp
