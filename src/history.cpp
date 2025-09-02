@@ -34,6 +34,7 @@ void History::update_quiet_stats(
 }
 
 void History::clear() {
-    std::memset(&m_main_hist[0], 0, sizeof(MainHistory));
+    std::memset(&m_main_hist, 0, sizeof(MainHistory));
+    std::memset(&m_cont_hist, 0, sizeof(ContHistory));
 }
 }
