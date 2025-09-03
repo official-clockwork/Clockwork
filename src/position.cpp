@@ -23,19 +23,30 @@ void Position::incrementally_remove_piece(bool         color,
     toggle_rays(from);
 
     // TODO: check if some speed left on the table for zobrist here
-    m_hash_key ^=
-      Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())]
-                                   [static_cast<size_t>(m_board[from].ptype())][from.raw];
-    updates.removes.push_back({m_board[from].color(), m_board[from].ptype(), from});
+    Color     pcolor = m_board[from].color();
+    PieceType ptype  = m_board[from].ptype();
+    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(pcolor)]
+                                               [static_cast<size_t>(ptype)][from.raw];
+    if (ptype == PieceType::Pawn) {
+        m_pawn_key = Zobrist::piece_square_zobrist[static_cast<size_t>(pcolor)]
+                                                  [static_cast<size_t>(PieceType::Pawn)][from.raw];
+    }
+    updates.removes.push_back({pcolor, ptype, from});
     m_board[from] = Place::empty();
 }
 
 void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdates& updates) {
     // TODO: check if some speed left on the table for zobrist here
-    m_board[to] = p;
-    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())]
-                                               [static_cast<size_t>(m_board[to].ptype())][to.raw];
-    updates.adds.push_back({p.color(), p.ptype(), to});
+    m_board[to]      = p;
+    Color     pcolor = p.color();
+    PieceType ptype  = p.ptype();
+    m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(pcolor)]
+                                               [static_cast<size_t>(ptype)][to.raw];
+    if (ptype == PieceType::Pawn) {
+        m_pawn_key = Zobrist::piece_square_zobrist[static_cast<size_t>(pcolor)]
+                                                  [static_cast<size_t>(PieceType::Pawn)][to.raw];
+    }
+    updates.adds.push_back({pcolor, ptype, to});
 
     v512 m = toggle_rays(to);
     add_attacks(color, p.id(), to, p.ptype(), m);
@@ -46,10 +57,18 @@ void Position::incrementally_mutate_piece(
     // TODO: check if some speed left on the table for zobrist here
     m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
                                                [static_cast<size_t>(m_board[sq].ptype())][sq.raw];
+    if (m_board[sq].ptype() == PieceType::Pawn) {
+        m_pawn_key = Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
+                                                  [static_cast<size_t>(PieceType::Pawn)][sq.raw];
+    }
     updates.removes.push_back({m_board[sq].color(), m_board[sq].ptype(), sq});
     m_board[sq] = p;
     m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
                                                [static_cast<size_t>(m_board[sq].ptype())][sq.raw];
+    if (m_board[sq].ptype() == PieceType::Pawn) {
+        m_pawn_key = Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[sq].color())]
+                                                  [static_cast<size_t>(PieceType::Pawn)][sq.raw];
+    }
     updates.adds.push_back({p.color(), p.ptype(), sq});
 
     remove_attacks(old_color, old_id);
@@ -68,11 +87,19 @@ void Position::incrementally_move_piece(
     m_hash_key ^=
       Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())]
                                    [static_cast<size_t>(m_board[from].ptype())][from.raw];
+    if (m_board[from].ptype() == PieceType::Pawn) {
+        m_pawn_key = Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[from].color())]
+                                                  [static_cast<size_t>(PieceType::Pawn)][from.raw];
+    }
     updates.removes.push_back({m_board[from].color(), m_board[from].ptype(), from});
     m_board[from] = Place::empty();
     m_board[to]   = p;
     m_hash_key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())]
                                                [static_cast<size_t>(m_board[to].ptype())][to.raw];
+    if (m_board[to].ptype() == PieceType::Pawn) {
+        m_pawn_key = Zobrist::piece_square_zobrist[static_cast<size_t>(m_board[to].color())]
+                                                  [static_cast<size_t>(PieceType::Pawn)][to.raw];
+    }
     updates.adds.push_back({p.color(), p.ptype(), to});
 
     v512 dst_ray_places = v512::permute8(dst_ray_coords, m_board.to_vec());
@@ -722,6 +749,7 @@ std::optional<Position> Position::parse(std::string_view board,
 
     result.m_attack_table = result.calc_attacks_slow();
     result.m_hash_key     = result.calc_hash_key_slow();
+    result.m_pawn_key     = result.calc_pawn_key_slow();
 
     return result;
 }
@@ -754,6 +782,20 @@ HashKey Position::calc_hash_key_slow() const {
         key ^= Zobrist::side_key;
     }
 
+    return key;
+}
+
+HashKey Position::calc_pawn_key_slow() const {
+    HashKey key = 0;
+    // Iterate over all the pawns only
+    for (size_t sq_idx = 0; sq_idx < 64; sq_idx++) {
+        Place p = m_board.mailbox[sq_idx];
+        if (p.is_empty() || p.ptype() != PieceType::Pawn) {
+            continue;
+        }
+        key ^= Zobrist::piece_square_zobrist[static_cast<size_t>(p.color())]
+                                            [static_cast<size_t>(PieceType::Pawn)][sq_idx];
+    }
     return key;
 }
 

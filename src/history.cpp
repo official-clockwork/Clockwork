@@ -43,4 +43,22 @@ void History::clear() {
     std::memset(&m_main_hist, 0, sizeof(MainHistory));
     std::memset(&m_cont_hist, 0, sizeof(ContHistory));
 }
+
+void History::add_correction_history(
+  CorrectionHistory& hist, Color side, HashKey pawn_key, i32 depth, i32 diff) {
+    usize pawn_index  = static_cast<usize>(pawn_key % CORRECTION_HISTORY_ENTRY_NB);
+    i32*  entry       = &hist[static_cast<usize>(side)][pawn_index];
+    i32   new_weight  = std::min(16, 1 + depth);
+    i32   scaled_diff = diff * CORRECTION_HISTORY_GRAIN;
+
+    i32 update = *entry * (CORRECTION_HISTORY_WEIGHT_SCALE - new_weight) + scaled_diff * new_weight;
+
+    *entry = std::clamp(update / CORRECTION_HISTORY_WEIGHT_SCALE, -CORRECTION_HISTORY_MAX,
+                        CORRECTION_HISTORY_MAX);
+}
+
+i32 History::get_correction(const CorrectionHistory& hist, Color side, HashKey pawn_key) {
+    usize pawn_index = static_cast<usize>(pawn_key % CORRECTION_HISTORY_ENTRY_NB);
+    return hist[static_cast<usize>(side)][pawn_index] / CORRECTION_HISTORY_GRAIN;
+}
 }

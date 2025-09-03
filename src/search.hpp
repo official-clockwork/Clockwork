@@ -50,6 +50,7 @@ struct SearchLimits {
 
 struct ThreadData {
     History                history;
+    CorrectionHistory      correction_history;
     std::vector<PsqtState> psqt_states;
 
     PsqtState& push_psqt_state() {

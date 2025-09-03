@@ -1,9 +1,10 @@
-#include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
 #include "evaluation.hpp"
+#include "history.hpp"
 #include "movegen.hpp"
 #include "movepick.hpp"
+#include "search.hpp"
 #include "see.hpp"
 #include "tm.hpp"
 #include "tuned.hpp"
@@ -344,7 +345,15 @@ Value Worker::search(
     }
 
     bool  is_in_check = pos.is_in_check();
-    Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
+    Value correction  = 0;
+    Value raw_eval    = -VALUE_INF;
+    Value static_eval = -VALUE_INF;
+    if (!is_in_check) {
+        correction =
+          History::get_correction(m_td.correction_history, pos.active_color(), pos.get_pawn_key());
+        raw_eval    = is_in_check ? -VALUE_INF : evaluate(pos);
+        static_eval = raw_eval + correction;
+    }
 
     // Internal Iterative Reductions
     if ((PV_NODE || cutnode) && depth >= 8 && (!tt_data || tt_data->move == Move::none())) {
@@ -525,6 +534,15 @@ Value Worker::search(
                                             : Bound::Upper;
     m_searcher.tt.store(pos, ply, best_move, best_value, depth, bound);
 
+    // Update to correction history.
+    if (!is_in_check
+        && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
+        && !((bound == Bound::Lower && best_value <= static_eval)
+             || (bound == Bound::Upper && best_value >= static_eval))) {
+        History::add_correction_history(m_td.correction_history, pos.active_color(),
+                                        pos.get_pawn_key(), depth, best_value - raw_eval);
+    }
+
     return best_value;
 }
 
@@ -558,7 +576,15 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     }
 
     bool  is_in_check = pos.is_in_check();
-    Value static_eval = is_in_check ? -VALUE_INF : evaluate(pos);
+    Value correction  = 0;
+    Value raw_eval    = -VALUE_INF;
+    Value static_eval = -VALUE_INF;
+    if (!is_in_check) {
+        correction =
+          History::get_correction(m_td.correction_history, pos.active_color(), pos.get_pawn_key());
+        raw_eval    = is_in_check ? -VALUE_INF : evaluate(pos);
+        static_eval = raw_eval + correction;
+    }
 
     // Stand pat
     if (static_eval >= beta) {
