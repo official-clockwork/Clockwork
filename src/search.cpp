@@ -171,6 +171,8 @@ void Worker::start_searching() {
         m_search_limits = {
           .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
                                                     root_position.active_color()),
+          .soft_time_limit = TM::compute_soft_limit(m_search_start, m_searcher.settings,
+                                                    root_position.active_color()),
           .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
                                                                 : std::numeric_limits<u64>::max(),
           .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
@@ -268,7 +270,11 @@ Move Worker::iterative_deepening(const Position& root_position) {
         if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit) {
             break;
         }
-        // TODO: add any soft time limit check here
+        time::TimePoint now = time::Clock::now();
+        // check soft time limit
+        if (IS_MAIN && now >= m_search_limits.soft_time_limit) {
+            break;
+        }
 
         if (IS_MAIN) {
             print_info_line();

@@ -42,6 +42,7 @@ struct Stack {
 
 struct SearchLimits {
     time::TimePoint hard_time_limit;
+    time::TimePoint soft_time_limit;
     u64             soft_node_limit;
     u64             hard_node_limit;
     Depth           depth_limit;
