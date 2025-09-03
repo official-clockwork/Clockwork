@@ -21,6 +21,7 @@ const PScore MOBILITY_VAL = S(15, 13);
 const PScore TEMPO_VAL    = S(20, 5);
 
 const PScore BISHOP_PAIR_VAL = S(69,156);
+const PScore DOUBLED_PAWN_VAL = S(-10,-10);
 
 const std::array<PScore, 48> PAWN_PSQT = {
     S(222,576),     S(118,663),     S(255,569),     S(300,506),     S(300,398),     S(427,334),     S(273,430),     S(332,431),
@@ -112,6 +113,13 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
         mob_count -= std::popcount(x);
     }
 
+    const std::array<Bitboard, 2> pawns = {pos.board().bitboard_for(Color::White, PieceType::Pawn),
+                                           pos.board().bitboard_for(Color::Black, PieceType::Pawn)};
+
+    PScore doubled_pawns_bonus = DOUBLED_PAWN_VAL
+                               * ((pawns[0] & pawns[0].shift(Direction::North)).popcount()
+                                  - (pawns[1] & pawns[1].shift(Direction::South)).popcount());
+
     PScore bishop_pair_bonus = BISHOP_PAIR_VAL
                              * ((pos.piece_count(Color::White, PieceType::Bishop) >= 2)
                                 - (pos.piece_count(Color::Black, PieceType::Bishop) >= 2));
@@ -119,7 +127,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore mobility = MOBILITY_VAL * mob_count;
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-    PScore sum   = psqt_state.score() + mobility + tempo + bishop_pair_bonus;
+    PScore sum   = psqt_state.score() + mobility + tempo + bishop_pair_bonus + doubled_pawns_bonus;
     return sum->phase<24>(phase);
 };
 
