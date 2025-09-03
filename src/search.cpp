@@ -159,7 +159,6 @@ void Worker::prepare() {
 }
 
 void Worker::start_searching() {
-    m_td.history.clear();
     m_td.psqt_states.reserve(MAX_PLY + 1);
     m_td.psqt_states.clear();
     m_td.psqt_states.push_back(PsqtState(root_position));
