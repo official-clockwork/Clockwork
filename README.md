@@ -23,7 +23,7 @@ Several modern HCE projects (e.g., Sirius, Weiss, Stash, Perseus) have come more
 - Build a **strong, modern HCE engine** through open collaboration.  
 - Advance HCE research with **innovative technologies** not found elsewhere.  
 - Provide a **clean, modern, and open** codebase that encourages contributions.  
-- Prove that creating a HCE engine that can hold his own against top NNUE engines is possible, even if it will probably never be able to reach them in strength.
+- Prove that creating a HCE engine that can hold his own against top NNUE engines is possible.
 - Test search heuristics that are not possible when the evaluation function is a complete blackbox.
 
 ### Our Innovations and features  
