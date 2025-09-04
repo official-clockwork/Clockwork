@@ -13,7 +13,7 @@
 </div>
 
 ## Overview  
-Clockwork is a **handcrafted evaluation (HCE) chess engine** capable of playing normal and DFRC chess, developed collaboratively by some of the most active HCE and NNUE developers. While state-of-the-art HCE hasn’t meaningfully advanced since Stockfish 11 (classical), we believe there’s still untapped potential in handcrafted evaluation, especially when it comes to both unexplored avenues due to NNUE becoming the state-of-the-art and some fresh ideas that have come along in the last years.  
+Clockwork is a **handcrafted evaluation (HCE) chess engine** capable of playing normal and DFRC chess, developed collaboratively by some of the most active HCE and NNUE developers. While state-of-the-art HCE hasn’t meaningfully advanced since Stockfish 11 (classical), we believe there’s still untapped potential in handcrafted evaluation, especially in developing new HCE features and implementing new techniques discovered since Stockfish Classical.
 
 Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come more or less close to Stockfish Classical, but remain **50–150 Elo short**. Our mission is to push HCE strength further and become the number one HCE chess engine, exploring new technical innovations.
 
