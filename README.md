@@ -30,7 +30,7 @@ Several modern HCE projects (e.g., Sirius, Weiss, Stash, Perseus) have come more
 - **Internal autograd engine**  
   - Write the evaluation function once, then simply run `make evaltune` to tune on our publicly available data.  
 
-- **Incremental AVX2/AVX512 attack tables (affectionately LilyTech)**  
+- **Incremental AVX2/AVX512 attack tables (affectionately "LilyTech")**  
   - Extremely fast generation of attack tables, crucial for efficient HCE engines.  
 
 - **Completely original evaluation data**  
