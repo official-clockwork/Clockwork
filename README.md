@@ -47,7 +47,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 - Full UCI protocol support.  
 - Extra UCI commands:  
   - `d` : Print the current position.  
-  - `eval` : Returns the static evaluation of the current position from the side to move point of view.
+  - `eval` : Returns the static evaluation of the current position from the point of view of the side to move.
   - `genfens` : Internal command to generate starting positions for data generation workloads.    
 
 ---
