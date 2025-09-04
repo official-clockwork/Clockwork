@@ -108,5 +108,5 @@ Clockwork requires **clang++ and LLVM** (latest versions always recommended).
 Huge thanks to:  
 - Our maintainers and growing developer community.  
 - Developers from other engines, including top chess engines, for their support and collaboration.  
-- Hardware donors who have and continue to make large-scale testing and datagen workloads.  
+- Hardware donors who have and continue to make large-scale testing and datagen workloads possible and fast. 
 - The engine tester community, who continues to provide an invaluable service to all the chess engine developers just for the love of computer chess.
