@@ -24,7 +24,7 @@ Several modern HCE projects (e.g., Sirius, Weiss, Stash, Perseus) have come more
 - Advance HCE research with **innovative technologies** not found elsewhere.  
 - Provide a **clean, modern, and open** codebase that encourages contributions.  
 - Prove that creating a HCE engine that can hold his own against top NNUE engines is possible.
-- Test search heuristics that are not possible when the evaluation function is a complete blackbox.
+- Test search heuristics that are not possible when the evaluation function is a black-box.
 
 ### Our Innovations and features  
 - **Internal autograd engine**  
