@@ -36,7 +36,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 - **Completely original evaluation data**  
   - Starting from handcrafted material values, refined via iterative data generation and tuning.  
 
-- **Modern C++ (C++26)** with strict styling guidelines and automatic formatting.  
+- **Modern C++ (C++26)** with strict styling guidelines and automatic formatting, enforced through our Continuous Integrations pipeline.
 
 - **OpenBench integration**  
   - Full testing and data-generation pipeline: [Clockwork OpenBench](http://clockworkopenbench.pythonanywhere.com).  
@@ -56,7 +56,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 Clockwork welcomes contributions from anyone interested in advancing HCE technology.  
 
 ### Benchmarks  
-- Use the built-in `bench` command, which runs a fixed-depth search over internal test positions and outputs a hash-like number (the sum of visited nodes).
+- Use the built-in `bench` command, which runs a fixed-depth search over internal test positions and outputs a hash-like number (the sum of visited nodes). Make sure that the last commit includes a line containing `Bench: xxxxxx`, where `xxxxxx` is the result of the aforementioned command. Non-compliant commits get automatically flagged by our CI.
 - You must always make sure that the engine compiles in both **normal** and **evaltune** mode:  
   ```bash
   make
