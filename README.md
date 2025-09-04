@@ -13,7 +13,7 @@
 </div>
 
 ## Overview  
-Clockwork is a **handcrafted evaluation (HCE) chess engine** capable of playing normal and DFRC chess, developed collaboratively by some of the most active HCE and NNUE developers. While state-of-the-art HCE hasn’t meaningfully advanced since Stockfish 11 (classical), we believe there’s still untapped potential in handcrafted evaluation, especially when it comes to both unexplored avenues due to nnue becoming the state-of-the-art and some fresh ideas that have come along in the last years.  
+Clockwork is a **handcrafted evaluation (HCE) chess engine** capable of playing normal and DFRC chess, developed collaboratively by some of the most active HCE and NNUE developers. While state-of-the-art HCE hasn’t meaningfully advanced since Stockfish 11 (classical), we believe there’s still untapped potential in handcrafted evaluation, especially when it comes to both unexplored avenues due to NNUE becoming the state-of-the-art and some fresh ideas that have come along in the last years.  
 
 Several modern HCE projects (e.g., Sirius, Weiss, Stash, Perseus) have come more or less close to stockfish classical, but remain **50–150 Elo short**. Our mission is to push HCE strength further and become the number one HCE chess engine, exploring new technical innovations.  
 
@@ -23,7 +23,7 @@ Several modern HCE projects (e.g., Sirius, Weiss, Stash, Perseus) have come more
 - Build a **strong, modern HCE engine** through open collaboration.  
 - Advance HCE research with **innovative technologies** not found elsewhere.  
 - Provide a **clean, modern, and open** codebase that encourages contributions.  
-- Prove that creating a HCE engine that can hold his own against top nnue engines is possible, even if it will probably never be able to reach them in strength.
+- Prove that creating a HCE engine that can hold his own against top NNUE engines is possible, even if it will probably never be able to reach them in strength.
 - Test search heuristics that are not possible when the evaluation function is a complete blackbox.
 
 ### Our Innovations and features  
