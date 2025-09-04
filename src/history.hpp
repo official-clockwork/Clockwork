@@ -34,20 +34,19 @@ public:
     i32  get_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss) const;
     void update_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus);
 
-    void clear();
+    void update_correction_history(Color side, HashKey pawn_key, i32 depth, i32 diff);
+    i32  get_correction(Color side, HashKey pawn_key);
 
-    // Correction history functions
-    static void add_correction_history(
-      CorrectionHistory& hist, Color side, HashKey pawn_key, i32 depth, i32 diff);
-    static i32 get_correction(const CorrectionHistory& hist, Color side, HashKey pawn_key);
+    void clear();
 
 private:
     static void update_hist_entry(i32& entry, i32 bonus) {
         entry += bonus - entry * std::abs(bonus) / HISTORY_MAX;
     }
 
-    MainHistory m_main_hist = {};
-    ContHistory m_cont_hist = {};
+    MainHistory       m_main_hist = {};
+    ContHistory       m_cont_hist = {};
+    CorrectionHistory m_corr_hist = {};
 };
 
 }
