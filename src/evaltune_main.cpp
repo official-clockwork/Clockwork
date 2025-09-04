@@ -24,10 +24,10 @@ int main(int argc, char* argv[]) {
     std::vector<f64>      results;
 
     // List of files to load
-    std::vector<std::string> fenFiles = {"data/v1_filtered/sampled_positions_294539.txt",
-                                         "data/v1_filtered/sampled_positions_852973.txt",
-                                         "data/v1_filtered/sampled_positions_909857.txt",
-                                         "data/v1_filtered/sampled_positions_3268132.txt"};
+    std::vector<std::string> fenFiles = {"data/v2_filtered/gioviok_sampled_positions_337763.txt",
+                                         "data/v2_filtered/giovivast_sampled_positions_2568565.txt",
+                                         "data/v2_filtered/micpillar_sampled_positions_25219.txt",
+                                         "data/v2_filtered/styx_sampled_positions_2101270.txt"};
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
         printPsqtArray(KING_PSQT);
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.985);
+            optim.set_lr(optim.get_lr() * 0.85);
         }
     }
 

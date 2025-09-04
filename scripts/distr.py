@@ -37,10 +37,10 @@ def count_piece_distribution(fen_files):
 if __name__ == "__main__":
     # List of files
     fen_files = [
-        "data/v1_filtered/sampled_positions_294539.txt",
-                                         "data/v1_filtered/sampled_positions_852973.txt",
-                                         "data/v1_filtered/sampled_positions_909857.txt",
-                                         "data/v1_filtered/sampled_positions_3268132.txt"]
+        "data/v2_filtered/gioviok_sampled_positions_337763.txt",
+                                         "data/v2_filtered/giovivast_sampled_positions_2568565.txt",
+                                         "data/v2_filtered/micpillar_sampled_positions_25219.txt",
+                                         "data/v2_filtered/styx_sampled_positions_2101270.txt"]
 
     piece_counts, piece_totals = count_piece_distribution(fen_files)
 
