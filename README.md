@@ -17,9 +17,9 @@ Clockwork is a **HCE chess engine** capable of playing normal and DFRC chess, de
 > ### What does HCE mean?  
 >A **HCE (hand-crafted evaluation)** chess engine uses manually designed algorithms to assess specific features of a position, often based on human chess theory and understanding of the game. In contrast, an **NNUE** chess engine relies on a neural network that automatically learns which features to evaluate, drawing solely from data.
 
-While state-of-the-art HCE hasn’t meaningfully advanced since Stockfish 11 (the last version of Stockfish that didn't make use of NNUE, also called Stockfish Classical), we believe there’s still untapped potential in handcrafted evaluation, especially in developing new HCE features and implementing new techniques discovered since Stockfish Classical.
+While state-of-the-art HCE hasn’t meaningfully advanced since Stockfish 11 (the last release of Stockfish that didn't make use of NNUE), we believe there’s still untapped potential in handcrafted evaluation, especially in developing new HCE features and implementing new techniques discovered since Stockfish 11.
 
-Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come more or less close to Stockfish Classical, but remain **50–150 Elo short**. Our mission is to push HCE strength further and become the number one HCE chess engine, exploring new technical innovations.
+Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come more or less close to Stockfish 11, but remain **50–150 Elo short**. Our mission is to push HCE strength further and become the number one HCE chess engine, exploring new technical innovations.
 
 ---
 
