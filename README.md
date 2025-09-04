@@ -48,7 +48,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 ---
 
 ## Features  
-- Full UCI protocol support.  
+- Support of UCI commands to be used with most Chess GUIs. Doesn't support go `searchmoves` or `ponder`.  
 - Extra UCI commands:  
   - `d` : Print the current position.  
   - `eval` : Returns the static evaluation of the current position from the point of view of the side to move.
