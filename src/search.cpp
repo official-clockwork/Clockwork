@@ -1,10 +1,10 @@
+#include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
 #include "evaluation.hpp"
 #include "history.hpp"
 #include "movegen.hpp"
 #include "movepick.hpp"
-#include "search.hpp"
 #include "see.hpp"
 #include "tm.hpp"
 #include "tuned.hpp"
@@ -16,6 +16,7 @@
 #include <iostream>
 #include <limits>
 #include <mutex>
+
 
 namespace Clockwork {
 namespace Search {
