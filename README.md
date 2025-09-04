@@ -23,12 +23,12 @@ Several modern HCE projects (e.g., Sirius, Weiss, Stash, Perseus) have come more
 - Build a **strong, modern HCE engine** through open collaboration.  
 - Advance HCE research with **innovative technologies** not found elsewhere.  
 - Provide a **clean, modern, and open** codebase that encourages contributions.  
-- Prove that creating a HCE engine that can hold his own against top nnue engines is possible, even if it will probably never be able to reach them in strenght.
+- Prove that creating a HCE engine that can hold his own against top nnue engines is possible, even if it will probably never be able to reach them in strength.
 - Test search heuristics that are not possible when the evaluation function is a complete blackbox.
 
 ### Our Innovations and features  
 - **Internal autograd engine**  
-  - Write the evaluation function once, then simply run `make evaltune` to tune on data.  
+  - Write the evaluation function once, then simply run `make evaltune` to tune on our publicly available data.  
 
 - **Incremental AVX2/AVX512 attack tables (affectionately LilyTech)**  
   - Extremely fast generation of attack tables, crucial for efficient HCE engines.  
