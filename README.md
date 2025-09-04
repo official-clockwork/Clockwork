@@ -27,7 +27,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 - Build a **strong, modern HCE engine** through open collaboration.  
 - Advance HCE research with **innovative technologies** not found elsewhere.  
 - Provide a **clean, modern, and open** codebase that encourages contributions.  
-- Prove that creating a HCE engine that can hold his own against top NNUE engines is possible.
+- Prove that it is possible to create a HCE engine that can hold his own against top NNUE.
 - Test search heuristics that are not possible when the evaluation function is a black-box.
 
 ### Our Innovations and features  
@@ -40,7 +40,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 - **Completely original evaluation data**  
   - Starting from handcrafted material values, refined via iterative data generation and tuning.  
 
-- **Modern C++ (C++26)** with strict styling guidelines and automatic formatting, enforced through our Continuous Integrations pipeline.
+- **Modern C++ (C++20)** with strict styling guidelines and automatic formatting, enforced through our Continuous Integrations pipeline.
 
 - **OpenBench integration**  
   - Full testing and data-generation pipeline: [Clockwork OpenBench](http://clockworkopenbench.pythonanywhere.com).  
@@ -94,7 +94,7 @@ Clockwork welcomes contributions from anyone interested in advancing HCE technol
 ---
 
 ## Building  
-Clockwork requires **clang++ and LLVM** (latest versions always recommended).  
+Clockwork requires **clang++ and LLVM** (latest versions always recommended, clang 17 being the oldest version we test).  
 
 - Build engine:  
   ```bash
