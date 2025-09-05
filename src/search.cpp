@@ -328,6 +328,10 @@ Value Worker::search(
         if (pos.get_50mr_counter() >= 100) {
             return 0;
         }
+        // Insufficient material check
+        if (pos.is_insufficient_material()){
+            return 0;
+        }
     }
 
     // Return eval if we exceed the max ply.

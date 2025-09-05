@@ -134,6 +134,10 @@ public:
         return std::popcount(piece_list(color).mask_eq(ptype));
     }
 
+    [[nodiscard]] i16 get_piece_mask(Color color, PieceType ptype) const {
+        return piece_list(color).mask_eq(ptype);
+    }
+
     [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceType ptype) const {
         return attack_table(color).read(sq) & piece_list(color).mask_eq(ptype);
     }
@@ -153,6 +157,37 @@ public:
             }
         }
         return true;
+    }
+
+    [[nodiscard]] bool is_insufficient_material() const {
+        auto wpcnt = piece_count(Color::White);
+        auto bpcnt = piece_count(Color::Black);
+        switch (wpcnt + bpcnt) {
+            case 2:
+                return true;
+            case 3:
+                if ( get_piece_mask(Color::White, PieceType::Pawn)
+                    || get_piece_mask(Color::Black, PieceType::Pawn)
+                    || get_piece_mask(Color::White, PieceType::Rook)
+                    || get_piece_mask(Color::Black, PieceType::Rook)
+                    || get_piece_mask(Color::White, PieceType::Queen)
+                    || get_piece_mask(Color::Black, PieceType::Queen)) {
+                    return false;
+                }
+                return true;
+            case 4:
+                if (get_piece_mask(Color::White, PieceType::Pawn)
+                    || get_piece_mask(Color::Black, PieceType::Pawn)
+                    || get_piece_mask(Color::White, PieceType::Rook)
+                    || get_piece_mask(Color::Black, PieceType::Rook)
+                    || get_piece_mask(Color::White, PieceType::Queen)
+                    || get_piece_mask(Color::Black, PieceType::Queen)) {
+                    return false;
+                }
+                return false;
+            default:
+               return false;
+        }
     }
 
     template<bool UPDATE_PSQT>
