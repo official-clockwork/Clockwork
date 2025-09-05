@@ -49,11 +49,11 @@ private:
         entry += bonus - entry * std::abs(bonus) / HISTORY_MAX;
     }
 
-    MainHistory       m_main_hist          = {};
-    ContHistory       m_cont_hist          = {};
-    CaptHistory       m_capt_hist          = {};
-    CorrectionHistory m_pawn_corr_hist     = {};
-    CorrectionHistory m_non_pawn_corr_hist = {};
+    MainHistory                      m_main_hist          = {};
+    ContHistory                      m_cont_hist          = {};
+    CaptHistory                      m_capt_hist          = {};
+    CorrectionHistory                m_pawn_corr_hist     = {};
+    std::array<CorrectionHistory, 2> m_non_pawn_corr_hist = {};
 };
 
 }

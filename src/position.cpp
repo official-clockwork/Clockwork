@@ -31,7 +31,7 @@ void Position::incrementally_remove_piece(bool         color,
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= piece_key;
     } else {
-        m_non_pawn_key ^= piece_key;
+        m_non_pawn_key[static_cast<usize>(pcolor)] ^= piece_key;
     }
     updates.removes.push_back({pcolor, ptype, from});
     m_board[from] = Place::empty();
@@ -48,7 +48,7 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= piece_key;
     } else {
-        m_non_pawn_key ^= piece_key;
+        m_non_pawn_key[static_cast<usize>(pcolor)] ^= piece_key;
     }
     updates.adds.push_back({pcolor, ptype, to});
 
@@ -66,7 +66,7 @@ void Position::incrementally_mutate_piece(
     if (m_board[sq].ptype() == PieceType::Pawn) {
         m_pawn_key ^= rem_piece_key;
     } else {
-        m_non_pawn_key ^= rem_piece_key;
+        m_non_pawn_key[static_cast<usize>(m_board[sq].color())] ^= rem_piece_key;
     }
     updates.removes.push_back({m_board[sq].color(), m_board[sq].ptype(), sq});
     m_board[sq] = p;
@@ -77,7 +77,7 @@ void Position::incrementally_mutate_piece(
     if (m_board[sq].ptype() == PieceType::Pawn) {
         m_pawn_key ^= add_piece_key;
     } else {
-        m_non_pawn_key ^= add_piece_key;
+        m_non_pawn_key[static_cast<usize>(m_board[sq].color())] ^= add_piece_key;
     }
     updates.adds.push_back({p.color(), p.ptype(), sq});
 
@@ -101,7 +101,7 @@ void Position::incrementally_move_piece(
     if (m_board[from].ptype() == PieceType::Pawn) {
         m_pawn_key ^= rem_piece_key;
     } else {
-        m_non_pawn_key ^= rem_piece_key;
+        m_non_pawn_key[static_cast<usize>(m_board[from].color())] ^= rem_piece_key;
     }
     updates.removes.push_back({m_board[from].color(), m_board[from].ptype(), from});
     m_board[from] = Place::empty();
@@ -113,7 +113,7 @@ void Position::incrementally_move_piece(
     if (m_board[to].ptype() == PieceType::Pawn) {
         m_pawn_key ^= add_piece_key;
     } else {
-        m_non_pawn_key ^= add_piece_key;
+        m_non_pawn_key[static_cast<usize>(m_board[to].color())] ^= add_piece_key;
     }
     updates.adds.push_back({p.color(), p.ptype(), to});
 
@@ -814,15 +814,16 @@ HashKey Position::calc_pawn_key_slow() const {
     return key;
 }
 
-HashKey Position::calc_non_pawn_key_slow() const {
-    HashKey key = 0;
+std::array<HashKey, 2> Position::calc_non_pawn_key_slow() const {
+    std::array<HashKey, 2> key = {0, 0};
     for (usize sq_idx = 0; sq_idx < 64; sq_idx++) {
         Place p = m_board.mailbox[sq_idx];
         if (p.is_empty() || p.ptype() == PieceType::Pawn) {
             continue;
         }
-        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
-                                            [static_cast<usize>(p.ptype())][sq_idx];
+        key[static_cast<usize>(p.color())] ^=
+          Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
+                                       [static_cast<usize>(p.ptype())][sq_idx];
     }
     return key;
 }
