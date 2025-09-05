@@ -407,6 +407,8 @@ Value Worker::search(
 
     // Clear child's killer move.
     (ss + 1)->killer = Move::none();
+    // Clear child's fail high count
+    (ss + 1)->fail_high_count = 0;
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
@@ -453,6 +455,10 @@ Value Worker::search(
             }
 
             if (tt_data && tt_data->move.is_capture()) {
+                reduction += 1024;
+            }
+
+            if ((ss + 1)->fail_high_count > 3) {
                 reduction += 1024;
             }
 
@@ -503,6 +509,7 @@ Value Worker::search(
                 best_move = m;
 
                 if (value >= beta) {
+                    ss->fail_high_count++;
                     break;
                 }
             }
