@@ -20,7 +20,6 @@
 
 namespace Clockwork {
 namespace Search {
-
 Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
@@ -72,7 +71,6 @@ void Searcher::initialize(int thread_count) {
     if (m_workers.size() == thread_count) {
         return;
     }
-
     {
         std::unique_lock lock_guard{mutex};
         for (auto& worker : m_workers) {
@@ -145,7 +143,6 @@ void Worker::thread_main() {
         if (m_exiting) {
             return;
         }
-
         {
             std::shared_lock lock_guard{m_searcher.mutex};
             (void)m_searcher.started_barrier->arrive();
@@ -573,6 +570,15 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     // Return eval if we exceed the max ply.
     if (ply >= MAX_PLY) {
         return evaluate(pos);
+    }
+
+    // TT Probing
+    auto tt_data = m_searcher.tt.probe(pos, ply);
+    if (tt_data
+        && (tt_data->bound == Bound::Exact
+            || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
+            || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
+        return tt_data->score;
     }
 
     bool  is_in_check = pos.is_in_check();
