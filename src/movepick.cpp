@@ -132,10 +132,12 @@ i32 MovePicker::score_move(Move move) const {
     if (quiet_move(move)) {
         return m_history.get_quiet_stats(m_pos, move, m_ply, m_stack);
     } else if (move.is_promotion()) {
-        return 500;
+        return 500 + m_history.get_noisy_stats(m_pos, move);
     } else {
-        return 100 * static_cast<int>(m_pos.piece_at(move.to()))
-             - static_cast<int>(m_pos.piece_at(move.from()));
+        constexpr int MVV[6]   = {0, 800, 2400, 2400, 4800, 7200};
+        PieceType     captured = move.is_en_passant() ? PieceType::Pawn : m_pos.piece_at(move.to());
+
+        return MVV[static_cast<usize>(captured)] + m_history.get_noisy_stats(m_pos, move);
     }
 }
 

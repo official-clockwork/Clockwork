@@ -398,6 +398,7 @@ Value Worker::search(
     Value      best_value   = -VALUE_INF;
     i32        moves_played = 0;
     MoveList   quiets_played;
+    MoveList   noisies_played;
 
     // Clear child's killer move.
     (ss + 1)->killer = Move::none();
@@ -502,18 +503,29 @@ Value Worker::search(
             }
         }
 
-        if (best_move != m && quiet_move(m)) {
-            quiets_played.push_back(m);
+        if (best_move != m) {
+            if (quiet_move(m)) {
+                quiets_played.push_back(m);
+            } else {
+                noisies_played.push_back(m);
+            }
         }
     }
 
-    if (best_value >= beta && quiet_move(best_move)) {
-        ss->killer = best_move;
-
+    if (best_value >= beta) {
         const i32 bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
-        m_td.history.update_quiet_stats(pos, best_move, ply, ss, bonus);
-        for (Move quiet : quiets_played) {
-            m_td.history.update_quiet_stats(pos, quiet, ply, ss, -bonus);
+        if (quiet_move(best_move)) {
+            ss->killer = best_move;
+
+            m_td.history.update_quiet_stats(pos, best_move, ply, ss, bonus);
+            for (Move quiet : quiets_played) {
+                m_td.history.update_quiet_stats(pos, quiet, ply, ss, -bonus);
+            }
+        } else {
+            m_td.history.update_noisy_stats(pos, best_move, bonus);
+        }
+        for (Move noisy : noisies_played) {
+            m_td.history.update_noisy_stats(pos, noisy, -bonus);
         }
     }
 
