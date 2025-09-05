@@ -39,8 +39,8 @@ public:
     i32  get_noisy_stats(const Position& pos, Move move) const;
     void update_noisy_stats(const Position& pos, Move move, i32 bonus);
 
-    void update_correction_history(Color side, HashKey pawn_key, i32 depth, i32 diff);
-    i32  get_correction(Color side, HashKey pawn_key);
+    void update_correction_history(const Position& pos, i32 depth, i32 diff);
+    i32  get_correction(const Position& pos);
 
     void clear();
 
@@ -49,10 +49,11 @@ private:
         entry += bonus - entry * std::abs(bonus) / HISTORY_MAX;
     }
 
-    MainHistory       m_main_hist = {};
-    ContHistory       m_cont_hist = {};
-    CaptHistory       m_capt_hist = {};
-    CorrectionHistory m_corr_hist = {};
+    MainHistory       m_main_hist          = {};
+    ContHistory       m_cont_hist          = {};
+    CaptHistory       m_capt_hist          = {};
+    CorrectionHistory m_pawn_corr_hist     = {};
+    CorrectionHistory m_non_pawn_corr_hist = {};
 };
 
 }

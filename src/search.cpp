@@ -1,4 +1,5 @@
 #include "search.hpp"
+
 #include "board.hpp"
 #include "common.hpp"
 #include "evaluation.hpp"
@@ -347,7 +348,7 @@ Value Worker::search(
     Value raw_eval    = -VALUE_INF;
     Value static_eval = -VALUE_INF;
     if (!is_in_check) {
-        correction  = m_td.history.get_correction(pos.active_color(), pos.get_pawn_key());
+        correction  = m_td.history.get_correction(pos);
         raw_eval    = is_in_check ? -VALUE_INF : evaluate(pos);
         static_eval = raw_eval + correction;
     }
@@ -548,8 +549,7 @@ Value Worker::search(
         && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
         && !((bound == Bound::Lower && best_value <= static_eval)
              || (bound == Bound::Upper && best_value >= static_eval))) {
-        m_td.history.update_correction_history(pos.active_color(), pos.get_pawn_key(), depth,
-                                               best_value - raw_eval);
+        m_td.history.update_correction_history(pos, depth, best_value - raw_eval);
     }
 
     return best_value;
@@ -598,7 +598,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     Value raw_eval    = -VALUE_INF;
     Value static_eval = -VALUE_INF;
     if (!is_in_check) {
-        correction  = m_td.history.get_correction(pos.active_color(), pos.get_pawn_key());
+        correction  = m_td.history.get_correction(pos);
         raw_eval    = is_in_check ? -VALUE_INF : evaluate(pos);
         static_eval = raw_eval + correction;
     }

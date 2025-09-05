@@ -102,6 +102,9 @@ public:
     [[nodiscard]] HashKey get_pawn_key() const {
         return m_pawn_key;
     }
+    [[nodiscard]] HashKey get_non_pawn_key() const {
+        return m_non_pawn_key;
+    }
 
     [[nodiscard]] Square king_sq(Color color) const {
         return piece_list_sq(color)[PieceId{0}];
@@ -174,6 +177,7 @@ public:
 
     [[nodiscard]] HashKey calc_hash_key_slow() const;
     [[nodiscard]] HashKey calc_pawn_key_slow() const;
+    [[nodiscard]] HashKey calc_non_pawn_key_slow() const;
 
     static std::optional<Position> parse(std::string_view str);
     static std::optional<Position> parse(std::string_view board,
@@ -199,6 +203,7 @@ private:
     std::array<RookInfo, 2>             m_rook_info;
     HashKey                             m_hash_key;
     HashKey                             m_pawn_key;
+    HashKey                             m_non_pawn_key;
 
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates& updates);
