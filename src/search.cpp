@@ -421,6 +421,14 @@ Value Worker::search(
             if (moves_played >= 3 + depth * depth) {
                 break;
             }
+
+            // Forward Futility Pruning
+            Value futility = static_eval + 500 + 100 * depth;
+            if (quiet && !is_in_check && depth <= 8 && futility <= alpha) {
+                moves.skip_quiets();
+                continue;
+            }
+
             // Quiet History Pruning
             if (depth <= 4 && !is_in_check && quiet && move_history < depth * -2048) {
                 break;
