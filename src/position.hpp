@@ -41,6 +41,14 @@ struct alignas(16) PieceList {
         return v128::eq8(to_vec(), v128::broadcast8(static_cast<u8>(ptype)));
     }
 
+    template<PieceType... ptype>
+    [[nodiscard]] u16 mask_eq() const {
+        constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
+        const v128 to_bits{std::array<u8, 16>{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0, 0,
+                                              0, 0, 0, 0, 0, 0}};
+        return v128::eq8(v128::permute8(to_vec(), to_bits), v128::broadcast8(bits));
+    }
+
     constexpr bool operator==(const PieceList& other) const {
         return array == other.array;
     }
@@ -134,8 +142,13 @@ public:
         return std::popcount(piece_list(color).mask_eq(ptype));
     }
 
-    [[nodiscard]] i16 get_piece_mask(Color color, PieceType ptype) const {
+    [[nodiscard]] u16 get_piece_mask(Color color, PieceType ptype) const {
         return piece_list(color).mask_eq(ptype);
+    }
+
+    template<PieceType... ptypes>
+    [[nodiscard]] u16 get_piece_mask(Color color) const {
+        return piece_list(color).mask_eq<ptypes...>();
     }
 
     [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceType ptype) const {
@@ -163,30 +176,24 @@ public:
         auto wpcnt = piece_count(Color::White);
         auto bpcnt = piece_count(Color::Black);
         switch (wpcnt + bpcnt) {
-            case 2:
-                return true;
-            case 3:
-                if ( get_piece_mask(Color::White, PieceType::Pawn)
-                    || get_piece_mask(Color::Black, PieceType::Pawn)
-                    || get_piece_mask(Color::White, PieceType::Rook)
-                    || get_piece_mask(Color::Black, PieceType::Rook)
-                    || get_piece_mask(Color::White, PieceType::Queen)
-                    || get_piece_mask(Color::Black, PieceType::Queen)) {
-                    return false;
-                }
-                return true;
-            case 4:
-                if (get_piece_mask(Color::White, PieceType::Pawn)
-                    || get_piece_mask(Color::Black, PieceType::Pawn)
-                    || get_piece_mask(Color::White, PieceType::Rook)
-                    || get_piece_mask(Color::Black, PieceType::Rook)
-                    || get_piece_mask(Color::White, PieceType::Queen)
-                    || get_piece_mask(Color::Black, PieceType::Queen)) {
-                    return false;
-                }
+        case 2:
+            return true;
+        case 3:
+            if (get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White)
+                || get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(
+                  Color::Black)) {
                 return false;
-            default:
-               return false;
+            }
+            return true;
+        case 4:
+            if (get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White)
+                || get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(
+                  Color::Black)) {
+                return false;
+            }
+            return false;
+        default:
+            return false;
         }
     }
 
