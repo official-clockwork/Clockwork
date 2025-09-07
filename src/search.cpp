@@ -633,6 +633,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         moves.skip_quiets();
     }
 
+    Move best_move = Move::none();
     Value best_value     = static_eval;
     u32   moves_searched = 0;
 
@@ -671,6 +672,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
             if (value > alpha) {
                 alpha = value;
+                best_move = m;
 
                 if (value >= beta) {
                     break;
@@ -683,6 +685,10 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     if (is_in_check && moves_searched == 0) {
         return mated_in(ply);
     }
+
+    // Store to the TT
+    Bound bound = best_value >= beta ? Bound::Lower : Bound::Upper;
+    m_searcher.tt.store(pos, ply, best_move, best_value, 0, bound);
 
     return best_value;
 }
