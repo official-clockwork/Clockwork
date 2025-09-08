@@ -145,7 +145,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
                   * (pos.piece_count(Color::White, PieceType::Queen)
                      + pos.piece_count(Color::Black, PieceType::Queen));
 
-    phase = std::min<i32>(phase, 24);
+    phase = std::clamp<i32>(phase, 4, 24);
 
     PScore mobility    = PSCORE_ZERO;
     PScore king_attack = PSCORE_ZERO;
