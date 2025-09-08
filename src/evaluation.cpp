@@ -103,7 +103,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
                   * (pos.piece_count(Color::White, PieceType::Queen)
                      + pos.piece_count(Color::Black, PieceType::Queen));
 
-    phase = std::min<i32>(phase, 24);
+    phase = std::clamp<i32>(phase, 4, 24);
 
     i32 mob_count = 0;
     for (u64 x : std::bit_cast<std::array<u64, 16>>(pos.attack_table(Color::White))) {
