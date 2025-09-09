@@ -191,7 +191,7 @@ void Worker::start_searching() {
 
 template<bool IS_MAIN>
 Move Worker::iterative_deepening(const Position& root_position) {
-    constexpr usize SS_PADDING = 2;
+    constexpr usize                             SS_PADDING = 2;
     std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
     std::array<Move, MAX_PLY + SS_PADDING + 1>  pv;
 
@@ -235,8 +235,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
         }
         Value score = -VALUE_INF;
         while (true) {
-            score =
-              search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta, search_depth, 0, false);
+            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta, search_depth,
+                                          0, false);
 
             if (m_stopped) {
                 break;
@@ -330,7 +330,7 @@ Value Worker::search(
             return 0;
         }
         // Insufficient material check
-        if (pos.is_insufficient_material()){
+        if (pos.is_insufficient_material()) {
             return 0;
         }
     }
@@ -349,15 +349,15 @@ Value Worker::search(
     }
 
     bool  is_in_check = pos.is_in_check();
-    bool improving    = false;
+    bool  improving   = false;
     Value correction  = 0;
     Value raw_eval    = -VALUE_INF;
-    ss->static_eval = -VALUE_INF;
+    ss->static_eval   = -VALUE_INF;
     if (!is_in_check) {
-        correction  = m_td.history.get_correction(pos);
-        raw_eval    = evaluate(pos);
+        correction      = m_td.history.get_correction(pos);
+        raw_eval        = evaluate(pos);
         ss->static_eval = raw_eval + correction;
-        improving = (ss-2)->static_eval != -VALUE_INF && ss->static_eval > (ss-2)->static_eval;
+        improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
     }
 
     // Internal Iterative Reductions
@@ -367,7 +367,8 @@ Value Worker::search(
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = ss->static_eval;
-    if (tt_data && tt_data->bound != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
+    if (tt_data
+        && tt_data->bound != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
 
@@ -636,7 +637,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         moves.skip_quiets();
     }
 
-    Move best_move = Move::none();
+    Move  best_move      = Move::none();
     Value best_value     = static_eval;
     u32   moves_searched = 0;
 
@@ -674,7 +675,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
             best_value = value;
 
             if (value > alpha) {
-                alpha = value;
+                alpha     = value;
                 best_move = m;
 
                 if (value >= beta) {

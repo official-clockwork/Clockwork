@@ -32,6 +32,9 @@ void Position::incrementally_remove_piece(bool         color,
         m_pawn_key ^= piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(pcolor)] ^= piece_key;
+        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+            m_major_key ^= piece_key;
+        }
     }
     updates.removes.push_back({pcolor, ptype, from});
     m_board[from] = Place::empty();
@@ -49,6 +52,9 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
         m_pawn_key ^= piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(pcolor)] ^= piece_key;
+        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+            m_major_key ^= piece_key;
+        }
     }
     updates.adds.push_back({pcolor, ptype, to});
 
@@ -58,26 +64,33 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
 
 void Position::incrementally_mutate_piece(
   bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates& updates) {
+    PieceType ptype = m_board[sq].ptype();
+
     // TODO: check if some speed left on the table for zobrist here
-    u64 rem_piece_key =
-      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
-                                   [static_cast<usize>(m_board[sq].ptype())][sq.raw];
+    u64 rem_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
+                                                     [static_cast<usize>(ptype)][sq.raw];
     m_hash_key ^= rem_piece_key;
-    if (m_board[sq].ptype() == PieceType::Pawn) {
+    if (ptype == PieceType::Pawn) {
         m_pawn_key ^= rem_piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(m_board[sq].color())] ^= rem_piece_key;
+        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+            m_major_key ^= rem_piece_key;
+        }
     }
-    updates.removes.push_back({m_board[sq].color(), m_board[sq].ptype(), sq});
-    m_board[sq] = p;
-    u64 add_piece_key =
-      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
-                                   [static_cast<usize>(m_board[sq].ptype())][sq.raw];
+    updates.removes.push_back({m_board[sq].color(), ptype, sq});
+    m_board[sq]       = p;
+    ptype             = m_board[sq].ptype();
+    u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
+                                                     [static_cast<usize>(ptype)][sq.raw];
     m_hash_key ^= add_piece_key;
-    if (m_board[sq].ptype() == PieceType::Pawn) {
+    if (ptype == PieceType::Pawn) {
         m_pawn_key ^= add_piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(m_board[sq].color())] ^= add_piece_key;
+        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+            m_major_key ^= add_piece_key;
+        }
     }
     updates.adds.push_back({p.color(), p.ptype(), sq});
 
@@ -93,27 +106,33 @@ void Position::incrementally_move_piece(
     auto [dst_ray_coords, dst_ray_valid] = geometry::superpiece_rays(to);
     v512 src_ray_places                  = v512::permute8(src_ray_coords, m_board.to_vec());
 
+    PieceType ptype = m_board[from].ptype();
+
     // TODO: check if some speed left on the table for zobrist here
-    u64 rem_piece_key =
-      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[from].color())]
-                                   [static_cast<usize>(m_board[from].ptype())][from.raw];
+    u64 rem_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[from].color())]
+                                                     [static_cast<usize>(ptype)][from.raw];
     m_hash_key ^= rem_piece_key;
-    if (m_board[from].ptype() == PieceType::Pawn) {
+    if (ptype == PieceType::Pawn) {
         m_pawn_key ^= rem_piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(m_board[from].color())] ^= rem_piece_key;
+        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+            m_major_key ^= rem_piece_key;
+        }
     }
-    updates.removes.push_back({m_board[from].color(), m_board[from].ptype(), from});
-    m_board[from] = Place::empty();
-    m_board[to]   = p;
-    u64 add_piece_key =
-      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())]
-                                   [static_cast<usize>(m_board[to].ptype())][to.raw];
+    updates.removes.push_back({m_board[from].color(), ptype, from});
+    m_board[from]     = Place::empty();
+    m_board[to]       = p;
+    u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())]
+                                                     [static_cast<usize>(ptype)][to.raw];
     m_hash_key ^= add_piece_key;
-    if (m_board[to].ptype() == PieceType::Pawn) {
+    if (ptype == PieceType::Pawn) {
         m_pawn_key ^= add_piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(m_board[to].color())] ^= add_piece_key;
+        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+            m_major_key ^= add_piece_key;
+        }
     }
     updates.adds.push_back({p.color(), p.ptype(), to});
 
@@ -766,6 +785,7 @@ std::optional<Position> Position::parse(std::string_view board,
     result.m_hash_key     = result.calc_hash_key_slow();
     result.m_pawn_key     = result.calc_pawn_key_slow();
     result.m_non_pawn_key = result.calc_non_pawn_key_slow();
+    result.m_major_key    = result.calc_major_key_slow();
 
     return result;
 }
@@ -824,6 +844,20 @@ std::array<HashKey, 2> Position::calc_non_pawn_key_slow() const {
         key[static_cast<usize>(p.color())] ^=
           Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
                                        [static_cast<usize>(p.ptype())][sq_idx];
+    }
+    return key;
+}
+
+HashKey Position::calc_major_key_slow() const {
+    HashKey key = 0;
+    for (usize sq_idx = 0; sq_idx < 64; sq_idx++) {
+        Place p = m_board.mailbox[sq_idx];
+        if (p.is_empty() || p.ptype() == PieceType::Pawn || p.ptype() == PieceType::Knight
+            || p.ptype() == PieceType::Bishop) {
+            continue;
+        }
+        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
+                                            [static_cast<usize>(p.ptype())][sq_idx];
     }
     return key;
 }

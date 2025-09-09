@@ -54,6 +54,7 @@ private:
     CaptHistory                      m_capt_hist          = {};
     CorrectionHistory                m_pawn_corr_hist     = {};
     std::array<CorrectionHistory, 2> m_non_pawn_corr_hist = {};
+    CorrectionHistory                m_major_corr_hist    = {};
 };
 
 }
