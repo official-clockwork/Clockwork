@@ -35,6 +35,7 @@ enum class ThreadType {
 };
 
 struct Stack {
+    Value          static_eval;
     Move*          pv;
     Move           killer;
     ContHistEntry* cont_hist_entry;

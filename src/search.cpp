@@ -348,13 +348,15 @@ Value Worker::search(
     }
 
     bool  is_in_check = pos.is_in_check();
+    bool improving    = false;
     Value correction  = 0;
     Value raw_eval    = -VALUE_INF;
-    Value static_eval = -VALUE_INF;
+    ss->static_eval = -VALUE_INF;
     if (!is_in_check) {
         correction  = m_td.history.get_correction(pos);
-        raw_eval    = is_in_check ? -VALUE_INF : evaluate(pos);
-        static_eval = raw_eval + correction;
+        raw_eval    = evaluate(pos);
+        ss->static_eval = raw_eval + correction;
+        improving = (ss-2)->static_eval != -VALUE_INF && ss->static_eval > (ss-2)->static_eval;
     }
 
     // Internal Iterative Reductions
@@ -363,8 +365,8 @@ Value Worker::search(
     }
 
     // Reuse TT score as a better positional evaluation
-    auto tt_adjusted_eval = static_eval;
-    if (tt_data && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
+    auto tt_adjusted_eval = ss->static_eval;
+    if (tt_data && tt_data->bound != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
 
@@ -391,7 +393,7 @@ Value Worker::search(
     }
 
     // Razoring
-    if (!PV_NODE && !is_in_check && depth <= 7 && static_eval + 707 * depth < alpha) {
+    if (!PV_NODE && !is_in_check && depth <= 7 && ss->static_eval + 707 * depth < alpha) {
         const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
@@ -418,12 +420,12 @@ Value Worker::search(
 
         if (!ROOT_NODE && best_value > -VALUE_WIN) {
             // Late Move Pruning (LMP)
-            if (moves_played >= 3 + depth * depth) {
+            if (moves_played >= (3 + depth * depth) / (2 - improving)) {
                 break;
             }
 
             // Forward Futility Pruning
-            Value futility = static_eval + 500 + 100 * depth;
+            Value futility = ss->static_eval + 500 + 100 * depth;
             if (quiet && !is_in_check && depth <= 8 && futility <= alpha) {
                 moves.skip_quiets();
                 continue;
@@ -566,8 +568,8 @@ Value Worker::search(
     // Update to correction history.
     if (!is_in_check
         && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
-        && !((bound == Bound::Lower && best_value <= static_eval)
-             || (bound == Bound::Upper && best_value >= static_eval))) {
+        && !((bound == Bound::Lower && best_value <= ss->static_eval)
+             || (bound == Bound::Upper && best_value >= ss->static_eval))) {
         m_td.history.update_correction_history(pos, depth, best_value - raw_eval);
     }
 
