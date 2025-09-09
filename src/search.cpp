@@ -621,7 +621,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     Value static_eval = -VALUE_INF;
     if (!is_in_check) {
         correction  = m_td.history.get_correction(pos);
-        raw_eval    = is_in_check ? -VALUE_INF : evaluate(pos);
+        raw_eval    = evaluate(pos);
         static_eval = raw_eval + correction;
     }
 
