@@ -191,10 +191,11 @@ void Worker::start_searching() {
 
 template<bool IS_MAIN>
 Move Worker::iterative_deepening(const Position& root_position) {
-    std::array<Stack, MAX_PLY + 1> ss;
-    std::array<Move, MAX_PLY + 1>  pv;
+    constexpr usize SS_PADDING = 2;
+    std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
+    std::array<Move, MAX_PLY + SS_PADDING + 1>  pv;
 
-    for (u32 i = 0; i < static_cast<u32>(MAX_PLY); i++) {
+    for (u32 i = 0; i < static_cast<u32>(MAX_PLY + SS_PADDING + 1); i++) {
         ss[i].pv              = &pv[i];
         ss[i].cont_hist_entry = nullptr;
     }
@@ -235,7 +236,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         Value score = -VALUE_INF;
         while (true) {
             score =
-              search<IS_MAIN, true>(root_position, &ss[0], alpha, beta, search_depth, 0, false);
+              search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta, search_depth, 0, false);
 
             if (m_stopped) {
                 break;
@@ -259,7 +260,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Store information only if the last iterative deepening search completed
         last_search_depth = search_depth;
         last_search_score = score;
-        last_best_move    = *ss[0].pv;
+        last_best_move    = *ss[SS_PADDING].pv;
 
         // Check depth limit
         if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
