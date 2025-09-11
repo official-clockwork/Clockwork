@@ -18,6 +18,9 @@ i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::St
     if (ply >= 2 && (ss - 2)->cont_hist_entry != nullptr) {
         stats += (*(ss - 2)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw];
     }
+    if (ply >= 4 && (ss - 4)->cont_hist_entry != nullptr) {
+        stats += (*(ss - 4)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw];
+    }
 
     return stats;
 }
@@ -36,6 +39,9 @@ void History::update_quiet_stats(
     }
     if (ply >= 2 && (ss - 2)->cont_hist_entry != nullptr) {
         update_hist_entry((*(ss - 2)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], bonus);
+    }
+    if (ply >= 4 && (ss - 4)->cont_hist_entry != nullptr) {
+        update_hist_entry((*(ss - 4)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], bonus);
     }
 }
 
