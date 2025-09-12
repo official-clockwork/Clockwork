@@ -227,6 +227,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
                   << " pv " << last_best_move << std::endl;
     };
 
+    m_node_counts.fill(0);
+
     for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
         Value alpha = -VALUE_INF, beta = VALUE_INF;
