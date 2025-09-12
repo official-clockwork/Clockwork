@@ -133,15 +133,16 @@ private:
         m_search_nodes.fetch_add(1, std::memory_order_relaxed);
     }
 
-    std::atomic<u64>  m_search_nodes;
-    time::TimePoint   m_search_start;
-    Searcher&         m_searcher;
-    std::thread       m_thread;
-    ThreadType        m_thread_type;
-    SearchLimits      m_search_limits;
-    ThreadData        m_td;
-    std::atomic<bool> m_stopped;
-    std::atomic<bool> m_exiting;
+    std::atomic<u64>         m_search_nodes;
+    time::TimePoint          m_search_start;
+    Searcher&                m_searcher;
+    std::thread              m_thread;
+    ThreadType               m_thread_type;
+    SearchLimits             m_search_limits;
+    ThreadData               m_td;
+    std::atomic<bool>        m_stopped;
+    std::atomic<bool>        m_exiting;
+    std::array<u64, 64 * 64> m_node_counts;
 
     template<bool IS_MAIN>
     Move iterative_deepening(const Position& root_position);

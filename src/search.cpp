@@ -13,10 +13,12 @@
 #include "util/types.hpp"
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <iostream>
 #include <limits>
 #include <mutex>
+#include <numeric>
 
 
 namespace Clockwork {
@@ -266,8 +268,16 @@ Move Worker::iterative_deepening(const Position& root_position) {
         if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
             break;
         }
+
+        const auto total_nodes = std::reduce(std::begin(m_node_counts), std::end(m_node_counts), 0);
+        const auto best_move_nodes = m_node_counts[last_best_move.from_to()];
+        const auto best_move_fraction =
+          static_cast<double>(best_move_nodes) / static_cast<double>(total_nodes);
+        const auto percent_not_best = 1 - best_move_fraction;
+        const auto adjustment = std::max<double>(0.5, 1.5 - best_move_fraction);
+
         // Check soft node limit
-        if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit) {
+        if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit * adjustment) {
             break;
         }
         time::TimePoint now = time::Clock::now();
@@ -416,7 +426,8 @@ Value Worker::search(
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
-        bool quiet = quiet_move(m);
+        const auto nodes_before = m_search_nodes.load(std::memory_order::relaxed);
+        bool       quiet        = quiet_move(m);
 
         auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m, ply, ss) : 0;
 
@@ -499,6 +510,10 @@ Value Worker::search(
         if (PV_NODE && (moves_played == 1 || value > alpha)) {
             value =
               -search<IS_MAIN, true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1, false);
+        }
+        const auto nodes_after = m_search_nodes.load(std::memory_order::relaxed);
+        if (ROOT_NODE) {
+            m_node_counts[m.from_to()] += nodes_after - nodes_before;
         }
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
