@@ -30,13 +30,13 @@ time::TimePoint compute_hard_limit(time::TimePoint               search_start,
     return hard_limit - UCI_LATENCY;
 }
 
-time::TimePoint compute_soft_limit(time::TimePoint               search_start,
+time::Duration compute_soft_limit(time::TimePoint               search_start,
                                    const Search::SearchSettings& settings,
                                    const Color                   stm) {
     using namespace std;
     using namespace time;
 
-    auto soft_limit = TimePoint::max();
+    auto soft_limit = Duration::max();
 
     if (settings.w_time >= 0) {
         const auto compute_buffer_time = [&]() -> u64 {
@@ -46,7 +46,7 @@ time::TimePoint compute_soft_limit(time::TimePoint               search_start,
                 return settings.b_time / 20 + settings.b_inc / 2;
             }
         };
-        soft_limit = min(soft_limit, search_start + Milliseconds(compute_buffer_time()));
+        soft_limit = Milliseconds(compute_buffer_time());
     }
 
     return soft_limit;

@@ -271,19 +271,20 @@ Move Worker::iterative_deepening(const Position& root_position) {
             break;
         }
 
+        // Check soft node limit
+        if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit) {
+            break;
+        }
+
         const auto total_nodes = std::reduce(std::begin(m_node_counts), std::end(m_node_counts), 0);
         const auto best_move_nodes = m_node_counts[last_best_move.from_to()];
         const auto best_move_fraction =
           static_cast<double>(best_move_nodes) / static_cast<double>(total_nodes);
         const auto adjustment = std::max<double>(0.5, 1.5 - best_move_fraction * 2.0);
 
-        // Check soft node limit
-        if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit * adjustment) {
-            break;
-        }
         time::TimePoint now = time::Clock::now();
         // check soft time limit
-        if (IS_MAIN && now >= m_search_limits.soft_time_limit) {
+        if (IS_MAIN && now - m_search_start >= m_search_limits.soft_time_limit * adjustment) {
             break;
         }
 
