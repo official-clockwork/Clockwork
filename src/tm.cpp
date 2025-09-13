@@ -30,15 +30,19 @@ time::TimePoint compute_hard_limit(time::TimePoint               search_start,
     return hard_limit - UCI_LATENCY;
 }
 
+template <bool ADJUST_FOR_NODES_TM>
 time::TimePoint compute_soft_limit(time::TimePoint               search_start,
                                    const Search::SearchSettings& settings,
-                                   const Color                   stm) {
+                                   const Color                   stm,
+                                   const f64                     nodes_tm_fraction) {
     using namespace std;
     using namespace time;
 
     auto soft_limit = TimePoint::max();
 
     if (settings.w_time >= 0) {
+
+        // Base time calculation
         const auto compute_buffer_time = [&]() -> u64 {
             if (stm == Color::White) {
                 return settings.w_time / 20 + settings.w_inc / 2;
@@ -46,10 +50,25 @@ time::TimePoint compute_soft_limit(time::TimePoint               search_start,
                 return settings.b_time / 20 + settings.b_inc / 2;
             }
         };
-        soft_limit = min(soft_limit, search_start + Milliseconds(compute_buffer_time()));
+
+        // Adjustment based on mainline nodes vs total nodes
+        const auto compute_nodestm_factor = [&]() -> f64 {
+            if constexpr (!ADJUST_FOR_NODES_TM) {
+                return 1.0;
+            }
+            return std::max<f64>(0.5, 1.5 - nodes_tm_fraction * 2.0);
+        };
+
+        soft_limit = min(soft_limit, search_start + Milliseconds(static_cast<i64>(compute_buffer_time() * compute_nodestm_factor())));
     }
 
     return soft_limit;
 }
 
+// Explicit instantiations
+template time::TimePoint
+compute_soft_limit<true>(time::TimePoint, const Search::SearchSettings&, const Color, const f64);
+
+template time::TimePoint
+compute_soft_limit<false>(time::TimePoint, const Search::SearchSettings&, const Color, const f64);
 }
