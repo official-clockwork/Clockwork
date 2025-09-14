@@ -197,7 +197,7 @@ void Position::incrementally_move_piece(
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
-    v512 mask = v512::broadcast16(~id.to_piece_mask());
+    v512 mask = v512::broadcast16(~id.to_piece_mask().value());
     m_attack_table[color].raw[0] &= mask;
     m_attack_table[color].raw[1] &= mask;
 }
@@ -279,7 +279,7 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v
     v512 m0 = v512::unpacklo8(moves, moves);
     v512 m1 = v512::unpackhi8(moves, moves);
 
-    v512 bit = v512::broadcast16(id.to_piece_mask());
+    v512 bit = v512::broadcast16(id.to_piece_mask().value());
     m_attack_table[color].raw[0] |= bit & m0;
     m_attack_table[color].raw[1] |= bit & m1;
 }

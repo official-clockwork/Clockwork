@@ -13,6 +13,8 @@
 
 namespace Clockwork {
 
+struct PieceMask;
+
 struct PieceId {
     u8 raw;
 
@@ -21,12 +23,116 @@ struct PieceId {
         assert(raw < 0x10);
     }
 
-    [[nodiscard]] constexpr u16 to_piece_mask() const {
-        return static_cast<u16>(1 << raw);
-    }
+    [[nodiscard]] constexpr PieceMask to_piece_mask() const;
 };
 
 static_assert(sizeof(PieceId) == sizeof(u8));
+
+struct PieceMask {
+public:
+    constexpr explicit PieceMask(u16 raw) :
+        m_raw(raw) {
+    }
+
+    [[nodiscard]] bool empty() const {
+        return m_raw == 0;
+    }
+
+    [[nodiscard]] usize popcount() const {
+        return static_cast<usize>(std::popcount(m_raw));
+    }
+
+    [[nodiscard]] PieceId msb() const {
+        return PieceId{static_cast<u8>(std::countl_zero(m_raw))};
+    }
+
+    [[nodiscard]] PieceId lsb() const {
+        return PieceId{static_cast<u8>(std::countr_zero(m_raw))};
+    }
+
+    [[nodiscard]] u16 value() const {
+        return m_raw;
+    }
+
+    [[nodiscard]] bool is_set(PieceId id) const {
+        return (m_raw >> id.raw) & 1;
+    }
+
+    void clear(PieceId id) {
+        m_raw &= ~id.to_piece_mask().m_raw;
+    }
+
+    void set(PieceId id) {
+        m_raw |= id.to_piece_mask().m_raw;
+    }
+
+    void set(PieceId id, bool value) {
+        if (value) {
+            set(id);
+        } else {
+            clear(id);
+        }
+    }
+
+    struct Iterator {
+    public:
+        Iterator& operator++() {
+            m_raw = clear_lowest_bit(m_raw);
+            return *this;
+        }
+
+        PieceId operator*() const {
+            return PieceId{static_cast<u8>(std::countr_zero(m_raw))};
+        }
+
+        bool operator==(const Iterator&) const = default;
+
+    private:
+        friend struct PieceMask;
+
+        explicit constexpr Iterator(u16 raw) :
+            m_raw(raw) {
+        }
+
+        u16 m_raw;
+    };
+
+    [[nodiscard]] Iterator begin() const {
+        return Iterator{m_raw};
+    }
+
+    [[nodiscard]] Iterator end() const {
+        return Iterator{0};
+    }
+
+    bool operator==(const PieceMask&) const = default;
+
+    friend constexpr PieceMask operator~(PieceMask a) {
+        return PieceMask{static_cast<u16>(~a.m_raw)};
+    }
+    friend constexpr PieceMask operator&(PieceMask a, PieceMask b) {
+        return PieceMask{static_cast<u16>(a.m_raw & b.m_raw)};
+    }
+    friend constexpr PieceMask operator|(PieceMask a, PieceMask b) {
+        return PieceMask{static_cast<u16>(a.m_raw | b.m_raw)};
+    }
+
+    friend constexpr PieceMask& operator&=(PieceMask& a, PieceMask b) {
+        return a = a & b;
+    }
+    friend constexpr PieceMask& operator|=(PieceMask& a, PieceMask b) {
+        return a = a | b;
+    }
+
+private:
+    u16 m_raw = 0;
+};
+
+[[nodiscard]] constexpr PieceMask PieceId::to_piece_mask() const {
+    return PieceMask{static_cast<u16>(1 << raw)};
+}
+
+static_assert(sizeof(PieceMask) == sizeof(u16));
 
 struct Place {
     u8 raw = 0;
@@ -122,8 +228,8 @@ struct Wordboard {
         return Bitboard{concat64(v512::test16(raw[0], pm), v512::test16(raw[1], pm))};
     }
 
-    [[nodiscard]] i32 count_matching_mask(u16 piece_mask) const {
-        v512 pm = v512::broadcast16(piece_mask);
+    [[nodiscard]] i32 count_matching_mask(PieceMask piece_mask) const {
+        v512 pm = v512::broadcast16(piece_mask.value());
         return v512::nonzerocount16(raw[0] & pm) + v512::nonzerocount16(raw[1] & pm);
     }
 
