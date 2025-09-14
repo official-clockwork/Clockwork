@@ -24,17 +24,15 @@ int main(int argc, char* argv[]) {
     std::vector<f64>      results;
 
     // List of files to load
-    std::vector<std::string> fenFiles = {"data/v2_filtered/gioviok_sampled_positions_337763.txt",
-                                         "data/v2_filtered/giovivast_sampled_positions_2568565.txt",
-                                         "data/v2_filtered/micpillar_sampled_positions_25219.txt",
-                                         "data/v2_filtered/styx_sampled_positions_2101270.txt"};
+    std::vector<std::string> fenFiles = {
+        "data/v2.1_filtered/filtered_data.txt"
+    };
 
-    for (const auto& filename : fenFiles) {
-        std::ifstream fenFile(filename);
-        if (!fenFile) {
-            std::cerr << "Error opening " << filename << std::endl;
-            continue;  // skip to the next file
-        }
+        for (const auto& filename : fenFiles){std::ifstream fenFile(filename);
+    if (!fenFile) {
+        std::cerr << "Error opening " << filename << std::endl;
+        continue;  // skip to the next file
+    }
 
         std::string line;
         while (std::getline(fenFile, line)) {

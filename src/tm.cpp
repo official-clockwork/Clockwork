@@ -56,7 +56,7 @@ time::TimePoint compute_soft_limit(time::TimePoint               search_start,
             if constexpr (!ADJUST_FOR_NODES_TM) {
                 return 1.0;
             }
-            return std::max<f64>(0.5, 1.5 - nodes_tm_fraction * (50.0 / 54.038));
+            return std::max<f64>(0.5, 2.0 - nodes_tm_fraction * (100.0 / 54.038));
         };
 
         soft_limit = min(soft_limit, search_start + Milliseconds(static_cast<i64>(compute_buffer_time() * compute_nodestm_factor())));
