@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
         auto print_table = [](const std::string& name, const auto& table) {
             std::cout << name << ": ";
             for (const auto& val : table) {
-                std::cout << val << ",\t";
+                std::cout << val << ", ";
             }
             std::cout << std::endl;
         };

@@ -12,15 +12,15 @@
 namespace Clockwork {
 
 // clang-format off
-const PScore PAWN_MAT     = S(265,462);
-const PScore KNIGHT_MAT   = S(748,950);
-const PScore BISHOP_MAT   = S(764,994);
-const PScore ROOK_MAT     = S(1176,1691);
-const PScore QUEEN_MAT    = S(2568,3065);
-const PScore TEMPO_VAL    = S(30,13);
+const PScore PAWN_MAT     = S(292,482);
+const PScore KNIGHT_MAT   = S(822,1011);
+const PScore BISHOP_MAT   = S(837,1047);
+const PScore ROOK_MAT     = S(1280,1802);
+const PScore QUEEN_MAT    = S(2703,3318);
+const PScore TEMPO_VAL    = S(29,15);
 
-const PScore BISHOP_PAIR_VAL = S(54,208);
-const PScore DOUBLED_PAWN_VAL = S(-72,-117);
+const PScore BISHOP_PAIR_VAL = S(50,212);
+const PScore DOUBLED_PAWN_VAL = S(-73,-118);
 
 const std::array<PScore, 48> PAWN_PSQT = {
     S(-170,511),    S(0,465),       S(76,493),      S(248,248),     S(209,255),     S(281,330),     S(119,379),     S(207,375),
@@ -87,17 +87,16 @@ const std::array<PScore, 64> KING_PSQT = {
 };
 
 const std::array<PScore, 9> KNIGHT_MOBILITY = {
-    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+    S(0,0), S(0,0), S(-29,-26), S(-21,-2), S(-14,7), S(0,0), S(11,13), S(0,0), S(39,26)
 };
 const std::array<PScore, 14> BISHOP_MOBILITY = {
-    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+   S(0,0), S(-91,-405), S(-132,-153), S(-89,-73), S(-55,-38), S(-14,-27), S(18,32), S(52,42), S(76,60), S(73,73), S(89,95), S(114,62), S(167,14), S(251,-27)
 };
 const std::array<PScore, 15> ROOK_MOBILITY = {
-    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+    S(0,0), S(0,0), S(-120,-50), S(-93,-24), S(-81,4), S(-57,0), S(-44,0), S(-31,20), S(0,14), S(25,13), S(58,19), S(83,24), S(103,28), S(151,13), S(178,-16),
 };
 const std::array<PScore, 28> QUEEN_MOBILITY = {
-    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0),
-    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+    S(0,0), S(0,0), S(0,0), S(208,100), S(-529,-62), S(-95,-190), S(-22,-538), S(-61,-192), S(-34,-266), S(-56,-135), S(-41,-106), S(-18,-68), S(-18,-14), S(-10,7), S(-3,29), S(2,42), S(14,63), S(19,88), S(15,103), S(54,81), S(54,86), S(53,100), S(64,95), S(83,80), S(144,32), S(288,-30), S(203,-48), S(440,-69),
 };
 
 // clang-format on
@@ -140,7 +139,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     };
 
     add_mobility(Color::Black, mobility);
-    mobility *= -1; // Persy trick
+    mobility *= -1;  // Persy trick
     add_mobility(Color::White, mobility);
 
 
