@@ -33,20 +33,20 @@ struct alignas(16) PieceList {
         return v128::load(array.data());
     }
 
-    [[nodiscard]] u16 mask_valid() const {
-        return to_vec().nonzero8();
+    [[nodiscard]] PieceMask mask_valid() const {
+        return PieceMask{to_vec().nonzero8()};
     }
 
-    [[nodiscard]] u16 mask_eq(PieceType ptype) const {
-        return v128::eq8(to_vec(), v128::broadcast8(static_cast<u8>(ptype)));
+    [[nodiscard]] PieceMask mask_eq(PieceType ptype) const {
+        return PieceMask{v128::eq8(to_vec(), v128::broadcast8(static_cast<u8>(ptype)))};
     }
 
     template<PieceType... ptype>
-    [[nodiscard]] u16 mask_eq() const {
+    [[nodiscard]] PieceMask mask_eq() const {
         constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
         const v128 to_bits{std::array<u8, 16>{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0, 0,
                                               0, 0, 0, 0, 0, 0}};
-        return v128::eq8(v128::permute8(to_vec(), to_bits), v128::broadcast8(bits));
+        return PieceMask{v128::eq8(v128::permute8(to_vec(), to_bits), v128::broadcast8(bits))};
     }
 
     constexpr bool operator==(const PieceList& other) const {
@@ -130,40 +130,49 @@ public:
     }
 
     [[nodiscard]] bool is_valid() const {
-        return attack_table(m_active_color).read(king_sq(invert(m_active_color))) == 0;
+        return attack_table(m_active_color).read(king_sq(invert(m_active_color))).empty();
     }
 
-    [[nodiscard]] u16 checker_mask() const {
+    [[nodiscard]] PieceMask checker_mask() const {
         return attack_table(invert(m_active_color)).read(king_sq(m_active_color));
     }
 
     [[nodiscard]] bool is_in_check() const {
-        return checker_mask() != 0;
+        return !checker_mask().empty();
     }
 
     [[nodiscard]] i32 piece_count(Color color, PieceType ptype) const {
-        return std::popcount(piece_list(color).mask_eq(ptype));
+        return piece_list(color).mask_eq(ptype).popcount();
     }
 
-    [[nodiscard]] u16 get_piece_mask(Color color) const {
+    template<PieceType... ptypes>
+    [[nodiscard]] i32 piece_count(Color color) const {
+        return piece_list(color).mask_eq<ptypes...>().popcount();
+    }
+
+    [[nodiscard]] PieceMask get_piece_mask(Color color) const {
         return piece_list(color).mask_valid();
     }
 
-    [[nodiscard]] u16 get_piece_mask(Color color, PieceType ptype) const {
+    [[nodiscard]] PieceMask get_piece_mask(Color color, PieceType ptype) const {
         return piece_list(color).mask_eq(ptype);
     }
 
     template<PieceType... ptypes>
-    [[nodiscard]] u16 get_piece_mask(Color color) const {
+    [[nodiscard]] PieceMask get_piece_mask(Color color) const {
         return piece_list(color).mask_eq<ptypes...>();
     }
 
+    [[nodiscard]] bool is_square_attacked_by(Square sq, Color color) const {
+        return !attack_table(color).read(sq).empty();
+    }
+
     [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceType ptype) const {
-        return attack_table(color).read(sq) & piece_list(color).mask_eq(ptype);
+        return !(attack_table(color).read(sq) & piece_list(color).mask_eq(ptype)).empty();
     }
 
     [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceId id) const {
-        return (attack_table(color).read(sq) >> id.raw) & 1;
+        return attack_table(color).read(sq).is_set(id);
     }
 
     [[nodiscard]] i32 mobility_of(Color color, PieceId id) const {
@@ -190,16 +199,14 @@ public:
         case 2:
             return true;
         case 3:
-            if (get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White)
-                || get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(
-                  Color::Black)) {
+            if (piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White)
+                || piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::Black)) {
                 return false;
             }
             return true;
         case 4:
-            if (get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White)
-                || get_piece_mask<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(
-                  Color::Black)) {
+            if (piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White)
+                || piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::Black)) {
                 return false;
             }
             return false;
@@ -226,7 +233,7 @@ public:
     [[nodiscard]] bool is_reversible(Move move);
 
     const std::array<Wordboard, 2> calc_attacks_slow();
-    const std::array<u16, 2>       calc_attacks_slow(Square sq);
+    const std::array<PieceMask, 2> calc_attacks_slow(Square sq);
 
     [[nodiscard]] HashKey                calc_hash_key_slow() const;
     [[nodiscard]] HashKey                calc_pawn_key_slow() const;

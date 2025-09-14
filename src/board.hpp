@@ -23,6 +23,10 @@ struct PieceId {
         assert(raw < 0x10);
     }
 
+    constexpr static PieceId king() {
+        return {0};
+    }
+
     [[nodiscard]] constexpr PieceMask to_piece_mask() const;
 };
 
@@ -30,8 +34,17 @@ static_assert(sizeof(PieceId) == sizeof(u8));
 
 struct PieceMask {
 public:
+    constexpr PieceMask() :
+        m_raw(0) {
+    }
+
     constexpr explicit PieceMask(u16 raw) :
         m_raw(raw) {
+    }
+
+    constexpr static PieceMask king() {
+        // The king always has a PieceId of 0.
+        return PieceMask{0x0001};
     }
 
     [[nodiscard]] bool empty() const {
@@ -215,16 +228,16 @@ static_assert(sizeof(Byteboard) == 64);
 struct Wordboard {
     std::array<v512, 2> raw;
 
-    [[nodiscard]] std::array<u16, 64> to_mailbox() const {
-        return std::bit_cast<std::array<u16, 64>>(raw);
+    [[nodiscard]] std::array<PieceMask, 64> to_mailbox() const {
+        return std::bit_cast<std::array<PieceMask, 64>>(raw);
     }
 
     [[nodiscard]] Bitboard get_attacked_bitboard() const {
         return Bitboard{concat64(raw[0].nonzero16(), raw[1].nonzero16())};
     }
 
-    [[nodiscard]] Bitboard get_piece_mask_bitboard(u16 piece_mask) const {
-        v512 pm = v512::broadcast16(piece_mask);
+    [[nodiscard]] Bitboard get_piece_mask_bitboard(PieceMask piece_mask) const {
+        v512 pm = v512::broadcast16(piece_mask.value());
         return Bitboard{concat64(v512::test16(raw[0], pm), v512::test16(raw[1], pm))};
     }
 
@@ -233,10 +246,10 @@ struct Wordboard {
         return v512::nonzerocount16(raw[0] & pm) + v512::nonzerocount16(raw[1] & pm);
     }
 
-    [[nodiscard]] u16 read(Square sq) const {
-        u16 value;
-        std::memcpy(&value, reinterpret_cast<const char*>(raw.data()) + sq.raw * sizeof(u16),
-                    sizeof(u16));
+    [[nodiscard]] PieceMask read(Square sq) const {
+        PieceMask value;
+        std::memcpy(&value, reinterpret_cast<const char*>(raw.data()) + sq.raw * sizeof(PieceMask),
+                    sizeof(PieceMask));
         return value;
     }
 

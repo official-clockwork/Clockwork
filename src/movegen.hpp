@@ -27,13 +27,13 @@ public:
 
 private:
     [[nodiscard]] std::tuple<Bitboard, Bitboard, bool>
-                           valid_destinations_one_checker(u16 checker) const;
-    [[nodiscard]] Bitboard valid_destinations_two_checkers(u16 checker) const;
+                           valid_destinations_one_checker(PieceMask checker) const;
+    [[nodiscard]] Bitboard valid_destinations_two_checkers(PieceMask checker) const;
 
     [[nodiscard]] bool is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) const;
     [[nodiscard]] bool is_legal_king_move(Move m, Bitboard valid_dests) const;
-    [[nodiscard]] bool is_legal_one_checker(Move m, u16 checkers) const;
-    [[nodiscard]] bool is_legal_two_checkers(Move m, u16 checkers) const;
+    [[nodiscard]] bool is_legal_one_checker(Move m, PieceMask checkers) const;
+    [[nodiscard]] bool is_legal_two_checkers(Move m, PieceMask checkers) const;
 
     [[nodiscard]] bool is_aside_castling_legal(Bitboard empty, Bitboard danger) const;
     [[nodiscard]] bool is_hside_castling_legal(Bitboard empty, Bitboard danger) const;
@@ -42,23 +42,23 @@ private:
     void generate_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests, bool can_ep);
     void generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests);
 
-    void generate_moves_one_checker(MoveList& noisy, MoveList& quiet, u16 checker);
-    void generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, u16 checkers);
+    void generate_moves_one_checker(MoveList& noisy, MoveList& quiet, PieceMask checker);
+    void generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, PieceMask checkers);
 
     // Write moves that go to dest. Source are pieces in piecemask.
-    void write(MoveList& moves, Square dest, u16 piecemask, MoveFlags mf);
+    void write(MoveList& moves, Square dest, PieceMask piecemask, MoveFlags mf);
 
     // Write moves that go to all squares in dest_bb. Possible sources are pieces in piecemask, masked as appropriate by attack_table.
-    void write(MoveList&                  moves,
-               const std::array<u16, 64>& attack_table,
-               Bitboard                   dest_bb,
-               u16                        piecemask,
-               MoveFlags                  mf);
+    void write(MoveList&                        moves,
+               const std::array<PieceMask, 64>& attack_table,
+               Bitboard                         dest_bb,
+               PieceMask                        piecemask,
+               MoveFlags                        mf);
 
     // Write quiet pawn moves that start from src_bb, moved by shift.
     void write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf);
 
-    [[nodiscard]] bool is_ep_clearance_pinned(u16 ep_attackers_mask) const;
+    [[nodiscard]] bool is_ep_clearance_pinned(PieceMask ep_attackers_mask) const;
 
     Color           m_active_color;
     const Position& m_position;

@@ -526,7 +526,7 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 }
 
 const std::array<Wordboard, 2> Position::calc_attacks_slow() {
-    std::array<std::array<u16, 64>, 2> result{};
+    std::array<std::array<PieceMask, 64>, 2> result{};
     for (usize i = 0; i < 64; i++) {
         Square sq{static_cast<u8>(i)};
         auto [white, black] = calc_attacks_slow(sq);
@@ -536,7 +536,7 @@ const std::array<Wordboard, 2> Position::calc_attacks_slow() {
     return std::bit_cast<std::array<Wordboard, 2>>(result);
 }
 
-const std::array<u16, 2> Position::calc_attacks_slow(Square sq) {
+const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
     v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
 
@@ -552,8 +552,10 @@ const std::array<u16, 2> Position::calc_attacks_slow(Square sq) {
     v128 white_attackers_coord = v512::compress8(white_attackers, ray_coords).to128();
     v128 black_attackers_coord = v512::compress8(black_attackers, ray_coords).to128();
     return {
-      findset8(white_attackers_coord, white_attackers_count, m_piece_list_sq[0].to_vec()),
-      findset8(black_attackers_coord, black_attackers_count, m_piece_list_sq[1].to_vec()),
+      PieceMask{
+        findset8(white_attackers_coord, white_attackers_count, m_piece_list_sq[0].to_vec())},
+      PieceMask{
+        findset8(black_attackers_coord, black_attackers_count, m_piece_list_sq[1].to_vec())},
     };
 }
 

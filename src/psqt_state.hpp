@@ -80,15 +80,13 @@ public:
 private:
     void reload_accumulator(const Position& pos, Color c) {
         m_accumulators[static_cast<usize>(c)] = PSCORE_ZERO;
-        auto& pieces                          = pos.piece_list(c);
-        auto& squares                         = pos.piece_list_sq(c);
-        u16   valid_pieces                    = pieces.mask_valid();
+        auto&     pieces                      = pos.piece_list(c);
+        auto&     squares                     = pos.piece_list_sq(c);
+        PieceMask valid_pieces                = pieces.mask_valid();
 
-        while (valid_pieces) {
-            int       i  = std::countr_zero(valid_pieces);
-            PieceType pt = pieces[i];
-            add_piece(c, pt, squares[i]);
-            valid_pieces &= valid_pieces - 1;
+        for (PieceId id : valid_pieces) {
+            PieceType pt = pieces[id];
+            add_piece(c, pt, squares[id]);
         }
     }
 
