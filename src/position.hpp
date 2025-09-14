@@ -145,6 +145,10 @@ public:
         return std::popcount(piece_list(color).mask_eq(ptype));
     }
 
+    [[nodiscard]] u16 get_piece_mask(Color color) const {
+        return piece_list(color).mask_valid();
+    }
+
     [[nodiscard]] u16 get_piece_mask(Color color, PieceType ptype) const {
         return piece_list(color).mask_eq(ptype);
     }
@@ -160,6 +164,10 @@ public:
 
     [[nodiscard]] bool is_square_attacked_by(Square sq, Color color, PieceId id) const {
         return (attack_table(color).read(sq) >> id.raw) & 1;
+    }
+
+    [[nodiscard]] i32 mobility_of(Color color, PieceId id) const {
+        return attack_table(color).count_matching_mask(id.to_piece_mask());
     }
 
     [[nodiscard]] i32 piece_count(Color color) const {

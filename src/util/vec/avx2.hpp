@@ -424,6 +424,17 @@ struct v512 {
         return (a & b).zero8();
     }
 
+    static forceinline i32 nonzerocount16(v512 a) {
+        i32 result = 0;
+        result += std::popcount(
+          0xAAAAAAAA
+          & ~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[0].raw, _mm256_setzero_si256())));
+        result += std::popcount(
+          0xAAAAAAAA
+          & ~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[1].raw, _mm256_setzero_si256())));
+        return result;
+    }
+
     [[nodiscard]] forceinline u64 msb8() const {
         return concat64(raw[0].msb8(), raw[1].msb8());
     }
