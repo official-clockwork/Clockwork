@@ -25,5 +25,6 @@ extern const std::array<PScore, 9>  KNIGHT_MOBILITY;
 extern const std::array<PScore, 14> BISHOP_MOBILITY;
 extern const std::array<PScore, 15> ROOK_MOBILITY;
 extern const std::array<PScore, 28> QUEEN_MOBILITY;
+extern const std::array<PScore, 9>  KING_MOBILITY;
 
 }

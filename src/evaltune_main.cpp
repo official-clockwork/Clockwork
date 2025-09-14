@@ -13,6 +13,7 @@
 #include <iostream>
 #include <numeric>
 #include <random>
+#include <sstream>
 #include <tuple>
 
 using namespace Clockwork;
@@ -120,47 +121,58 @@ int main(int argc, char* argv[]) {
 
         std::cout << std::endl;  // Finish progress bar line
 
-        std::cout << "Pawn mat " << PAWN_MAT << std::endl;
-        std::cout << "Knight mat " << KNIGHT_MAT << std::endl;
-        std::cout << "Bishop mat " << BISHOP_MAT << std::endl;
-        std::cout << "Rook mat " << ROOK_MAT << std::endl;
-        std::cout << "Queen mat " << QUEEN_MAT << std::endl;
+        std::cout << "const PScore PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
+        std::cout << "const PScore KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
+        std::cout << "const PScore BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
+        std::cout << "const PScore ROOK_MAT   = " << ROOK_MAT << ";" << std::endl;
+        std::cout << "const PScore QUEEN_MAT  = " << QUEEN_MAT << ";" << std::endl;
+        std::cout << "const PScore TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
+        std::cout << std::endl;
 
-        std::cout << "Tempo " << TEMPO_VAL << std::endl;
-
-        std::cout << "Bishop pair " << BISHOP_PAIR_VAL << std::endl;
-        std::cout << "Doubled pawns " << DOUBLED_PAWN_VAL << std::endl;
+        std::cout << "const PScore BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";" << std::endl;
+        std::cout << "const PScore DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";" << std::endl;
+        std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {
-            std::cout << name << ": ";
+            std::cout << "const std::array<PScore, " << table.size() << "> " << name << " = {"
+                      << std::endl
+                      << "   ";
             for (const auto& val : table) {
-                std::cout << val << ", ";
+                std::cout << " " << val << ",";
             }
-            std::cout << std::endl;
+            std::cout << std::endl << "};" << std::endl;
         };
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
         print_table("BISHOP_MOBILITY", BISHOP_MOBILITY);
         print_table("ROOK_MOBILITY", ROOK_MOBILITY);
         print_table("QUEEN_MOBILITY", QUEEN_MOBILITY);
+        print_table("KING_MOBILITY", KING_MOBILITY);
+        std::cout << std::endl;
 
-
-        auto printPsqtArray = [](const auto& arr) {
+        auto printPsqtArray = [](const std::string& name, const auto& arr) {
+            std::cout << "const std::array<PScore, " << arr.size() << "> " << name << " = {"
+                      << std::endl;
             for (std::size_t i = 0; i < arr.size(); ++i) {
-                std::cout << arr[i] << ",\t";
+                if ((i & 7) == 0) {
+                    std::cout << "    ";
+                }
+                std::stringstream ss;
+                ss << arr[i] << ",";
+                std::cout << std::left << std::setw(16) << ss.str();
                 if ((i & 7) == 7) {
-                    std::cout << std::endl;
+                    std::cout << "//" << std::endl;
                 }
             }
-            std::cout << std::endl;
+            std::cout << "};" << std::endl;
         };
 
-        printPsqtArray(PAWN_PSQT);
-        printPsqtArray(KNIGHT_PSQT);
-        printPsqtArray(BISHOP_PSQT);
-        printPsqtArray(ROOK_PSQT);
-        printPsqtArray(QUEEN_PSQT);
-        printPsqtArray(KING_PSQT);
+        printPsqtArray("PAWN_PSQT", PAWN_PSQT);
+        printPsqtArray("KNIGHT_PSQT", KNIGHT_PSQT);
+        printPsqtArray("BISHOP_PSQT", BISHOP_PSQT);
+        printPsqtArray("ROOK_PSQT", ROOK_PSQT);
+        printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
+        printPsqtArray("KING_PSQT", KING_PSQT);
 
         if (epoch > 5) {
             optim.set_lr(optim.get_lr() * 0.85);
