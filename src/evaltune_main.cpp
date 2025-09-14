@@ -24,15 +24,14 @@ int main(int argc, char* argv[]) {
     std::vector<f64>      results;
 
     // List of files to load
-    std::vector<std::string> fenFiles = {
-        "data/v2.1_filtered/filtered_data.txt"
-    };
+    std::vector<std::string> fenFiles = {"data/v2.1_filtered/filtered_data.txt"};
 
-        for (const auto& filename : fenFiles){std::ifstream fenFile(filename);
-    if (!fenFile) {
-        std::cerr << "Error opening " << filename << std::endl;
-        continue;  // skip to the next file
-    }
+    for (const auto& filename : fenFiles) {
+        std::ifstream fenFile(filename);
+        if (!fenFile) {
+            std::cerr << "Error opening " << filename << std::endl;
+            continue;  // skip to the next file
+        }
 
         std::string line;
         while (std::getline(fenFile, line)) {
@@ -127,11 +126,24 @@ int main(int argc, char* argv[]) {
         std::cout << "Rook mat " << ROOK_MAT << std::endl;
         std::cout << "Queen mat " << QUEEN_MAT << std::endl;
 
-        std::cout << "Mobility " << MOBILITY_VAL << std::endl;
         std::cout << "Tempo " << TEMPO_VAL << std::endl;
 
         std::cout << "Bishop pair " << BISHOP_PAIR_VAL << std::endl;
         std::cout << "Doubled pawns " << DOUBLED_PAWN_VAL << std::endl;
+
+        auto print_table = [](const std::string& name, const auto& table) {
+            std::cout << name << ": ";
+            for (const auto& val : table) {
+                std::cout << val << ",\t";
+            }
+            std::cout << std::endl;
+        };
+
+        print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
+        print_table("BISHOP_MOBILITY", BISHOP_MOBILITY);
+        print_table("ROOK_MOBILITY", ROOK_MOBILITY);
+        print_table("QUEEN_MOBILITY", QUEEN_MOBILITY);
+
 
         auto printPsqtArray = [](const auto& arr) {
             for (std::size_t i = 0; i < arr.size(); ++i) {

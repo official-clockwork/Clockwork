@@ -30,7 +30,7 @@ time::TimePoint compute_hard_limit(time::TimePoint               search_start,
     return hard_limit - UCI_LATENCY;
 }
 
-template <bool ADJUST_FOR_NODES_TM>
+template<bool ADJUST_FOR_NODES_TM>
 time::TimePoint compute_soft_limit(time::TimePoint               search_start,
                                    const Search::SearchSettings& settings,
                                    const Color                   stm,
@@ -59,7 +59,10 @@ time::TimePoint compute_soft_limit(time::TimePoint               search_start,
             return std::max<f64>(0.5, 2.0 - nodes_tm_fraction * (100.0 / 54.038));
         };
 
-        soft_limit = min(soft_limit, search_start + Milliseconds(static_cast<i64>(compute_buffer_time() * compute_nodestm_factor())));
+        soft_limit =
+          min(soft_limit,
+              search_start
+                + Milliseconds(static_cast<i64>(compute_buffer_time() * compute_nodestm_factor())));
     }
 
     return soft_limit;

@@ -9,7 +9,6 @@ extern const PScore KNIGHT_MAT;
 extern const PScore BISHOP_MAT;
 extern const PScore ROOK_MAT;
 extern const PScore QUEEN_MAT;
-extern const PScore MOBILITY_VAL;
 extern const PScore TEMPO_VAL;
 extern const PScore BISHOP_PAIR_VAL;
 extern const PScore DOUBLED_PAWN_VAL;
@@ -20,5 +19,11 @@ extern const std::array<PScore, 64> BISHOP_PSQT;
 extern const std::array<PScore, 64> ROOK_PSQT;
 extern const std::array<PScore, 64> QUEEN_PSQT;
 extern const std::array<PScore, 64> KING_PSQT;
+
+
+extern const std::array<PScore, 9>  KNIGHT_MOBILITY;
+extern const std::array<PScore, 14> BISHOP_MOBILITY;
+extern const std::array<PScore, 15> ROOK_MOBILITY;
+extern const std::array<PScore, 28> QUEEN_MOBILITY;
 
 }

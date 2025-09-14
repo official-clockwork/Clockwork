@@ -17,7 +17,6 @@ const PScore KNIGHT_MAT   = S(748,950);
 const PScore BISHOP_MAT   = S(764,994);
 const PScore ROOK_MAT     = S(1176,1691);
 const PScore QUEEN_MAT    = S(2568,3065);
-const PScore MOBILITY_VAL = S(21,7);
 const PScore TEMPO_VAL    = S(30,13);
 
 const PScore BISHOP_PAIR_VAL = S(54,208);
@@ -87,6 +86,20 @@ const std::array<PScore, 64> KING_PSQT = {
     S(220,-242),    S(189,-184),    S(12,-127),     S(36,-177),     S(0,0), S(0,0), S(0,0), S(0,0),
 };
 
+const std::array<PScore, 9> KNIGHT_MOBILITY = {
+    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+};
+const std::array<PScore, 14> BISHOP_MOBILITY = {
+    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+};
+const std::array<PScore, 15> ROOK_MOBILITY = {
+    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+};
+const std::array<PScore, 28> QUEEN_MOBILITY = {
+    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0),
+    S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0)
+};
+
 // clang-format on
 
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
@@ -105,13 +118,31 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
 
     phase = std::min<i32>(phase, 24);
 
-    i32 mob_count = 0;
-    for (PieceId id : pos.get_piece_mask(Color::White)) {
-        mob_count += pos.mobility_of(Color::White, id);
-    }
-    for (PieceId id : pos.get_piece_mask(Color::Black)) {
-        mob_count -= pos.mobility_of(Color::Black, id);
-    }
+    PScore mobility = PSCORE_ZERO;
+
+    auto add_mobility = [&](Color c, PScore& mob_count) {
+        for (PieceId id : pos.get_piece_mask(c)) {
+            switch (pos.pt_of(c, id)) {
+            case PieceType::Knight:
+                mobility += KNIGHT_MOBILITY[pos.mobility_of(c, id)];
+                break;
+            case PieceType::Bishop:
+                mobility += BISHOP_MOBILITY[pos.mobility_of(c, id)];
+                break;
+            case PieceType::Rook:
+                mobility += ROOK_MOBILITY[pos.mobility_of(c, id)];
+                break;
+            case PieceType::Queen:
+                mobility += QUEEN_MOBILITY[pos.mobility_of(c, id)];
+                break;
+            }
+        }
+    };
+
+    add_mobility(Color::Black, mobility);
+    mobility *= -1; // Persy trick
+    add_mobility(Color::White, mobility);
+
 
     const std::array<Bitboard, 2> pawns = {pos.board().bitboard_for(Color::White, PieceType::Pawn),
                                            pos.board().bitboard_for(Color::Black, PieceType::Pawn)};
@@ -123,8 +154,6 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore bishop_pair_bonus = BISHOP_PAIR_VAL
                              * ((pos.piece_count(Color::White, PieceType::Bishop) >= 2)
                                 - (pos.piece_count(Color::Black, PieceType::Bishop) >= 2));
-
-    PScore mobility = MOBILITY_VAL * mob_count;
 
     PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     PScore sum   = psqt_state.score() + mobility + tempo + bishop_pair_bonus + doubled_pawns_bonus;

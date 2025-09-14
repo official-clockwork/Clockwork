@@ -179,6 +179,14 @@ public:
         return attack_table(color).count_matching_mask(id.to_piece_mask());
     }
 
+    [[nodiscard]] i32 mobility_of(Color color, PieceId id, Bitboard mask) const {
+        return attack_table(color).count_matching_mask_masked(id.to_piece_mask(), mask);
+    }
+
+    [[nodiscard]] PieceType pt_of(Color color, PieceId id) const {
+        return piece_list(color)[id];
+    }
+
     [[nodiscard]] i32 piece_count(Color color) const {
         return 16 - piece_count(color, PieceType::None);
     }
