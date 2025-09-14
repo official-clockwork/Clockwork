@@ -163,7 +163,7 @@ void Worker::prepare() {
 void Worker::start_searching() {
     m_td.psqt_states.reserve(MAX_PLY + 1);
     m_td.psqt_states.clear();
-    m_td.psqt_states.push_back(PsqtState(root_position));
+    m_td.psqt_states.emplace_back(root_position);
 
     // Run iterative deepening search
     if (m_thread_type == ThreadType::MAIN) {
@@ -173,7 +173,7 @@ void Worker::start_searching() {
           .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
                                                     root_position.active_color()),
           .soft_time_limit = TM::compute_soft_limit<false>(m_search_start, m_searcher.settings,
-                                                    root_position.active_color(), 0.0),
+                                                           root_position.active_color(), 0.0),
           .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
                                                                 : std::numeric_limits<u64>::max(),
           .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
@@ -247,6 +247,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
             }
 
             if (score <= alpha) {
+                beta  = (alpha + beta) / 2;
                 alpha = score - delta;
             } else if (score >= beta) {
                 beta = score + delta;
