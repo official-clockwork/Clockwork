@@ -180,7 +180,7 @@ public:
     }
 
     [[nodiscard]] i32 mobility_of(Color color, PieceId id, Bitboard mask) const {
-        return (attack_table(color).get_piece_mask_bitboard(id) & mask).popcount();
+        return (attack_table(color).get_piece_mask_bitboard(id.to_piece_mask()) & mask).popcount();
     }
 
     [[nodiscard]] PieceType pt_of(Color color, PieceId id) const {
