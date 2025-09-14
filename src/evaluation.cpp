@@ -120,21 +120,17 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore mobility = PSCORE_ZERO;
 
     auto add_mobility = [&](Color c, PScore& mob_count) {
-        for (PieceId id : pos.get_piece_mask(c)) {
-            switch (pos.pt_of(c, id)) {
-            case PieceType::Knight:
-                mobility += KNIGHT_MOBILITY[pos.mobility_of(c, id)];
-                break;
-            case PieceType::Bishop:
-                mobility += BISHOP_MOBILITY[pos.mobility_of(c, id)];
-                break;
-            case PieceType::Rook:
-                mobility += ROOK_MOBILITY[pos.mobility_of(c, id)];
-                break;
-            case PieceType::Queen:
-                mobility += QUEEN_MOBILITY[pos.mobility_of(c, id)];
-                break;
-            }
+        for (PieceId id : pos.get_piece_mask(c, PieceType::Knight)) {
+            mobility += KNIGHT_MOBILITY[pos.mobility_of(c, id)];
+        }
+        for (PieceId id : pos.get_piece_mask(c, PieceType::Bishop)) {
+            mobility += BISHOP_MOBILITY[pos.mobility_of(c, id)];
+        }
+        for (PieceId id : pos.get_piece_mask(c, PieceType::Rook)) {
+            mobility += ROOK_MOBILITY[pos.mobility_of(c, id)];
+        }
+        for (PieceId id : pos.get_piece_mask(c, PieceType::Queen)) {
+            mobility += QUEEN_MOBILITY[pos.mobility_of(c, id)];
         }
     };
 
