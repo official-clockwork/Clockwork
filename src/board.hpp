@@ -246,12 +246,6 @@ struct Wordboard {
         return v512::nonzerocount16(raw[0] & pm) + v512::nonzerocount16(raw[1] & pm);
     }
 
-    [[nodiscard]] i32 count_matching_mask_masked(PieceMask piece_mask, Bitboard mask) const {
-        v512 pm = v512::broadcast16(piece_mask.value());
-        v512 bm = v512::broadcast64(mask.value());
-        return v512::nonzerocount16((raw[0] & pm) & bm) + v512::nonzerocount16((raw[1] & pm) & bm);
-    }
-
     [[nodiscard]] PieceMask read(Square sq) const {
         PieceMask value;
         std::memcpy(&value, reinterpret_cast<const char*>(raw.data()) + sq.raw * sizeof(PieceMask),
