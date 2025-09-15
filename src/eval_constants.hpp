@@ -15,6 +15,8 @@ inline const PScore TEMPO_VAL  = S(28,15);
 inline const PScore BISHOP_PAIR_VAL  = S(54,216);
 inline const PScore DOUBLED_PAWN_VAL = S(-72,-117);
 
+inline const PScore POTENIAL_CHECKER_VAL = S(0, 0);
+
 inline const std::array<PScore, 9> KNIGHT_MOBILITY = {
     S(-216,-267), S(-135,-133), S(-82,-41), S(-43,-3), S(2,15), S(25,61), S(53,64), S(87,56), S(134,-19),
 };

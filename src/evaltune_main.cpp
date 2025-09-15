@@ -141,6 +141,10 @@ int main(int argc, char* argv[]) {
                   << std::endl;
         std::cout << std::endl;
 
+        std::cout << "inline const PScore POTENIAL_CHECKER_VAL = " << POTENIAL_CHECKER_VAL << ";"
+                  << std::endl;
+        std::cout << std::endl;
+
         auto print_table = [](const std::string& name, const auto& table) {
             std::cout << "inline const std::array<PScore, " << table.size() << "> " << name
                       << " = {" << std::endl

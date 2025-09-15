@@ -72,6 +72,32 @@ PScore evaluate_pieces(const Position& pos) {
     return eval;
 }
 
+template<Color color>
+PScore evaluate_potential_checkers(const Position& pos) {
+    constexpr Color opp = ~color;
+
+    const PieceMask orth   = pos.get_piece_mask<PieceType::Rook, PieceType::Queen>(opp);
+    const PieceMask diag   = pos.get_piece_mask<PieceType::Bishop, PieceType::Queen>(opp);
+    const PieceMask knight = pos.get_piece_mask<PieceType::Knight>(opp);
+
+    CreateSuperpieceMaskInfo cmi;
+    cmi.knight     = knight.value();
+    cmi.orth       = orth.value();
+    cmi.orth_near  = orth.value();
+    cmi.wpawn_near = diag.value();
+    cmi.bpawn_near = diag.value();
+    cmi.diag       = diag.value();
+
+    Wordboard mask = pos.create_attack_table_superpiece_mask(pos.king_sq(color), cmi);
+    mask           = mask & pos.attack_table(opp);
+
+    i32 count = 0;
+    for (u64 x : std::bit_cast<std::array<u64, 16>>(mask)) {
+        count += std::popcount(x);
+    }
+    return POTENIAL_CHECKER_VAL * count;
+}
+
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     i32         phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -93,6 +119,8 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore eval = psqt_state.score();
     eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
+    eval += evaluate_potential_checkers<Color::White>(pos)
+          - evaluate_potential_checkers<Color::Black>(pos);
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     return eval->phase<24>(phase);
 };
