@@ -47,6 +47,9 @@ struct v128 {
     static forceinline v128 broadcast8(u8 x) {
         return {_mm_set1_epi8(static_cast<i8>(x))};
     }
+    static forceinline v128 broadcast16(u16 x) {
+        return {_mm_set1_epi16(static_cast<i16>(x))};
+    }
 
     static forceinline v128 blend8(v128 mask, v128 a, v128 b) {
         return {_mm_blendv_epi8(a.raw, b.raw, mask.raw)};
@@ -70,6 +73,9 @@ struct v128 {
 
     static forceinline v128 shl16(v128 a, i32 shift) {
         return {_mm_slli_epi16(a.raw, shift)};
+    }
+    static forceinline v128 shr16(v128 a, i32 shift) {
+        return {_mm_srli_epi16(a.raw, shift)};
     }
 
     static forceinline u16 eq8(v128 a, v128 b) {

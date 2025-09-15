@@ -79,6 +79,18 @@ struct RookInfo {
     constexpr bool operator==(const RookInfo&) const = default;
 };
 
+struct CreateSuperpieceMaskInfo {
+    u16 padding1 = 0;  // must be zero
+    u16 diag;          // north-east, north-west, south-east or south-west (2-7 squares away)
+    u16 orth;          // north, east, south, west (2 - 7 squares away)
+    u16 orth_near;     // north, east, south, west (1 square away)
+    u16 knight;        // knight move away
+    u16 wpawn_near;    // south-east or south-west (1 square away)
+    u16 bpawn_near;    // north-east or north-west (1 square away)
+    u16 padding2;
+};
+static_assert(sizeof(CreateSuperpieceMaskInfo) == 16);
+
 struct Position {
 public:
     constexpr Position() = default;
@@ -190,6 +202,9 @@ public:
     [[nodiscard]] i32 mobility_of(Color color, PieceId id, Bitboard mask) const {
         return (attack_table(color).get_piece_mask_bitboard(id.to_piece_mask()) & mask).popcount();
     }
+
+    [[nodiscard]] Wordboard create_attack_table_superpiece_mask(Square                   sq,
+                                                                CreateSuperpieceMaskInfo cmi) const;
 
     [[nodiscard]] PieceType pt_of(Color color, PieceId id) const {
         return piece_list(color)[id];

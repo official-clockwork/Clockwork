@@ -559,6 +559,48 @@ const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
     };
 }
 
+Wordboard Position::create_attack_table_superpiece_mask(Square                   sq,
+                                                        CreateSuperpieceMaskInfo cmi_arg) const {
+    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
+    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
+    v512 inverse_perm            = geometry::superpiece_inverse_rays_avx2(sq);
+    v512 ray_extent              = geometry::superpiece_attacks(ray_places, ray_valid);
+
+    // Ordering needs to be consistent with CreateSuperpieceMaskInfo
+    constexpr usize DIAG       = 1;
+    constexpr usize ORTH       = 2;
+    constexpr usize ORTH_NEAR  = 3;
+    constexpr usize HORSE      = 4;
+    constexpr usize WPAWN_NEAR = 5;
+    constexpr usize BPAWN_NEAR = 6;
+    static_assert(sizeof(CreateSuperpieceMaskInfo) == sizeof(__m128i));
+
+    const v512 IDXS{std::array<u8, 64>{{
+      HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // N
+      HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NE
+      HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // E
+      HORSE, WPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // SE
+      HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // S
+      HORSE, WPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // SW
+      HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // W
+      HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NW
+    }}};
+
+    v128 cmi = std::bit_cast<v128>(cmi_arg);
+    v128 lo{_mm_packus_epi16((cmi & v128::broadcast16(0xFF)).raw, _mm_setzero_si128())};
+    v128 hi{_mm_packus_epi16(v128::shr16(cmi, 8).raw, _mm_setzero_si128())};
+
+    v512 board_idxs = v512::permute8(inverse_perm, IDXS & ray_extent);
+
+    v512 result_lo = v512::permute8(board_idxs, lo);
+    v512 result_hi = v512::permute8(board_idxs, hi);
+
+    v512 at0 = v512::unpacklo8(result_lo, result_hi);
+    v512 at1 = v512::unpackhi8(result_lo, result_hi);
+
+    return {at0, at1};
+}
+
 std::optional<Position> Position::parse(std::string_view str) {
     std::string        input{str};
     std::istringstream is{input};
