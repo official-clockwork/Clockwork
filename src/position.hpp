@@ -46,7 +46,7 @@ struct alignas(16) PieceList {
         constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
         const v128 to_bits{std::array<u8, 16>{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0, 0,
                                               0, 0, 0, 0, 0, 0}};
-        return PieceMask{v128::eq8(v128::permute8(to_vec(), to_bits), v128::broadcast8(bits))};
+        return PieceMask{(v128::permute8(to_vec(), to_bits) & v128::broadcast8(bits)).nonzero8()};
     }
 
     constexpr bool operator==(const PieceList& other) const {

@@ -84,6 +84,16 @@ struct v128 {
         return neq8(*this, zero());
     }
 
+    friend forceinline v128 operator&(v128 a, v128 b) {
+        return {_mm_and_si128(a.raw, b.raw)};
+    }
+    friend forceinline v128 operator|(v128 a, v128 b) {
+        return {_mm_or_si128(a.raw, b.raw)};
+    }
+    friend forceinline v128 operator^(v128 a, v128 b) {
+        return {_mm_xor_si128(a.raw, b.raw)};
+    }
+
     [[nodiscard]] forceinline bool operator==(const v128& other) const {
         __m128i t = _mm_xor_si128(raw, other.raw);
         return _mm_testz_si128(t, t);
