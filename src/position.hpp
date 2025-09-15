@@ -141,6 +141,10 @@ public:
         return !checker_mask().empty();
     }
 
+    [[nodiscard]] Bitboard bitboard_for(Color color, PieceType ptype) const {
+        return m_board.bitboard_for(color, ptype);
+    }
+
     [[nodiscard]] i32 piece_count(Color color, PieceType ptype) const {
         return piece_list(color).mask_eq(ptype).popcount();
     }
