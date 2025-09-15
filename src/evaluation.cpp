@@ -95,7 +95,7 @@ PScore evaluate_potential_checkers(const Position& pos) {
     for (u64 x : std::bit_cast<std::array<u64, 16>>(mask)) {
         count += std::popcount(x);
     }
-    return POTENIAL_CHECKER_VAL * count;
+    return POTENTIAL_CHECKER_VAL * count;
 }
 
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
