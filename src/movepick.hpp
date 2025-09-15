@@ -6,7 +6,7 @@
 #include "history.hpp"
 #include "movegen.hpp"
 #include "position.hpp"
-
+#include "search.hpp"
 
 namespace Clockwork {
 
@@ -14,15 +14,15 @@ bool quiet_move(Move move);
 
 class MovePicker {
 public:
-    explicit MovePicker(const Position& pos,
-                        const History&  history,
-                        Move            tt_move = Move::none(),
-                        Move            killer  = Move::none()) :
+    explicit MovePicker(
+      const Position& pos, const History& history, Move tt_move, i32 ply, Search::Stack* ss) :
         m_pos(pos),
         m_history(history),
         m_movegen(pos),
         m_tt_move(tt_move),
-        m_killer(killer) {
+        m_killer(ss->killer),
+        m_ply(ply),
+        m_stack(ss) {
     }
 
     void skip_quiets();
@@ -38,10 +38,11 @@ private:
         EmitTTMove,
         GenerateMoves,
         ScoreNoisy,
-        EmitNoisy,
+        EmitGoodNoisy,
         EmitKiller,
         ScoreQuiet,
         EmitQuiet,
+        EmitBadNoisy,
         End,
     };
 
@@ -58,12 +59,15 @@ private:
     MoveGen              m_movegen;
     MoveList             m_noisy;
     MoveList             m_quiet;
+    MoveList             m_bad_noisy;
     usize                m_current_index = 0;
     bool                 m_skip_quiets   = false;
     std::array<i32, 256> m_scores;
 
-    Move m_tt_move;
-    Move m_killer;
+    Move           m_tt_move;
+    Move           m_killer;
+    i32            m_ply;
+    Search::Stack* m_stack;
 };
 
 }

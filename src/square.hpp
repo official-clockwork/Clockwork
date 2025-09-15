@@ -55,6 +55,14 @@ struct Square {
         return (raw & 0x80) == 0;
     }
 
+    constexpr Square flip_horizontal() const {
+        return Square{static_cast<u8>(raw ^ 7)};
+    }
+
+    constexpr Square flip_vertical() const {
+        return Square{static_cast<u8>(raw ^ 56)};
+    }
+
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());
         return os << file << sq.rank() + 1;

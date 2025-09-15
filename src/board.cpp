@@ -12,10 +12,10 @@ std::ostream& operator<<(std::ostream& os, const Wordboard& at) {
 
     for (i32 rank = 7; rank >= 0; rank--) {
         for (i32 file = 0; file < 8; file++) {
-            Square sq    = Square::from_file_and_rank(file, rank);
-            u16    value = at.read(sq);
+            Square    sq    = Square::from_file_and_rank(file, rank);
+            PieceMask value = at.read(sq);
 
-            os << std::hex << std::setfill('0') << std::setw(4) << value << ' ';
+            os << std::hex << std::setfill('0') << std::setw(4) << value.value() << ' ';
         }
         os << std::endl;
     }

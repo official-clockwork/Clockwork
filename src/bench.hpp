@@ -5,6 +5,6 @@
 
 namespace Clockwork {
 namespace Bench {
-void benchmark(Search::Worker& worker, Depth depth);
+void benchmark(Search::Searcher& searcher, Depth depth);
 }
 }

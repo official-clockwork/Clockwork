@@ -36,12 +36,16 @@ std::optional<Move> Move::parse(std::string_view str, const Position& ctx) {
             }
         }
         if (ptype == PieceType::King) {
-            // TODO: FRC
+            Square rook_aside = ctx.rook_info(ctx.active_color()).aside;
+            Square rook_hside = ctx.rook_info(ctx.active_color()).hside;
+            if (*to == rook_aside || *to == rook_hside) {
+                return Move(*from, *to, MoveFlags::Castle);
+            }
             if (from->file() == 4 && to->file() == 2) {
-                return Move(*from, ctx.rook_info(ctx.active_color()).aside, MoveFlags::Castle);
+                return Move(*from, rook_aside, MoveFlags::Castle);
             }
             if (from->file() == 4 && to->file() == 6) {
-                return Move(*from, ctx.rook_info(ctx.active_color()).hside, MoveFlags::Castle);
+                return Move(*from, rook_hside, MoveFlags::Castle);
             }
         }
         return Move(*from, *to, capture ? MoveFlags::CaptureBit : MoveFlags::Normal);

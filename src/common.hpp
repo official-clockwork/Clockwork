@@ -1,8 +1,11 @@
 #pragma once
 
 #include "util/types.hpp"
+#include <atomic>
 
 namespace Clockwork {
+
+inline std::atomic<bool> g_frc = false;
 
 constexpr i32   MAX_PLY     = 256;
 constexpr Value VALUE_INF   = 32501;
@@ -25,8 +28,23 @@ constexpr char color_char(Color color) {
     unreachable();
 }
 
+constexpr i32 color_backrank(Color color) {
+    using enum Color;
+    switch (color) {
+    case White:
+        return 0;
+    case Black:
+        return 7;
+    }
+    unreachable();
+}
+
 constexpr Color invert(Color color) {
     return static_cast<Color>(static_cast<i32>(color) ^ 1);
+}
+
+constexpr Color operator~(Color color) {
+    return invert(color);
 }
 
 enum class PieceType : u8 {

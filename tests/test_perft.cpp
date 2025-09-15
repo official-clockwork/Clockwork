@@ -37,7 +37,17 @@ int main() {
         "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10",
         {{1, 46, 2079, 89890, 3894594, 164075551}},
       },
+      {
+        "1bbrnkqr/pp1p1ppp/2p1p3/1n6/5P2/3Q4/PPPPP1PP/NBBRNK1R w HDhd - 2 9",
+        {{1, 36, 891, 31075, 781792, 26998966}},
+      },
+      {
+        "2r1kr2/8/8/8/8/8/8/1R2K1R1 w GBfc - 0 1",
+        {{1, 22, 501, 11459, 264663, 6236222, 149271720}},
+      },
     }};
+
+    g_frc = true;
 
     for (auto [fen, results] : cases) {
         Position position = *Position::parse(fen);

@@ -32,6 +32,7 @@
 *.app
 
 clockwork
+clockwork-evaltune
 
 # Cmake folders
 build*/
@@ -39,3 +40,8 @@ build*/
 # IDEs
 .idea/*
 .vscode/*
+
+data/*
+*.epd
+# Other common folders
+books/*
