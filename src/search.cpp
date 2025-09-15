@@ -428,6 +428,7 @@ Value Worker::search(
     i32        moves_played = 0;
     MoveList   quiets_played;
     MoveList   noisies_played;
+    i32        alpha_raises = 0;
 
     // Clear child's killer move.
     (ss + 1)->killer = Move::none();
@@ -482,6 +483,8 @@ Value Worker::search(
             i32 reduction = static_cast<i32>(
               std::round(1024 * (0.77 + std::log(depth) * std::log(moves_played) / 2.36)));
             reduction -= 1024 * PV_NODE;
+
+            reduction += alpha_raises * 512;
 
             if (cutnode) {
                 reduction += 1024;
@@ -544,6 +547,7 @@ Value Worker::search(
             if (value > alpha) {
                 alpha     = value;
                 best_move = m;
+                alpha_raises++;
 
                 if (value >= beta) {
                     ss->fail_high_count++;
