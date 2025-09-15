@@ -496,7 +496,7 @@ Value Worker::search(
             }
 
             if (quiet) {
-                reduction -= move_history / 8;
+                reduction += (1024 - move_history / 8);
             }
 
             if (!quiet) {
