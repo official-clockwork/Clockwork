@@ -74,6 +74,11 @@ int main(int argc, char* argv[]) {
     std::cout << "Loaded " << positions.size() << " FENs from " << fenFiles.size() << " files."
               << std::endl;
 
+    if (positions.size() == 0) {
+        std::cerr << "No positions loaded!" << std::endl;
+        return 1;
+    }
+
     Clockwork::Autograd::AdamW optim(10, 0.9, 0.999, 1e-8, 0.0);
 
     i32       epochs     = 1000;
