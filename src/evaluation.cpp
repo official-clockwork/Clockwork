@@ -132,6 +132,46 @@ std::array<Bitboard, 64> king_ring_table = []() {
     return king_ring_table;
 }();
 
+template<Color color>
+PScore evaluate_pawns(const Position& pos) {
+    Bitboard pawns = pos.board().bitboard_for(color, PieceType::Pawn);
+    PScore eval = PSCORE_ZERO;
+    eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).popcount();
+
+    return eval;
+}
+
+template<Color color>
+PScore evaluate_pieces(const Position& pos) {
+    constexpr Color opp = ~color;
+    PScore eval = PSCORE_ZERO;
+    Bitboard bb = pos.bitboard_for(color, PieceType::Pawn) | pos.attacked_by(opp, PieceType::Pawn);
+    Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
+        eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += KNIGHT_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
+    }
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Bishop)) {
+        eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += BISHOP_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
+    }
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
+        eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += ROOK_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
+    }
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Queen)) {
+        eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += QUEEN_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
+    }
+    eval += KING_MOBILITY[pos.mobility_of(color, PieceId::king(), ~bb)];
+
+    if (pos.piece_count(color, PieceType::Bishop) >= 2) {
+        eval += BISHOP_PAIR_VAL;
+    }
+
+    return eval;
+}
+
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     i32         phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -150,48 +190,11 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore mobility    = PSCORE_ZERO;
     PScore king_attack = PSCORE_ZERO;
 
-    auto add_mobility = [&](Color c, PScore& mob_count, PScore& k_attack) {
-        Bitboard bb = pos.bitboard_for(c, PieceType::Pawn) | pos.attacked_by(~c, PieceType::Pawn);
-        Bitboard king_ring = king_ring_table[pos.king_sq(~c).raw];
-        for (PieceId id : pos.get_piece_mask(c, PieceType::Knight)) {
-            mobility += KNIGHT_MOBILITY[pos.mobility_of(c, id, ~bb)];
-            k_attack += KNIGHT_KING_RING[pos.mobility_of(c, id, king_ring)];
-        }
-        for (PieceId id : pos.get_piece_mask(c, PieceType::Bishop)) {
-            mobility += BISHOP_MOBILITY[pos.mobility_of(c, id, ~bb)];
-            k_attack += BISHOP_KING_RING[pos.mobility_of(c, id, king_ring)];
-        }
-        for (PieceId id : pos.get_piece_mask(c, PieceType::Rook)) {
-            mobility += ROOK_MOBILITY[pos.mobility_of(c, id, ~bb)];
-            k_attack += ROOK_KING_RING[pos.mobility_of(c, id, king_ring)];
-        }
-        for (PieceId id : pos.get_piece_mask(c, PieceType::Queen)) {
-            mobility += QUEEN_MOBILITY[pos.mobility_of(c, id, ~bb)];
-            k_attack += QUEEN_KING_RING[pos.mobility_of(c, id, king_ring)];
-        }
-        mobility += KING_MOBILITY[pos.mobility_of(c, PieceId::king(), ~bb)];
-    };
-
-    add_mobility(Color::Black, mobility, king_attack);
-    mobility *= -1;  // Persy trick
-    king_attack *= -1;
-    add_mobility(Color::White, mobility, king_attack);
-
-    const std::array<Bitboard, 2> pawns = {pos.board().bitboard_for(Color::White, PieceType::Pawn),
-                                           pos.board().bitboard_for(Color::Black, PieceType::Pawn)};
-
-    PScore doubled_pawns_bonus = DOUBLED_PAWN_VAL
-                               * ((pawns[0] & pawns[0].shift(Direction::North)).popcount()
-                                  - (pawns[1] & pawns[1].shift(Direction::South)).popcount());
-
-    PScore bishop_pair_bonus = BISHOP_PAIR_VAL
-                             * ((pos.piece_count(Color::White, PieceType::Bishop) >= 2)
-                                - (pos.piece_count(Color::Black, PieceType::Bishop) >= 2));
-
-    PScore tempo = (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-    PScore sum =
-      psqt_state.score() + mobility + king_attack + tempo + bishop_pair_bonus + doubled_pawns_bonus;
-    return sum->phase<24>(phase);
+    PScore eval = psqt_state.score();
+    eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
+    eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
+    eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
+    return eval->phase<24>(phase);
 };
 
 Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state) {
