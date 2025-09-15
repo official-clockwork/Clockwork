@@ -127,21 +127,23 @@ int main(int argc, char* argv[]) {
 
         std::cout << std::endl;  // Finish progress bar line
 
-        std::cout << "const PScore PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
-        std::cout << "const PScore KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
-        std::cout << "const PScore BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
-        std::cout << "const PScore ROOK_MAT   = " << ROOK_MAT << ";" << std::endl;
-        std::cout << "const PScore QUEEN_MAT  = " << QUEEN_MAT << ";" << std::endl;
-        std::cout << "const PScore TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
+        std::cout << "inline const PScore PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
+        std::cout << "inline const PScore KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
+        std::cout << "inline const PScore BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
+        std::cout << "inline const PScore ROOK_MAT   = " << ROOK_MAT << ";" << std::endl;
+        std::cout << "inline const PScore QUEEN_MAT  = " << QUEEN_MAT << ";" << std::endl;
+        std::cout << "inline const PScore TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
         std::cout << std::endl;
 
-        std::cout << "const PScore BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";" << std::endl;
-        std::cout << "const PScore DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";" << std::endl;
+        std::cout << "inline const PScore BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";"
+                  << std::endl;
+        std::cout << "inline const PScore DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
+                  << std::endl;
         std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {
-            std::cout << "const std::array<PScore, " << table.size() << "> " << name << " = {"
-                      << std::endl
+            std::cout << "inline const std::array<PScore, " << table.size() << "> " << name
+                      << " = {" << std::endl
                       << "   ";
             for (const auto& val : table) {
                 std::cout << " " << val << ",";
@@ -163,7 +165,7 @@ int main(int argc, char* argv[]) {
         std::cout << std::endl;
 
         auto printPsqtArray = [](const std::string& name, const auto& arr) {
-            std::cout << "const std::array<PScore, " << arr.size() << "> " << name << " = {"
+            std::cout << "inline const std::array<PScore, " << arr.size() << "> " << name << " = {"
                       << std::endl;
             for (std::size_t i = 0; i < arr.size(); ++i) {
                 if ((i & 7) == 0) {
