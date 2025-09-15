@@ -90,12 +90,7 @@ PScore evaluate_potential_checkers(const Position& pos) {
 
     Wordboard mask = pos.create_attack_table_superpiece_mask(pos.king_sq(color), cmi);
     mask           = mask & pos.attack_table(opp);
-
-    i32 count = 0;
-    for (u64 x : std::bit_cast<std::array<u64, 16>>(mask)) {
-        count += std::popcount(x);
-    }
-    return POTENTIAL_CHECKER_VAL * count;
+    return POTENTIAL_CHECKER_VAL * mask.popcount();
 }
 
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {

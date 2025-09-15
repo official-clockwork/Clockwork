@@ -253,6 +253,14 @@ struct Wordboard {
         return value;
     }
 
+    [[nodiscard]] i32 popcount() const {
+        i32 count = 0;
+        for (u64 x : std::bit_cast<std::array<u64, 16>>(*this)) {
+            count += std::popcount(x);
+        }
+        return count;
+    }
+
     friend inline Wordboard operator&(const Wordboard& a, const Wordboard& b) {
         return Wordboard{{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]}};
     }
