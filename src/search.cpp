@@ -200,7 +200,7 @@ template<bool IS_MAIN>
 Move Worker::iterative_deepening(const Position& root_position) {
     constexpr usize                             SS_PADDING = 2;
     std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
-    std::array<PV, MAX_PLY + 1>                 pv;
+    std::array<PV, MAX_PLY + SS_PADDING + 1>    pv;
 
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY + SS_PADDING + 1); i++) {
         ss[i].pv              = &pv[i];
