@@ -188,7 +188,7 @@ void Worker::start_searching() {
         Move best_move = iterative_deepening<true>(root_position);
 
         // Print (and make sure to flush) the best move
-        std::cout << "bestmove " << best_move << std::endl;
+        std::cout << "bestmove " << best_move << std::endl << std::flush;
 
         m_searcher.stop_searching();
     } else {
@@ -322,6 +322,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
     // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
     if (IS_MAIN) {
         print_info_line();
+        std::cout << std::flush;
     }
 
     return last_best_move;
