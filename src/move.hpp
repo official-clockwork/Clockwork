@@ -4,7 +4,6 @@
 #include "square.hpp"
 #include "util/types.hpp"
 
-
 #include <optional>
 #include <string_view>
 
@@ -30,6 +29,29 @@ enum class MoveFlags : u16 {
     PromoRookCapture   = (0b1100 | (static_cast<u16>(PieceType::Rook) - 2)) << 12,
     PromoQueenCapture  = (0b1100 | (static_cast<u16>(PieceType::Queen) - 2)) << 12,
 };
+
+inline std::optional<MoveFlags>
+build_move_flags(bool castle, bool en_passant, bool capture, PieceType promo) {
+    using enum MoveFlags;
+    if (castle) {
+        return Castle;
+    }
+    if (en_passant) {
+        return EnPassant;
+    }
+
+    u16 flags = 0;
+    if (capture) {
+        flags |= static_cast<u16>(CaptureBit);
+    }
+    if (promo != PieceType::None) {
+        if (promo < PieceType::Knight || promo > PieceType::Queen) {
+            return std::nullopt;
+        }
+        flags |= (static_cast<u16>(promo) - 2) << 12;
+    }
+    return static_cast<MoveFlags>(flags);
+}
 
 struct Move {
     u16 raw          = 0;
@@ -84,7 +106,13 @@ struct Move {
         return static_cast<PieceType>(((raw >> 12) & 0b0011) + 2);
     }
 
+    // Parse UCI move notation
+    // All legal moves will be parsed, but a successfully parsed move is not guaranteed to be legal.
     static std::optional<Move> parse(std::string_view str, const Position& context);
+
+    // Parse Standard Algebraic notation (SAN) moves
+    // All legal moves will be parsed, but a successfully parsed move is not guaranteed to be legal.
+    static std::optional<Move> parseSan(std::string_view san, const Position& context);
 
     [[nodiscard]] constexpr bool operator==(const Move& other) const = default;
 

@@ -967,6 +967,12 @@ std::ostream& operator<<(std::ostream& os, const Position& position) {
     return os;
 }
 
+std::string Position::to_string() const {
+    std::stringstream ss;
+    ss << *this;
+    return ss.str();
+}
+
 bool Position::is_reversible(Move move) {
     return !(move.is_capture() || move.is_promotion() || move.is_castle()
              || (m_board[move.from()].ptype() == PieceType::Pawn));

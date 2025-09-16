@@ -282,6 +282,8 @@ public:
     bool                 operator==(const Position&) const = default;
     friend std::ostream& operator<<(std::ostream& os, const Position& position);
 
+    std::string to_string() const;
+
 private:
     std::array<Wordboard, 2>            m_attack_table{};
     std::array<PieceList<Square>, 2>    m_piece_list_sq{};
