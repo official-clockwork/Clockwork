@@ -38,6 +38,10 @@ enum class ThreadType {
 
 struct PV {
 public:
+    void clear() {
+        m_pv.clear();
+    }
+
     void set(Move move, const PV& child_pv_line) {
         m_pv.clear();
         m_pv.push_back(move);

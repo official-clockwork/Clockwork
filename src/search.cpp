@@ -319,6 +319,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
 template<bool IS_MAIN, bool PV_NODE>
 Value Worker::search(
   const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode) {
+    ss->pv.clear();
+
     if (m_stopped) {
         return 0;
     }
@@ -616,6 +618,8 @@ Value Worker::search(
 
 template<bool IS_MAIN>
 Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
+    ss->pv.clear();
+
     if (m_stopped) {
         return 0;
     }
