@@ -41,7 +41,6 @@ build*/
 .idea/*
 .vscode/*
 
-data/*
 *.epd
 # Other common folders
 books/*
