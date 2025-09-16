@@ -21,15 +21,15 @@
 
 namespace Clockwork {
 namespace Search {
-Value mated_in(i32 ply) {
+static Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
-// Adds current move to current
-void update_pv(Move move, PV* current_pv, const PV* child_pv_line) {
-    current_pv->clear();
-    current_pv->push_back(move);
-    current_pv->append(*child_pv_line);
+std::ostream& operator<<(std::ostream& os, const PV& pv) {
+    for (Move m : pv.m_pv) {
+        os << m << ' ';
+    }
+    return os;
 }
 
 Searcher::Searcher() :
@@ -200,10 +200,8 @@ template<bool IS_MAIN>
 Move Worker::iterative_deepening(const Position& root_position) {
     constexpr usize                             SS_PADDING = 2;
     std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
-    std::array<PV, MAX_PLY + SS_PADDING + 1>    pv;
 
     for (u32 i = 0; i < static_cast<u32>(MAX_PLY + SS_PADDING + 1); i++) {
-        ss[i].pv              = &pv[i];
         ss[i].cont_hist_entry = nullptr;
     }
 
@@ -224,15 +222,6 @@ Move Worker::iterative_deepening(const Position& root_position) {
             return "cp " + std::to_string(score / 4);
         };
 
-        // Lambda to print the mainline
-        auto pv_string = [&] {
-            std::ostringstream oss;
-            for (Move m : last_pv) {
-                oss << m << " ";
-            }
-            return oss.str();
-        };
-
         // Get current time
         auto curr_time = time::Clock::now();
 
@@ -240,7 +229,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
                   << format_score(last_search_score) << " nodes " << m_searcher.node_count()
                   << " nps " << time::nps(m_searcher.node_count(), curr_time - m_search_start)
                   << " time " << time::cast<time::Milliseconds>(curr_time - m_search_start).count()
-                  << " pv " << pv_string() << std::endl;
+                  << " pv " << last_pv << std::endl;
     };
 
     m_node_counts.fill(0);
@@ -281,8 +270,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Store information only if the last iterative deepening search completed
         last_search_depth = search_depth;
         last_search_score = score;
-        last_pv           = *ss[SS_PADDING].pv;
-        last_best_move    = last_pv[0];
+        last_pv           = ss[SS_PADDING].pv;
+        last_best_move    = last_pv.first_move();
 
         // Check depth limit
         if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
@@ -322,7 +311,6 @@ Move Worker::iterative_deepening(const Position& root_position) {
     // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
     if (IS_MAIN) {
         print_info_line();
-        std::cout << std::flush;
     }
 
     return last_best_move;
@@ -562,7 +550,7 @@ Value Worker::search(
 
             if (value > alpha) {
                 if (PV_NODE) {
-                    update_pv(m, ss->pv, (ss + 1)->pv);
+                    ss->pv.set(m, (ss + 1)->pv);
                 }
                 alpha     = value;
                 best_move = m;

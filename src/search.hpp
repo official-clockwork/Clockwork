@@ -8,6 +8,7 @@
 #include "util/static_vector.hpp"
 #include "util/types.hpp"
 #include <barrier>
+#include <iosfwd>
 #include <memory>
 #include <shared_mutex>
 #include <thread>
@@ -35,14 +36,30 @@ enum class ThreadType {
     SECONDARY = 0,
 };
 
-using PV = StaticVector<Move, MAX_PLY + 1>;
+struct PV {
+public:
+    void set(Move move, const PV& child_pv_line) {
+        m_pv.clear();
+        m_pv.push_back(move);
+        m_pv.append(child_pv_line.m_pv);
+    }
+
+    Move first_move() const {
+        return m_pv.empty() ? Move::none() : m_pv[0];
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const PV& pv);
+
+private:
+    StaticVector<Move, MAX_PLY + 1> m_pv;
+};
 
 struct Stack {
     Value          static_eval;
-    PV*            pv;
     Move           killer;
     ContHistEntry* cont_hist_entry;
     i32            fail_high_count;
+    PV             pv;
 };
 
 struct SearchLimits {
