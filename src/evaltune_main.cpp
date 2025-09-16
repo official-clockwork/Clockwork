@@ -155,6 +155,7 @@ int main(int argc, char* argv[]) {
         };
 
         print_table("PAWN_PHALANX", PAWN_PHALANX);
+        print_table("DEFENDED_PAWN", DEFENDED_PAWN);
         std::cout << std::endl;
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
