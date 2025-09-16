@@ -86,7 +86,7 @@ public:
     void launch_search(SearchSettings settings);
     void stop_searching();
     void wait();
-    void initialize(int thread_count);
+    void initialize(size_t thread_count);
     void exit();
 
     u64  node_count();

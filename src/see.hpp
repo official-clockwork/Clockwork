@@ -87,7 +87,7 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     while (u64 current = current_attackers()) {
         i32  next  = std::countr_zero((ptype_vec & v512::broadcast64(current)).nonzero64());
         auto ptype = static_cast<PieceType>(next);
-        u64  br    = ptype_bits[next] & current;
+        u64  br    = ptype_bits[static_cast<size_t>(next)] & current;
         occupied ^= lowest_bit(br);
 
         score = -score - 1 - value(ptype);

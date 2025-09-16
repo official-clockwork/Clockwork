@@ -180,7 +180,7 @@ public:
 
     friend ValuePtr operator+(ValuePtr a, f64 b) {
         ValuePtr result         = Value::create(a->m_value + b);
-        result->m_backward_func = [a, b](ValuePtr out) {
+        result->m_backward_func = [a](ValuePtr out) {
             a->m_gradient += out->m_gradient;
         };
         return result;
@@ -188,7 +188,7 @@ public:
 
     friend ValuePtr operator-(ValuePtr a, f64 b) {
         ValuePtr result         = Value::create(a->m_value - b);
-        result->m_backward_func = [a, b](ValuePtr out) {
+        result->m_backward_func = [a](ValuePtr out) {
             a->m_gradient += out->m_gradient;
         };
         return result;
@@ -217,7 +217,7 @@ public:
 
     friend ValuePtr operator-(f64 a, ValuePtr b) {
         ValuePtr result         = Value::create(a - b->m_value);
-        result->m_backward_func = [a, b](ValuePtr out) {
+        result->m_backward_func = [b](ValuePtr out) {
             b->m_gradient -= out->m_gradient;
         };
         return result;

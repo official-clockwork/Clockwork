@@ -32,12 +32,12 @@ public:
             auto& squares                         = pos.piece_list_sq(c);
 
             for (size_t i = 0; i < 16; i++) {
-                PieceType pt = pieces[i];
+                PieceType pt = pieces[static_cast<u8>(i)];
                 if (pt == PieceType::None) {
                     continue;
                 }
 
-                add_piece(c, pt, squares[i]);
+                add_piece(c, pt, squares[static_cast<u8>(i)]);
             }
         }
     }

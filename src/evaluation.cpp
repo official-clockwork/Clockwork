@@ -135,7 +135,7 @@ std::array<Bitboard, 64> king_ring_table = []() {
 template<Color color>
 PScore evaluate_pawns(const Position& pos) {
     Bitboard pawns = pos.board().bitboard_for(color, PieceType::Pawn);
-    PScore eval = PSCORE_ZERO;
+    PScore   eval  = PSCORE_ZERO;
     eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).popcount();
 
     return eval;
@@ -143,8 +143,8 @@ PScore evaluate_pawns(const Position& pos) {
 
 template<Color color>
 PScore evaluate_pieces(const Position& pos) {
-    constexpr Color opp = ~color;
-    PScore eval = PSCORE_ZERO;
+    constexpr Color opp  = ~color;
+    PScore          eval = PSCORE_ZERO;
     Bitboard bb = pos.bitboard_for(color, PieceType::Pawn) | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {

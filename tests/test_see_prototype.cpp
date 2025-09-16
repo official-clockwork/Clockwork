@@ -15,7 +15,7 @@ template<typename T>
 void print8(T x) {
     std::cout << std::hex;
     auto y = std::bit_cast<std::array<u8, sizeof(T)>>(x);
-    for (int i = 0; i < sizeof(T); i++) {
+    for (size_t i = 0; i < sizeof(T); i++) {
         if (i != 0 && (i % 8) == 0) {
             std::cout << "| ";
         }
@@ -91,7 +91,7 @@ int main() {
         std::cout << std::setw(2) << std::setfill('0')
                   << (ptype_vec & v512::broadcast64(current)).nonzero64() << std::endl;
         i32 next = std::countr_zero((ptype_vec & v512::broadcast64(current)).nonzero64());
-        u64 br   = ptype_bits[next] & current;
+        u64 br   = ptype_bits[static_cast<size_t>(next)] & current;
 
         std::cout << "current:        " << std::setw(16) << std::setfill('0') << current
                   << std::endl;

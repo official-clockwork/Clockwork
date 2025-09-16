@@ -70,7 +70,7 @@ void Searcher::wait() {
     std::unique_lock lock_guard{mutex};
 }
 
-void Searcher::initialize(int thread_count) {
+void Searcher::initialize(size_t thread_count) {
     if (m_workers.size() == thread_count) {
         return;
     }
@@ -88,7 +88,7 @@ void Searcher::initialize(int thread_count) {
 
     if (thread_count > 0) {
         m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
-        for (int i = 1; i < thread_count; i++) {
+        for (size_t i = 1; i < thread_count; i++) {
             m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::SECONDARY));
         }
     }
@@ -342,7 +342,7 @@ Value Worker::search(
     // Draw checks
     if (!ROOT_NODE) {
         // Repetition check
-        if (repetition_info.detect_repetition(ply)) {
+        if (repetition_info.detect_repetition(static_cast<size_t>(ply))) {
             return 0;
         }
         // 50 mr check

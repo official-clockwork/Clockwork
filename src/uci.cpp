@@ -249,7 +249,7 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
         }
     } else if (name == "Threads") {
         if (auto value = parse_number<usize>(value_str)) {
-            usize thread_count = std::clamp<usize>(*value, 1, MAX_THREADS);
+            size_t thread_count = std::clamp<size_t>(*value, 1, MAX_THREADS);
             searcher.initialize(thread_count);
             searcher.set_position(m_position, m_repetition_info);
         } else {
