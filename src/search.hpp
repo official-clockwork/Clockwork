@@ -5,7 +5,6 @@
 #include "psqt_state.hpp"
 #include "repetition_info.hpp"
 #include "tt.hpp"
-#include "uci.hpp"
 #include "util/static_vector.hpp"
 #include "util/types.hpp"
 #include <barrier>

@@ -210,6 +210,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
     Depth last_search_depth = 0;
     Value last_search_score = -VALUE_INF;
     Move  last_best_move    = Move::none();
+    PV    last_pv{};
 
     const auto print_info_line = [&] {
         // Lambda to convert internal units score to uci score. TODO: add eval rescaling here once we get one
@@ -226,7 +227,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Lambda to print the mainline
         auto pv_string = [&] {
             std::ostringstream oss;
-            for (Move m : *ss[0]->pv) {
+            for (Move m : last_pv) {
                 oss << m << " ";
             }
             return oss.str();
@@ -236,9 +237,10 @@ Move Worker::iterative_deepening(const Position& root_position) {
         auto curr_time = time::Clock::now();
 
         std::cout << std::dec << "info depth " << last_search_depth << " score "
-                  << format_score(last_search_score) << " nodes " << search_nodes << " nps "
-                  << time::nps(search_nodes, curr_time - m_search_start) << " pv " << pv_string()
-                  << std::endl;
+                  << format_score(last_search_score) << " nodes " << m_searcher.node_count()
+                  << " nps " << time::nps(m_searcher.node_count(), curr_time - m_search_start)
+                  << " time " << time::cast<time::Milliseconds>(curr_time - m_search_start).count()
+                  << " pv " << pv_string() << std::endl;
     };
 
     m_node_counts.fill(0);
@@ -279,7 +281,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Store information only if the last iterative deepening search completed
         last_search_depth = search_depth;
         last_search_score = score;
-        last_best_move    = *ss[SS_PADDING].pv;
+        last_pv           = *ss[SS_PADDING].pv;
+        last_best_move    = last_pv[0];
 
         // Check depth limit
         if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
@@ -336,7 +339,6 @@ Value Worker::search(
     }
 
     const bool ROOT_NODE = ply == 0;
-    const bool PV_NODE   = (beta - alpha) > 1;
 
     // TODO: search nodes limit condition here
     // ...
@@ -401,8 +403,9 @@ Value Worker::search(
     }
 
     // Reuse TT score as a better positional evaluation
-    auto tt_adjusted_eval = static_eval;
-    if (tt_data && tt_data->bound != (tt_data->score > static_eval ? Bound::Upper : Bound::Lower)) {
+    auto tt_adjusted_eval = ss->static_eval;
+    if (tt_data
+        && tt_data->bound != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
 
