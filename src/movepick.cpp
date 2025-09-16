@@ -116,8 +116,8 @@ void MovePicker::score_moves(MoveList& moves) {
 }
 
 Move MovePicker::pick_next(MoveList& moves) {
-    u32 best_idx = static_cast<u32>(m_current_index);
-    for (u32 i = static_cast<u32>(m_current_index + 1); i < moves.size(); i++) {
+    usize best_idx = m_current_index;
+    for (usize i = m_current_index + 1; i < moves.size(); i++) {
         if (m_scores[i] > m_scores[best_idx]) {
             best_idx = i;
         }

@@ -13,11 +13,11 @@ time::TimePoint compute_hard_limit(time::TimePoint               search_start,
     auto hard_limit = TimePoint::max();
 
     if (settings.w_time >= 0) {
-        const auto compute_buffer_time = [&]() -> u64 {
+        const auto compute_buffer_time = [&]() -> i64 {
             if (stm == Color::White) {
-                return static_cast<u64>(settings.w_time / 4);
+                return settings.w_time / 4;
             } else {
-                return static_cast<u64>(settings.b_time / 4);
+                return settings.b_time / 4;
             }
         };
         hard_limit = min(hard_limit, search_start + Milliseconds(compute_buffer_time()));

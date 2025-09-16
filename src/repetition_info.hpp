@@ -15,7 +15,7 @@ public:
     void pop();
     void reset();
 
-    bool detect_repetition(size_t root_ply);
+    bool detect_repetition(usize root_ply);
 
 private:
     std::vector<std::pair<HashKey, bool>> m_repetition_table;
