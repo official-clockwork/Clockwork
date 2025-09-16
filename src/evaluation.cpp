@@ -34,9 +34,16 @@ std::array<Bitboard, 64> king_ring_table = []() {
 
 template<Color color>
 PScore evaluate_pawns(const Position& pos) {
+    constexpr i32 RANK_2 = 1;
+
     Bitboard pawns = pos.board().bitboard_for(color, PieceType::Pawn);
     PScore   eval  = PSCORE_ZERO;
     eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).popcount();
+
+    Bitboard phalanx = pawns & pawns.shift(Direction::East);
+    for (Square sq : phalanx) {
+        eval += PAWN_PHALANX[sq.relative_sq(color).rank() - RANK_2];
+    }
 
     return eval;
 }

@@ -47,6 +47,10 @@ struct Square {
         return raw / 8;
     }
 
+    [[nodiscard]] constexpr Square relative_sq(Color c) const {
+        return c == Color::White ? *this : flip_vertical();
+    }
+
     [[nodiscard]] constexpr std::tuple<i32, i32> to_file_and_rank() const {
         return {file(), rank()};
     }

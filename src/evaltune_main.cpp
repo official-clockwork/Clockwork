@@ -143,7 +143,6 @@ int main(int argc, char* argv[]) {
 
         std::cout << "inline const PScore POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
                   << std::endl;
-        std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {
             std::cout << "inline const std::array<PScore, " << table.size() << "> " << name
@@ -154,6 +153,9 @@ int main(int argc, char* argv[]) {
             }
             std::cout << std::endl << "};" << std::endl;
         };
+
+        print_table("PAWN_PHALANX", PAWN_PHALANX);
+        std::cout << std::endl;
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
         print_table("BISHOP_MOBILITY", BISHOP_MOBILITY);
