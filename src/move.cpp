@@ -1,4 +1,5 @@
 #include "move.hpp"
+#include "movegen.hpp"
 
 #include "position.hpp"
 
@@ -188,23 +189,25 @@ std::optional<Move> Move::parseSan(std::string_view san, const Position& ctx) {
         return std::nullopt;
     }
 
-    std::vector<Square> from_candidates;
+    MoveGen           movegen{ctx};
+    std::vector<Move> candidates;
     PieceMask piece_mask = ctx.attack_table(stm).read(*to) & ctx.piece_list(stm).mask_eq(src_ptype);
     for (PieceId id : piece_mask) {
-        Square possible_from = ctx.piece_list_sq(stm)[id];
-        if (possible_from.to_string().find(san) != std::string::npos) {
-            from_candidates.push_back(possible_from);
+        Square from = ctx.piece_list_sq(stm)[id];
+        if (from.to_string().find(san) != std::string::npos) {
+            if (auto mf = build_move_flags(false, is_en_passant, is_capture, promo)) {
+                Move move = Move(from, *to, *mf);
+                if (movegen.is_legal(move)) {
+                    candidates.push_back(move);
+                }
+            }
         }
     }
 
-    if (from_candidates.size() != 1) {
+    if (candidates.size() != 1) {
         return std::nullopt;
     }
-
-    if (auto mf = build_move_flags(false, is_en_passant, is_capture, promo)) {
-        return Move(from_candidates[0], *to, *mf);
-    }
-    return std::nullopt;
+    return candidates[0];
 }
 
 }

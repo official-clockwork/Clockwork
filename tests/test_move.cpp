@@ -86,15 +86,20 @@ void cases() {
        "r3k1nr/pp1bnpbp/1q4p1/3p4/3N1P2/1PP1Q2P/P1B3P1/RNB1K2R w KQkq - 6 16"},
     }};
     for (auto [before, san, after] : cases) {
-        Position pos  = Position::parse(before).value();
-        Move     move = Move::parseSan(san, pos).value();
-        pos           = pos.move(move);
-        std::cout << before << " + " << san << " = " << pos << std::endl;
-        REQUIRE(pos.to_string() == after);
+        std::cout << before << " + " << san << ":";
+        auto pos1 = Position::parse(before);
+        REQUIRE(pos1);
+        auto move = Move::parseSan(san, *pos1);
+        REQUIRE(move);
+        std::cout << *move << " = ";
+        Position pos2 = pos1->move(*move);
+        std::cout << pos2 << std::endl;
+        REQUIRE(pos2.to_string() == after);
     }
 }
 
 int main() {
     game1();
+    cases();
     return 0;
 }
