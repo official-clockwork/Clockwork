@@ -118,7 +118,7 @@ std::optional<Move> Move::parseSan(std::string_view san, const Position& ctx) {
         return std::nullopt;
     }
 
-    bool is_capture = san.size() >= 3 && san[san.size() - 3] == 'x';
+    bool is_capture = san.size() > 3 && san[san.size() - 3] == 'x';
     auto to         = Square::parse(san.substr(san.size() - 2));
     if (!to) {
         return std::nullopt;
@@ -129,15 +129,12 @@ std::optional<Move> Move::parseSan(std::string_view san, const Position& ctx) {
     switch (san.size()) {
     case 0:
         // e.g. e4
-        if (is_capture) {
-            return std::nullopt;
-        }
         {
             i32    delta = stm == Color::White ? -8 : 8;
             Square push_src{static_cast<u8>(to->raw + delta)};
             Square double_src{static_cast<u8>(to->raw + delta * 2)};
 
-            if (to->relative_sq(stm).rank() < 8 && ctx.board()[push_src].ptype() == PieceType::Pawn
+            if (to->relative_sq(stm).rank() < 7 && ctx.board()[push_src].ptype() == PieceType::Pawn
                 && ctx.board()[push_src].color() == stm) {
                 if (auto mf = build_move_flags(false, false, false, promo)) {
                     return Move(push_src, *to, *mf);
@@ -171,7 +168,6 @@ std::optional<Move> Move::parseSan(std::string_view san, const Position& ctx) {
     case 2:  // e.g. Qhxa3, Q3xb7, Qba4, Q6a3
     case 3:  // e.g. Qa1b2, Qa1xb2
         if (auto p = parse_piece_char(san[0])) {
-            // e.g. Bb3, Bxb3
             src_ptype = *p;
         } else {
             return std::nullopt;
@@ -183,11 +179,6 @@ std::optional<Move> Move::parseSan(std::string_view san, const Position& ctx) {
     }
 
     bool is_en_passant = src_ptype == PieceType::Pawn && is_capture && *to == ctx.en_passant();
-
-    if (!is_en_passant && is_capture && ctx.board()[*to].is_empty()) {
-        // Capturing with empty destination
-        return std::nullopt;
-    }
 
     MoveGen           movegen{ctx};
     std::vector<Move> candidates;
