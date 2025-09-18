@@ -440,15 +440,15 @@ struct v512 {
         return (a & b).zero8();
     }
 
-    static forceinline i32 nonzerocount16(v512 a) {
+    static forceinline usize nonzerocount16(v512 a) {
         i32 result = 0;
-        result += std::popcount(
-          0xAAAAAAAA
-          & ~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[0].raw, _mm256_setzero_si256())));
-        result += std::popcount(
-          0xAAAAAAAA
-          & ~_mm256_movemask_epi8(_mm256_cmpeq_epi16(a.raw[1].raw, _mm256_setzero_si256())));
-        return result;
+        result += std::popcount(0xAAAAAAAA
+                                & static_cast<u32>(~_mm256_movemask_epi8(
+                                  _mm256_cmpeq_epi16(a.raw[0].raw, _mm256_setzero_si256()))));
+        result += std::popcount(0xAAAAAAAA
+                                & static_cast<u32>(~_mm256_movemask_epi8(
+                                  _mm256_cmpeq_epi16(a.raw[1].raw, _mm256_setzero_si256()))));
+        return static_cast<usize>(result);
     }
 
     [[nodiscard]] forceinline u64 msb8() const {

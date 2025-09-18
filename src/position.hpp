@@ -157,12 +157,12 @@ public:
         return m_board.bitboard_for(color, ptype);
     }
 
-    [[nodiscard]] i32 piece_count(Color color, PieceType ptype) const {
+    [[nodiscard]] usize piece_count(Color color, PieceType ptype) const {
         return piece_list(color).mask_eq(ptype).popcount();
     }
 
     template<PieceType... ptypes>
-    [[nodiscard]] i32 piece_count(Color color) const {
+    [[nodiscard]] usize piece_count(Color color) const {
         return piece_list(color).mask_eq<ptypes...>().popcount();
     }
 
@@ -195,11 +195,11 @@ public:
         return attack_table(color).get_piece_mask_bitboard(piece_list(color).mask_eq(ptype));
     }
 
-    [[nodiscard]] i32 mobility_of(Color color, PieceId id) const {
+    [[nodiscard]] usize mobility_of(Color color, PieceId id) const {
         return attack_table(color).count_matching_mask(id.to_piece_mask());
     }
 
-    [[nodiscard]] i32 mobility_of(Color color, PieceId id, Bitboard mask) const {
+    [[nodiscard]] usize mobility_of(Color color, PieceId id, Bitboard mask) const {
         return (attack_table(color).get_piece_mask_bitboard(id.to_piece_mask()) & mask).popcount();
     }
 
@@ -210,7 +210,7 @@ public:
         return piece_list(color)[id];
     }
 
-    [[nodiscard]] i32 piece_count(Color color) const {
+    [[nodiscard]] usize piece_count(Color color) const {
         return 16 - piece_count(color, PieceType::None);
     }
 

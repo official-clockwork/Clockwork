@@ -241,7 +241,7 @@ struct Wordboard {
         return Bitboard{concat64(v512::test16(raw[0], pm), v512::test16(raw[1], pm))};
     }
 
-    [[nodiscard]] i32 count_matching_mask(PieceMask piece_mask) const {
+    [[nodiscard]] usize count_matching_mask(PieceMask piece_mask) const {
         v512 pm = v512::broadcast16(piece_mask.value());
         return v512::nonzerocount16(raw[0] & pm) + v512::nonzerocount16(raw[1] & pm);
     }
