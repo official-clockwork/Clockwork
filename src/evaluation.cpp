@@ -38,11 +38,11 @@ PScore evaluate_pawns(const Position& pos) {
 
     Bitboard pawns = pos.board().bitboard_for(color, PieceType::Pawn);
     PScore   eval  = PSCORE_ZERO;
-    eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).popcount();
+    eval += DOUBLED_PAWN_VAL * static_cast<i32>((pawns & pawns.shift(Direction::North)).popcount());
 
     Bitboard phalanx = pawns & pawns.shift(Direction::East);
     for (Square sq : phalanx) {
-        eval += PAWN_PHALANX[sq.relative_sq(color).rank() - RANK_2];
+        eval += PAWN_PHALANX[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
     }
 
     return eval;
@@ -102,21 +102,18 @@ PScore evaluate_potential_checkers(const Position& pos) {
 
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
-    i32         phase = pos.piece_count(Color::White, PieceType::Knight)
-              + pos.piece_count(Color::Black, PieceType::Knight)
-              + pos.piece_count(Color::White, PieceType::Bishop)
-              + pos.piece_count(Color::Black, PieceType::Bishop)
-              + 2
-                  * (pos.piece_count(Color::White, PieceType::Rook)
-                     + pos.piece_count(Color::Black, PieceType::Rook))
-              + 4
-                  * (pos.piece_count(Color::White, PieceType::Queen)
-                     + pos.piece_count(Color::Black, PieceType::Queen));
+    usize       phase = pos.piece_count(Color::White, PieceType::Knight)
+                + pos.piece_count(Color::Black, PieceType::Knight)
+                + pos.piece_count(Color::White, PieceType::Bishop)
+                + pos.piece_count(Color::Black, PieceType::Bishop)
+                + 2
+                    * (pos.piece_count(Color::White, PieceType::Rook)
+                       + pos.piece_count(Color::Black, PieceType::Rook))
+                + 4
+                    * (pos.piece_count(Color::White, PieceType::Queen)
+                       + pos.piece_count(Color::Black, PieceType::Queen));
 
-    phase = std::min<i32>(phase, 24);
-
-    PScore mobility    = PSCORE_ZERO;
-    PScore king_attack = PSCORE_ZERO;
+    phase = std::min<usize>(phase, 24);
 
     PScore eval = psqt_state.score();
     eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
@@ -124,7 +121,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-    return eval->phase<24>(phase);
+    return eval->phase<24>(static_cast<i32>(phase));
 };
 
 Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state) {

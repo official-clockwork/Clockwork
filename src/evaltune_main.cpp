@@ -20,7 +20,7 @@
 
 using namespace Clockwork;
 
-int main(int argc, char* argv[]) {
+int main() {
 
     // Load fens from multiple files.
     std::vector<Position> positions;

@@ -307,15 +307,15 @@ public:
     f128 m_gradients;  // stores (grad_first, grad_second)
 
     explicit Pair(f64 first, f64 second, bool constant = false) :
+        m_constant(constant),
         m_values(f128::make(first, second)),
-        m_gradients(f128::zero()),
-        m_constant(constant) {
+        m_gradients(f128::zero()) {
     }
 
     explicit Pair(const f128& values, bool constant = false) :
+        m_constant(constant),
         m_values(values),
-        m_gradients(f128::zero()),
-        m_constant(false) {
+        m_gradients(f128::zero()) {
     }
 
     static PairPtr create_tunable(f64 first, f64 second);
