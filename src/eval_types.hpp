@@ -6,6 +6,7 @@
 #include <limits>
 
 #ifdef EVAL_TUNING
+    #include "tuning/globals.hpp"
     #include "tuning/loss.hpp"
     #include "tuning/optim.hpp"
     #include "tuning/value.hpp"
@@ -103,21 +104,24 @@ public:
     }
 };
 
+using PParam = PScore;
 
 #else
+
 using Score  = Autograd::ValuePtr;
 using PScore = Autograd::PairPtr;
+using PParam = Autograd::PairPlaceholder;
 
 #endif
 
 #ifdef EVAL_TUNING
-    #define S(a, b) Autograd::Pair::create_tunable((a), (b))  // Defines a tunable pscore
-    #define CS(a, b) Autograd::Pair::create((a), (b))
-    #define PSCORE_ZERO CS(0, 0)
+    #define S(a, b) Autograd::PairPlaceholder::create_tunable((a), (b))  // Defines a tunable pscore
+    #define CS(a, b) Autograd::PairPlaceholder::create((a), (b))
+    #define PSCORE_ZERO Autograd::Pair::create(0, 0)
 #else
     #define S(a, b) PScore((a), (b))  // Defines a constant pscore when not tuning
     #define CS(a, b) S((a), (b))
-    #define PSCORE_ZERO S(0, 0)
+    #define PSCORE_ZERO CS(0, 0)
 #endif
 
 }  // namespace Clockwork

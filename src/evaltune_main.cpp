@@ -16,6 +16,7 @@
 #include <numeric>
 #include <random>
 #include <sstream>
+#include <thread>
 #include <tuple>
 
 using namespace Clockwork;
@@ -27,8 +28,15 @@ int main() {
     std::vector<f64>      results;
 
     // List of files to load
-    std::vector<std::string> fenFiles = {"data/v2.2/filtered_data.txt",
-                                         "data/v2.1/filtered_data.txt"};
+    std::vector<std::string> fenFiles = {
+      "data/v2.2/filtered_data.txt",
+      "data/v2.1/filtered_data.txt",
+    };
+
+    // Number of threads to use, default to half available
+    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
+
+    std::cout << "Running on " << thread_count << " threads" << std::endl;
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -81,7 +89,12 @@ int main() {
         return 1;
     }
 
-    Clockwork::Autograd::AdamW optim(10, 0.9, 0.999, 1e-8, 0.0);
+    using namespace Clockwork::Autograd;
+
+    ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
+    Parameters         current_parameter_values = Graph::get().get_all_parameter_values();
+
+    AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 
     i32       epochs     = 1000;
     const f64 K          = 1.0 / 400;
@@ -99,29 +112,62 @@ int main() {
 
         size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
-        for (size_t batch_idx = 0, start = 0; start < positions.size();
-             start += batch_size, ++batch_idx) {
-            size_t end = std::min(start + batch_size, positions.size());
+        for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
+             batch_start += batch_size, ++batch_idx) {
+            size_t batch_end          = std::min(batch_start + batch_size, positions.size());
+            size_t current_batch_size = batch_end - batch_start;
+            size_t subbatch_size      = (current_batch_size + thread_count - 1) / thread_count;
 
-            std::vector<Clockwork::Autograd::ValuePtr> batch_outputs;
-            std::vector<f64>                           batch_targets;
-            batch_outputs.reserve(end - start);
-            batch_targets.reserve(end - start);
+            Parameters batch_gradients = Parameters::zeros(parameter_count);
 
-            for (size_t j = start; j < end; ++j) {
-                size_t   idx    = indices[j];
-                f64      y      = results[idx];
-                Position pos    = positions[idx];
-                auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
-                batch_outputs.push_back(result);
-                batch_targets.push_back(y);
+            std::mutex               mutex;
+            std::vector<std::thread> threads;
+
+            for (size_t subbatch_start = batch_start; subbatch_start < batch_end;
+                 subbatch_start += subbatch_size) {
+
+                threads.emplace_back([&, subbatch_start] {
+                    size_t subbatch_end = std::min(subbatch_start + subbatch_size, batch_end);
+                    size_t current_subbatch_size = subbatch_end - subbatch_start;
+
+                    std::vector<ValuePtr> subbatch_outputs;
+                    std::vector<f64>      subbatch_targets;
+                    subbatch_outputs.reserve(current_subbatch_size);
+                    subbatch_targets.reserve(current_subbatch_size);
+
+                    Graph::get().cleanup();
+                    Graph::get().copy_parameter_values(current_parameter_values);
+
+                    for (size_t j = subbatch_start; j < subbatch_end; ++j) {
+                        size_t   idx    = indices[j];
+                        f64      y      = results[idx];
+                        Position pos    = positions[idx];
+                        auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
+                        subbatch_outputs.push_back(result);
+                        subbatch_targets.push_back(y);
+                    }
+
+                    auto subbatch_loss =
+                      mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
+                      * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
+                    Graph::get().backward();
+
+                    Parameters subbatch_gradients = Graph::get().get_all_parameter_gradients();
+
+                    {
+                        std::lock_guard guard{mutex};
+                        batch_gradients.accumulate(subbatch_gradients);
+                    }
+
+                    Graph::get().cleanup();
+                });
             }
 
-            auto loss = Clockwork::Autograd::mse(batch_outputs, batch_targets);
+            for (std::thread& t : threads) {
+                t.join();
+            }
 
-            Clockwork::Autograd::Graph::get()->backward();
-            optim.step();
-            Clockwork::Autograd::Graph::get()->cleanup();
+            optim.step(current_parameter_values, batch_gradients);
 
             // Print batch progress bar
             print_progress(batch_idx + 1, total_batches);
@@ -129,25 +175,29 @@ int main() {
 
         std::cout << std::endl;  // Finish progress bar line
 
-        std::cout << "inline const PScore PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
-        std::cout << "inline const PScore KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
-        std::cout << "inline const PScore BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
-        std::cout << "inline const PScore ROOK_MAT   = " << ROOK_MAT << ";" << std::endl;
-        std::cout << "inline const PScore QUEEN_MAT  = " << QUEEN_MAT << ";" << std::endl;
-        std::cout << "inline const PScore TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
+        // Print current values
+        Graph::get().copy_parameter_values(current_parameter_values);
+
+        std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
+        std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
+        std::cout << "inline const PParam BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
+        std::cout << "inline const PParam ROOK_MAT   = " << ROOK_MAT << ";" << std::endl;
+        std::cout << "inline const PParam QUEEN_MAT  = " << QUEEN_MAT << ";" << std::endl;
+        std::cout << "inline const PParam TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PScore BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";"
+        std::cout << "inline const PParam BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";"
                   << std::endl;
-        std::cout << "inline const PScore DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
+        std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
                   << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PScore POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
+        std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
                   << std::endl;
+        std::cout << std::endl;
 
         auto print_table = [](const std::string& name, const auto& table) {
-            std::cout << "inline const std::array<PScore, " << table.size() << "> " << name
+            std::cout << "inline const std::array<PParam, " << table.size() << "> " << name
                       << " = {" << std::endl
                       << "   ";
             for (const auto& val : table) {
@@ -174,34 +224,34 @@ int main() {
         print_table("QUEEN_KING_RING", QUEEN_KING_RING);
         std::cout << std::endl;
 
-        std::cout << "inline const PScore PAWN_THREAT_KNIGHT = " << PAWN_THREAT_KNIGHT << ";"
+        std::cout << "inline const PParam PAWN_THREAT_KNIGHT = " << PAWN_THREAT_KNIGHT << ";"
                   << std::endl;
-        std::cout << "inline const PScore PAWN_THREAT_BISHOP = " << PAWN_THREAT_BISHOP << ";"
+        std::cout << "inline const PParam PAWN_THREAT_BISHOP = " << PAWN_THREAT_BISHOP << ";"
                   << std::endl;
-        std::cout << "inline const PScore PAWN_THREAT_ROOK = " << PAWN_THREAT_ROOK << ";"
+        std::cout << "inline const PParam PAWN_THREAT_ROOK   = " << PAWN_THREAT_ROOK << ";"
                   << std::endl;
-        std::cout << "inline const PScore PAWN_THREAT_QUEEN = " << PAWN_THREAT_QUEEN << ";"
-                  << std::endl;
-        std::cout << std::endl;
-
-        std::cout << "inline const PScore KNIGHT_THREAT_BISHOP = " << KNIGHT_THREAT_BISHOP << ";"
-                  << std::endl;
-        std::cout << "inline const PScore KNIGHT_THREAT_ROOK = " << KNIGHT_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PScore KNIGHT_THREAT_QUEEN = " << KNIGHT_THREAT_QUEEN << ";"
+        std::cout << "inline const PParam PAWN_THREAT_QUEEN  = " << PAWN_THREAT_QUEEN << ";"
                   << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PScore BISHOP_THREAT_KNIGHT = " << BISHOP_THREAT_KNIGHT << ";"
+        std::cout << "inline const PParam KNIGHT_THREAT_BISHOP = " << KNIGHT_THREAT_BISHOP << ";"
                   << std::endl;
-        std::cout << "inline const PScore BISHOP_THREAT_ROOK = " << BISHOP_THREAT_ROOK << ";"
+        std::cout << "inline const PParam KNIGHT_THREAT_ROOK   = " << KNIGHT_THREAT_ROOK << ";"
                   << std::endl;
-        std::cout << "inline const PScore BISHOP_THREAT_QUEEN = " << BISHOP_THREAT_QUEEN << ";"
+        std::cout << "inline const PParam KNIGHT_THREAT_QUEEN  = " << KNIGHT_THREAT_QUEEN << ";"
+                  << std::endl;
+        std::cout << std::endl;
+
+        std::cout << "inline const PParam BISHOP_THREAT_KNIGHT = " << BISHOP_THREAT_KNIGHT << ";"
+                  << std::endl;
+        std::cout << "inline const PParam BISHOP_THREAT_ROOK   = " << BISHOP_THREAT_ROOK << ";"
+                  << std::endl;
+        std::cout << "inline const PParam BISHOP_THREAT_QUEEN  = " << BISHOP_THREAT_QUEEN << ";"
                   << std::endl;
         std::cout << std::endl;
 
         auto printPsqtArray = [](const std::string& name, const auto& arr) {
-            std::cout << "inline const std::array<PScore, " << arr.size() << "> " << name << " = {"
+            std::cout << "inline const std::array<PParam, " << arr.size() << "> " << name << " = {"
                       << std::endl;
             for (std::size_t i = 0; i < arr.size(); ++i) {
                 if ((i & 7) == 0) {

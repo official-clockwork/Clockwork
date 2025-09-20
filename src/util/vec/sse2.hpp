@@ -13,10 +13,10 @@
 
 struct f128 {
 #if F128_USE_SSE2
-    __m128d v;
+    __m128d v = _mm_setzero_pd();
 #else
-    double lo;
-    double hi;
+    double lo = 0.0;
+    double hi = 0.0;
 #endif
 
     // ---- Constructors ----

@@ -5,70 +5,71 @@
 namespace Clockwork {
 
 // clang-format off
-inline const PScore PAWN_MAT   = S(283, 445);
-inline const PScore KNIGHT_MAT = S(965, 1000);
-inline const PScore BISHOP_MAT = S(973, 1067);
-inline const PScore ROOK_MAT   = S(1474, 1805);
-inline const PScore QUEEN_MAT  = S(3217, 3269);
-inline const PScore TEMPO_VAL  = S(48, 15);
+inline const PParam PAWN_MAT   = S(283, 445);
+inline const PParam KNIGHT_MAT = S(965, 1000);
+inline const PParam BISHOP_MAT = S(973, 1067);
+inline const PParam ROOK_MAT   = S(1474, 1805);
+inline const PParam QUEEN_MAT  = S(3217, 3269);
+inline const PParam TEMPO_VAL  = S(48, 15);
 
-inline const PScore BISHOP_PAIR_VAL  = S(63, 189);
-inline const PScore DOUBLED_PAWN_VAL = S(-48, -77);
+inline const PParam BISHOP_PAIR_VAL  = S(63, 189);
+inline const PParam DOUBLED_PAWN_VAL = S(-48, -77);
 
-inline const PScore POTENTIAL_CHECKER_VAL = S(-73, -2);
-inline const std::array<PScore, 6> PAWN_PHALANX = {
+inline const PParam POTENTIAL_CHECKER_VAL = S(-73, -2);
+
+inline const std::array<PParam, 6> PAWN_PHALANX = {
     S(0, 21), S(53, 28), S(83, 71), S(190, 147), S(470, 573), S(1774, 1452),
 };
-inline const std::array<PScore, 5> DEFENDED_PAWN = {
+inline const std::array<PParam, 5> DEFENDED_PAWN = {
     S(47, 47), S(52, 22), S(54, 37), S(103, 111), S(653, -131),
 };
-inline const std::array<PScore, 6> PASSED_PAWN = {
+inline const std::array<PParam, 6> PASSED_PAWN = {
     S(-2, 4), S(-26, 37), S(-28, 89), S(44, 140), S(73, 246), S(25, 42),
 };
 
-inline const std::array<PScore, 9> KNIGHT_MOBILITY = {
+inline const std::array<PParam, 9> KNIGHT_MOBILITY = {
     S(-217, -192), S(-112, -131), S(-56, -35), S(-4, -7), S(41, 12), S(63, 58), S(94, 55), S(119, 55), S(168, -26),
 };
-inline const std::array<PScore, 14> BISHOP_MOBILITY = {
+inline const std::array<PParam, 14> BISHOP_MOBILITY = {
     S(-127, -275), S(-78, -183), S(-18, -120), S(-5, -64), S(31, -31), S(44, -7), S(65, 2), S(75, 13), S(82, 24), S(85, 20), S(110, 10), S(166, -44), S(213, -62), S(281, -92),
 };
-inline const std::array<PScore, 15> ROOK_MOBILITY = {
+inline const std::array<PParam, 15> ROOK_MOBILITY = {
     S(-207, -340), S(-86, -117), S(-43, -43), S(-22, -46), S(-7, -11), S(7, 4), S(26, 12), S(54, 8), S(79, 17), S(105, 25), S(132, 26), S(144, 31), S(190, 18), S(175, 19), S(273, -74),
 };
-inline const std::array<PScore, 28> QUEEN_MOBILITY = {
+inline const std::array<PParam, 28> QUEEN_MOBILITY = {
     S(69, 102), S(-642, 553), S(-216, -401), S(-154, -217), S(-115, -263), S(-81, -214), S(-116, -13), S(-91, -42), S(-77, -11), S(-75, 16), S(-67, 36), S(-65, 70), S(-43, 57), S(-30, 54), S(-21, 56), S(-8, 51), S(-23, 75), S(0, 35), S(15, 24), S(48, -30), S(88, -76), S(120, -139), S(216, -214), S(413, -409), S(376, -419), S(945, -701), S(736, -629), S(1373, -1004),
 };
-inline const std::array<PScore, 9> KING_MOBILITY = {
+inline const std::array<PParam, 9> KING_MOBILITY = {
     S(390, 800), S(89, 435), S(18, 482), S(21, 514), S(0, 505), S(-24, 485), S(-7, 492), S(1, 460), S(53, 338),
 };
 
-inline const std::array<PScore, 3> KNIGHT_KING_RING = {
+inline const std::array<PParam, 3> KNIGHT_KING_RING = {
     CS(0, 0), S(86, -40), S(152, -91),
 };
-inline const std::array<PScore, 3> BISHOP_KING_RING = {
+inline const std::array<PParam, 3> BISHOP_KING_RING = {
     CS(0, 0), S(28, -2), S(137, -43),
 };
-inline const std::array<PScore, 5> ROOK_KING_RING = {
+inline const std::array<PParam, 5> ROOK_KING_RING = {
     CS(0, 0), S(67, -65), S(89, -82), S(139, -78), S(148, -129),
 };
-inline const std::array<PScore, 6> QUEEN_KING_RING = {
+inline const std::array<PParam, 6> QUEEN_KING_RING = {
     CS(0, 0), S(-54, 36), S(-71, 47), S(9, -27), S(177, -125), S(417, -272),
 };
 
-inline const PScore PAWN_THREAT_KNIGHT = S(210, 68);
-inline const PScore PAWN_THREAT_BISHOP = S(177, 79);
-inline const PScore PAWN_THREAT_ROOK = S(175, 49);
-inline const PScore PAWN_THREAT_QUEEN = S(146, -75);
+inline const PParam PAWN_THREAT_KNIGHT = S(210, 68);
+inline const PParam PAWN_THREAT_BISHOP = S(177, 79);
+inline const PParam PAWN_THREAT_ROOK   = S(175, 49);
+inline const PParam PAWN_THREAT_QUEEN  = S(146, -75);
 
-inline const PScore KNIGHT_THREAT_BISHOP = S(83, 69);
-inline const PScore KNIGHT_THREAT_ROOK = S(224, -14);
-inline const PScore KNIGHT_THREAT_QUEEN = S(133, -71);
+inline const PParam KNIGHT_THREAT_BISHOP = S(83, 69);
+inline const PParam KNIGHT_THREAT_ROOK   = S(224, -14);
+inline const PParam KNIGHT_THREAT_QUEEN  = S(133, -71);
 
-inline const PScore BISHOP_THREAT_KNIGHT = S(82, 22);
-inline const PScore BISHOP_THREAT_ROOK = S(208, 41);
-inline const PScore BISHOP_THREAT_QUEEN = S(175, 29);
+inline const PParam BISHOP_THREAT_KNIGHT = S(82, 22);
+inline const PParam BISHOP_THREAT_ROOK   = S(208, 41);
+inline const PParam BISHOP_THREAT_QUEEN  = S(175, 29);
 
-inline const std::array<PScore, 48> PAWN_PSQT = {
+inline const std::array<PParam, 48> PAWN_PSQT = {
     S(-120, 487),   S(15, 492),     S(162, 438),    S(316, 216),    S(263, 234),    S(282, 327),    S(158, 367),    S(220, 355),    //
     S(13, -6),      S(175, 14),     S(114, -65),    S(147, -173),   S(70, -176),    S(14, -89),     S(-30, -9),     S(-54, -20),    //
     S(-44, -67),    S(-31, -61),    S(-30, -108),   S(-40, -142),   S(-52, -139),   S(-96, -134),   S(-111, -63),   S(-133, -43),   //
@@ -76,7 +77,7 @@ inline const std::array<PScore, 48> PAWN_PSQT = {
     S(-33, -177),   S(28, -173),    S(-32, -134),   S(-92, -117),   S(-85, -137),   S(-136, -135),  S(-142, -106),  S(-174, -110),  //
     S(-28, -179),   S(124, -178),   S(40, -136),    S(-56, -95),    S(-76, -149),   S(-100, -128),  S(-115, -87),   S(-150, -103),  //
 };
-inline const std::array<PScore, 64> KNIGHT_PSQT = {
+inline const std::array<PParam, 64> KNIGHT_PSQT = {
     S(-403, -159),  S(-86, -73),    S(-560, 315),   S(-53, 61),     S(-334, 156),   S(-360, 179),   S(-411, -16),   S(-532, 49),    //
     S(50, -19),     S(81, 66),      S(199, -53),    S(29, 74),      S(88, 50),      S(43, 4),       S(-36, 23),     S(15, -39),     //
     S(37, 26),      S(-3, 124),     S(213, 63),     S(88, 99),      S(135, 62),     S(32, 68),      S(32, 34),      S(-63, 12),     //
@@ -86,7 +87,7 @@ inline const std::array<PScore, 64> KNIGHT_PSQT = {
     S(17, 68),      S(45, -23),     S(-8, -20),     S(-13, 7),      S(-20, -5),     S(-43, -33),    S(-22, -55),    S(-116, -113),  //
     S(-43, -15),    S(-3, -27),     S(55, -99),     S(35, -32),     S(69, -48),     S(2, -145),     S(-50, -43),    S(-166, -50),   //
 };
-inline const std::array<PScore, 64> BISHOP_PSQT = {
+inline const std::array<PParam, 64> BISHOP_PSQT = {
     S(-109, 111),   S(-43, 29),     S(-545, 130),   S(-278, 124),   S(-312, 143),   S(-419, 145),   S(-2, 83),      S(-10, 61),     //
     S(15, -30),     S(1, 82),       S(27, 62),      S(29, 20),      S(16, 45),      S(8, 59),       S(0, 46),       S(-56, 53),     //
     S(17, 80),      S(69, 80),      S(269, 44),     S(130, 44),     S(80, 55),      S(23, 91),      S(139, 31),     S(9, 88),       //
@@ -96,7 +97,7 @@ inline const std::array<PScore, 64> BISHOP_PSQT = {
     S(34, -51),     S(114, -28),    S(59, -16),     S(39, 20),      S(29, -8),      S(58, -20),     S(5, 12),       S(68, -103),    //
     S(53, 1),       S(25, 14),      S(20, 23),      S(28, -37),     S(11, -31),     S(34, 4),       S(40, -62),     S(-34, 22),     //
 };
-inline const std::array<PScore, 64> ROOK_PSQT = {
+inline const std::array<PParam, 64> ROOK_PSQT = {
     S(114, 29),     S(208, 32),     S(105, 72),     S(82, 84),      S(107, 57),     S(64, 58),      S(86, 58),      S(93, 59),      //
     S(124, 68),     S(172, 64),     S(244, 40),     S(156, 95),     S(154, 91),     S(67, 110),     S(32, 109),     S(51, 99),      //
     S(39, 73),      S(299, 5),      S(252, 17),     S(260, 2),      S(165, 37),     S(78, 75),      S(127, 45),     S(-16, 90),     //
@@ -106,7 +107,7 @@ inline const std::array<PScore, 64> ROOK_PSQT = {
     S(-157, 18),    S(-79, -52),    S(-35, -55),    S(-32, -42),    S(-46, -24),    S(-58, -21),    S(-110, -33),   S(-121, -33),   //
     S(-128, 0),     S(-95, 9),      S(-55, -27),    S(-20, -43),    S(-31, -22),    S(-40, -26),    S(-59, -40),    S(-90, -21),    //
 };
-inline const std::array<PScore, 64> QUEEN_PSQT = {
+inline const std::array<PParam, 64> QUEEN_PSQT = {
     S(43, 85),      S(64, 54),      S(91, 68),      S(-81, 221),    S(0, 119),      S(-62, 163),    S(45, 40),      S(-24, 37),     //
     S(90, 66),      S(-92, 256),    S(-53, 310),    S(-151, 336),   S(-100, 253),   S(-147, 274),   S(-70, 138),    S(-8, 37),      //
     S(-35, 179),    S(91, 161),     S(48, 212),     S(-16, 263),    S(-36, 209),    S(-77, 219),    S(10, 93),      S(-10, 17),     //
@@ -116,7 +117,7 @@ inline const std::array<PScore, 64> QUEEN_PSQT = {
     S(52, -246),    S(44, -301),    S(20, -123),    S(42, -43),     S(-2, 0),       S(42, -125),    S(28, -58),     S(-17, -27),    //
     S(-78, -54),    S(-79, -332),   S(-15, -290),   S(12, -207),    S(38, -113),    S(61, -207),    S(36, -157),    S(-22, -55),    //
 };
-inline const std::array<PScore, 64> KING_PSQT = {
+inline const std::array<PParam, 64> KING_PSQT = {
     S(487, -695),   S(280, -130),   S(-36, -14),    S(-155, 52),    S(0, 0),        S(0, 0),        S(0, 0),        S(0, 0),        //
     S(362, -161),   S(18, 137),     S(-37, 165),    S(286, 78),     S(0, 0),        S(0, 0),        S(0, 0),        S(0, 0),        //
     S(-19, 38),     S(110, 151),    S(176, 119),    S(230, 58),     S(0, 0),        S(0, 0),        S(0, 0),        S(0, 0),        //
