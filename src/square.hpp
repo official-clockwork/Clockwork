@@ -67,6 +67,13 @@ struct Square {
         return Square{static_cast<u8>(raw ^ 56)};
     }
 
+    constexpr std::string to_string() {
+        std::string result;
+        result += static_cast<char>('a' + file());
+        result += static_cast<char>('1' + rank());
+        return result;
+    }
+
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());
         return os << file << sq.rank() + 1;
