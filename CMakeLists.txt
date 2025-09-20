@@ -104,6 +104,8 @@ set(srcs
         src/util/vec.hpp
         src/util/vec/avx2.hpp
         src/util/vec/avx512.hpp
+        src/tuning/globals.hpp
+        src/tuning/graph.cpp
         src/tuning/graph.hpp
         src/tuning/loss.hpp
         src/tuning/optim.hpp

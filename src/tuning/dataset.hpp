@@ -12,8 +12,7 @@
 #include <unistd.h>
 #include <vector>
 
-namespace Clockwork {
-namespace Autograd {
+namespace Clockwork::Autograd {
 
 class Dataset {
 private:
@@ -51,5 +50,4 @@ public:
     void                     reset();
 };
 
-}  // namespace Autograd
-}  // namespace Clockwork
+}  // namespace Clockwork::Autograd

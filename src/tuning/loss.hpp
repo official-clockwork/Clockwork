@@ -4,8 +4,7 @@
 #include <memory>
 #include <vector>
 
-namespace Clockwork {
-namespace Autograd {
+namespace Clockwork::Autograd {
 
 enum class Reduction {
     None,
@@ -47,5 +46,4 @@ auto mse(const std::vector<ValuePtr>& predictions, const std::vector<Target>& ta
     }
 }
 
-}  // namespace Autograd
-}  // namespace Clockwork
+}  // namespace Clockwork::Autograd

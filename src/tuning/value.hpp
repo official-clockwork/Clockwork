@@ -9,9 +9,7 @@
 #include <memory>
 #include <vector>
 
-namespace Clockwork {
-
-namespace Autograd {
+namespace Clockwork::Autograd {
 
 // Forward declarations
 
@@ -74,8 +72,6 @@ public:
     inline void zero_grad() {
         m_gradient = 0.0;
     }
-
-    static ValuePtr create_tunable(f64 data);
     static ValuePtr create(f64 data);
 
     ValuePtr exp() {
@@ -318,12 +314,9 @@ public:
         m_gradients(f128::zero()) {
     }
 
-    static PairPtr create_tunable(f64 first, f64 second);
-
     static PairPtr create(f64 first, f64 second);
 
     static PairPtr create(const f128& values);
-
 
     inline f64 first() const {
         return m_values.first();
@@ -333,12 +326,20 @@ public:
         return m_values.second();
     }
 
+    inline f128 get_values() const {
+        return m_values;
+    }
+
     inline f64 grad_first() const {
         return m_gradients.first();
     }
 
     inline f64 grad_second() const {
         return m_gradients.second();
+    }
+
+    inline f128 get_graidents() const {
+        return m_gradients;
     }
 
     inline void zero_grad() {
@@ -615,5 +616,5 @@ inline PairPtr& operator/=(PairPtr& a, const ValuePtr& v) {
     a = a / v;
     return a;
 }
-}
-}
+
+}  // namespace Clockwork::Autograd
