@@ -84,7 +84,7 @@ int main() {
 
     i32       epochs     = 1000;
     const f64 K          = 1.0 / 400;
-    size_t    batch_size = 16384;  // Set batch size here
+    size_t    batch_size = 16 * 16384;  // Set batch size here
 
     std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
 
