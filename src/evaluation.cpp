@@ -65,6 +65,13 @@ PScore evaluate_pawns(const Position& pos) {
         }
     }
 
+    for (Square sq : pawns) {
+        Bitboard stoppers = opp_pawns & passed_pawn_spans[static_cast<usize>(color)][sq.raw];
+        if (stoppers.empty()) {
+            eval += PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
+        }
+    }
+
     Bitboard phalanx = pawns & pawns.shift(Direction::East);
     for (Square sq : phalanx) {
         eval += PAWN_PHALANX[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
