@@ -32,14 +32,38 @@ std::array<Bitboard, 64> king_ring_table = []() {
     return king_ring_table;
 }();
 
+std::array<std::array<Bitboard, 64>, 2> passed_pawn_spans = []() {
+    std::array<std::array<Bitboard, 64>, 2> passed_pawn_masks{};
+    for (Color color : {Color::White, Color::Black}) {
+        for (u8 sq_idx = 0; sq_idx < 64; sq_idx++) {
+            Bitboard sq_bb = Bitboard::from_square(Square{sq_idx});
+            Bitboard mask  = sq_bb.shift_relative(color, Direction::North);
+            mask |= mask.shift(Direction::East) | mask.shift(Direction::West);
+            for (u8 i = 0; i < 8; i++) {
+                mask |= mask.shift_relative(color, Direction::North);
+            }
+            passed_pawn_masks[static_cast<usize>(color)][sq_idx] = mask;
+        }
+    }
+    return passed_pawn_masks;
+}();
+
 template<Color color>
 PScore evaluate_pawns(const Position& pos) {
     constexpr i32 RANK_2 = 1;
     constexpr i32 RANK_3 = 2;
 
-    Bitboard pawns = pos.board().bitboard_for(color, PieceType::Pawn);
-    PScore   eval  = PSCORE_ZERO;
+    Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
+    Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
+    PScore   eval      = PSCORE_ZERO;
     eval += DOUBLED_PAWN_VAL * static_cast<i32>((pawns & pawns.shift(Direction::North)).popcount());
+
+    for (Square sq : pawns) {
+        Bitboard stoppers = opp_pawns & passed_pawn_spans[static_cast<usize>(color)][sq.raw];
+        if (stoppers.empty()) {
+            eval += PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
+        }
+    }
 
     Bitboard phalanx = pawns & pawns.shift(Direction::East);
     for (Square sq : phalanx) {
