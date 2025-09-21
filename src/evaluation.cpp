@@ -136,26 +136,12 @@ PScore evaluate_threats(const Position& pos) {
     PScore          eval = PSCORE_ZERO;
 
     Bitboard pawn_attacks = pos.attacked_by(color, PieceType::Pawn);
-    for (PieceId id : pos.get_piece_mask(opp, PieceType::Knight)) {
-        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
-            eval += PAWN_THREAT_KNIGHT;
-        }
-    }
-    for (PieceId id : pos.get_piece_mask(opp, PieceType::Bishop)) {
-        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
-            eval += PAWN_THREAT_BISHOP;
-        }
-    }
-    for (PieceId id : pos.get_piece_mask(opp, PieceType::Rook)) {
-        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
-            eval += PAWN_THREAT_ROOK;
-        }
-    }
-    for (PieceId id : pos.get_piece_mask(opp, PieceType::Queen)) {
-        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
-            eval += PAWN_THREAT_QUEEN;
-        }
-    }
+    eval +=
+      PAWN_THREAT_KNIGHT * (pos.bitboard_for(opp, PieceType::Knight) & pawn_attacks).popcount();
+    eval +=
+      PAWN_THREAT_BISHOP * (pos.bitboard_for(opp, PieceType::Bishop) & pawn_attacks).popcount();
+    eval += PAWN_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & pawn_attacks).popcount();
+    eval += PAWN_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & pawn_attacks).popcount();
 
     return eval;
 }
