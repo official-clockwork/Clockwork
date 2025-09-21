@@ -130,6 +130,36 @@ PScore evaluate_potential_checkers(const Position& pos) {
     return POTENTIAL_CHECKER_VAL * mask.popcount();
 }
 
+template<Color color>
+PScore evaluate_threats(const Position& pos) {
+    constexpr Color opp  = ~color;
+    PScore          eval = PSCORE_ZERO;
+
+    Bitboard pawn_attacks = pos.attacked_by(color, PieceType::Pawn);
+    for (PieceId id : pos.get_piece_mask(opp, PieceType::Knight)) {
+        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
+            eval += PAWN_THREAT_KNIGHT;
+        }
+    }
+    for (PieceId id : pos.get_piece_mask(opp, PieceType::Bishop)) {
+        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
+            eval += PAWN_THREAT_BISHOP;
+        }
+    }
+    for (PieceId id : pos.get_piece_mask(opp, PieceType::Rook)) {
+        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
+            eval += PAWN_THREAT_ROOK;
+        }
+    }
+    for (PieceId id : pos.get_piece_mask(opp, PieceType::Queen)) {
+        if (pawn_attacks.is_set(pos.piece_list_sq(opp)[id])) {
+            eval += PAWN_THREAT_QUEEN;
+        }
+    }
+
+    return eval;
+}
+
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     usize       phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -150,6 +180,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
+    eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     return eval->phase<24>(static_cast<i32>(phase));
 };

@@ -173,6 +173,15 @@ int main() {
         print_table("QUEEN_KING_RING", QUEEN_KING_RING);
         std::cout << std::endl;
 
+        std::cout << "inline const PScore PAWN_THREAT_KNIGHT = " << PAWN_THREAT_KNIGHT << ";"
+                  << std::endl;
+        std::cout << "inline const PScore PAWN_THREAT_BISHOP = " << PAWN_THREAT_BISHOP << ";"
+                  << std::endl;
+        std::cout << "inline const PScore PAWN_THREAT_ROOK = " << PAWN_THREAT_ROOK << ";"
+                  << std::endl;
+        std::cout << "inline const PScore PAWN_THREAT_QUEEN = " << PAWN_THREAT_QUEEN << ";"
+                  << std::endl;
+
         auto printPsqtArray = [](const std::string& name, const auto& arr) {
             std::cout << "inline const std::array<PScore, " << arr.size() << "> " << name << " = {"
                       << std::endl;
