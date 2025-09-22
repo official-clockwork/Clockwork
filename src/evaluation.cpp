@@ -143,6 +143,14 @@ PScore evaluate_threats(const Position& pos) {
     eval += PAWN_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & pawn_attacks).popcount();
     eval += PAWN_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & pawn_attacks).popcount();
 
+    Bitboard knight_attacks = pos.attacked_by(color, PieceType::Knight);
+    eval +=
+      KNIGHT_THREAT_BISHOP * (pos.bitboard_for(opp, PieceType::Bishop) & knight_attacks).popcount();
+    eval +=
+      KNIGHT_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & knight_attacks).popcount();
+    eval +=
+      KNIGHT_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & knight_attacks).popcount();
+
     return eval;
 }
 
