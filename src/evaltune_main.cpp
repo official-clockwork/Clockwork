@@ -27,7 +27,8 @@ int main() {
     std::vector<f64>      results;
 
     // List of files to load
-    std::vector<std::string> fenFiles = {"data/v2.2/filtered_data.txt", "data/v2.1/filtered_data.txt"};
+    std::vector<std::string> fenFiles = {"data/v2.2/filtered_data.txt",
+                                         "data/v2.1/filtered_data.txt"};
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -181,6 +182,15 @@ int main() {
                   << std::endl;
         std::cout << "inline const PScore PAWN_THREAT_QUEEN = " << PAWN_THREAT_QUEEN << ";"
                   << std::endl;
+        std::cout << std::endl;
+
+        std::cout << "inline const PScore KNIGHT_THREAT_BISHOP = " << KNIGHT_THREAT_BISHOP << ";"
+                  << std::endl;
+        std::cout << "inline const PScore KNIGHT_THREAT_ROOK = " << KNIGHT_THREAT_ROOK << ";"
+                  << std::endl;
+        std::cout << "inline const PScore KNIGHT_THREAT_QUEEN = " << KNIGHT_THREAT_QUEEN << ";"
+                  << std::endl;
+        std::cout << std::endl;
 
         auto printPsqtArray = [](const std::string& name, const auto& arr) {
             std::cout << "inline const std::array<PScore, " << arr.size() << "> " << name << " = {"
