@@ -18,8 +18,8 @@ struct Parameters {
 
     static Parameters zeros(ParameterCountInfo counts) {
         Parameters result;
-        result.parameters.resize(counts.parameter_count);
-        result.pair_parameters.resize(counts.pair_parameter_count);
+        result.parameters.resize(counts.parameter_count, 0.0);
+        result.pair_parameters.resize(counts.pair_parameter_count, f128::zero());
         return result;
     }
 
