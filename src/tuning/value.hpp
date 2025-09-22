@@ -240,16 +240,21 @@ public:
             return Value::create(0.0);
         }
 
-        f64 sum = 0;
+        f64 sum = 0.0;
+        f64 c     = 0.0; 
         for (auto& v : inputs) {
-            sum += v->m_value;
+            f64 y = v->m_value - c;
+            f64 t = sum + y;
+            c     = (t - sum) - y;
+            sum = t;
         }
 
         ValuePtr result = Value::create(sum);
 
         result->m_backward_func = [inputs](ValuePtr out) {
+            f64 grad = out->m_gradient;
             for (auto& v : inputs) {
-                v->m_gradient += out->m_gradient;
+                v->m_gradient += grad;
             }
         };
 
