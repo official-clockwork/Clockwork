@@ -28,10 +28,11 @@ int main() {
     std::vector<f64>      results;
 
     // List of files to load
-    std::vector<std::string> fenFiles = {"data/v2.2/filtered_data.txt", "data/v2.1/filtered_data.txt"};
+    std::vector<std::string> fenFiles = {"data/v2.2/filtered_data.txt",
+                                         "data/v2.1/filtered_data.txt"};
 
-    // Number of threads to use, default to three quarters available
-    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() * 3 / 4);
+    // Number of threads to use, default to half available
+    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 
     std::cout << "Running on " << thread_count << " threads" << std::endl;
 
@@ -148,7 +149,7 @@ int main() {
 
                     Parameters subbatch_gradients = Graph::get().get_all_parameter_gradients();
                     double     subbatch_contribution =
-                      static_cast<double>(subbatch_size) / static_cast<double>(positions.size());
+                      static_cast<double>(subbatch_size) / static_cast<double>(batch_size);
 
                     {
                         std::lock_guard guard{mutex};
