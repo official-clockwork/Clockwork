@@ -133,6 +133,7 @@ int main() {
                     subbatch_outputs.reserve(current_subbatch_size);
                     subbatch_targets.reserve(current_subbatch_size);
 
+                    Graph::get().cleanup();
                     Graph::get().copy_parameter_values(current_parameter_values);
 
                     for (size_t j = subbatch_start; j < subbatch_end; ++j) {
