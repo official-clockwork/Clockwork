@@ -12,13 +12,14 @@ enum Bound : u8 {
 };
 
 struct TTEntry {
-    HashKey key;
-    Move    move;
-    i16     score;
-    u8      depth;
-    Bound   bound;
+    u16   key16;
+    Move  move;
+    i16   score;
+    u8    depth;
+    Bound bound;
 };
 
+static_assert(sizeof(TTEntry) == 8 * sizeof(u8));
 
 struct TTData {
     Move  move;

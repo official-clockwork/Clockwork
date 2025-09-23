@@ -2,9 +2,12 @@
 
 namespace Clockwork {
 
-uint64_t mulhi64(uint64_t a, uint64_t b) {
-    unsigned __int128 result =
-      static_cast<unsigned __int128>(a) * static_cast<unsigned __int128>(b);
+static u16 shrink_key(HashKey key) {
+    return static_cast<u16>(key);
+}
+
+static u64 mulhi64(u64 a, u64 b) {
+    u128 result = static_cast<u128>(a) * static_cast<u128>(b);
     return static_cast<u64>(result >> 64);
 }
 
@@ -60,7 +63,7 @@ TT::~TT() {
 std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     size_t      idx   = mulhi64(pos.get_hash_key(), m_size);
     const auto& entry = m_entries[idx];
-    if (entry.key == pos.get_hash_key()) {
+    if (entry.key16 == shrink_key(pos.get_hash_key())) {
         TTData data = {.move  = entry.move,
                        .score = score_from_tt(entry.score, ply),
                        .depth = static_cast<Depth>(entry.depth),
@@ -73,7 +76,7 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
 void TT::store(const Position& pos, i32 ply, Move move, Value score, Depth depth, Bound bound) {
     size_t idx   = mulhi64(pos.get_hash_key(), m_size);
     auto&  entry = m_entries[idx];
-    entry.key    = pos.get_hash_key();
+    entry.key16  = shrink_key(pos.get_hash_key());
     entry.move   = move;
     entry.score  = score_to_tt(score, ply);
     entry.depth  = static_cast<u8>(depth);
