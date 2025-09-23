@@ -64,7 +64,8 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     size_t      idx   = mulhi64(pos.get_hash_key(), m_size);
     const auto& entry = m_entries[idx];
     if (entry.key16 == shrink_key(pos.get_hash_key())) {
-        TTData data = {.move  = entry.move,
+        TTData data = {.eval  = entry.eval,
+                       .move  = entry.move,
                        .score = score_from_tt(entry.score, ply),
                        .depth = static_cast<Depth>(entry.depth),
                        .bound = entry.bound};
@@ -73,12 +74,14 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     return {};
 }
 
-void TT::store(const Position& pos, i32 ply, Move move, Value score, Depth depth, Bound bound) {
+void TT::store(
+  const Position& pos, i32 ply, Value eval, Move move, Value score, Depth depth, Bound bound) {
     size_t idx   = mulhi64(pos.get_hash_key(), m_size);
     auto&  entry = m_entries[idx];
     entry.key16  = shrink_key(pos.get_hash_key());
     entry.move   = move;
     entry.score  = score_to_tt(score, ply);
+    entry.eval   = static_cast<i16>(eval);
     entry.depth  = static_cast<u8>(depth);
     entry.bound  = bound;
 }

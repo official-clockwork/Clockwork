@@ -383,9 +383,13 @@ Value Worker::search(
     ss->static_eval   = -VALUE_INF;
     if (!is_in_check) {
         correction      = m_td.history.get_correction(pos);
-        raw_eval        = evaluate(pos);
+        raw_eval        = tt_data ? tt_data->eval : evaluate(pos);
         ss->static_eval = raw_eval + correction;
         improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
+
+        if (!tt_data) {
+            m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, Bound::None);
+        }
     }
 
     // Internal Iterative Reductions
@@ -395,7 +399,7 @@ Value Worker::search(
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = ss->static_eval;
-    if (tt_data
+    if (tt_data && tt_data->bound != Bound::None
         && tt_data->bound != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
@@ -604,7 +608,7 @@ Value Worker::search(
                   : best_move != Move::none() ? Bound::Exact
                                               : Bound::Upper;
     Move  tt_move = best_move != Move::none() ? best_move : tt_data ? tt_data->move : Move::none();
-    m_searcher.tt.store(pos, ply, tt_move, best_value, depth, bound);
+    m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, depth, bound);
 
     // Update to correction history.
     if (!is_in_check
@@ -663,8 +667,12 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     Value static_eval = -VALUE_INF;
     if (!is_in_check) {
         correction  = m_td.history.get_correction(pos);
-        raw_eval    = evaluate(pos);
+        raw_eval    = tt_data ? tt_data->eval : evaluate(pos);
         static_eval = raw_eval + correction;
+
+        if (!tt_data) {
+            m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, Bound::None);
+        }
     }
 
     // Stand pat
@@ -733,7 +741,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Store to the TT
     Bound bound = best_value >= beta ? Bound::Lower : Bound::Upper;
-    m_searcher.tt.store(pos, ply, best_move, best_value, 0, bound);
+    m_searcher.tt.store(pos, ply, raw_eval, best_move, best_value, 0, bound);
 
     return best_value;
 }
