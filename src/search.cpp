@@ -325,6 +325,12 @@ Value Worker::search(
         return 0;
     }
 
+    alpha = std::max(alpha, mated_in(ply));
+    beta = std::min(beta, -mated_in(ply) + 1);
+    if (alpha >= beta) {
+        return alpha;
+    }
+
     if (depth <= 0) {
         return quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
     }
