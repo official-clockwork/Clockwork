@@ -192,6 +192,14 @@ int main() {
                   << std::endl;
         std::cout << std::endl;
 
+        std::cout << "inline const PScore BISHOP_THREAT_KNIGHT = " << BISHOP_THREAT_KNIGHT << ";"
+                  << std::endl;
+        std::cout << "inline const PScore BISHOP_THREAT_ROOK = " << BISHOP_THREAT_ROOK << ";"
+                  << std::endl;
+        std::cout << "inline const PScore BISHOP_THREAT_QUEEN = " << BISHOP_THREAT_QUEEN << ";"
+                  << std::endl;
+        std::cout << std::endl;
+
         auto printPsqtArray = [](const std::string& name, const auto& arr) {
             std::cout << "inline const std::array<PScore, " << arr.size() << "> " << name << " = {"
                       << std::endl;
