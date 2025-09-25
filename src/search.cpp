@@ -214,7 +214,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Lambda to convert internal units score to uci score. TODO: add eval rescaling here once we get one
         auto format_score = [](Value score) {
             if (score < -VALUE_WIN && score > -VALUE_MATED) {
-                return "mate " + std::to_string(-(VALUE_MATED + score + 2) / 2);
+                return "mate " + std::to_string(-(VALUE_MATED + score + 1) / 2);
             }
             if (score > VALUE_WIN && score < VALUE_MATED) {
                 return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
