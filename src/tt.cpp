@@ -89,10 +89,11 @@ void TT::store(
 void TT::resize(size_t mb) {
     aligned_free(m_entries);
 
-    size_t entries = mb * 1024 * 1024 / sizeof(TTEntry);
+    size_t bytes   = mb * 1024 * 1024;
+    size_t entries = bytes / sizeof(TTEntry);
 
     m_size    = entries;
-    m_entries = static_cast<TTEntry*>(aligned_alloc(TT_ALIGNMENT, entries * sizeof(TTEntry)));
+    m_entries = static_cast<TTEntry*>(aligned_alloc(TT_ALIGNMENT, bytes));
     clear();
 }
 
