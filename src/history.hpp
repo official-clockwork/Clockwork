@@ -33,6 +33,7 @@ public:
         return m_cont_hist[stm_idx][pt_idx][move.to().raw];
     }
 
+    i32  get_conthist(const Position& pos, Move move, i32 ply, Search::Stack* ss) const;
     i32  get_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss) const;
     void update_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus);
 
@@ -47,6 +48,10 @@ public:
 private:
     static void update_hist_entry(i32& entry, i32 bonus) {
         entry += bonus - entry * std::abs(bonus) / HISTORY_MAX;
+    }
+
+    static void update_hist_entry_banger(i32& entry, i32 base, i32 bonus) {
+        entry += bonus - base * std::abs(bonus) / HISTORY_MAX;
     }
 
     MainHistory                      m_main_hist          = {};

@@ -3,13 +3,10 @@
 
 namespace Clockwork {
 
-i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss) const {
-    auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
-    auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
-    usize stm_idx       = static_cast<usize>(pos.active_color());
-    i32   stats         = m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()]
-                           [from_attacked * 2 + to_attacked];
+i32 History::get_conthist(const Position &pos, Move move, i32 ply, Search::Stack *ss) const {
+    i32 stats = 0;
 
+    usize stm_idx       = static_cast<usize>(pos.active_color());
     PieceType pt     = pos.piece_at(move.from());
     usize     pt_idx = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
     if (ply >= 1 && (ss - 1)->cont_hist_entry != nullptr) {
@@ -25,6 +22,15 @@ i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::St
     return stats;
 }
 
+i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss) const {
+    auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
+    auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
+    i32   stats         = m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()]
+                           [from_attacked * 2 + to_attacked];
+    stats += get_conthist(pos, move, ply, ss);
+    return stats;
+}
+
 void History::update_quiet_stats(
   const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
     auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
@@ -32,16 +38,17 @@ void History::update_quiet_stats(
     usize stm_idx       = static_cast<usize>(pos.active_color());
     update_hist_entry(m_main_hist[stm_idx][move.from_to()][from_attacked * 2 + to_attacked], bonus);
 
+    i32 conthist = get_conthist(pos, move, ply, ss);
     PieceType pt     = pos.piece_at(move.from());
     usize     pt_idx = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
     if (ply >= 1 && (ss - 1)->cont_hist_entry != nullptr) {
-        update_hist_entry((*(ss - 1)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], bonus);
+        update_hist_entry_banger((*(ss - 1)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], conthist, bonus);
     }
     if (ply >= 2 && (ss - 2)->cont_hist_entry != nullptr) {
-        update_hist_entry((*(ss - 2)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], bonus);
+        update_hist_entry_banger((*(ss - 2)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], conthist, bonus);
     }
     if (ply >= 4 && (ss - 4)->cont_hist_entry != nullptr) {
-        update_hist_entry((*(ss - 4)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], bonus);
+        update_hist_entry_banger((*(ss - 4)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw], conthist, bonus);
     }
 }
 
