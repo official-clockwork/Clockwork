@@ -406,13 +406,13 @@ Value Worker::search(
         tt_adjusted_eval = tt_data->score;
     }
 
-    if (!PV_NODE && !is_in_check && depth <= tuned::rfp_depth
+    if (!PV_NODE && !is_in_check && abs(tt_adjusted_eval) < VALUE_WIN && depth <= tuned::rfp_depth
         && tt_adjusted_eval >= beta + tuned::rfp_margin * depth) {
         return tt_adjusted_eval;
     }
 
-    if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth
-        && tt_adjusted_eval >= beta) {
+    if (!PV_NODE && !is_in_check && abs(tt_adjusted_eval) < VALUE_WIN && !pos.is_kp_endgame()
+        && depth >= tuned::nmp_depth && tt_adjusted_eval >= beta) {
         int R =
           tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
