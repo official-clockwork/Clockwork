@@ -201,10 +201,6 @@ Move Worker::iterative_deepening(const Position& root_position) {
     constexpr usize                             SS_PADDING = 2;
     std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
 
-    for (u32 i = 0; i < static_cast<u32>(MAX_PLY + SS_PADDING + 1); i++) {
-        ss[i].cont_hist_entry = nullptr;
-    }
-
     Depth last_search_depth = 0;
     Value last_search_score = -VALUE_INF;
     Move  last_best_move    = Move::none();
@@ -326,7 +322,7 @@ Value Worker::search(
     }
 
     alpha = std::max(alpha, mated_in(ply));
-    beta = std::min(beta, -mated_in(ply) + 1);
+    beta  = std::min(beta, -mated_in(ply) + 1);
     if (alpha >= beta) {
         return alpha;
     }
