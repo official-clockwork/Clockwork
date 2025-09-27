@@ -59,10 +59,10 @@ private:
 };
 
 struct Stack {
-    Value          static_eval;
-    Move           killer;
-    ContHistEntry* cont_hist_entry;
-    i32            fail_high_count;
+    Value          static_eval     = 0;
+    Move           killer          = Move::none();
+    ContHistEntry* cont_hist_entry = nullptr;
+    i32            fail_high_count = 0;
     PV             pv;
 };
 
