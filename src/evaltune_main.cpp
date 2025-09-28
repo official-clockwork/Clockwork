@@ -34,7 +34,7 @@ int main() {
     };
 
     // Number of threads to use, default to half available
-    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
+    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency());
 
     std::cout << "Running on " << thread_count << " threads" << std::endl;
 
