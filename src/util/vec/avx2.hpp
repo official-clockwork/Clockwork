@@ -347,14 +347,34 @@ struct v512 {
     }
 
     static forceinline v512 compress8(u64 m, v512 a) {
-        // TODO: Slow
-        std::array<u8, 64> result{};
-        auto               in = std::bit_cast<std::array<u8, 64>>(a);
-        for (usize i = 0; m != 0; i++, m = clear_lowest_bit(m)) {
-            result[i] = in[static_cast<usize>(std::countr_zero(m))];
+    // Fast path: keep as-is when selecting all bytes
+    if (m == u64(-1)) return a;
+
+    std::array<u8, 64> result{}; // zero-initialized
+    const auto in = std::bit_cast<std::array<u8, 64>>(a);
+
+    usize out = 0;
+    usize base = 0;
+
+    while (m) {
+        // Skip zeros
+        const unsigned tz = static_cast<unsigned>(std::countr_zero(m));
+        base += tz;
+        m >>= tz;
+        if (!m) break;
+
+        // Copy contiguous run of ones
+        const unsigned run = static_cast<unsigned>(std::countr_zero(~m));
+        for (unsigned i = 0; i < run; ++i) {
+            result[out + i] = in[base + i];
         }
-        return std::bit_cast<v512>(result);
+        out += run;
+        base += run;
+        m >>= run;
     }
+
+    return std::bit_cast<v512>(result);
+}
 
     static forceinline v512 sliderbroadcast(v512 a) {
         return v512{v256::sliderbroadcast(a.raw[0]), v256::sliderbroadcast(a.raw[1])};
