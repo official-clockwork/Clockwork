@@ -34,7 +34,7 @@ int main() {
         std::ifstream fenFile(filename);
         if (!fenFile) {
             std::cerr << "Error opening " << filename << std::endl;
-            continue;  // skip to the next file
+            return 1;
         }
 
         std::string line;
