@@ -275,7 +275,7 @@ int main() {
         printPsqtArray("KING_PSQT", KING_PSQT);
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.85);
+            optim.set_lr(optim.get_lr() * 0.91);
         }
     }
 
