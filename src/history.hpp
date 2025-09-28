@@ -3,6 +3,8 @@
 #include "common.hpp"
 #include "position.hpp"
 
+#include <algorithm>
+
 namespace Clockwork {
 
 using MainHistory   = std::array<std::array<std::array<i32, 4>, 4096>, 2>;
