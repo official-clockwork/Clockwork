@@ -52,6 +52,7 @@ private:
 
     static void update_hist_entry_banger(i32& entry, i32 base, i32 bonus) {
         entry += bonus - base * std::abs(bonus) / HISTORY_MAX;
+        entry = std::clamp(entry, -2 * HISTORY_MAX, 2 * HISTORY_MAX);
     }
 
     MainHistory                      m_main_hist          = {};
