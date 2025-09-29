@@ -583,7 +583,7 @@ Value Worker::search(
     }
 
     if (best_value >= beta) {
-        i32       bonus_depth = depth + (best_value >= beta + 75);
+        i32       bonus_depth = depth + (best_value >= beta + 100);
         const i32 bonus = std::min(1896, 4 * bonus_depth * bonus_depth + 120 * bonus_depth - 120);
         if (quiet_move(best_move)) {
             ss->killer = best_move;
