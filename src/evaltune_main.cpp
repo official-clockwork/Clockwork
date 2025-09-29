@@ -176,43 +176,30 @@ int main() {
         // Print epoch header
         std::cout << "Epoch " << (epoch + 1) << "/" << epochs << std::endl;
 
+        const auto epoch_start_time = time::Clock::now();
+
         std::iota(indices.begin(), indices.end(), 0);
         std::shuffle(indices.begin(), indices.end(), rng);
-
-        auto epoch_start_time = time::Clock::now();
 
         epoch_barrier.arrive_and_wait();
 
         for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
              batch_start += batch_size, ++batch_idx) {
 
-            auto batch_start_time = time::Clock::now();
-
             batch_barrier.arrive_and_wait();
-
-            auto parallel_stop = time::Clock::now();
-            std::cout << "Parallel: "
-                      << time::cast<time::FloatSeconds>(parallel_stop - batch_start_time).count()
-                      << std::endl;
 
             {
                 std::lock_guard guard{mutex};
                 optim.step(current_parameter_values, batch_gradients);
             }
 
-            std::cout << "Optim: "
-                      << time::cast<time::FloatSeconds>(time::Clock::now() - parallel_stop).count()
-                      << std::endl;
-
             // Print batch progress bar
             print_progress(batch_idx + 1, total_batches);
-            std::cout << std::endl;
         }
 
-        std::cout << std::endl;  // Finish progress bar line
+        const auto epoch_end_time = time::Clock::now();
 
-        std::cout << time::cast<time::FloatSeconds>(time::Clock::now() - epoch_start_time).count()
-                  << std::endl;
+        std::cout << std::endl;  // Finish progress bar line
 
         // Print current values
         Graph::get().copy_parameter_values(current_parameter_values);
@@ -312,6 +299,10 @@ int main() {
         printPsqtArray("ROOK_PSQT", ROOK_PSQT);
         printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
         printPsqtArray("KING_PSQT", KING_PSQT);
+
+        std::cout << "// Epoch duration: "
+                  << time::cast<time::FloatSeconds>(epoch_end_time - epoch_start_time).count()
+                  << "s" << std::endl;
 
         if (epoch > 5) {
             optim.set_lr(optim.get_lr() * 0.91);
