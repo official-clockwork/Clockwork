@@ -367,7 +367,6 @@ struct v512 {
         for (unsigned i = 0; i < run; ++i) {
             result[out + i] = in[base + i];
         }
-        return std::bit_cast<v512>(result);
         out += run;
         base += run;
         m >>= run;
