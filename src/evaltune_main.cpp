@@ -9,6 +9,7 @@
 #include "util/pretty.hpp"
 #include "util/types.hpp"
 #include <algorithm>
+#include <barrier>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -122,13 +123,13 @@ int main() {
 
             Parameters batch_gradients = Parameters::zeros(parameter_count);
 
-            std::mutex               mutex;
-            std::vector<std::thread> threads;
+            std::mutex   mutex;
+            std::barrier barrier{thread_count + 1};
 
             for (size_t subbatch_start = batch_start; subbatch_start < batch_end;
                  subbatch_start += subbatch_size) {
 
-                threads.emplace_back([&, subbatch_start] {
+                std::thread([&, subbatch_start] {
                     size_t subbatch_end = std::min(subbatch_start + subbatch_size, batch_end);
                     size_t current_subbatch_size = subbatch_end - subbatch_start;
 
@@ -160,14 +161,13 @@ int main() {
                         std::lock_guard guard{mutex};
                         batch_gradients.accumulate(subbatch_gradients);
                     }
+                    (void)barrier.arrive();
 
                     Graph::get().cleanup();
-                });
+                }).detach();
             }
 
-            for (std::thread& t : threads) {
-                t.join();
-            }
+            barrier.arrive_and_wait();
 
             auto parallel_stop = time::Clock::now();
             std::cout << "Parallel: " << time::cast<time::FloatSeconds>(parallel_stop - start)
