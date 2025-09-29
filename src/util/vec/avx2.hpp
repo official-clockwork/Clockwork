@@ -346,7 +346,8 @@ struct v512 {
         return v512{v256::add8(a.raw[0], b.raw[0]), v256::add8(a.raw[1], b.raw[1])};
     }
 
-       if (m == u64(-1)) return a;
+    static forceinline v512 compress8(u64 m, v512 a) {
+        if (m == u64(-1)) return a;
 
     std::array<u8, 64> result{}; // zero-initialized
     const auto in = std::bit_cast<std::array<u8, 64>>(a);
@@ -366,6 +367,7 @@ struct v512 {
         for (unsigned i = 0; i < run; ++i) {
             result[out + i] = in[base + i];
         }
+        return std::bit_cast<v512>(result);
         out += run;
         base += run;
         m >>= run;
