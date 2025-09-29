@@ -112,6 +112,7 @@ int main() {
     std::barrier epoch_barrier{thread_count + 1};
     std::barrier batch_barrier{thread_count + 1, [&] {
                                    std::lock_guard guard{mutex};
+                                   optim.step(current_parameter_values, batch_gradients);
                                    batch_gradients = Parameters::zeros(parameter_count);
                                }};
 
@@ -187,11 +188,6 @@ int main() {
              batch_start += batch_size, ++batch_idx) {
 
             batch_barrier.arrive_and_wait();
-
-            {
-                std::lock_guard guard{mutex};
-                optim.step(current_parameter_values, batch_gradients);
-            }
 
             // Print batch progress bar
             print_progress(batch_idx + 1, total_batches);
