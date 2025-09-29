@@ -346,29 +346,31 @@ struct v512 {
         return v512{v256::add8(a.raw[0], b.raw[0]), v256::add8(a.raw[1], b.raw[1])};
     }
 
-    static forceinline v512 compress8(u64 m, v512 a) {
-    if (m == u64(-1)) return a;
-    
+       if (m == u64(-1)) return a;
+
+    std::array<u8, 64> result{}; // zero-initialized
     const auto in = std::bit_cast<std::array<u8, 64>>(a);
-    std::array<u8, 64> result{};
-    
-    for (int i = 0; i < 8; ++i) {
-        u64 chunk_mask = (m >> (i * 8)) & 0xFF;
-        if (!chunk_mask) continue;
-        
-        // Unrolled PEXT-like logic
-        int out_pos = std::popcount(m & ((1ULL << (i * 8)) - 1));
-        
-        if (chunk_mask & 0x01) result[out_pos++] = in[i * 8 + 0];
-        if (chunk_mask & 0x02) result[out_pos++] = in[i * 8 + 1];
-        if (chunk_mask & 0x04) result[out_pos++] = in[i * 8 + 2];
-        if (chunk_mask & 0x08) result[out_pos++] = in[i * 8 + 3];
-        if (chunk_mask & 0x10) result[out_pos++] = in[i * 8 + 4];
-        if (chunk_mask & 0x20) result[out_pos++] = in[i * 8 + 5];
-        if (chunk_mask & 0x40) result[out_pos++] = in[i * 8 + 6];
-        if (chunk_mask & 0x80) result[out_pos++] = in[i * 8 + 7];
+
+    usize out = 0;
+    usize base = 0;
+
+    while (m) {
+        // Skip zeros
+        const unsigned tz = static_cast<unsigned>(std::countr_zero(m));
+        base += tz;
+        m >>= tz;
+        if (!m) break;
+
+        // Copy contiguous run of ones
+        const unsigned run = static_cast<unsigned>(std::countr_zero(~m));
+        for (unsigned i = 0; i < run; ++i) {
+            result[out + i] = in[base + i];
+        }
+        out += run;
+        base += run;
+        m >>= run;
     }
-    
+
     return std::bit_cast<v512>(result);
 }
 
