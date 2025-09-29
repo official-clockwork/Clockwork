@@ -46,9 +46,9 @@ private:
         End,
     };
 
-    void generate_moves();
-    Move pick_next(MoveList& moves);
-    void score_moves(MoveList& moves);
+    void                 generate_moves();
+    std::pair<Move, i32> pick_next(MoveList& moves);
+    void                 score_moves(MoveList& moves);
 
     i32 score_move(Move move) const;
 
