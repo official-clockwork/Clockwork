@@ -140,6 +140,7 @@ else()
         add_test(${name} ${name})
     endfunction()
 
+    do_test(test_move)
     do_test(test_piece_count)
     do_test(test_see)
     do_test(test_see_prototype)
