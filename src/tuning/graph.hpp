@@ -36,18 +36,16 @@ private:
 
     void register_param(const ValuePtr& param) {
         m_parameters.push_back(param);
-        m_backwardables.push_back(std::static_pointer_cast<Backwardable>(param));
     }
 
     void register_param(const PairPtr& param) {
         m_pair_parameters.push_back(param);
-        m_backwardables.push_back(std::static_pointer_cast<Backwardable>(param));
     }
 
 public:
     static Graph& get() {
-        thread_local std::shared_ptr<Graph> instance(new Graph());
-        return *instance;
+        thread_local Graph instance;
+        return instance;
     }
 
     // ------------------ Registration ------------------
