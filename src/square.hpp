@@ -67,6 +67,11 @@ struct Square {
         return Square{static_cast<u8>(raw ^ 56)};
     }
 
+    template <Color color>
+    constexpr Square push() const {
+        return Square{static_cast<u8>(raw + (color == Color::White ? 8 : -8))};
+    }
+
     friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());
         return os << file << sq.rank() + 1;

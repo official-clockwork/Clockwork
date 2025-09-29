@@ -235,6 +235,7 @@ int main() {
         print_table("PAWN_PHALANX", PAWN_PHALANX);
         print_table("DEFENDED_PAWN", DEFENDED_PAWN);
         print_table("PASSED_PAWN", PASSED_PAWN);
+        std::cout << "inline const PParam DEFENDED_PASSED_PUSH = " << DEFENDED_PASSED_PUSH << ";" << std::endl;
         std::cout << std::endl;
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);

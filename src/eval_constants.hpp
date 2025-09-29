@@ -26,6 +26,7 @@ inline const std::array<PParam, 5> DEFENDED_PAWN = {
 inline const std::array<PParam, 6> PASSED_PAWN = {
     S(-1, 4), S(-26, 38), S(-28, 89), S(44, 139), S(73, 246), S(23, 42),
 };
+inline const PParam DEFENDED_PASSED_PUSH = S(0, 0);
 
 inline const std::array<PParam, 9> KNIGHT_MOBILITY = {
     S(-218, -193), S(-110, -133), S(-55, -37), S(-4, -10), S(42, 11), S(63, 55), S(95, 53), S(119, 52), S(170, -28),
