@@ -347,38 +347,83 @@ struct v512 {
     }
 
     static forceinline v512 compress8(u64 m, v512 a) {
+    // Fast paths
     if (m == 0) {
         std::array<u8, 64> z{};
         return std::bit_cast<v512>(z);
     }
-    if (m == ~u64{0}) return a;
+    if (m == u64(-1)) return a;
+
+    // 8-bit LUT: for each mask byte b, idx[b] lists set-bit positions (0..7), cnt[b] is popcount(b).
+    struct Lut {
+        std::array<std::array<u8, 8>, 256> idx{};
+        std::array<u8, 256> cnt{};
+    };
+    static constexpr Lut lut = []() constexpr {
+        Lut L{};
+        for (unsigned b = 0; b < 256; ++b) {
+            unsigned k = 0;
+            for (unsigned i = 0; i < 8; ++i) {
+                if (b & (1u << i)) L.idx[b][k++] = static_cast<u8>(i);
+            }
+            L.cnt[b] = static_cast<u8>(k);
+        }
+        return L;
+    }();
 
     const auto in = std::bit_cast<std::array<u8, 64>>(a);
-    std::array<u8, 64> out; // not zero-initialized
+    std::array<u8, 64> out{}; // zero-filled tail
 
-    usize o = 0;
-    usize base = 0;
+    const unsigned pc = static_cast<unsigned>(std::popcount(m));
 
-    while (m) {
-        const unsigned tz = static_cast<unsigned>(std::countr_zero(m));
-        base += tz;
-        m >>= tz;
-        if (!m) break;
-
-        const unsigned run = static_cast<unsigned>(std::countr_zero(~m));
-
-        // Copy contiguous 1-run [base, base+run) to out[o, o+run)
-        for (unsigned i = 0; i < run; ++i) {
-            out[o + i] = in[base + i];
+    // Sparse masks: per-bit gather with t &= t-1
+    if (pc <= 12) {
+        usize o = 0;
+        for (u64 t = m; t; t &= (t - 1)) {
+            const unsigned idx = static_cast<unsigned>(std::countr_zero(t));
+            out[o++] = in[idx];
         }
-
-        o    += run;
-        base += run;
-        m    >>= run;
+        return std::bit_cast<v512>(out);
     }
 
-    // Zero-fill the tail once
-    for (usize i = o; i < 64; ++i) out[i] = 0;
+    // Dense masks: compress per 8-byte lane using the LUT
+    usize o = 0;
+    usize base = 0;
+    for (unsigned lane = 0; lane < 8; ++lane, base += 8) {
+        const unsigned b = static_cast<unsigned>((m >> (lane * 8)) & 0xFFu);
+        if (!b) continue;
+
+        const u8 cnt = lut.cnt[b];
+        const auto& ix = lut.idx[b];
+
+        switch (cnt) {
+            case 8:
+                out[o+7] = in[base + ix[7]];
+                [[fallthrough]];
+            case 7:
+                out[o+6] = in[base + ix[6]];
+                [[fallthrough]];
+            case 6:
+                out[o+5] = in[base + ix[5]];
+                [[fallthrough]];
+            case 5:
+                out[o+4] = in[base + ix[4]];
+                [[fallthrough]];
+            case 4:
+                out[o+3] = in[base + ix[3]];
+                [[fallthrough]];
+            case 3:
+                out[o+2] = in[base + ix[2]];
+                [[fallthrough]];
+            case 2:
+                out[o+1] = in[base + ix[1]];
+                [[fallthrough]];
+            case 1:
+                out[o+0] = in[base + ix[0]];
+                break;
+        }
+        o += cnt;
+    }
 
     return std::bit_cast<v512>(out);
 }
