@@ -113,8 +113,6 @@ int main() {
 
         size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
-        auto start = time::Clock::now();
-
         Parameters batch_gradients = Parameters::zeros(parameter_count);
 
         std::mutex   mutex;
@@ -172,17 +170,25 @@ int main() {
             }).detach();
         }
 
+        auto batch_start = time::Clock::now();
+
         for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
              batch_start += batch_size, ++batch_idx) {
             batch_gradients = Parameters::zeros(parameter_count);
 
+            auto subbatch_start = time::Clock::now();
+
             barrier.arrive_and_wait();
 
             auto parallel_stop = time::Clock::now();
-            std::cout << "Parallel: " << time::cast<time::FloatSeconds>(parallel_stop - start)
+            std::cout << "Parallel: "
+                      << time::cast<time::FloatSeconds>(parallel_stop - subbatch_start)
                       << std::endl;
 
-            optim.step(current_parameter_values, batch_gradients);
+            {
+                std::lock_guard guard{mutex};
+                optim.step(current_parameter_values, batch_gradients);
+            }
 
             std::cout << "Optim: "
                       << time::cast<time::FloatSeconds>(time::Clock::now() - parallel_stop)
@@ -190,11 +196,12 @@ int main() {
 
             // Print batch progress bar
             print_progress(batch_idx + 1, total_batches);
+            std::cout << std::endl;
         }
 
         std::cout << std::endl;  // Finish progress bar line
 
-        std::cout << time::cast<time::FloatSeconds>(time::Clock::now() - start) << std::endl;
+        std::cout << time::cast<time::FloatSeconds>(time::Clock::now() - batch_start) << std::endl;
 
         // Print current values
         Graph::get().copy_parameter_values(current_parameter_values);
