@@ -477,7 +477,7 @@ Value Worker::search(
 
             Value see_threshold = quiet ? -67 * depth : -22 * depth * depth;
             // SEE PVS Pruning
-            if (depth <= 10 && !SEE::see(pos, m, see_threshold)) {
+            if (depth <= 10 && !SEE::see(pos, m, see_threshold - move_history * 20 / 1024)) {
                 continue;
             }
         }
