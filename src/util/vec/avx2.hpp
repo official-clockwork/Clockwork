@@ -347,85 +347,29 @@ struct v512 {
     }
 
     static forceinline v512 compress8(u64 m, v512 a) {
-    // Fast paths
-    if (m == 0) {
-        std::array<u8, 64> z{};
-        return std::bit_cast<v512>(z);
-    }
     if (m == u64(-1)) return a;
-
-    // 8-bit LUT: for each mask byte b, idx[b] lists set-bit positions (0..7), cnt[b] is popcount(b).
-    struct Lut {
-        std::array<std::array<u8, 8>, 256> idx{};
-        std::array<u8, 256> cnt{};
-    };
-    static constexpr Lut lut = []() constexpr {
-        Lut L{};
-        for (unsigned b = 0; b < 256; ++b) {
-            unsigned k = 0;
-            for (unsigned i = 0; i < 8; ++i) {
-                if (b & (1u << i)) L.idx[b][k++] = static_cast<u8>(i);
-            }
-            L.cnt[b] = static_cast<u8>(k);
-        }
-        return L;
-    }();
-
+    
     const auto in = std::bit_cast<std::array<u8, 64>>(a);
-    std::array<u8, 64> out{}; // zero-filled tail
-
-    const unsigned pc = static_cast<unsigned>(std::popcount(m));
-
-    // Sparse masks: per-bit gather with t &= t-1
-    if (pc <= 12) {
-        usize o = 0;
-        for (u64 t = m; t; t &= (t - 1)) {
-            const unsigned idx = static_cast<unsigned>(std::countr_zero(t));
-            out[o++] = in[idx];
-        }
-        return std::bit_cast<v512>(out);
+    std::array<u8, 64> result{};
+    
+    for (int i = 0; i < 8; ++i) {
+        u64 chunk_mask = (m >> (i * 8)) & 0xFF;
+        if (!chunk_mask) continue;
+        
+        // Unrolled PEXT-like logic
+        int out_pos = std::popcount(m & ((1ULL << (i * 8)) - 1));
+        
+        if (chunk_mask & 0x01) result[out_pos++] = in[i * 8 + 0];
+        if (chunk_mask & 0x02) result[out_pos++] = in[i * 8 + 1];
+        if (chunk_mask & 0x04) result[out_pos++] = in[i * 8 + 2];
+        if (chunk_mask & 0x08) result[out_pos++] = in[i * 8 + 3];
+        if (chunk_mask & 0x10) result[out_pos++] = in[i * 8 + 4];
+        if (chunk_mask & 0x20) result[out_pos++] = in[i * 8 + 5];
+        if (chunk_mask & 0x40) result[out_pos++] = in[i * 8 + 6];
+        if (chunk_mask & 0x80) result[out_pos++] = in[i * 8 + 7];
     }
-
-    // Dense masks: compress per 8-byte lane using the LUT
-    usize o = 0;
-    usize base = 0;
-    for (unsigned lane = 0; lane < 8; ++lane, base += 8) {
-        const unsigned b = static_cast<unsigned>((m >> (lane * 8)) & 0xFFu);
-        if (!b) continue;
-
-        const u8 cnt = lut.cnt[b];
-        const auto& ix = lut.idx[b];
-
-        switch (cnt) {
-            case 8:
-                out[o+7] = in[base + ix[7]];
-                [[fallthrough]];
-            case 7:
-                out[o+6] = in[base + ix[6]];
-                [[fallthrough]];
-            case 6:
-                out[o+5] = in[base + ix[5]];
-                [[fallthrough]];
-            case 5:
-                out[o+4] = in[base + ix[4]];
-                [[fallthrough]];
-            case 4:
-                out[o+3] = in[base + ix[3]];
-                [[fallthrough]];
-            case 3:
-                out[o+2] = in[base + ix[2]];
-                [[fallthrough]];
-            case 2:
-                out[o+1] = in[base + ix[1]];
-                [[fallthrough]];
-            case 1:
-                out[o+0] = in[base + ix[0]];
-                break;
-        }
-        o += cnt;
-    }
-
-    return std::bit_cast<v512>(out);
+    
+    return std::bit_cast<v512>(result);
 }
 
     static forceinline v512 sliderbroadcast(v512 a) {
