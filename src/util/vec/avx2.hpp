@@ -347,46 +347,33 @@ struct v512 {
     }
 
     static forceinline v512 compress8(u64 m, v512 a) {
-    if (m == 0) {
-        std::array<u8, 64> z{};
-        return std::bit_cast<v512>(z);
-    }
+    // Fast path: keep as-is when selecting all bytes
     if (m == u64(-1)) return a;
 
+    std::array<u8, 64> result{}; // zero-initialized
     const auto in = std::bit_cast<std::array<u8, 64>>(a);
-    std::array<u8, 64> out; // not zero-initialized
 
-    usize o = 0;
+    usize out = 0;
     usize base = 0;
 
     while (m) {
-        const unsigned tz  = static_cast<unsigned>(std::countr_zero(m));
+        // Skip zeros
+        const unsigned tz = static_cast<unsigned>(std::countr_zero(m));
         base += tz;
         m >>= tz;
         if (!m) break;
 
+        // Copy contiguous run of ones
         const unsigned run = static_cast<unsigned>(std::countr_zero(~m));
-
-        // Copy the contiguous run [base, base+run) to out[o, o+run)
-        const u8* src = &in[base];
-        u8*       dst = &out[o];
-        unsigned  n   = run;
-
-        while (n >= 16) { std::memcpy(dst, src, 16); dst += 16; src += 16; n -= 16; }
-        if (n & 8) { std::memcpy(dst, src, 8); dst += 8; src += 8; }
-        if (n & 4) { std::memcpy(dst, src, 4); dst += 4; src += 4; }
-        if (n & 2) { std::memcpy(dst, src, 2); dst += 2; src += 2; }
-        if (n & 1) { *dst = *src; }
-
-        o    += run;
+        for (unsigned i = 0; i < run; ++i) {
+            result[out + i] = in[base + i];
+        }
+        out += run;
         base += run;
-        m    >>= run;
+        m >>= run;
     }
 
-    // Zero-fill the tail only once
-    for (usize i = o; i < 64; ++i) out[i] = 0;
-
-    return std::bit_cast<v512>(out);
+    return std::bit_cast<v512>(result);
 }
 
     static forceinline v512 sliderbroadcast(v512 a) {
