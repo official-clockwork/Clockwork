@@ -103,27 +103,28 @@ int main() {
 
     std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
 
-    for (i32 epoch = 0; epoch < epochs; epoch++) {
-        // Print epoch header
-        std::cout << "Epoch " << (epoch + 1) << "/" << epochs << std::endl;
+    const size_t        total_batches = (positions.size() + batch_size - 1) / batch_size;
+    std::vector<size_t> indices(positions.size());
 
-        std::vector<size_t> indices(positions.size());
-        std::iota(indices.begin(), indices.end(), 0);
-        std::shuffle(indices.begin(), indices.end(), rng);
+    Parameters batch_gradients = Parameters::zeros(parameter_count);
 
-        size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
+    std::mutex   mutex;
+    std::barrier epoch_barrier{thread_count + 1};
+    std::barrier batch_barrier{thread_count + 1, [&] {
+                                   std::lock_guard guard{mutex};
+                                   batch_gradients = Parameters::zeros(parameter_count);
+                               }};
 
-        Parameters batch_gradients = Parameters::zeros(parameter_count);
+    for (u32 thread_idx = 0; thread_idx < thread_count; thread_idx++) {
+        std::thread([&, thread_idx] {
+            Graph::get().cleanup();
 
-        std::mutex   mutex;
-        std::barrier barrier{thread_count + 1};
+            std::vector<ValuePtr> subbatch_outputs;
+            std::vector<f64>      subbatch_targets;
 
-        for (u32 thread_idx = 0; thread_idx < thread_count; thread_idx++) {
-            std::thread([&, thread_idx] {
-                Graph::get().cleanup();
+            for (i32 epoch = 0; epoch < epochs; epoch++) {
 
-                std::vector<ValuePtr> subbatch_outputs;
-                std::vector<f64>      subbatch_targets;
+                epoch_barrier.arrive_and_wait();
 
                 for (size_t batch_start = 0; batch_start < positions.size();
                      batch_start += batch_size) {
@@ -163,26 +164,35 @@ int main() {
                         std::lock_guard guard{mutex};
                         batch_gradients.accumulate(subbatch_gradients);
                     }
-                    (void)barrier.arrive();
+                    batch_barrier.arrive_and_wait();
 
                     Graph::get().cleanup();
                 }
-            }).detach();
-        }
+            }
+        }).detach();
+    }
 
-        auto batch_start = time::Clock::now();
+    for (i32 epoch = 0; epoch < epochs; epoch++) {
+        // Print epoch header
+        std::cout << "Epoch " << (epoch + 1) << "/" << epochs << std::endl;
+
+        std::iota(indices.begin(), indices.end(), 0);
+        std::shuffle(indices.begin(), indices.end(), rng);
+
+        auto epoch_start_time = time::Clock::now();
+
+        epoch_barrier.arrive_and_wait();
 
         for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
              batch_start += batch_size, ++batch_idx) {
-            batch_gradients = Parameters::zeros(parameter_count);
 
-            auto subbatch_start = time::Clock::now();
+            auto batch_start_time = time::Clock::now();
 
-            barrier.arrive_and_wait();
+            batch_barrier.arrive_and_wait();
 
             auto parallel_stop = time::Clock::now();
             std::cout << "Parallel: "
-                      << time::cast<time::FloatSeconds>(parallel_stop - subbatch_start)
+                      << time::cast<time::FloatSeconds>(parallel_stop - batch_start_time).count()
                       << std::endl;
 
             {
@@ -191,7 +201,7 @@ int main() {
             }
 
             std::cout << "Optim: "
-                      << time::cast<time::FloatSeconds>(time::Clock::now() - parallel_stop)
+                      << time::cast<time::FloatSeconds>(time::Clock::now() - parallel_stop).count()
                       << std::endl;
 
             // Print batch progress bar
@@ -201,7 +211,8 @@ int main() {
 
         std::cout << std::endl;  // Finish progress bar line
 
-        std::cout << time::cast<time::FloatSeconds>(time::Clock::now() - batch_start) << std::endl;
+        std::cout << time::cast<time::FloatSeconds>(time::Clock::now() - epoch_start_time).count()
+                  << std::endl;
 
         // Print current values
         Graph::get().copy_parameter_values(current_parameter_values);
