@@ -34,7 +34,7 @@ int main() {
     };
 
     // Number of threads to use, default to half available
-    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency());
+    u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 
     std::cout << "Running on " << thread_count << " threads" << std::endl;
 
@@ -112,6 +112,8 @@ int main() {
 
         size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
+        auto start = time::Clock::now();
+
         for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
              batch_start += batch_size, ++batch_idx) {
             size_t batch_end          = std::min(batch_start + batch_size, positions.size());
@@ -167,13 +169,23 @@ int main() {
                 t.join();
             }
 
+            auto parallel_stop = time::Clock::now();
+            std::cout << "Parallel: " << time::cast<time::FloatSeconds>(parallel_stop - start)
+                      << std::endl;
+
             optim.step(current_parameter_values, batch_gradients);
+
+            std::cout << "Optim: "
+                      << time::cast<time::FloatSeconds>(time::Clock::now() - parallel_stop)
+                      << std::endl;
 
             // Print batch progress bar
             print_progress(batch_idx + 1, total_batches);
         }
 
         std::cout << std::endl;  // Finish progress bar line
+
+        std::cout << time::cast<time::FloatSeconds>(time::Clock::now() - start) << std::endl;
 
         // Print current values
         Graph::get().copy_parameter_values(current_parameter_values);
