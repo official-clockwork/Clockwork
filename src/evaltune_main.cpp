@@ -14,6 +14,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -110,7 +111,7 @@ int main() {
 
     std::mutex   mutex;
     std::barrier epoch_barrier{thread_count + 1};
-    std::barrier batch_barrier{thread_count + 1, [&] {
+    std::barrier batch_barrier{thread_count + 1, [&]() noexcept {
                                    std::lock_guard guard{mutex};
                                    optim.step(current_parameter_values, batch_gradients);
                                    batch_gradients = Parameters::zeros(parameter_count);
@@ -232,6 +233,7 @@ int main() {
         print_table("DEFENDED_PAWN", DEFENDED_PAWN);
         print_table("PASSED_PAWN", PASSED_PAWN);
         print_table("DEFENDED_PASSED_PUSH", DEFENDED_PASSED_PUSH);
+        print_table("BLOCKED_PASSED_PAWN", BLOCKED_PASSED_PAWN);
         std::cout << std::endl;
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);

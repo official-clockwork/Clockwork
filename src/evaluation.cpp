@@ -50,9 +50,9 @@ std::array<std::array<Bitboard, 64>, 2> passed_pawn_spans = []() {
 
 template<Color color>
 PScore evaluate_pawns(const Position& pos) {
-    constexpr i32 RANK_2 = 1;
-    constexpr i32 RANK_3 = 2;
-    constexpr Color them = color == Color::White ? Color::Black : Color::White;
+    constexpr i32   RANK_2 = 1;
+    constexpr i32   RANK_3 = 2;
+    constexpr Color them   = color == Color::White ? Color::Black : Color::White;
 
     Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
     Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
@@ -60,10 +60,12 @@ PScore evaluate_pawns(const Position& pos) {
     eval += DOUBLED_PAWN_VAL * static_cast<i32>((pawns & pawns.shift(Direction::North)).popcount());
 
     for (Square sq : pawns) {
+        Square   push     = sq.push<color>();
         Bitboard stoppers = opp_pawns & passed_pawn_spans[static_cast<usize>(color)][sq.raw];
         if (stoppers.empty()) {
             eval += PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
-            if (pos.attack_table(color).read(sq.push<color>()).popcount() > pos.attack_table(them).read(sq.push<color>()).popcount()) {
+            if (pos.attack_table(color).read(push).popcount()
+                > pos.attack_table(them).read(push).popcount()) {
                 eval += DEFENDED_PASSED_PUSH[sq.relative_sq(color).rank() - RANK_2];
             }
         }
