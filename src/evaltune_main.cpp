@@ -233,6 +233,7 @@ int main() {
         print_table("DEFENDED_PAWN", DEFENDED_PAWN);
         print_table("PASSED_PAWN", PASSED_PAWN);
         print_table("DEFENDED_PASSED_PUSH", DEFENDED_PASSED_PUSH);
+        print_table("BLOCKED_PASSED_PAWN", BLOCKED_PASSED_PAWN);
         std::cout << std::endl;
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);

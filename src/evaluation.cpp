@@ -68,6 +68,9 @@ PScore evaluate_pawns(const Position& pos) {
                 > pos.attack_table(them).read(push).popcount()) {
                 eval += DEFENDED_PASSED_PUSH[sq.relative_sq(color).rank() - RANK_2];
             }
+            if (pos.piece_at(push) != PieceType::None) {
+                eval += BLOCKED_PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
+            }
         }
     }
 
