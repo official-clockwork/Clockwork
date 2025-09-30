@@ -27,7 +27,7 @@ i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::St
     auto from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
     i32  stats         = m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()]
                            [from_attacked * 2 + to_attacked];
-    stats += get_conthist(pos, move, ply, ss);
+    stats += 2 * get_conthist(pos, move, ply, ss);
     return stats;
 }
 
