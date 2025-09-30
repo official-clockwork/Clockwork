@@ -30,6 +30,10 @@ void aligned_free(void* ptr) {
 #endif
 }
 
+[[nodiscard]] static u8 make_ttpv_bound(bool is_tt_pv, Bound bound) {
+    return static_cast<u8>(bound) | (static_cast<u8>(is_tt_pv) << 2);
+}
+
 i16 score_to_tt(Value score, i32 ply) {
     if (score > VALUE_WIN) {
         return static_cast<i16>(score + ply);
@@ -64,18 +68,18 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     size_t      idx   = mulhi64(pos.get_hash_key(), m_size);
     const auto& entry = m_entries[idx];
     if (entry.key16 == shrink_key(pos.get_hash_key())) {
-        TTData data = {.eval  = entry.eval,
-                       .move  = entry.move,
-                       .score = score_from_tt(entry.score, ply),
-                       .depth = static_cast<Depth>(entry.depth),
-                       .bound = entry.bound};
+        TTData data = {.eval       = entry.eval,
+                       .move       = entry.move,
+                       .score      = score_from_tt(entry.score, ply),
+                       .depth      = static_cast<Depth>(entry.depth),
+                       .ttpv_bound = entry.ttpv_bound};
         return {data};
     }
     return {};
 }
 
 void TT::store(
-  const Position& pos, i32 ply, Value eval, Move move, Value score, Depth depth, Bound bound) {
+  const Position& pos, i32 ply, Value eval, Move move, Value score, Depth depth, bool ttpv, Bound bound) {
     size_t idx   = mulhi64(pos.get_hash_key(), m_size);
     auto&  entry = m_entries[idx];
     entry.key16  = shrink_key(pos.get_hash_key());
@@ -83,7 +87,7 @@ void TT::store(
     entry.score  = score_to_tt(score, ply);
     entry.eval   = static_cast<i16>(eval);
     entry.depth  = static_cast<u8>(depth);
-    entry.bound  = bound;
+    entry.ttpv_bound  = make_ttpv_bound(ttpv, bound);
 }
 
 void TT::resize(size_t mb) {

@@ -371,11 +371,16 @@ Value Worker::search(
     }
 
     auto tt_data = m_searcher.tt.probe(pos, ply);
-    if (!PV_NODE && tt_data && tt_data->depth >= depth
-        && (tt_data->bound == Bound::Exact
-            || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
-            || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
-        return tt_data->score;
+    bool ttpv = PV_NODE;
+
+    if (!PV_NODE && tt_data) {
+        if (tt_data->depth >= depth && (tt_data->bound() == Bound::Exact
+                || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
+                || (tt_data->bound() == Bound::Upper && tt_data->score <= alpha))) {
+            return tt_data->score;
+        }
+        // Update ttpv
+        ttpv |= tt_data->ttpv();
     }
 
     bool  is_in_check = pos.is_in_check();
@@ -390,7 +395,7 @@ Value Worker::search(
         improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
 
         if (!tt_data) {
-            m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, Bound::None);
+            m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, ttpv, Bound::None);
         }
     }
 
@@ -401,8 +406,8 @@ Value Worker::search(
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = ss->static_eval;
-    if (tt_data && tt_data->bound != Bound::None && abs(tt_data->score) < VALUE_WIN
-        && tt_data->bound != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
+    if (tt_data && tt_data->bound() != Bound::None && abs(tt_data->score) < VALUE_WIN
+        && tt_data->bound() != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
 
@@ -505,6 +510,10 @@ Value Worker::search(
 
             if (cutnode) {
                 reduction += 1024;
+            }
+
+            if (ttpv) {
+                reduction -= 1024;
             }
 
             if (tt_data && tt_data->move.is_capture()) {
@@ -613,7 +622,7 @@ Value Worker::search(
                   : best_move != Move::none() ? Bound::Exact
                                               : Bound::Upper;
     Move  tt_move = best_move != Move::none() ? best_move : tt_data ? tt_data->move : Move::none();
-    m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, depth, bound);
+    m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, depth, ttpv, bound);
 
     // Update to correction history.
     if (!is_in_check
@@ -660,13 +669,17 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     // TT Probing
     auto tt_data = m_searcher.tt.probe(pos, ply);
     if (tt_data
-        && (tt_data->bound == Bound::Exact
-            || (tt_data->bound == Bound::Lower && tt_data->score >= beta)
-            || (tt_data->bound == Bound::Upper && tt_data->score <= alpha))) {
+        && (tt_data->bound() == Bound::Exact
+            || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
+            || (tt_data->bound() == Bound::Upper && tt_data->score <= alpha))) {
         return tt_data->score;
     }
 
     bool  is_in_check = pos.is_in_check();
+    bool  ttpv =
+      tt_data
+         ? tt_data->ttpv()
+         : false;  // TODO: if we ever get to needing ttpv patches in quiescence, we might want to add PV_NODE handling in here also
     Value correction  = 0;
     Value raw_eval    = -VALUE_INF;
     Value static_eval = -VALUE_INF;
@@ -676,7 +689,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         static_eval = raw_eval + correction;
 
         if (!tt_data) {
-            m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, Bound::None);
+            m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, ttpv, Bound::None);
         }
     }
 
@@ -746,7 +759,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Store to the TT
     Bound bound = best_value >= beta ? Bound::Lower : Bound::Upper;
-    m_searcher.tt.store(pos, ply, raw_eval, best_move, best_value, 0, bound);
+    m_searcher.tt.store(pos, ply, raw_eval, best_move, best_value, 0, ttpv, bound);
 
     return best_value;
 }

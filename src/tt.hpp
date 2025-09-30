@@ -5,10 +5,10 @@
 namespace Clockwork {
 
 enum Bound : u8 {
-    None,
-    Lower,
-    Upper,
-    Exact,
+    None = 0,
+    Lower = 1,
+    Upper = 2,
+    Exact = 3,
 };
 
 struct TTEntry {
@@ -17,7 +17,7 @@ struct TTEntry {
     i16   score;
     i16   eval;
     u8    depth;
-    Bound bound;
+    u8    ttpv_bound;
 };
 
 static_assert(sizeof(TTEntry) == 10 * sizeof(u8));
@@ -27,7 +27,14 @@ struct TTData {
     Move  move;
     Value score;
     Depth depth;
-    Bound bound;
+    u8    ttpv_bound;
+
+    [[nodiscard]] Bound bound() const {
+        return static_cast<Bound>(ttpv_bound & 0b011);
+    }
+    [[nodiscard]] bool ttpv() const {
+        return static_cast<bool>(ttpv_bound & 0b100);
+    }
 };
 
 class TT {
@@ -45,6 +52,7 @@ public:
                                 Move            move,
                                 Value           score,
                                 Depth           depth,
+                                bool            ttpv,
                                 Bound           bound);
     void                  resize(size_t mb);
     void                  clear();
