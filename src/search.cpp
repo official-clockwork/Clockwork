@@ -442,6 +442,58 @@ Value Worker::search(
         }
     }
 
+    // Probcut (Probabilistic Beta Cutoff)
+    if (!PV_NODE && !is_in_check && depth >= 5 && abs(beta) < VALUE_WIN) {
+        // Only try the TT move if it exists and is tactical.
+        if (tt_data && tt_data->move != Move::none() && !quiet_move(tt_data->move)) {
+            
+            do {
+                const Move probcut_move = tt_data->move;
+                
+                MovePicker legality_checker{pos, m_td.history, Move::none(), ply, ss};
+                if (!legality_checker.is_legal(probcut_move)) [[unlikely]] {
+                    break;
+                }
+                
+                constexpr Value kProbCutSEEThreshold = 0;
+                if (!SEE::see(pos, probcut_move, kProbCutSEEThreshold)) [[unlikely]] {
+                    break;
+                }
+
+                // Base margin: 200 internal units (~50cp)
+                constexpr Value kProbCutMargin = 200;
+                // Bonus for improving eval: 50 internal units (~12.5cp)
+                constexpr Value kImprovingBonus = 50;
+                constexpr Depth kProbCutReduction = 4;
+                
+                const Value probcut_beta = beta + kProbCutMargin - (improving ? kImprovingBonus : 0);
+                const Depth probcut_depth = depth - kProbCutReduction;
+
+                static_assert(5 - kProbCutReduction >= 1, "Probcut min depth must be >= 1");
+
+                ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, probcut_move);
+                Position pos_after  = pos.move(probcut_move, m_td.push_psqt_state());
+                repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(probcut_move));
+
+                const Value probcut_value = -search<IS_MAIN, false>(
+                    pos_after, ss + 1, -probcut_beta, -probcut_beta + 1, probcut_depth, ply + 1, !cutnode
+                );
+
+                repetition_info.pop();
+                m_td.pop_psqt_state();
+                ss->cont_hist_entry = nullptr;
+
+                if (m_stopped) [[unlikely]] {
+                    return 0;
+                }
+
+                if (probcut_value >= probcut_beta) [[likely]] {
+                    return (probcut_value >= VALUE_WIN) ? probcut_value : beta;
+                }
+            } while (false);
+        }
+    }
+
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
