@@ -760,7 +760,8 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Store to the TT
     Bound bound = best_value >= beta ? Bound::Lower : Bound::Upper;
-    m_searcher.tt.store(pos, ply, raw_eval, best_move, best_value, 0, ttpv, bound);
+    Move  tt_move = best_move != Move::none() ? best_move : tt_data ? tt_data->move : Move::none();
+    m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, 0, ttpv, bound);
 
     return best_value;
 }
