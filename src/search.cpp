@@ -379,18 +379,6 @@ Value Worker::search(
                 || (tt_data->bound() == Bound::Upper && tt_data->score <= alpha))) {
             return tt_data->score;
         }
-        
-        // TT-Based ProbCut
-        constexpr Value kProbCutMargin = 480;
-        constexpr Depth kProbCutDepthReduction = 4;
-
-        if (tt_data->bound() == Bound::Lower
-            && tt_data->depth >= depth - kProbCutDepthReduction
-            && tt_data->score >= beta + kProbCutMargin
-            && abs(beta) < VALUE_WIN
-            && abs(tt_data->score) < VALUE_WIN) {
-            return tt_data->score;
-        }
 
         // Update ttpv
         ttpv |= tt_data->ttpv();
@@ -481,8 +469,8 @@ Value Worker::search(
                 break;
             }
 
-            // Forward Futility Pruning
-            Value futility = ss->static_eval + 500 + 100 * depth;
+            // Forward Futility Pruning (FFP)
+            Value futility = ss->static_eval + 500 + 100 * depth + move_history / 32;
             if (quiet && !is_in_check && depth <= 8 && futility <= alpha) {
                 moves.skip_quiets();
                 continue;
