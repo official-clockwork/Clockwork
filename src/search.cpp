@@ -522,7 +522,7 @@ Value Worker::search(
             }            
 
             if (tt_data && tt_data->move.is_capture()) {
-                reduction += 1024;
+                reduction += 512 + 512 * (!m.is_capture());
             }
 
             if ((ss + 1)->fail_high_count > 3) {
