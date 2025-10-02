@@ -418,7 +418,7 @@ Value Worker::search(
     }
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth
-        && tt_adjusted_eval >= beta) {
+        && tt_adjusted_eval >= beta + 30) {
         int R =
           tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
