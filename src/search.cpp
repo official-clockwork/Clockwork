@@ -517,7 +517,7 @@ Value Worker::search(
                 reduction -= 1024;
             }
             
-            if (ttpv && !tt_data && tt_data->score <= alpha) {
+            if (ttpv && tt_data && tt_data->score <= alpha) {
                 reduction += 1024;
             }
             
