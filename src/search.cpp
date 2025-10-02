@@ -516,6 +516,11 @@ Value Worker::search(
             if (ttpv) {
                 reduction -= 1024;
             }
+            
+
+            if (ttpv && !tt_data && tt_data->score <= alpha) {
+                reduction += 1024;
+            }
 
             if (tt_data && tt_data->move.is_capture()) {
                 reduction += 1024;
