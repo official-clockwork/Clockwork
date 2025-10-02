@@ -521,8 +521,8 @@ Value Worker::search(
                 reduction += 1024;
             }            
 
-            if (tt_data && tt_data->move.is_capture()) {
-                reduction += 512 + 512 * (!m.is_capture());
+            if (tt_data && tt_data->move.is_capture() && !m.is_capture()) {
+                reduction += 1024;
             }
 
             if ((ss + 1)->fail_high_count > 3) {
