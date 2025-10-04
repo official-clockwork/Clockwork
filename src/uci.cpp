@@ -19,12 +19,34 @@
 #include <string_view>
 #include <unordered_set>
 
+#ifndef CLOCKWORK_VERSION
+    #define WHITESPACE ""
+
+    #ifndef GIT_COMMIT_HASH
+        #define GIT_COMMIT_HASH ""
+        #define CLOCKWORK_VERSION "-dev"
+    #else
+        #define CLOCKWORK_VERSION "-dev-"
+    #endif
+#else
+    #define WHITESPACE " "
+#endif
+
 namespace Clockwork::UCI {
 
 
 constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
 constexpr usize            MAX_HASH    = 268435456;
 constexpr usize            MAX_THREADS = 1024;
+
+constexpr std::string_view VERSION   = CLOCKWORK_VERSION;
+constexpr std::string_view SEPARATOR = WHITESPACE;
+
+#if defined(GIT_COMMIT_HASH)
+constexpr std::string_view HASH = std::string_view(GIT_COMMIT_HASH).substr(0, 8);
+#else
+constexpr std::string_view HASH = "";
+#endif
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
@@ -54,7 +76,9 @@ void UCIHandler::execute_command(const std::string& line) {
     is >> std::skipws >> command;
 
     if (command == "uci") {
-        std::cout << "id name Clockwork\n";
+        const auto version = std::string(SEPARATOR) + std::string(VERSION) + std::string(HASH);
+
+        std::cout << "id name Clockwork" << version << "\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "option name UCI_Chess960 type check default false\n";
         std::cout << "option name UseSoftNodes type check default false\n";
