@@ -54,9 +54,12 @@ PScore evaluate_pawns(const Position& pos) {
     constexpr i32   RANK_3 = 2;
     constexpr Color them   = color == Color::White ? Color::Black : Color::White;
 
-    Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
-    Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
-    PScore   eval      = PSCORE_ZERO;
+    Bitboard pawns       = pos.board().bitboard_for(color, PieceType::Pawn);
+    Bitboard opp_pawns   = pos.board().bitboard_for(~color, PieceType::Pawn);
+    Square   our_king    = pos.king_sq(color);
+    Square   their_king  = pos.king_sq(them);
+    PScore   eval        = PSCORE_ZERO;
+    
     eval += DOUBLED_PAWN_VAL * static_cast<i32>((pawns & pawns.shift(Direction::North)).popcount());
 
     for (Square sq : pawns) {
@@ -71,6 +74,17 @@ PScore evaluate_pawns(const Position& pos) {
             if (pos.piece_at(push) != PieceType::None) {
                 eval += BLOCKED_PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
             }
+            
+            i32 our_king_dist = std::abs(our_king.file() - sq.file()) 
+                              + std::abs(our_king.rank() - sq.rank());
+            i32 their_king_dist = std::abs(their_king.file() - sq.file()) 
+                                + std::abs(their_king.rank() - sq.rank());
+            
+            our_king_dist = std::min(our_king_dist, 7);
+            their_king_dist = std::min(their_king_dist, 7);
+            
+            eval += FRIENDLY_KING_PASSED_PAWN_DISTANCE[our_king_dist];
+            eval += ENEMY_KING_PASSED_PAWN_DISTANCE[their_king_dist];
         }
     }
 
