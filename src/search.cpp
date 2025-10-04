@@ -508,8 +508,7 @@ Value Worker::search(
             if (singular_value < singular_beta) {
                 extension = 1;
             }
-        }
-        
+        }        
 
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
