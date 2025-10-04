@@ -495,9 +495,9 @@ Value Worker::search(
 
         // Singular extensions
         int extension = 0;
-        if (!excluded && tt_data && m == tt_data->move && depth >= 7 && tt_data->depth >= depth - 3
+        if (!excluded && tt_data && m == tt_data->move && depth >= 8 && tt_data->depth >= depth - 3
             && tt_data->bound() != Bound::Upper) {
-            Value singular_beta  = tt_data->score - depth * 2;
+            Value singular_beta  = tt_data->score - depth * 5;
             int   singular_depth = depth / 2;
 
             ss->excluded_move    = m;
@@ -508,7 +508,8 @@ Value Worker::search(
             if (singular_value < singular_beta) {
                 extension = 1;
             }
-        }        
+        }
+        
 
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
