@@ -72,6 +72,10 @@ Clockwork welcomes contributions from anyone interested in advancing HCE technol
   ```
 
 ### Guidelines  
+- **Internal optimization (no bench change):**
+  - Requires running `make test` with no errors.
+  - May be tested on OpenBench upon maintainer's request
+
 - **Nonfunctional changes (no bench change):**  
   - Allowed without testing, but may be verified on OpenBench if performance is in question.  
   - If tested, include the result in your PR.  
