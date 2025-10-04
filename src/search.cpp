@@ -371,10 +371,11 @@ Value Worker::search(
     }
 
     auto tt_data = m_searcher.tt.probe(pos, ply);
-    bool ttpv = PV_NODE;
+    bool ttpv    = PV_NODE;
 
     if (!PV_NODE && tt_data) {
-        if (tt_data->depth >= depth && (tt_data->bound() == Bound::Exact
+        if (tt_data->depth >= depth
+            && (tt_data->bound() == Bound::Exact
                 || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
                 || (tt_data->bound() == Bound::Upper && tt_data->score <= alpha))) {
             return tt_data->score;
@@ -516,10 +517,10 @@ Value Worker::search(
             if (ttpv) {
                 reduction -= 1024;
             }
-            
+
             if (ttpv && tt_data && tt_data->score <= alpha) {
                 reduction += 1024;
-            }            
+            }
 
             if (tt_data && tt_data->move.is_capture() && !m.is_capture()) {
                 reduction += 1024;
@@ -680,11 +681,11 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         return tt_data->score;
     }
 
-    bool  is_in_check = pos.is_in_check();
-    bool  ttpv =
+    bool is_in_check = pos.is_in_check();
+    bool ttpv =
       tt_data
-         ? tt_data->ttpv()
-         : false;  // TODO: if we ever get to needing ttpv patches in quiescence, we might want to add PV_NODE handling in here also
+        ? tt_data->ttpv()
+        : false;  // TODO: if we ever get to needing ttpv patches in quiescence, we might want to add PV_NODE handling in here also
     Value correction  = 0;
     Value raw_eval    = -VALUE_INF;
     Value static_eval = -VALUE_INF;
@@ -763,7 +764,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     }
 
     // Store to the TT
-    Bound bound = best_value >= beta ? Bound::Lower : Bound::Upper;
+    Bound bound   = best_value >= beta ? Bound::Lower : Bound::Upper;
     Move  tt_move = best_move != Move::none() ? best_move : tt_data ? tt_data->move : Move::none();
     m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, 0, ttpv, bound);
 

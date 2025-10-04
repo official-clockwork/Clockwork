@@ -67,7 +67,7 @@ struct Square {
         return Square{static_cast<u8>(raw ^ 56)};
     }
 
-    template <Color color>
+    template<Color color>
     constexpr Square push() const {
         return Square{static_cast<u8>(raw + (color == Color::White ? 8 : -8))};
     }
