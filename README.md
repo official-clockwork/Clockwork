@@ -114,6 +114,82 @@ Clockwork requires **clang++ and LLVM** (latest versions always recommended, cla
 
 ---
 
+## Contribute CPU Time
+
+Our project uses a distributed testing framework called [OpenBench](https://github.com/AndyGrant/OpenBench) to rigorously test changes, simplify code, and tune the engine's parameters. By contributing your computer's idle CPU cycles, you can directly help us accelerate development and make Clockwork a stronger engine.
+
+Here’s how you can get started in just a few steps:
+
+---
+
+### Step 1: Create and Approve Your Account
+
+1.  **Register an account** on our OpenBench website:
+    *   **https://clockworkopenbench.pythonanywhere.com**
+
+2.  **Request account approval** on our official Discord server:
+    *   [**Join the Clockwork Discord Server**](https://discord.gg/r2uNZ9x6mr)
+    *   Once you've joined, go to the `#openbench` channel and ping an `@Maintainer` with your OpenBench username. We'll approve your account as soon as possible.
+
+### Step 2: Set Up the OpenBench Client
+
+First, ensure you have **Python 3** and **Git** installed on your system. These instructions are for Linux & Windows Subsystem for Linux (WSL).
+
+1.  **Create a Python virtual environment.** This is a best practice that isolates the project's dependencies from your system's global Python packages.
+    ```bash
+    # Navigate to your home directory and create a virtual environment named 'venv'
+    cd ~
+    python3 -m venv venv
+    ```
+
+2.  **Clone the repository and install dependencies.**
+    ```bash
+    # Navigate to a directory of your choice (e.g., Desktop)
+    cd ~/Desktop
+
+    # Clone the OpenBench project
+    git clone https://github.com/official-clockwork/OpenBench
+    cd OpenBench/Client
+
+    # Activate the virtual environment
+    source ~/venv/bin/activate
+
+    # Install the required Python packages
+    pip install -r requirements.txt
+    ```
+> **Note:** If you close your terminal, the virtual environment will deactivate. To reactivate it, simply run `source ~/venv/bin/activate` again before running the client.
+
+### Step 3: Start Contributing
+
+Now you are ready to run the client and start contributing your CPU time!
+
+1.  **Run the client** using the following command, replacing the placeholder values with your own information.
+    ```bash
+    python client.py -U "YOUR_USERNAME" -P "YOUR_PASSWORD" -S "https://clockworkopenbench.pythonanywhere.com" -T <THREADS> -N <SOCKETS>
+    ```
+
+#### Choosing Thread and Socket Counts
+
+*   `-T <THREADS>`: The number of CPU threads you want to dedicate. A good starting point is the number of physical cores in your CPU.
+*   `-N <SOCKETS>`: The number of sockets (connections) to use. A good rule of thumb is to use **one socket for every 8 threads**. Divide your thread count by 8 and round up to the nearest whole number.
+
+**Examples:**
+*   For an 8-core CPU: `-T 8 -N 1`
+*   For a 14-core CPU: `-T 14 -N 2` (since 14 / 8 = 1.75, which rounds up to 2)
+*   For a 16-core CPU: `-T 16 -N 2` (since 16 / 8 = 2)
+
+**Full Command Example:**
+If your username is `chessfan`, your password is `supersecret`, and you want to use 16 threads:
+```bash
+python client.py -U "chessfan" -P "supersecret" -S "https://clockworkopenbench.pythonanywhere.com" -T 16 -N 2
+```
+
+---
+Thank you for helping us make Clockwork stronger!
+
+---
+
+
 ## Thanks 
 Huge thanks to:  
 - Our maintainers and growing developer community.  
