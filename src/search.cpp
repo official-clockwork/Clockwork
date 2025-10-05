@@ -178,7 +178,7 @@ void Worker::start_searching() {
           .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
                                                     root_position.active_color()),
           .soft_time_limit = TM::compute_soft_limit<false>(m_search_start, m_searcher.settings,
-                                                           root_position.active_color(), 0.0),
+                                                           root_position.active_color(), 0.0, 0.0),
           .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
                                                                 : std::numeric_limits<u64>::max(),
           .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
@@ -203,6 +203,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
     Depth last_search_depth = 0;
     Value last_search_score = -VALUE_INF;
+    Value base_search_score = -VALUE_INF;
     Move  last_best_move    = Move::none();
     PV    last_pv{};
 
@@ -268,6 +269,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         last_search_score = score;
         last_pv           = ss[SS_PADDING].pv;
         last_best_move    = last_pv.first_move();
+        base_search_score = search_depth == 1 ? score : base_search_score;
 
         // Check depth limit
         if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
@@ -289,8 +291,12 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Starting from depth 6, recalculate the soft time limit based on the fraction of nodes (nodes_tm_fraction)
         // We don't do it for too shallow depths because the node distribution is not stable enough
         if (IS_MAIN && search_depth >= 6) {
+            f64 complexity = 0;
+            if (abs(score) < VALUE_WIN) {
+                complexity = 0.2 * abs(base_search_score - score) * std::log(search_depth);
+            }
             m_search_limits.soft_time_limit = TM::compute_soft_limit<true>(
-              m_search_start, m_searcher.settings, root_position.active_color(), nodes_tm_fraction);
+              m_search_start, m_searcher.settings, root_position.active_color(), nodes_tm_fraction, complexity);
         }
 
         // check soft time limit
