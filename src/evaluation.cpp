@@ -84,8 +84,8 @@ PScore evaluate_pawns(const Position& pos) {
             i32 our_king_dist   = chebyshev_distance(our_king, sq);
             i32 their_king_dist = chebyshev_distance(their_king, sq);
             
-            our_king_dist = std::min(our_king_dist, 7);
-            their_king_dist = std::min(their_king_dist, 7);
+            our_king_dist = (our_king_dist, 7);
+            their_king_dist = (their_king_dist, 7);
             
             eval += FRIENDLY_KING_PASSED_PAWN_DISTANCE[our_king_dist];
             eval += ENEMY_KING_PASSED_PAWN_DISTANCE[their_king_dist];
