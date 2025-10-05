@@ -514,7 +514,6 @@ Value Worker::search(
                     extension = 2;
                 }                
             }
-
             
             // Negative Extensions
             else if (tt_data->score >= beta) {
