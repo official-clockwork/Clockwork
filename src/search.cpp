@@ -293,7 +293,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         if (IS_MAIN && search_depth >= 6) {
             f64 complexity = 0;
             if (abs(score) < VALUE_WIN) {
-                complexity = 0.2 * abs(base_search_score - score) * std::log(search_depth);
+                complexity = 0.6 * abs(base_search_score - score) * std::log(search_depth);
             }
             m_search_limits.soft_time_limit = TM::compute_soft_limit<true>(
               m_search_start, m_searcher.settings, root_position.active_color(), nodes_tm_fraction, complexity);
