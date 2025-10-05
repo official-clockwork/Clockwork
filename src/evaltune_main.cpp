@@ -241,7 +241,7 @@ int main() {
 
         print_table("FRIENDLY_KING_PASSED_PAWN_DISTANCE", FRIENDLY_KING_PASSED_PAWN_DISTANCE);
         print_table("ENEMY_KING_PASSED_PAWN_DISTANCE", ENEMY_KING_PASSED_PAWN_DISTANCE);
-        std::cout << std:endl;
+        std::cout << std::endl;
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
         print_table("BISHOP_MOBILITY", BISHOP_MOBILITY);
