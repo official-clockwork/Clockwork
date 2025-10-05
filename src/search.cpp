@@ -508,7 +508,8 @@ Value Worker::search(
 
             if (singular_value < singular_beta) {
                 extension++;
-            } 
+            }
+            
             else if (tt_data->score >= beta) {
                 extension--;
             }
