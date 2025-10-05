@@ -31,10 +31,13 @@ int main() {
 
     // List of files to load
     const std::vector<std::string> fenFiles = {
-      "data/v2.2/filtered_data.txt",
-      "data/v2.1/filtered_data.txt",
+      "data/dfrc-data/dfrc_augmented.txt",
+      "data/dfrc-data/dfrc-100k.txt",
+      "data/dfrc-data/dfrc-phase.txt",
+      "data/v2.2.txt",
+      "data/v2.1_filtered.txt",
     };
-
+    
     // Number of threads to use, default to half available
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 

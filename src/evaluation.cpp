@@ -14,6 +14,12 @@
 
 namespace Clockwork {
 
+static i32 chebyshev_distance(Square a, Square b) {
+    i32 file_dist = std::abs(a.file() - b.file());
+    i32 rank_dist = std::abs(a.rank() - b.rank());
+    return std::max(file_dist, rank_dist);
+}
+
 std::array<Bitboard, 64> king_ring_table = []() {
     std::array<Bitboard, 64> king_ring_table{};
     for (u8 sq_idx = 0; sq_idx < 64; sq_idx++) {
@@ -75,10 +81,8 @@ PScore evaluate_pawns(const Position& pos) {
                 eval += BLOCKED_PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
             }
             
-            i32 our_king_dist = std::abs(our_king.file() - sq.file()) 
-                              + std::abs(our_king.rank() - sq.rank());
-            i32 their_king_dist = std::abs(their_king.file() - sq.file()) 
-                                + std::abs(their_king.rank() - sq.rank());
+            i32 our_king_dist   = chebyshev_distance(our_king, sq);
+            i32 their_king_dist = chebyshev_distance(their_king, sq);
             
             our_king_dist = std::min(our_king_dist, 7);
             their_king_dist = std::min(their_king_dist, 7);
