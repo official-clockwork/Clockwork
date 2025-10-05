@@ -31,10 +31,13 @@ int main() {
 
     // List of files to load
     const std::vector<std::string> fenFiles = {
-      "data/v2.2/filtered_data.txt",
-      "data/v2.1/filtered_data.txt",
+      "data/dfrc-data/dfrc_augmented.txt",
+      "data/dfrc-data/dfrc-100k.txt",
+      "data/dfrc-data/dfrc-phase.txt",
+      "data/v2.2.txt",
+      "data/v2.1_filtered.txt",
     };
-
+    
     // Number of threads to use, default to half available
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 
@@ -234,6 +237,10 @@ int main() {
         print_table("PASSED_PAWN", PASSED_PAWN);
         print_table("DEFENDED_PASSED_PUSH", DEFENDED_PASSED_PUSH);
         print_table("BLOCKED_PASSED_PAWN", BLOCKED_PASSED_PAWN);
+        std::cout << std::endl;
+
+        print_table("FRIENDLY_KING_PASSED_PAWN_DISTANCE", FRIENDLY_KING_PASSED_PAWN_DISTANCE);
+        print_table("ENEMY_KING_PASSED_PAWN_DISTANCE", ENEMY_KING_PASSED_PAWN_DISTANCE);
         std::cout << std::endl;
 
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
