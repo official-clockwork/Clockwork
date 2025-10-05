@@ -236,6 +236,10 @@ int main() {
         print_table("BLOCKED_PASSED_PAWN", BLOCKED_PASSED_PAWN);
         std::cout << std::endl;
 
+        print_table("FRIENDLY_KING_PASSED_PAWN_DISTANCE", FRIENDLY_KING_PASSED_PAWN_DISTANCE);
+        print_table("ENEMY_KING_PASSED_PAWN_DISTANCE", ENEMY_KING_PASSED_PAWN_DISTANCE);
+        std::cout << std:endl;
+
         print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
         print_table("BISHOP_MOBILITY", BISHOP_MOBILITY);
         print_table("ROOK_MOBILITY", ROOK_MOBILITY);
