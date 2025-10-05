@@ -5,19 +5,19 @@
 namespace Clockwork {
 
 enum Bound : u8 {
-    None = 0,
+    None  = 0,
     Lower = 1,
     Upper = 2,
     Exact = 3,
 };
 
 struct TTEntry {
-    u16   key16;
-    Move  move;
-    i16   score;
-    i16   eval;
-    u8    depth;
-    u8    ttpv_bound;
+    u16  key16;
+    Move move;
+    i16  score;
+    i16  eval;
+    u8   depth;
+    u8   ttpv_bound;
 };
 
 static_assert(sizeof(TTEntry) == 10 * sizeof(u8));

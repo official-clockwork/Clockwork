@@ -78,16 +78,22 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     return {};
 }
 
-void TT::store(
-  const Position& pos, i32 ply, Value eval, Move move, Value score, Depth depth, bool ttpv, Bound bound) {
-    size_t idx   = mulhi64(pos.get_hash_key(), m_size);
-    auto&  entry = m_entries[idx];
-    entry.key16  = shrink_key(pos.get_hash_key());
-    entry.move   = move;
-    entry.score  = score_to_tt(score, ply);
-    entry.eval   = static_cast<i16>(eval);
-    entry.depth  = static_cast<u8>(depth);
-    entry.ttpv_bound  = make_ttpv_bound(ttpv, bound);
+void TT::store(const Position& pos,
+               i32             ply,
+               Value           eval,
+               Move            move,
+               Value           score,
+               Depth           depth,
+               bool            ttpv,
+               Bound           bound) {
+    size_t idx       = mulhi64(pos.get_hash_key(), m_size);
+    auto&  entry     = m_entries[idx];
+    entry.key16      = shrink_key(pos.get_hash_key());
+    entry.move       = move;
+    entry.score      = score_to_tt(score, ply);
+    entry.eval       = static_cast<i16>(eval);
+    entry.depth      = static_cast<u8>(depth);
+    entry.ttpv_bound = make_ttpv_bound(ttpv, bound);
 }
 
 void TT::resize(size_t mb) {

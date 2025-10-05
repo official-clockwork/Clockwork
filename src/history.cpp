@@ -123,14 +123,12 @@ i32 History::get_correction(const Position& pos) {
     usize major_index = static_cast<usize>(major_key % CORRECTION_HISTORY_ENTRY_NB);
 
     i32 correction = 0;
-    correction += m_pawn_corr_hist[side_index][pawn_index] / CORRECTION_HISTORY_GRAIN;
-    correction +=
-      m_non_pawn_corr_hist[0][side_index][white_non_pawn_index] / CORRECTION_HISTORY_GRAIN;
-    correction +=
-      m_non_pawn_corr_hist[1][side_index][black_non_pawn_index] / CORRECTION_HISTORY_GRAIN;
-    correction += m_major_corr_hist[side_index][major_index] / CORRECTION_HISTORY_GRAIN;
+    correction += m_pawn_corr_hist[side_index][pawn_index];
+    correction += m_non_pawn_corr_hist[0][side_index][white_non_pawn_index];
+    correction += m_non_pawn_corr_hist[1][side_index][black_non_pawn_index];
+    correction += m_major_corr_hist[side_index][major_index];
 
-    return correction;
+    return correction / CORRECTION_HISTORY_GRAIN;
 }
 
 void History::clear() {
