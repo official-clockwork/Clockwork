@@ -34,11 +34,11 @@ inline const std::array<PParam, 6> BLOCKED_PASSED_PAWN = {
 };
 
 inline const std::array<PParam, 8> FRIENDLY_KING_PASSED_PAWN_DISTANCE = {
-    S(0, 28), S(0, 20), S(0, 14), S(0, 9), S(0, 5), S(0, 2), S(0, 0), S(0, 0),
+    S(0, 28), S(20, 52), S(-10, 43), S(-43, 51), S(-25, 4), S(-27, -12), S(-4, -40), S(31, -51),
 };
 
 inline const std::array<PParam, 8> ENEMY_KING_PASSED_PAWN_DISTANCE = {
-    S(0, -22), S(0, -16), S(0, -11), S(0, -7), S(0, -4), S(0, -2), S(0, 0), S(0, 0),
+    S(0, -21), S(-182, -93), S(18, -87), S(27, -50), S(30, -17), S(6, 13), S(8, 28), S(9, 48),
 };
 
 inline const std::array<PParam, 9> KNIGHT_MOBILITY = {
