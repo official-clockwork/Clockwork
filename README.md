@@ -72,6 +72,12 @@ Clockwork welcomes contributions from anyone interested in advancing HCE technol
   ```
 
 ### Guidelines  
+- **Unit tests:**
+  - Clockwork has unit tests which can be found in the `tests/` sub-directory.
+  - Unit tests can be run by with `make test`.
+  - When making a change that touches a component that has unit tests, you should ensure `make test` displays no errors, especially before submitting a test to OpenBench.
+  - We encourage you to write unit tests for any new patches if appropriate.
+
 - **Nonfunctional changes (no bench change):**  
   - Allowed without testing, but may be verified on OpenBench if performance is in question.  
   - If tested, include the result in your PR.  
