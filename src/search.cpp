@@ -509,6 +509,10 @@ Value Worker::search(
             if (singular_value < singular_beta) {
                 extension = 1;
             }
+            
+            else if (tt_data->score >= beta) {
+                extension = -1;
+            }
         }        
         
         // Do move
