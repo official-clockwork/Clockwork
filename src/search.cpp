@@ -512,10 +512,9 @@ Value Worker::search(
                 // Double Extension
                 if (!PV_NODE && singular_value <= singular_beta - 40) {
                     extension = 2;
-                }
-                
+                }                
             }
-            
+            // Negative Extensions
             else if (tt_data->score >= beta) {
                 extension = -1;
             }
