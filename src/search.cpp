@@ -508,6 +508,12 @@ Value Worker::search(
 
             if (singular_value < singular_beta) {
                 extension = 1;
+
+                // Double Extension
+                if (!PV_NODE && singular_value <= singular_beta - 40) {
+                    extension = 2;
+                }
+                
             }
             
             else if (tt_data->score >= beta) {
