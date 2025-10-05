@@ -127,13 +127,13 @@ Here’s how you can get started in just a few steps:
 1.  **Register an account** on our OpenBench website:
     *   **https://clockworkopenbench.pythonanywhere.com**
 
-2.  **Request account approval** on our official Discord server:
+2.  **Request account enable** on our official Discord server:
     *   [**Join the Clockwork Discord Server**](https://discord.gg/r2uNZ9x6mr)
-    *   Once you've joined, go to the `#openbench` channel and ping an `@Maintainer` with your OpenBench username. We'll approve your account as soon as possible.
+    *   Once you've joined, go to the `#openbench` channel and ping an `@Maintainer` with your OpenBench username. We'll enable your account as soon as possible.
 
 ### Step 2: Set Up the OpenBench Client
 
-First, ensure you have **Python 3** and **Git** installed on your system. These instructions are for Linux & Windows Subsystem for Linux (WSL).
+First, ensure you have **Python 3** (needed for the worker client), **Git** and **clang** installed on your system. These instructions are for Linux & Windows Subsystem for Linux (WSL).
 
 1.  **Create a Python virtual environment.** This is a best practice that isolates the project's dependencies from your system's global Python packages.
     ```bash
@@ -147,7 +147,7 @@ First, ensure you have **Python 3** and **Git** installed on your system. These 
     # Navigate to a directory of your choice (e.g., Desktop)
     cd ~/Desktop
 
-    # Clone the OpenBench project
+    # Clone the OpenBench project (make sure you are not cloning another engine's fork!)
     git clone https://github.com/official-clockwork/OpenBench
     cd OpenBench/Client
 
@@ -170,16 +170,16 @@ Now you are ready to run the client and start contributing your CPU time!
 
 #### Choosing Thread and Socket Counts
 
-*   `-T <THREADS>`: The number of CPU threads you want to dedicate. A good starting point is the number of physical cores in your CPU.
-*   `-N <SOCKETS>`: The number of sockets (connections) to use. A good rule of thumb is to use **one socket for every 8 threads**. Divide your thread count by 8 and round up to the nearest whole number.
+*   `-T <THREADS>`: The number of CPU threads you want to dedicate. A good starting point is the number of physical cores in your CPU (if the machine isn't used by other processes). Otherwise, it is recomended to leave some cores free for any other tasks you might be performing on your machine. Don't worry about only donating some cores, everythin helps!
+*   `-N <SOCKETS>`: The number of match runners to use. A good rule of thumb is to use **one socket for every 8 threads**. Divide your thread count by 8 and round up to the nearest whole number.
 
 **Examples:**
-*   For an 8-core CPU: `-T 8 -N 1`
-*   For a 14-core CPU: `-T 14 -N 2` (since 14 / 8 = 1.75, which rounds up to 2)
-*   For a 16-core CPU: `-T 16 -N 2` (since 16 / 8 = 2)
+*   If you want to contribute 8 threads: `-T 8 -N 1`
+*   If you want to contribute 14 threads: `-T 14 -N 2` (since 14 / 8 = 1.75, which rounds up to 2)
+*   If you want to contribute 16 threads: `-T 16 -N 2` (since 16 / 8 = 2)
 
 **Full Command Example:**
-If your username is `chessfan`, your password is `supersecret`, and you want to use 16 threads:
+If your username is `hce_chess_fan`, your password is `road_to_3600`, and you want to use 16 threads, then your full command should look like:
 ```bash
 python client.py -U "chessfan" -P "supersecret" -S "https://clockworkopenbench.pythonanywhere.com" -T 16 -N 2
 ```
