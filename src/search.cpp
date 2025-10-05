@@ -507,11 +507,11 @@ Value Worker::search(
             ss->excluded_move    = Move::none();
 
             if (singular_value < singular_beta) {
-                extension++;
+                extension = 1;
             }
             
             else if (tt_data->score >= beta) {
-                extension--;
+                extension = -1;
             }
         }
                 
