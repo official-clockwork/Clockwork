@@ -514,8 +514,7 @@ Value Worker::search(
                 extension--;
             }
         }
-        
-        
+                
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
 
