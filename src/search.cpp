@@ -518,8 +518,7 @@ Value Worker::search(
             // Multicut
             else if (singular_beta >= beta) {
                 return singular_beta;
-            }
-            
+            }            
             
             // Negative Extensions
             else if (tt_data->score >= beta) {
