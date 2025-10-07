@@ -62,6 +62,8 @@ set(srcs
         src/bench.cpp
         src/bench.hpp
         src/common.hpp
+        src/dbg_tools.cpp
+        src/dbg_tools.hpp
         src/evaluation.cpp
         src/evaluation.hpp
         src/eval_constants.hpp
@@ -129,6 +131,12 @@ else()
     add_executable(clockwork src/main.cpp)
     target_link_libraries(clockwork PUBLIC clockwork-lib)
     target_add_flags(clockwork)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        target_link_options(clockwork PUBLIC
+            $<$<CONFIG:Release>:
+            -static -static-libgcc -static-libstdc++
+            >)
+    endif()
 
     # Tests
     enable_testing()

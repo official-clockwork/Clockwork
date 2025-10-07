@@ -1,4 +1,5 @@
 #include "bench.hpp"
+#include "dbg_tools.hpp"
 #include "search.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
@@ -83,6 +84,8 @@ void benchmark(Search::Searcher& searcher, Depth depth) {
     auto end_time = time::Clock::now();
 
     searcher.stop_searching();
+
+    dbg_print();
 
     std::cout << nodes << " nodes " << time::nps(nodes, end_time - start_time) << " nps"
               << std::endl;
