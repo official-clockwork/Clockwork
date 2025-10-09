@@ -897,7 +897,7 @@ HashKey Position::calc_major_key_slow() const {
     for (usize sq_idx = 0; sq_idx < 64; sq_idx++) {
         Place p = m_board.mailbox[sq_idx];
         if (p.is_empty() || p.ptype() == PieceType::Pawn || p.ptype() == PieceType::Knight
-            || p.ptype() == PieceType::Bishop) {
+            || p.ptype() == PieceType::Bishop || p.ptype() == PieceType::King) {
             continue;
         }
         key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
