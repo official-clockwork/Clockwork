@@ -26,6 +26,10 @@ static Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
+static constexpr i32 stat_bonus(Depth bonus_depth) {
+    return std::min(1896, 4 * bonus_depth * bonus_depth + 120 * bonus_depth - 120);
+}
+
 std::ostream& operator<<(std::ostream& os, const PV& pv) {
     for (Move m : pv.m_pv) {
         os << m << ' ';
@@ -607,6 +611,11 @@ Value Worker::search(
             if (value > alpha && reduced_depth < new_depth) {
                 value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
                                                 ply + 1, !cutnode);
+                if (quiet && (value <= alpha || value >= beta)) {
+                    m_td.history.update_cont_hist(pos, m, ply, ss,
+                                     value <= alpha ? stat_bonus(new_depth)
+                                                    : -stat_bonus(new_depth));
+                }
             }
         } else if (!PV_NODE || moves_played > 1) {
             value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
@@ -660,7 +669,7 @@ Value Worker::search(
 
     if (best_value >= beta) {
         i32       bonus_depth = depth + (best_value >= beta + 100);
-        const i32 bonus = std::min(1896, 4 * bonus_depth * bonus_depth + 120 * bonus_depth - 120);
+        const i32 bonus = stat_bonus(bonus_depth);
         if (quiet_move(best_move)) {
             ss->killer = best_move;
 
