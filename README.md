@@ -159,34 +159,69 @@ First, ensure you have **Python 3** (needed for the worker client), **Git** and 
     ```
 > **Note:** If you close your terminal, the virtual environment will deactivate. To reactivate it, simply run `source ~/venv/bin/activate` again before running the client.
 
-### Step 3: Start Contributing
-
-Now you are ready to run the client and start contributing your CPU time!
-
-1.  **Run the client** using the following command, replacing the placeholder values with your own information.
-    ```bash
-    python client.py -U "YOUR_USERNAME" -P "YOUR_PASSWORD" -S "https://clockworkopenbench.pythonanywhere.com" -T <THREADS> -N <SOCKETS>
-    ```
+### Step 3: Start Contributing! :D
 
 #### Choosing Thread and Socket Counts
 
-*   `-T <THREADS>`: The number of CPU threads you want to dedicate. A good starting point is the number of physical cores in your CPU (if the machine isn't used by other processes). Otherwise, it is recomended to leave some cores free for any other tasks you might be performing on your machine. Don't worry about only donating some cores, everythin helps!
-*   `-N <SOCKETS>`: The number of match runners to use. A good rule of thumb is to use **one socket for every 8 threads**. Divide your thread count by 8 and round up to the nearest whole number.
+*   `-T <THREADS>`: The number of CPU cores/threads you want to dedicate. A good starting point is the number of physical cores in your CPU (if the machine isn't used by other processes). Otherwise, it is recomended to leave some cores free for any other tasks you might be performing on your machine. Don't worry about only donating some cores, everythin helps!
+*   `-N <SOCKETS>`: The number of match runners to use. A good rule of thumb is to use **one socket for every 8 cores/threads**. Divide your core/thread count by 8 and round up to the nearest whole number.
 
 **Examples:**
-*   If you want to contribute 8 threads: `-T 8 -N 1`
-*   If you want to contribute 14 threads: `-T 14 -N 2` (since 14 / 8 = 1.75, which rounds up to 2)
-*   If you want to contribute 16 threads: `-T 16 -N 2` (since 16 / 8 = 2)
+*   If you want to contribute 8 cores: `-T 8 -N 1`
+*   If you want to contribute 14 cores: `-T 14 -N 2` (since 14 / 8 = 1.75, which rounds up to 2)
+*   If you want to contribute 16 cores: `-T 16 -N 2` (since 16 / 8 = 2)
+
+#### Taskset
+To improve performance and control CPU usage, you can bind a program to specific CPU cores using the taskset command. On an 8-core / 16-thread system, each core has two hardware threads (logical CPUs). To ensure a program uses only one thread per physical core, determine the CPU layout with `lscpu -e` command, then select every second logical CPU (e.g., 0,2,4,6,8,10,12,14). For example:
+```bash
+CPU NODE SOCKET CORE
+  0    0      0    0 <- 1 core
+  1    0      0    0
+  2    0      0    1 <- 2 core
+  3    0      0    1
+  4    0      0    2 <- 3 core
+  5    0      0    2
+  6    0      0    3 <- 4 core
+  7    0      0    3
+  8    0      0    4 <- 5 core
+  9    0      0    4
+ 10    0      0    5 <- 6 core
+ 11    0      0    5
+ 12    0      0    6 <- 7 core
+ 13    0      0    6
+ 14    0      0    7 <- 8 core
+ 15    0      0    7
+ ```
+So:
+```bash
+taskset -c 0,2,4,6,8,10,12,14 python client.py \
+  -U "YOUR_USERNAME" \
+  -P "YOUR_PASSWORD" \
+  -S "https://clockworkopenbench.pythonanywhere.com" \
+  -T <THREADS> \
+  -N <SOCKETS>
+```
 
 **Full Command Example:**
-If your username is `hce_chess_fan`, your password is `road_to_3600`, and you want to use 16 threads, then your full command should look like:
+If your username is `hce_chess_fan`, your password is `road_to_3600`, and you want to use 16 cores, then your full command should look like:
 ```bash
-python client.py -U "chessfan" -P "supersecret" -S "https://clockworkopenbench.pythonanywhere.com" -T 16 -N 2
+taskset -c 0,2,4,6,8,10,12,14 python client.py \
+  -U "hce_chess_fan" \
+  -P "road_to_3600" \
+  -S "https://clockworkopenbench.pythonanywhere.com" \
+  -T 16 \
+  -N 2
+```
+
+if you don't want to waste any time doing the commands and lend us all your physical cores, just use this:
+```bash
+taskset -c $(lscpu -e | awk '!/CPU/ && !seen[$4]++ {printf "%s,", $1}' | sed 's/,$//') \
+python client.py -U "YOUR_USERNAME" -P "YOUR_PASSWORD" \
+-S "https://clockworkopenbench.pythonanywhere.com" -T <THREADS> -N <SOCKETS>
 ```
 
 ---
 Thank you for helping us make Clockwork stronger!
-
 ---
 
 
