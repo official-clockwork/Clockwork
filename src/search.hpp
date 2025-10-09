@@ -59,8 +59,8 @@ private:
 };
 
 struct Stack {
-    Value          static_eval     = 0;
-    Move           killer          = Move::none();
+    Value          static_eval = 0;
+    Move           killer      = Move::none();
     Move           excluded_move;
     ContHistEntry* cont_hist_entry = nullptr;
     i32            fail_high_count = 0;
@@ -160,6 +160,7 @@ private:
 
     std::atomic<u64>         m_search_nodes;
     time::TimePoint          m_search_start;
+    time::TimePoint          m_last_info_time;
     Searcher&                m_searcher;
     std::thread              m_thread;
     ThreadType               m_thread_type;
@@ -168,6 +169,7 @@ private:
     std::atomic<bool>        m_stopped;
     std::atomic<bool>        m_exiting;
     std::array<u64, 64 * 64> m_node_counts;
+    Depth                    m_seldepth;
 
     template<bool IS_MAIN>
     Move iterative_deepening(const Position& root_position);

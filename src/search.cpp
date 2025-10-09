@@ -1,6 +1,7 @@
 #include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
+#include "dbg_tools.hpp"
 #include "evaluation.hpp"
 #include "history.hpp"
 #include "movegen.hpp"
@@ -132,7 +133,13 @@ Worker::~Worker() {
 }
 
 bool Worker::check_tm_hard_limit() {
+    using namespace std::chrono_literals;
+
     time::TimePoint now = time::Clock::now();
+    if (now - m_last_info_time >= 1s) {
+        m_last_info_time = now;
+        dbg_print();
+    }
     if (now >= m_search_limits.hard_time_limit) {
         m_stopped = true;
         return true;
@@ -178,7 +185,7 @@ void Worker::start_searching() {
           .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
                                                     root_position.active_color()),
           .soft_time_limit = TM::compute_soft_limit<false>(m_search_start, m_searcher.settings,
-                                                           root_position.active_color(), 0.0),
+                                                           root_position.active_color(), 0.0, 0.0),
           .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
                                                                 : std::numeric_limits<u64>::max(),
           .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
@@ -202,7 +209,9 @@ Move Worker::iterative_deepening(const Position& root_position) {
     std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
 
     Depth last_search_depth = 0;
+    Depth last_seldepth     = 0;
     Value last_search_score = -VALUE_INF;
+    Value base_search_score = -VALUE_INF;
     Move  last_best_move    = Move::none();
     PV    last_pv{};
 
@@ -221,17 +230,19 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Get current time
         auto curr_time = time::Clock::now();
 
-        std::cout << std::dec << "info depth " << last_search_depth << " score "
-                  << format_score(last_search_score) << " nodes " << m_searcher.node_count()
-                  << " nps " << time::nps(m_searcher.node_count(), curr_time - m_search_start)
-                  << " time " << time::cast<time::Milliseconds>(curr_time - m_search_start).count()
-                  << " pv " << last_pv << std::endl;
+        std::cout << std::dec << "info depth " << last_search_depth << " seldepth " << last_seldepth
+                  << " score " << format_score(last_search_score) << " nodes "
+                  << m_searcher.node_count() << " nps "
+                  << time::nps(m_searcher.node_count(), curr_time - m_search_start) << " time "
+                  << time::cast<time::Milliseconds>(curr_time - m_search_start).count() << " pv "
+                  << last_pv << std::endl;
     };
 
     m_node_counts.fill(0);
 
     for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
+        m_seldepth  = 0;
         Value alpha = -VALUE_INF, beta = VALUE_INF;
         Value delta = 50;
         if (search_depth >= 5) {
@@ -265,9 +276,11 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
         // Store information only if the last iterative deepening search completed
         last_search_depth = search_depth;
+        last_seldepth     = m_seldepth;
         last_search_score = score;
         last_pv           = ss[SS_PADDING].pv;
         last_best_move    = last_pv.first_move();
+        base_search_score = search_depth == 1 ? score : base_search_score;
 
         // Check depth limit
         if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
@@ -289,8 +302,13 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Starting from depth 6, recalculate the soft time limit based on the fraction of nodes (nodes_tm_fraction)
         // We don't do it for too shallow depths because the node distribution is not stable enough
         if (IS_MAIN && search_depth >= 6) {
+            f64 complexity = 0;
+            if (abs(score) < VALUE_WIN) {
+                complexity = 0.6 * abs(base_search_score - score) * std::log(search_depth);
+            }
             m_search_limits.soft_time_limit = TM::compute_soft_limit<true>(
-              m_search_start, m_searcher.settings, root_position.active_color(), nodes_tm_fraction);
+              m_search_start, m_searcher.settings, root_position.active_color(), nodes_tm_fraction,
+              complexity);
         }
 
         // check soft time limit
@@ -337,6 +355,9 @@ Value Worker::search(
     // TODO: search nodes limit condition here
     // ...
     increment_search_nodes();
+    if (PV_NODE) {
+        m_seldepth = std::max(ply + 1, m_seldepth);
+    }
 
     // Check for hard time limit
     // TODO: add control for being main search thread here
@@ -354,15 +375,15 @@ Value Worker::search(
     if (!ROOT_NODE) {
         // Repetition check
         if (repetition_info.detect_repetition(static_cast<usize>(ply))) {
-            return 0;
+            return VALUE_DRAW;
         }
         // 50 mr check
         if (pos.get_50mr_counter() >= 100) {
-            return 0;
+            return VALUE_DRAW;
         }
         // Insufficient material check
         if (pos.is_insufficient_material()) {
-            return 0;
+            return VALUE_DRAW;
         }
     }
 
@@ -372,7 +393,7 @@ Value Worker::search(
     }
 
     auto tt_data = excluded ? std::nullopt : m_searcher.tt.probe(pos, ply);
-    bool ttpv = PV_NODE;
+    bool ttpv    = PV_NODE;
 
     if (!PV_NODE && tt_data) {
         if (tt_data->depth >= depth
@@ -438,7 +459,8 @@ Value Worker::search(
     }
 
     // Razoring
-    if (!PV_NODE && !excluded && !is_in_check && depth <= 7 && ss->static_eval + 707 * depth < alpha) {
+    if (!PV_NODE && !excluded && !is_in_check && depth <= 7
+        && ss->static_eval + 707 * depth < alpha) {
         const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
@@ -460,7 +482,7 @@ Value Worker::search(
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
-         if (m == ss->excluded_move) {
+        if (m == ss->excluded_move) {
             continue;
         }
 
@@ -508,9 +530,24 @@ Value Worker::search(
 
             if (singular_value < singular_beta) {
                 extension = 1;
+
+                // Double Extension
+                if (!PV_NODE && singular_value <= singular_beta - 40) {
+                    extension = 2;
+                }
             }
-        }        
-        
+
+            // Multicut
+            else if (singular_value >= beta) {
+                return singular_value;
+            }
+
+            // Negative Extensions
+            else if (tt_data->score >= beta) {
+                extension = -1 - PV_NODE;                
+            }
+        }
+
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
 
@@ -643,30 +680,31 @@ Value Worker::search(
             return alpha;
         } else {
             if (pos.is_in_check()) {
-            return mated_in(ply);
+                return mated_in(ply);
             } else {
-                return 0;
+                return VALUE_DRAW;
             }
-        }        
+        }
     }
 
     if (!excluded) {
         Bound bound   = best_value >= beta        ? Bound::Lower
-                  : best_move != Move::none() ? Bound::Exact
-                                              : Bound::Upper;
-        Move  tt_move = best_move != Move::none() ? best_move : tt_data ? tt_data->move : Move::none();
+                      : best_move != Move::none() ? Bound::Exact
+                                                  : Bound::Upper;
+        Move  tt_move = best_move != Move::none() ? best_move
+                      : tt_data                   ? tt_data->move
+                                                  : Move::none();
         m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, depth, ttpv, bound);
 
         // Update to correction history.
         if (!is_in_check
             && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
             && !((bound == Bound::Lower && best_value <= ss->static_eval)
-                || (bound == Bound::Upper && best_value >= ss->static_eval))) {
+                 || (bound == Bound::Upper && best_value >= ss->static_eval))) {
             m_td.history.update_correction_history(pos, depth, best_value - raw_eval);
         }
     }
 
-    
 
     return best_value;
 }
@@ -694,7 +732,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // 50 mr check
     if (pos.get_50mr_counter() >= 100) {
-        return 0;
+        return VALUE_DRAW;
     }
 
     // Return eval if we exceed the max ply.
