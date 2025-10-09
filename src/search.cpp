@@ -538,13 +538,13 @@ Value Worker::search(
             }
 
             // Multicut
-            else if (singular_beta >= beta) {
-                return singular_beta;
+            else if (singular_value >= beta) {
+                return singular_value;
             }
 
             // Negative Extensions
             else if (tt_data->score >= beta) {
-                extension = -1;
+                extension = -1 - PV_NODE;                
             }
         }
 
