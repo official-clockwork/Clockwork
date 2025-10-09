@@ -558,7 +558,7 @@ Value Worker::search(
         repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
-        Depth new_depth = depth - 1 + pos_after.is_in_check() + extension;
+        Depth new_depth = depth - 1 + extension;
         Value value;
         if (depth >= 3 && moves_played >= 2 + 2 * PV_NODE) {
             i32 reduction = static_cast<i32>(
@@ -568,6 +568,8 @@ Value Worker::search(
             reduction += alpha_raises * 512;
 
             reduction += (512 * !improving);
+
+            reduction -= 1024 * pos_after.is_in_check();
 
             if (cutnode) {
                 reduction += 1024;
