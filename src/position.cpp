@@ -35,7 +35,7 @@ void Position::incrementally_remove_piece(bool         color,
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop) {
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
             m_minor_key ^= piece_key;
         }
     }
@@ -58,7 +58,7 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop) {
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
             m_minor_key ^= piece_key;
         }
     }
@@ -83,7 +83,7 @@ void Position::incrementally_mutate_piece(
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= rem_piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop) {
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
             m_minor_key ^= rem_piece_key;
         }
     }
@@ -100,7 +100,7 @@ void Position::incrementally_mutate_piece(
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= add_piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop) {
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
             m_minor_key ^= add_piece_key;
         }
     }
@@ -131,7 +131,7 @@ void Position::incrementally_move_piece(
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= rem_piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop) {
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
             m_minor_key ^= rem_piece_key;
         }
     }
@@ -148,7 +148,7 @@ void Position::incrementally_move_piece(
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= add_piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop) {
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
             m_minor_key ^= add_piece_key;
         }
     }
