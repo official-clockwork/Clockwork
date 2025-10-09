@@ -205,7 +205,7 @@ taskset -c 0,2,4,6,8,10,12,14 python client.py \
 **Full Command Example:**
 If your username is `hce_chess_fan`, your password is `road_to_3600`, and you want to use 16 cores, then your full command should look like:
 ```bash
-taskset -c 0,2,4,6,8,10,12,14 python client.py \
+taskset -c 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32 python client.py \
   -U "hce_chess_fan" \
   -P "road_to_3600" \
   -S "https://clockworkopenbench.pythonanywhere.com" \
