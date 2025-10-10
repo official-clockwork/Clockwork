@@ -34,16 +34,11 @@ i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::St
     return stats;
 }
 
-void History::update_quiet_stats(
-  const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
-    auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
-    auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
-    usize stm_idx       = static_cast<usize>(pos.active_color());
-    update_hist_entry(m_main_hist[stm_idx][move.from_to()][from_attacked * 2 + to_attacked], bonus);
-
+void History::update_cont_hist(const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus){
     i32       conthist = get_conthist(pos, move, ply, ss);
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
+    usize     stm_idx  = static_cast<usize>(pos.active_color());
     if (ply >= 1 && (ss - 1)->cont_hist_entry != nullptr) {
         update_hist_entry_banger((*(ss - 1)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
                                  conthist, bonus);
@@ -60,6 +55,16 @@ void History::update_quiet_stats(
         update_hist_entry_banger((*(ss - 6)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
                                  conthist, bonus);
     }
+}
+
+
+  void History::update_quiet_stats(
+    const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
+    auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
+    auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
+    usize stm_idx       = static_cast<usize>(pos.active_color());
+    update_hist_entry(m_main_hist[stm_idx][move.from_to()][from_attacked * 2 + to_attacked], bonus);
+    update_cont_hist(pos, move, ply, ss, bonus);
 }
 
 i32 History::get_noisy_stats(const Position& pos, Move move) const {
