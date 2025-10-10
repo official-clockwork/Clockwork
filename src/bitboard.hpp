@@ -33,6 +33,10 @@ public:
         return Bitboard{static_cast<u64>(1) << sq.raw};
     }
 
+    static constexpr Bitboard squares_of_color(Color c) {
+        return c == Color::White ? Bitboard{0x55AA55AA55AA55AA} : Bitboard{0xAA55AA55AA55AA55};
+    }
+
     static constexpr Bitboard file_mask(i32 file) {
         assert(file >= 0 && file <= 7);
         return Bitboard{static_cast<u64>(0x0101010101010101) << file};

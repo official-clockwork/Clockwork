@@ -82,6 +82,10 @@ inline const PParam BISHOP_THREAT_KNIGHT = S(107, 26);
 inline const PParam BISHOP_THREAT_ROOK   = S(238, 52);
 inline const PParam BISHOP_THREAT_QUEEN  = S(190, 57);
 
+inline const std::array<PParam, 9> BISHOP_PAWNS = {
+    S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0), S(0, 0)
+};
+
 inline const std::array<PParam, 48> PAWN_PSQT = {
     S(198, 392),    S(216, 439),    S(248, 417),    S(313, 285),    S(233, 297),    S(233, 360),    S(156, 373),    S(197, 348),    //
     S(32, -35),     S(165, -14),    S(133, -69),    S(135, -127),   S(92, -141),    S(35, -97),     S(6, -49),      S(-57, -48),    //

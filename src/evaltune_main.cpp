@@ -280,6 +280,9 @@ int main() {
                   << std::endl;
         std::cout << std::endl;
 
+        print_table("BISHOP_PAWNS", BISHOP_PAWNS);
+        std::cout << std::endl;
+
         auto printPsqtArray = [](const std::string& name, const auto& arr) {
             std::cout << "inline const std::array<PParam, " << arr.size() << "> " << name << " = {"
                       << std::endl;
