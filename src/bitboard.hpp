@@ -47,6 +47,10 @@ public:
         return Bitboard{static_cast<u64>(0xFF) << rank};
     }
 
+    static constexpr Bitboard central_files() {
+        return file_mask(2) | file_mask(3) | file_mask(4) | file_mask(5);
+    }
+
     [[nodiscard]] bool empty() const {
         return m_raw == 0;
     }

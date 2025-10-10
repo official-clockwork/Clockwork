@@ -107,6 +107,7 @@ PScore evaluate_pieces(const Position& pos) {
     constexpr Color opp  = ~color;
     PScore          eval = PSCORE_ZERO;
     Bitboard own_pawns = pos.bitboard_for(color, PieceType::Pawn);
+    Bitboard blocked_pawns = own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
     Bitboard bb = own_pawns | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
@@ -119,7 +120,7 @@ PScore evaluate_pieces(const Position& pos) {
         Square sq = pos.piece_list_sq(color)[id];
         eval += BISHOP_PAWNS[
             std::min(static_cast<usize>(8),(own_pawns & Bitboard::squares_of_color(sq.color())).popcount()) // Weird non standard positions which can have more than 8 pawns
-        ];
+        ] * (1 + (blocked_pawns & Bitboard::central_files()).popcount());
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
