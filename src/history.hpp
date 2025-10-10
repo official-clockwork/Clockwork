@@ -37,6 +37,7 @@ public:
 
     i32  get_conthist(const Position& pos, Move move, i32 ply, Search::Stack* ss) const;
     i32  get_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss) const;
+    void update_cont_hist(const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus);
     void update_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus);
 
     i32  get_noisy_stats(const Position& pos, Move move) const;
