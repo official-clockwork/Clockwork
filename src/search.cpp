@@ -613,8 +613,8 @@ Value Worker::search(
                                                 ply + 1, !cutnode);
                 if (quiet && (value <= alpha || value >= beta)) {
                     m_td.history.update_cont_hist(pos, m, ply, ss,
-                                     value <= alpha ? stat_bonus(new_depth)
-                                                    : -stat_bonus(new_depth));
+                                     value <= alpha ? -stat_bonus(new_depth)
+                                                    : stat_bonus(new_depth));
                 }
             }
         } else if (!PV_NODE || moves_played > 1) {
