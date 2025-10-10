@@ -604,7 +604,7 @@ Value Worker::search(
             }
 
             if (!quiet) {
-                reduction = std::min(reduction, 2048);
+                reduction = std::min(reduction, 3072);
             }
 
             reduction /= 1024;
