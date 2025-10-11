@@ -114,6 +114,117 @@ Clockwork requires **clang++ and LLVM** (latest versions always recommended, cla
 
 ---
 
+## Contribute CPU Time
+
+Our project uses a distributed testing framework called [OpenBench](https://github.com/AndyGrant/OpenBench) to rigorously test changes, simplify code, and tune the engine's parameters. By contributing your computer's idle CPU cycles, you can directly help us accelerate development and make Clockwork a stronger engine.
+
+Here’s how you can get started in just a few steps:
+
+---
+
+### Step 1: Create and Approve Your Account
+
+1.  **Register an account** on our OpenBench website:
+    *   **https://clockworkopenbench.pythonanywhere.com**
+
+2.  **Request account enable** on our official Discord server:
+    *   [**Join the Clockwork Discord Server**](https://discord.gg/r2uNZ9x6mr)
+    *   Once you've joined, go to the `#openbench` channel and ping an `@Maintainer` with your OpenBench username. We'll enable your account as soon as possible.
+
+### Step 2: Set Up the OpenBench Client
+
+First, ensure you have **Python 3** (needed for the worker client), **Git** and **clang** installed on your system. These instructions are for Linux & Windows Subsystem for Linux (WSL).
+
+1.  **Create a Python virtual environment.** This is a best practice that isolates the project's dependencies from your system's global Python packages.
+    ```bash
+    # Navigate to your home directory and create a virtual environment named 'venv'
+    cd ~
+    python3 -m venv venv
+    ```
+
+2.  **Clone the repository and install dependencies.**
+    ```bash
+    # Navigate to a directory of your choice (e.g., Desktop)
+    cd ~/Desktop
+
+    # Clone the OpenBench project (make sure you are not cloning another engine's fork!)
+    git clone https://github.com/official-clockwork/OpenBench
+    cd OpenBench/Client
+
+    # Activate the virtual environment
+    source ~/venv/bin/activate
+
+    # Install the required Python packages
+    pip install -r requirements.txt
+    ```
+> **Note:** If you close your terminal, the virtual environment will deactivate. To reactivate it, simply run `source ~/venv/bin/activate` again before running the client.
+
+### Step 3: Start Contributing! :D
+
+#### Choosing Thread and Socket Counts
+
+*   `-T <THREADS>`: The number of CPU cores/threads you want to dedicate. A good starting point is the number of physical cores in your CPU (if the machine isn't used by other processes). Otherwise, it is recomended to leave some cores free for any other tasks you might be performing on your machine. Don't worry about only donating some cores, everythin helps!
+*   `-N <SOCKETS>`: The number of match runners to use. A good rule of thumb is to use **one socket for every 8 cores/threads**. Divide your core/thread count by 8 and round up to the nearest whole number.
+
+**Examples:**
+*   If you want to contribute 8 cores: `-T 8 -N 1`
+*   If you want to contribute 14 cores: `-T 14 -N 2` (since 14 / 8 = 1.75, which rounds up to 2)
+*   If you want to contribute 16 cores: `-T 16 -N 2` (since 16 / 8 = 2)
+
+#### Taskset
+To improve performance and control CPU usage, you can bind a program to specific CPU cores using the taskset command. On an 8-core / 16-thread system, each core has two hardware threads (logical CPUs). To ensure a program uses only one thread per physical core, determine the CPU layout with `lscpu -e` command, then select every second logical CPU (e.g., 0,2,4,6,8,10,12,14). For example:
+```bash
+CPU NODE SOCKET CORE
+  0    0      0    0 <- 1 core
+  1    0      0    0
+  2    0      0    1 <- 2 core
+  3    0      0    1
+  4    0      0    2 <- 3 core
+  5    0      0    2
+  6    0      0    3 <- 4 core
+  7    0      0    3
+  8    0      0    4 <- 5 core
+  9    0      0    4
+ 10    0      0    5 <- 6 core
+ 11    0      0    5
+ 12    0      0    6 <- 7 core
+ 13    0      0    6
+ 14    0      0    7 <- 8 core
+ 15    0      0    7
+ ```
+So:
+```bash
+taskset -c 0,2,4,6,8,10,12,14 python client.py \
+  -U "YOUR_USERNAME" \
+  -P "YOUR_PASSWORD" \
+  -S "https://clockworkopenbench.pythonanywhere.com" \
+  -T <THREADS> \
+  -N <SOCKETS>
+```
+
+**Full Command Example:**
+If your username is `hce_chess_fan`, your password is `road_to_3600`, and you want to use 16 cores, then your full command should look like:
+```bash
+taskset -c 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32 python client.py \
+  -U "hce_chess_fan" \
+  -P "road_to_3600" \
+  -S "https://clockworkopenbench.pythonanywhere.com" \
+  -T 16 \
+  -N 2
+```
+
+if you don't want to waste any time doing the commands and lend us all your physical cores, just use this:
+```bash
+taskset -c $(lscpu -e | awk '!/CPU/ && !seen[$4]++ {printf "%s,", $1}' | sed 's/,$//') \
+python client.py -U "YOUR_USERNAME" -P "YOUR_PASSWORD" \
+-S "https://clockworkopenbench.pythonanywhere.com" -T <THREADS> -N <SOCKETS>
+```
+
+---
+Thank you for helping us make Clockwork stronger!
+---
+
+
 ## Thanks 
 Huge thanks to:  
 - Our maintainers and growing developer community.  
