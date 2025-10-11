@@ -127,6 +127,10 @@ public:
         return result;
     }
 
+    void add_gradient(f64 rhs) {
+        m_gradient += rhs;
+    }
+
     friend ValuePtr operator-(ValuePtr a) {
         ValuePtr result         = Value::create(-a->m_value);
         result->m_backward_func = [a](ValuePtr out) {
@@ -417,7 +421,7 @@ public:
             a->m_gradients   = f128::add(a->m_gradients, scaled_grad);
 
             f128 contribution = f128::mul(a->m_values, out->m_gradients);
-            v->m_gradient += contribution.first() + contribution.second();
+            v->add_gradient(contribution.first() + contribution.second());
         };
         return result;
     }
@@ -465,7 +469,7 @@ public:
 
             f128 numerator        = f128::mul(a->m_values, out->m_gradients);
             f64  sum_contribution = numerator.first() + numerator.second();
-            v->m_gradient -= sum_contribution / (v_val * v_val);
+            v->add_gradient(-sum_contribution / (v_val * v_val));
         };
         return result;
     }
@@ -484,7 +488,7 @@ public:
             a->m_gradients       = f128::add(a->m_gradients, grad_update);
 
             f128 v_grad_contrib = f128::div(out->m_gradients, a->m_values);
-            v->m_gradient += v_grad_contrib.first() + v_grad_contrib.second();
+            v->add_gradient(v_grad_contrib.first() + v_grad_contrib.second());
         };
         return result;
     }

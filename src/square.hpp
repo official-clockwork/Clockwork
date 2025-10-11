@@ -47,6 +47,10 @@ struct Square {
         return raw / 8;
     }
 
+    [[nodiscard]] constexpr Color color() const {
+        return ((file() + rank()) & 1)  ? Color::White : Color::Black;
+    }
+
     [[nodiscard]] constexpr Square relative_sq(Color c) const {
         return c == Color::White ? *this : flip_vertical();
     }
