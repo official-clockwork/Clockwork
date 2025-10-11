@@ -2,6 +2,7 @@
 #include "immintrin.h"
 #include "see.hpp"
 #include "tuned.hpp"
+#include <emmintrin.h>
 #include <immintrin.h>
 
 namespace Clockwork {
@@ -133,9 +134,9 @@ std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
     }
 
     std::array<u32, 4> indices_array;
-    _mm_storeu_epi32(indices_array.data(), best_indices);
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(indices_array.data()), best_indices);
     std::array<i32, 4> values_array;
-    _mm_storeu_epi32(values_array.data(), best_values);
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(values_array.data()), best_values);
 
     usize best_vectorized_index = 0;
 
