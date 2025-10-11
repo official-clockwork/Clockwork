@@ -125,7 +125,7 @@ std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
     __m128i indices = _mm_add_epi32(best_indices, _mm_set_epi32(4, 3, 2, 1));
     usize   i       = m_current_index + 1;
     for (; i + 3 < moves.size(); i += 4, indices = _mm_add_epi32(indices, _mm_set1_epi32(4))) {
-        __m128i values = _mm_loadu_epi32(&m_scores[i]);
+        __m128i values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&m_scores[i]));
 
         __m128i greater = _mm_cmpgt_epi32(values, best_values);
 
