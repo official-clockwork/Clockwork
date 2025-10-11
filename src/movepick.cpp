@@ -1,6 +1,8 @@
 #include "movepick.hpp"
+#include "immintrin.h"
 #include "see.hpp"
 #include "tuned.hpp"
+#include <immintrin.h>
 
 namespace Clockwork {
 
@@ -116,8 +118,37 @@ void MovePicker::score_moves(MoveList& moves) {
 }
 
 std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
-    usize best_idx = m_current_index;
-    for (usize i = m_current_index + 1; i < moves.size(); i++) {
+    __m256i best_indices = _mm256_set1_epi32(static_cast<u32>(m_current_index));
+    __m256i best_values  = _mm256_set1_epi32(m_scores[m_current_index]);
+
+    __m256i indices = _mm256_add_epi32(best_indices, _mm256_set_epi32(8, 7, 6, 5, 4, 3, 2, 1));
+    usize   i       = m_current_index + 1;
+    for (; i + 7 < moves.size();
+         i += 8, indices = _mm256_add_epi32(indices, _mm256_set1_epi32(8))) {
+        __m256i values = _mm256_loadu_epi32(&m_scores[i]);
+
+        __m256i greater = _mm256_cmpgt_epi32(values, best_values);
+
+        best_values  = _mm256_blendv_epi8(best_values, values, greater);
+        best_indices = _mm256_blendv_epi8(best_indices, indices, greater);
+    }
+
+    std::array<u32, 8> indices_array;
+    _mm256_storeu_epi32(indices_array.data(), best_indices);
+    std::array<i32, 8> values_array;
+    _mm256_storeu_epi32(values_array.data(), best_values);
+
+    usize best_vectorized_index = 0;
+
+    for (usize j = 1; j < 8; ++j) {
+        if (values_array[j] > values_array[best_vectorized_index]) {
+            best_vectorized_index = j;
+        }
+    }
+
+    usize best_idx = indices_array[best_vectorized_index];
+
+    for (; i < moves.size(); i++) {
         if (m_scores[i] > m_scores[best_idx]) {
             best_idx = i;
         }
