@@ -543,8 +543,7 @@ Value Worker::search(
                 // Triple Extension
                 if (!PV_NODE && quiet && singular_value <= singular_beta - 120) {
                     extension = 3;
-                }
-                
+                }                
             }
 
             // Multicut
