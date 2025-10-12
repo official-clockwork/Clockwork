@@ -48,6 +48,12 @@ function(target_add_flags target)
         -fsanitize=address,undefined
         >)
 
+    # Include directories
+    target_include_directories(${target} PUBLIC src)
+
+    # External libraries
+    target_include_directories(${target} PUBLIC vendor/lps/include)
+
     # LTO
     if (lto)
         set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -118,14 +124,12 @@ set(srcs
 if(CLOCKWORK_ENABLE_EVALTUNE)
 
     add_executable(clockwork-evaltune src/evaltune_main.cpp ${srcs})
-    target_include_directories(clockwork-evaltune PUBLIC src)
     target_compile_options(clockwork-evaltune PUBLIC -DEVAL_TUNING=1)
     target_add_flags(clockwork-evaltune)
 
 else()
 
     add_library(clockwork-lib OBJECT ${srcs})
-    target_include_directories(clockwork-lib PUBLIC src)
     target_add_flags(clockwork-lib)
 
     add_executable(clockwork src/main.cpp)
