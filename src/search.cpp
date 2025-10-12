@@ -10,6 +10,7 @@
 #include "tm.hpp"
 #include "tuned.hpp"
 #include "uci.hpp"
+#include "util/log2.hpp"
 #include "util/types.hpp"
 #include <algorithm>
 #include <array>
@@ -553,7 +554,7 @@ Value Worker::search(
 
             // Negative Extensions
             else if (tt_data->score >= beta) {
-                extension = -1 - PV_NODE;                
+                extension = -1 - PV_NODE;
             }
         }
 
@@ -570,8 +571,16 @@ Value Worker::search(
         Depth new_depth = depth - 1 + extension;
         Value value;
         if (depth >= 3 && moves_played >= 2 + 2 * PV_NODE) {
-            i32 reduction = static_cast<i32>(
-              std::round(1024 * (0.77 + std::log(depth) * std::log(moves_played) / 2.36)));
+            i32 reduction;
+
+            if (quiet) {
+                reduction =
+                  static_cast<i32>(788 + 208 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+            } else {
+                reduction =
+                  static_cast<i32>(256 + 197 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+            }
+
             reduction -= 1024 * PV_NODE;
 
             reduction += alpha_raises * 512;
@@ -605,7 +614,7 @@ Value Worker::search(
             }
 
             if (!quiet) {
-                reduction = std::min(reduction, 2048);
+                reduction = std::min(reduction, 3072);
             }
 
             reduction /= 1024;
@@ -618,8 +627,8 @@ Value Worker::search(
                                                 ply + 1, !cutnode);
                 if (quiet && (value <= alpha || value >= beta)) {
                     m_td.history.update_cont_hist(pos, m, ply, ss,
-                                     value <= alpha ? -stat_bonus(new_depth)
-                                                    : stat_bonus(new_depth));
+                                                  value <= alpha ? -stat_bonus(new_depth)
+                                                                 : stat_bonus(new_depth));
                 }
             }
         } else if (!PV_NODE || moves_played > 1) {
@@ -674,7 +683,7 @@ Value Worker::search(
 
     if (best_value >= beta) {
         i32       bonus_depth = depth + (best_value >= beta + 100);
-        const i32 bonus = stat_bonus(bonus_depth);
+        const i32 bonus       = stat_bonus(bonus_depth);
         if (quiet_move(best_move)) {
             ss->killer = best_move;
 
