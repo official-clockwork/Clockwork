@@ -568,21 +568,6 @@ Value Worker::search(
         if (depth >= 3 && moves_played >= 2 + 2 * PV_NODE) {
             i32 reduction;
 
-            //            if (quiet)
-            //                reduction = static_cast<i32>(std::round(1024 * (0.77 + 0.6931471806 * 0.6931471806 * 0.4237288136 * log2i(depth) * log2i(moves_played) / (1024 * 1024))));
-            //            else
-            //                reduction = static_cast<i32>(std::round(1024 * (0.25 + 0.6931471806 * 0.6931471806 * 0.4 * log2i(depth) * log2i(moves_played) / (1024 * 1024))));
-
-            //            if (quiet)
-            //                reduction = static_cast<i32>(std::round(1024 * (0.77 + 0.2035817856 * log2i(depth) * log2i(moves_played) / (1024 * 1024))));
-            //            else
-            //                reduction = static_cast<i32>(std::round(1024 * (0.25 + 0.1921812056 * log2i(depth) * log2i(moves_played) / (1024 * 1024))));
-
-            //            if (quiet)
-            //                reduction = 788 + 0.2035817856 * log2i(depth) * log2i(moves_played) / 1024;
-            //            else
-            //                reduction = 256 + 0.1921812056 * log2i(depth) * log2i(moves_played) / 1024;
-
             if (quiet) {
                 reduction = 788 + 208 * (log2i(depth) / 32) * (log2i(moves_played) / 32) / 1024;
             } else {
