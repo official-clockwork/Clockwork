@@ -538,8 +538,7 @@ Value Worker::search(
                 // Double Extension
                 if (!PV_NODE && singular_value <= singular_beta - 40) {
                     extension = 2;
-                }
-                
+                }                
             }
 
             // Multicut
