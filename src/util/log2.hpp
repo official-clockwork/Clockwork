@@ -6,7 +6,7 @@
 
 namespace Clockwork {
 
-[[nodiscard]] constexpr i32 log2i(i32 x) {
+[[nodiscard]] constexpr i64 log2i(i32 x) {
     assert(x > 0);
 
     int head = std::countl_zero(static_cast<u32>(x));
@@ -15,7 +15,7 @@ namespace Clockwork {
     u32 big   = static_cast<u32>(31 - head) * 1024;
     u32 small = rem + (355 * rem * (1024 - rem)) / (1024 * 1024);
 
-    return static_cast<i32>(big + small);
+    return static_cast<i64>(big + small);
 }
 
 }

@@ -569,9 +569,11 @@ Value Worker::search(
             i32 reduction;
 
             if (quiet) {
-                reduction = 788 + 208 * (log2i(depth) / 32) * (log2i(moves_played) / 32) / 1024;
+                reduction =
+                  static_cast<i32>(788 + 208 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
             } else {
-                reduction = 256 + 197 * (log2i(depth) / 32) * (log2i(moves_played) / 32) / 1024;
+                reduction =
+                  static_cast<i32>(256 + 197 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
             }
 
             reduction -= 1024 * PV_NODE;
