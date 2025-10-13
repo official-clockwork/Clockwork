@@ -308,7 +308,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // We don't do it for too shallow depths because the node distribution is not stable enough
         if (IS_MAIN && search_depth >= 6) {
             f64 complexity = 0;
-            if (abs(score) < VALUE_WIN) {
+            if (!is_mate_score(score)) {
                 complexity = 0.6 * abs(base_search_score - score) * std::log(search_depth);
             }
             m_search_limits.soft_time_limit = TM::compute_soft_limit<true>(
@@ -435,7 +435,7 @@ Value Worker::search(
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = ss->static_eval;
-    if (tt_data && tt_data->bound() != Bound::None && abs(tt_data->score) < VALUE_WIN
+    if (tt_data && tt_data->bound() != Bound::None && !is_mate_score(tt_data->score)
         && tt_data->bound() != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
@@ -446,7 +446,7 @@ Value Worker::search(
     }
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && !excluded
-        && tt_adjusted_eval >= beta + 30) {
+        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta)) {
         int R =
           tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
@@ -459,7 +459,7 @@ Value Worker::search(
         repetition_info.pop();
 
         if (value >= beta) {
-            return value > VALUE_WIN ? beta : value;
+            return is_mate_score(value) ? beta : value;
         }
     }
 
@@ -496,7 +496,7 @@ Value Worker::search(
 
         auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m, ply, ss) : 0;
 
-        if (!ROOT_NODE && best_value > -VALUE_WIN) {
+        if (!ROOT_NODE && !is_being_mated_score(best_value)) {
             // Late Move Pruning (LMP)
             if (moves_played >= (3 + depth * depth) / (2 - improving)) {
                 break;
@@ -805,7 +805,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         // QS SEE Pruning
-        if (best_value > -VALUE_WIN && !SEE::see(pos, m, tuned::quiesce_see_threshold)) {
+        if (!is_being_mated_score(best_value) && !SEE::see(pos, m, tuned::quiesce_see_threshold)) {
             continue;
         }
 
