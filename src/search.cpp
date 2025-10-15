@@ -10,6 +10,7 @@
 #include "tm.hpp"
 #include "tuned.hpp"
 #include "uci.hpp"
+#include "util/log2.hpp"
 #include "util/types.hpp"
 #include <algorithm>
 #include <array>
@@ -307,7 +308,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // We don't do it for too shallow depths because the node distribution is not stable enough
         if (IS_MAIN && search_depth >= 6) {
             f64 complexity = 0;
-            if (abs(score) < VALUE_WIN) {
+            if (!is_mate_score(score)) {
                 complexity = 0.6 * abs(base_search_score - score) * std::log(search_depth);
             }
             m_search_limits.soft_time_limit = TM::compute_soft_limit<true>(
@@ -434,7 +435,7 @@ Value Worker::search(
 
     // Reuse TT score as a better positional evaluation
     auto tt_adjusted_eval = ss->static_eval;
-    if (tt_data && tt_data->bound() != Bound::None && abs(tt_data->score) < VALUE_WIN
+    if (tt_data && tt_data->bound() != Bound::None && !is_mate_score(tt_data->score)
         && tt_data->bound() != (tt_data->score > ss->static_eval ? Bound::Upper : Bound::Lower)) {
         tt_adjusted_eval = tt_data->score;
     }
@@ -445,7 +446,7 @@ Value Worker::search(
     }
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && !excluded
-        && tt_adjusted_eval >= beta + 30) {
+        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta)) {
         int R =
           tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
@@ -458,7 +459,7 @@ Value Worker::search(
         repetition_info.pop();
 
         if (value >= beta) {
-            return value > VALUE_WIN ? beta : value;
+            return is_mate_score(value) ? beta : value;
         }
     }
 
@@ -496,7 +497,7 @@ Value Worker::search(
 
         auto move_history = quiet ? m_td.history.get_quiet_stats(pos, m, ply, ss) : 0;
 
-        if (!ROOT_NODE && best_value > -VALUE_WIN) {
+        if (!ROOT_NODE && !is_being_mated_score(best_value)) {
             // Late Move Pruning (LMP)
             if (moves_played >= (3 + depth * depth) / (2 - improving)) {
                 break;
@@ -523,7 +524,7 @@ Value Worker::search(
 
         // Singular extensions
         int extension = 0;
-        if (!excluded && tt_data && m == tt_data->move && depth >= 8 && tt_data->depth >= depth - 3
+        if (!excluded && tt_data && m == tt_data->move && depth >= 6 && tt_data->depth >= depth - 3
             && tt_data->bound() != Bound::Upper) {
             Value singular_beta  = tt_data->score - depth * 5;
             int   singular_depth = depth / 2;
@@ -540,6 +541,11 @@ Value Worker::search(
                 if (!PV_NODE && singular_value <= singular_beta - 40) {
                     extension = 2;
                 }
+
+                // Triple Extension
+                if (!PV_NODE && quiet && singular_value <= singular_beta - 120) {
+                    extension = 3;
+                }
             }
 
             // Multicut
@@ -549,7 +555,7 @@ Value Worker::search(
 
             // Negative Extensions
             else if (tt_data->score >= beta) {
-                extension = -1 - PV_NODE;                
+                extension = -1 - PV_NODE;
             }
         }
 
@@ -588,8 +594,16 @@ Value Worker::search(
         Depth new_depth = depth - 1 + extension;
         Value value;
         if (depth >= 3 && moves_played >= 2 + 2 * PV_NODE) {
-            i32 reduction = static_cast<i32>(
-              std::round(1024 * (0.77 + std::log(depth) * std::log(moves_played) / 2.36)));
+            i32 reduction;
+
+            if (quiet) {
+                reduction =
+                  static_cast<i32>(788 + 208 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+            } else {
+                reduction =
+                  static_cast<i32>(256 + 197 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+            }
+
             reduction -= 1024 * PV_NODE;
 
             reduction += alpha_raises * 512;
@@ -623,7 +637,7 @@ Value Worker::search(
             }
 
             if (!quiet) {
-                reduction = std::min(reduction, 2048);
+                reduction = std::min(reduction, 3072);
             }
 
             reduction /= 1024;
@@ -636,8 +650,8 @@ Value Worker::search(
                                                 ply + 1, !cutnode);
                 if (quiet && (value <= alpha || value >= beta)) {
                     m_td.history.update_cont_hist(pos, m, ply, ss,
-                                     value <= alpha ? -stat_bonus(new_depth)
-                                                    : stat_bonus(new_depth));
+                                                  value <= alpha ? -stat_bonus(new_depth)
+                                                                 : stat_bonus(new_depth));
                 }
             }
         } else if (!PV_NODE || moves_played > 1) {
@@ -692,7 +706,7 @@ Value Worker::search(
 
     if (best_value >= beta) {
         i32       bonus_depth = depth + (best_value >= beta + 100);
-        const i32 bonus = stat_bonus(bonus_depth);
+        const i32 bonus       = stat_bonus(bonus_depth);
         if (quiet_move(best_move)) {
             ss->killer = best_move;
 
@@ -819,7 +833,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
         // QS SEE Pruning
-        if (best_value > -VALUE_WIN && !SEE::see(pos, m, tuned::quiesce_see_threshold)) {
+        if (!is_being_mated_score(best_value) && !SEE::see(pos, m, tuned::quiesce_see_threshold)) {
             continue;
         }
 
