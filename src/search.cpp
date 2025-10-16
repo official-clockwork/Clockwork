@@ -389,15 +389,15 @@ Value Worker::search(
     if (!ROOT_NODE) {
         // Repetition check
         if (repetition_info.detect_repetition(static_cast<usize>(ply))) {
-            return VALUE_DRAW;
+            return get_draw_score();
         }
         // 50 mr check
         if (pos.get_50mr_counter() >= 100) {
-            return VALUE_DRAW;
+            return get_draw_score();
         }
         // Insufficient material check
         if (pos.is_insufficient_material()) {
-            return VALUE_DRAW;
+            return get_draw_score();
         }
     }
 
@@ -743,7 +743,7 @@ Value Worker::search(
             if (pos.is_in_check()) {
                 return mated_in(ply);
             } else {
-                return VALUE_DRAW;
+                return get_draw_score();
             }
         }
     }
@@ -793,7 +793,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // 50 mr check
     if (pos.get_50mr_counter() >= 100) {
-        return VALUE_DRAW;
+        return get_draw_score();
     }
 
     // Return eval if we exceed the max ply.
