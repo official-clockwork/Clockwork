@@ -27,7 +27,7 @@ forceinline std::tuple<u8x64, vm8x64> compress_coords(u8x64 list) {
 }  // namespace internal
 
 inline std::tuple<v512, v512> superpiece_rays(Square sq) {
-    static const v512 OFFSETS = v512{std::array<u8, 64>{
+    static const u8x64 OFFSETS{{
       0x1F, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,  // N
       0x21, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,  // NE
       0x12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,  // E
@@ -38,9 +38,9 @@ inline std::tuple<v512, v512> superpiece_rays(Square sq) {
       0x0E, 0x0F, 0x1E, 0x2D, 0x3C, 0x4B, 0x5A, 0x69,  // NW
     }};
 
-    v512 sq_vec       = v512::broadcast8(internal::expand_sq(sq));
-    v512 uncompressed = v512::add8(sq_vec, OFFSETS);
-    auto [a, b]       = internal::compress_coords(std::bit_cast<u8x64>(uncompressed));
+    u8x64 sq_vec       = u8x64::splat(internal::expand_sq(sq));
+    u8x64 uncompressed = sq_vec + OFFSETS;
+    auto [a, b]        = internal::compress_coords(std::bit_cast<u8x64>(uncompressed));
     return {std::bit_cast<v512>(a), std::bit_cast<v512>(b)};
 }
 
