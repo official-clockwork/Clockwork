@@ -24,6 +24,16 @@ endif()
 include(CheckIPOSupported)
 check_ipo_supported(RESULT lto)
 
+# Check git hash
+add_custom_target(check_git_hash COMMAND ${CMAKE_COMMAND}
+    -DINPUT_FILE=${CMAKE_CURRENT_LIST_DIR}/src/util/version.cpp.in
+    -DOUTPUT_FILE=${CMAKE_BINARY_DIR}/gen/util/version.cpp
+    -P ${CMAKE_CURRENT_LIST_DIR}/scripts/check_git_hash.cmake
+    BYPRODUCTS ${CMAKE_BINARY_DIR}/gen/util/version.cpp)
+add_library(git_hash ${CMAKE_BINARY_DIR}/gen/util/version.cpp src/util/version.hpp)
+target_include_directories(git_hash PUBLIC src)
+add_dependencies(git_hash check_git_hash)
+
 # Flags
 function(target_add_flags target)
 
@@ -48,6 +58,9 @@ function(target_add_flags target)
         -fsanitize=address,undefined
         >)
 
+    # Libraries
+    target_link_libraries(${target} PUBLIC git_hash)
+
     # LTO
     if (lto)
         set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -57,17 +70,17 @@ endfunction()
 
 # Sorted list of source files
 set(srcs
-        src/board.cpp
-        src/board.hpp
         src/bench.cpp
         src/bench.hpp
+        src/board.cpp
+        src/board.hpp
         src/common.hpp
         src/dbg_tools.cpp
         src/dbg_tools.hpp
-        src/evaluation.cpp
-        src/evaluation.hpp
         src/eval_constants.hpp
         src/eval_types.hpp
+        src/evaluation.cpp
+        src/evaluation.hpp
         src/geometry.cpp
         src/geometry.hpp
         src/history.cpp
@@ -83,8 +96,8 @@ set(srcs
         src/position.cpp
         src/position.hpp
         src/psqt_state.hpp
-        src/repetition_info.hpp
         src/repetition_info.cpp
+        src/repetition_info.hpp
         src/search.cpp
         src/search.hpp
         src/square.hpp
@@ -94,10 +107,15 @@ set(srcs
         src/tt.hpp
         src/tuned.cpp
         src/tuned.hpp
+        src/tuning/globals.hpp
+        src/tuning/graph.cpp
+        src/tuning/graph.hpp
+        src/tuning/loss.hpp
+        src/tuning/optim.hpp
+        src/tuning/value.cpp
+        src/tuning/value.hpp
         src/uci.cpp
         src/uci.hpp
-        src/zobrist.cpp
-        src/zobrist.hpp
         src/util/bit.hpp
         src/util/parse.hpp
         src/util/pretty.hpp
@@ -106,13 +124,8 @@ set(srcs
         src/util/vec.hpp
         src/util/vec/avx2.hpp
         src/util/vec/avx512.hpp
-        src/tuning/globals.hpp
-        src/tuning/graph.cpp
-        src/tuning/graph.hpp
-        src/tuning/loss.hpp
-        src/tuning/optim.hpp
-        src/tuning/value.cpp
-        src/tuning/value.hpp
+        src/zobrist.cpp
+        src/zobrist.hpp
 )
 
 if(CLOCKWORK_ENABLE_EVALTUNE)

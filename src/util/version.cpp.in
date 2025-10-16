@@ -1,0 +1,7 @@
+#include "util/version.hpp"
+#include <string_view>
+
+namespace Clockwork {
+const std::string_view GIT_VERSION{"${GIT_VERSION}"};
+const std::string_view GIT_HASH{"${GIT_HASH}"};
+}
