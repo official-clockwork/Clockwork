@@ -1,14 +1,13 @@
 #pragma once
 
-#include <array>
-#include <cassert>
-#include <tuple>
-#include <utility>
-
 #include "common.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
+#include <array>
+#include <cassert>
+#include <tuple>
+#include <utility>
 
 namespace Clockwork::geometry {
 
@@ -19,14 +18,13 @@ forceinline constexpr u8 expand_sq(Square sq) {
 }
 
 // 0rrr0fff → 00rrrfff
-template<typename V>
-forceinline std::tuple<V, V> compress_coords(V list) {
-    V valid      = V::eq8_vm(list & V::broadcast8(0x88), V::zero());
-    V compressed = (list & V::broadcast8(0x07)) | (V::shr16(list, 1) & V::broadcast8(0x38));
+forceinline std::tuple<u8x64, vm8x64> compress_coords(u8x64 list) {
+    vm8x64 valid      = (list & u8x64::splat(0x88)).zeros_vm();
+    u8x64  compressed = (list & u8x64::splat(0x07)) | (list & u8x64::splat(0x70)).shr<1>();
     return {compressed, valid};
 }
-}  // namespace internal
 
+}  // namespace internal
 
 inline std::tuple<v512, v512> superpiece_rays(Square sq) {
     static const v512 OFFSETS = v512{std::array<u8, 64>{
@@ -42,7 +40,8 @@ inline std::tuple<v512, v512> superpiece_rays(Square sq) {
 
     v512 sq_vec       = v512::broadcast8(internal::expand_sq(sq));
     v512 uncompressed = v512::add8(sq_vec, OFFSETS);
-    return internal::compress_coords(uncompressed);
+    auto [a, b]       = internal::compress_coords(std::bit_cast<u8x64>(uncompressed));
+    return {std::bit_cast<v512>(a), std::bit_cast<v512>(b)};
 }
 
 inline v512 superpiece_attacks(v512 ray_places, v512 ray_valid) {
