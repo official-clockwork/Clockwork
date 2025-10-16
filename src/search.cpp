@@ -559,7 +559,7 @@ Value Worker::search(
             }
         }
 
-        // Last captures extension
+        // Simplified captures extension
         if (extension == 0 && m.is_capture() && !m.is_en_passant()) {
             PieceType captured = pos.board()[m.to()].ptype();
     
