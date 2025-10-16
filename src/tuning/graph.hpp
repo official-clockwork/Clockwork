@@ -119,6 +119,10 @@ public:
         }
     }
 
+    void clear_backwardables() {
+        m_backwardables.clear();
+    }
+
     // ------------------ Cleanup ------------------
     void cleanup() {
         for (auto& param : m_parameters) {
