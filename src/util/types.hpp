@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <lps/lps.hpp>
 
 #define forceinline inline __attribute__((always_inline))
 #define unreachable() (__builtin_unreachable())
@@ -37,6 +38,9 @@ static_assert(sizeof(isize) == sizeof(usize));
 
 using f32 = float;
 using f64 = double;
+
+// Import vector types (u8x64, u64x8, u16x64, ...)
+using namespace lps::prelude;
 
 namespace time {
 using Clock        = std::chrono::steady_clock;

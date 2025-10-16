@@ -4,7 +4,6 @@
 #include "tuned.hpp"
 #include <emmintrin.h>
 #include <immintrin.h>
-#include <lps/lps.hpp>
 
 namespace Clockwork {
 
@@ -120,8 +119,6 @@ void MovePicker::score_moves(MoveList& moves) {
 }
 
 std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
-    using namespace lps::prelude;
-
     u32x4 best_indices = u32x4::splat(static_cast<u32>(m_current_index));
     i32x4 best_values  = i32x4::splat(m_scores[m_current_index]);
 
