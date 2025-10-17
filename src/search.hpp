@@ -1,4 +1,5 @@
 #pragma once
+
 #include "history.hpp"
 #include "move.hpp"
 #include "position.hpp"

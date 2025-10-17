@@ -1,10 +1,5 @@
 #include "position.hpp"
 
-#include <array>
-#include <bit>
-#include <iostream>
-#include <sstream>
-
 #include "board.hpp"
 #include "common.hpp"
 #include "geometry.hpp"
@@ -12,6 +7,10 @@
 #include "util/parse.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
+#include <array>
+#include <bit>
+#include <iostream>
+#include <sstream>
 
 namespace Clockwork {
 
@@ -929,8 +928,9 @@ HashKey Position::calc_minor_key_slow() const {
     HashKey key = 0;
     for (usize sq_idx = 0; sq_idx < 64; sq_idx++) {
         Place p = m_board.mailbox[sq_idx];
-        if (p.is_empty() || (p.ptype() != PieceType::Knight && p.ptype() != PieceType::Bishop
-            && p.ptype() != PieceType::King)) {
+        if (p.is_empty()
+            || (p.ptype() != PieceType::Knight && p.ptype() != PieceType::Bishop
+                && p.ptype() != PieceType::King)) {
             continue;
         }
         key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]

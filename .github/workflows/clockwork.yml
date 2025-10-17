@@ -10,6 +10,8 @@ on:
       - main
 
 jobs:
+  Formatting:
+    uses: ./.github/workflows/clang-format.yml
   Compilation:
     uses: ./.github/workflows/compilation.yml
   Linter:

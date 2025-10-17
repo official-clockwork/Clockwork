@@ -1,13 +1,12 @@
 #pragma once
 
+#include "util/types.hpp"
 #include <cassert>
 #include <compare>
 #include <optional>
 #include <ostream>
 #include <string_view>
 #include <tuple>
-
-#include "util/types.hpp"
 
 namespace Clockwork {
 
@@ -48,7 +47,7 @@ struct Square {
     }
 
     [[nodiscard]] constexpr Color color() const {
-        return ((file() + rank()) & 1)  ? Color::White : Color::Black;
+        return ((file() + rank()) & 1) ? Color::White : Color::Black;
     }
 
     [[nodiscard]] constexpr Square relative_sq(Color c) const {

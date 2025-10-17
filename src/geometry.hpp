@@ -1,14 +1,13 @@
 #pragma once
 
-#include <array>
-#include <cassert>
-#include <tuple>
-#include <utility>
-
 #include "common.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
+#include <array>
+#include <cassert>
+#include <tuple>
+#include <utility>
 
 namespace Clockwork::geometry {
 

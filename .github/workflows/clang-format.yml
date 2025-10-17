@@ -1,0 +1,27 @@
+name: clang-format
+
+on:
+  workflow_call:
+
+jobs:
+  formatting-check:
+    name: Verify Formatting
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        path:
+          - 'src'
+          - 'tests'
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify Formatting
+        uses: jidicula/clang-format-action@v4.15.0
+        with:
+          clang-format-version: '20'
+          check-path: ${{ matrix.path }}

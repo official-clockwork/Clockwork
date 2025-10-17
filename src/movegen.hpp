@@ -1,13 +1,12 @@
 #pragma once
 
-#include <tuple>
-
 #include "bitboard.hpp"
 #include "board.hpp"
 #include "move.hpp"
 #include "position.hpp"
 #include "square.hpp"
 #include "util/static_vector.hpp"
+#include <tuple>
 
 namespace Clockwork {
 

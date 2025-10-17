@@ -1,3 +1,5 @@
+#pragma once
+
 #include "util/types.hpp"
 #include <string_view>
 

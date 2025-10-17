@@ -1,16 +1,13 @@
-#include <array>
-#include <ranges>
-
+#include "evaluation.hpp"
 #include "bitboard.hpp"
 #include "common.hpp"
 #include "eval_constants.hpp"
+#include "eval_types.hpp"
 #include "position.hpp"
 #include "psqt_state.hpp"
-
-#include "evaluation.hpp"
-
-#include "eval_types.hpp"
 #include "square.hpp"
+#include <array>
+#include <ranges>
 
 namespace Clockwork {
 
@@ -104,11 +101,12 @@ PScore evaluate_pawns(const Position& pos) {
 
 template<Color color>
 PScore evaluate_pieces(const Position& pos) {
-    constexpr Color opp  = ~color;
-    PScore          eval = PSCORE_ZERO;
-    Bitboard own_pawns = pos.bitboard_for(color, PieceType::Pawn);
-    Bitboard blocked_pawns = own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
-    Bitboard bb = own_pawns | pos.attacked_by(opp, PieceType::Pawn);
+    constexpr Color opp       = ~color;
+    PScore          eval      = PSCORE_ZERO;
+    Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
+    Bitboard        blocked_pawns =
+      own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
+    Bitboard bb            = own_pawns | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
         eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
@@ -118,8 +116,10 @@ PScore evaluate_pieces(const Position& pos) {
         eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
         eval += BISHOP_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
         Square sq = pos.piece_list_sq(color)[id];
-        eval += BISHOP_PAWNS[
-            std::min(static_cast<usize>(8),(own_pawns & Bitboard::squares_of_color(sq.color())).popcount()) // Weird non standard positions which can have more than 8 pawns
+        eval += BISHOP_PAWNS[std::min(
+                  static_cast<usize>(8),
+                  (own_pawns & Bitboard::squares_of_color(sq.color()))
+                    .popcount())  // Weird non standard positions which can have more than 8 pawns
         ] * (1 + (blocked_pawns & Bitboard::central_files()).popcount());
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
