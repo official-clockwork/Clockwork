@@ -148,6 +148,7 @@ int main() {
 
                     Graph::get().copy_parameter_values(current_parameter_values);
 
+                    uint32_t i = 0;
                     for (size_t j = subbatch_start; j < subbatch_end; ++j) {
                         size_t   idx    = indices[j];
                         f64      y      = results[idx];
@@ -155,6 +156,16 @@ int main() {
                         auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
                         subbatch_outputs.push_back(result);
                         subbatch_targets.push_back(y);
+                        if (++i == 1024) {
+                            i = 0;
+                            auto subbatch_loss =
+                              mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
+                              * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
+                            Graph::get().backward();
+                            Graph::get().clear_backwardables();
+                            subbatch_outputs.clear();
+                            subbatch_targets.clear();
+                        }
                     }
 
                     auto subbatch_loss =
