@@ -876,7 +876,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Checkmate check
     if (is_in_check && moves_searched == 0) {
-        return mated_in(ply);
+        return -VALUE_WIN + 1;
     }
 
     // Store to the TT
