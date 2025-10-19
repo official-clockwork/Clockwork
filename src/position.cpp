@@ -65,7 +65,7 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
     updates.adds.push_back({pcolor, ptype, to});
 
     v512 m = toggle_rays(to);
-    add_attacks(color, p.id(), to, p.ptype(), m);
+    add_attacks(color, p.id(), to, p.ptype(), std::bit_cast<m8x64>(m));
 }
 
 void Position::incrementally_mutate_piece(
@@ -225,7 +225,7 @@ void Position::incrementally_move_piece(
       (lps::generic::andnot(src_color, src_at)) ^ (lps::generic::andnot(dst_color, dst_at));
     m_attack_table[1].raw ^= (src_color & src_at) ^ (dst_color & dst_at);
 
-    add_attacks(color, p.id(), to, p.ptype(), std::bit_cast<v512>(ret));
+    add_attacks(color, p.id(), to, p.ptype(), ret);
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
@@ -292,7 +292,7 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
     case PieceType::Pawn:
     case PieceType::Knight:
     case PieceType::King:
-        add_attacks(color, id, sq, ptype, v512::broadcast8(0xFF));
+        add_attacks(color, id, sq, ptype, m8x64::splat(true));
         return;
     case PieceType::Bishop:
     case PieceType::Rook:
@@ -307,20 +307,21 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
         u8x64 inv_perm  = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(sq));
         m8x64 boardmask = inv_perm.swizzle(raymask);
 
-        add_attacks(color, id, sq, ptype, std::bit_cast<v512>(boardmask));
+        add_attacks(color, id, sq, ptype, boardmask);
         return;
     }
     }
 }
 
-void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask) {
-    v512 moves = geometry::piece_moves_avx2(color, ptype, sq) & mask;
+void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask) {
+    u8x64 moves = mask.mask(std::bit_cast<u8x64>(geometry::piece_moves_avx2(color, ptype, sq)));
 
-    v512 m0 = v512::unpacklo8(moves, moves);
-    v512 m1 = v512::unpackhi8(moves, moves);
+    u8x64  m0 = moves.zip_low_128lanes(moves);
+    u8x64  m1 = moves.zip_high_128lanes(moves);
+    u16x64 m  = std::bit_cast<u16x64>(std::array<u8x64, 2>{m0, m1});
 
-    v512 bit = v512::broadcast16(id.to_piece_mask().value());
-    m_attack_table[color].raw |= std::bit_cast<u16x64>(std::array<v512, 2>{bit & m0, bit & m1});
+    u16x64 bit = u16x64::splat(id.to_piece_mask().value());
+    m_attack_table[color].raw |= m & bit;
 }
 
 template<bool UPDATE_PSQT>

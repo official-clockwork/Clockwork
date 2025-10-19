@@ -313,7 +313,7 @@ private:
     void remove_attacks(bool color, PieceId id);
     v512 toggle_rays(Square sq);
     void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
+    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask);
 };
 
 }
