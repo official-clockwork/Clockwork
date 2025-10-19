@@ -530,21 +530,22 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never pinned), so 0 converts to 0.
-    static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
-                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-    static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    v512              at_lo = v512::permute8(pinned_ids, BITS_LO);
-    v512              at_hi = v512::permute8(pinned_ids, BITS_HI);
+    static const u8x16 BITS_LO{{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+                                0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+    u8x64              at_lo = std::bit_cast<u8x64>(pinned_ids).swizzle(BITS_LO);
+    u8x64              at_hi = std::bit_cast<u8x64>(pinned_ids).swizzle(BITS_HI);
 
-    v512 nppm = v512::broadcast16(nonpinned_piece_mask);
+    u16x64 nppm = u16x64::splat(nonpinned_piece_mask);
 
-    v512 at0 = v512::unpacklo8(at_lo, at_hi) | nppm;
-    v512 at1 = v512::unpackhi8(at_lo, at_hi) | nppm;
+    u16x64 at = std::bit_cast<u16x64>(
+      std::array<u8x64, 2>{at_lo.zip_low_128lanes(at_hi), at_lo.zip_high_128lanes(at_hi)});
+    at |= nppm;
 
-    u64 pinned_bb = concat64(v512::neq16(at0, nppm), v512::neq16(at1, nppm));
+    u64 pinned_bb = at.neq(nppm).to_bits();
 
-    return {Wordboard{std::bit_cast<u16x64>(std::array<v512, 2>{at0, at1})}, Bitboard{pinned_bb}};
+    return {Wordboard{at}, Bitboard{pinned_bb}};
 }
 
 const std::array<Wordboard, 2> Position::calc_attacks_slow() {
