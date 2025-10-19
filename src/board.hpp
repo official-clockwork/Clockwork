@@ -235,29 +235,29 @@ struct Byteboard {
 static_assert(sizeof(Byteboard) == 64);
 
 struct Wordboard {
-    std::array<v512, 2> raw;
+    u16x64 raw = u16x64::zero();
 
     [[nodiscard]] std::array<PieceMask, 64> to_mailbox() const {
         return std::bit_cast<std::array<PieceMask, 64>>(raw);
     }
 
     [[nodiscard]] Bitboard get_attacked_bitboard() const {
-        return Bitboard{concat64(raw[0].nonzero16(), raw[1].nonzero16())};
+        return Bitboard{raw.nonzeros().to_bits()};
     }
 
     [[nodiscard]] Bitboard get_piece_mask_bitboard(PieceMask piece_mask) const {
-        v512 pm = v512::broadcast16(piece_mask.value());
-        return Bitboard{concat64(v512::test16(raw[0], pm), v512::test16(raw[1], pm))};
+        u16x64 pm = u16x64::splat(piece_mask.value());
+        return Bitboard{raw.test(pm).to_bits()};
     }
 
     [[nodiscard]] usize count_matching_mask(PieceMask piece_mask) const {
-        v512 pm = v512::broadcast16(piece_mask.value());
-        return v512::nonzerocount16(raw[0] & pm) + v512::nonzerocount16(raw[1] & pm);
+        u16x64 pm = u16x64::splat(piece_mask.value());
+        return (raw & pm).nonzeros_count();
     }
 
     [[nodiscard]] PieceMask read(Square sq) const {
         PieceMask value;
-        std::memcpy(&value, reinterpret_cast<const char*>(raw.data()) + sq.raw * sizeof(PieceMask),
+        std::memcpy(&value, reinterpret_cast<const char*>(&raw) + sq.raw * sizeof(PieceMask),
                     sizeof(PieceMask));
         return value;
     }
@@ -271,7 +271,7 @@ struct Wordboard {
     }
 
     friend inline Wordboard operator&(const Wordboard& a, const Wordboard& b) {
-        return Wordboard{{a.raw[0] & b.raw[0], a.raw[1] & b.raw[1]}};
+        return Wordboard{a.raw & b.raw};
     }
 
     bool                 operator==(const Wordboard& other) const = default;

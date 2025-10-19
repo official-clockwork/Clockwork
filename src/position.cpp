@@ -204,20 +204,19 @@ void Position::incrementally_move_piece(
     v512 dst_at0 = v512::unpacklo8(dst_at_lo, dst_at_hi);
     v512 dst_at1 = v512::unpackhi8(dst_at_lo, dst_at_hi);
 
-    m_attack_table[0].raw[0] ^=
-      (v512::andnot(src_color0, src_at0)) ^ (v512::andnot(dst_color0, dst_at0));
-    m_attack_table[0].raw[1] ^=
-      (v512::andnot(src_color1, src_at1)) ^ (v512::andnot(dst_color1, dst_at1));
-    m_attack_table[1].raw[0] ^= (src_color0 & src_at0) ^ (dst_color0 & dst_at0);
-    m_attack_table[1].raw[1] ^= (src_color1 & src_at1) ^ (dst_color1 & dst_at1);
+    m_attack_table[0].raw ^= std::bit_cast<u16x64>(std::array<v512, 2>{
+      (v512::andnot(src_color0, src_at0)) ^ (v512::andnot(dst_color0, dst_at0)),
+      (v512::andnot(src_color1, src_at1)) ^ (v512::andnot(dst_color1, dst_at1))});
+    m_attack_table[1].raw ^=
+      std::bit_cast<u16x64>(std::array<v512, 2>{(src_color0 & src_at0) ^ (dst_color0 & dst_at0),
+                                                (src_color1 & src_at1) ^ (dst_color1 & dst_at1)});
 
     add_attacks(color, p.id(), to, p.ptype(), ret);
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
-    v512 mask = v512::broadcast16(~id.to_piece_mask().value());
-    m_attack_table[color].raw[0] &= mask;
-    m_attack_table[color].raw[1] &= mask;
+    u16x64 mask = u16x64::splat(~id.to_piece_mask().value());
+    m_attack_table[color].raw &= mask;
 }
 
 v512 Position::toggle_rays(Square sq) {
@@ -258,10 +257,9 @@ v512 Position::toggle_rays(Square sq) {
     v512 at0 = v512::unpacklo8(at_lo, at_hi);
     v512 at1 = v512::unpackhi8(at_lo, at_hi);
 
-    m_attack_table[0].raw[1] ^= v512::andnot(color1, at1);
-    m_attack_table[0].raw[0] ^= v512::andnot(color0, at0);
-    m_attack_table[1].raw[0] ^= color0 & at0;
-    m_attack_table[1].raw[1] ^= color1 & at1;
+    m_attack_table[0].raw ^= std::bit_cast<u16x64>(
+      std::array<v512, 2>{v512::andnot(color0, at0), v512::andnot(color1, at1)});
+    m_attack_table[1].raw ^= std::bit_cast<u16x64>(std::array<v512, 2>{color0 & at0, color1 & at1});
 
     return ret;
 }
@@ -298,8 +296,7 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v
     v512 m1 = v512::unpackhi8(moves, moves);
 
     v512 bit = v512::broadcast16(id.to_piece_mask().value());
-    m_attack_table[color].raw[0] |= bit & m0;
-    m_attack_table[color].raw[1] |= bit & m1;
+    m_attack_table[color].raw |= std::bit_cast<u16x64>(std::array<v512, 2>{bit & m0, bit & m1});
 }
 
 template<bool UPDATE_PSQT>
@@ -540,7 +537,7 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 
     u64 pinned_bb = concat64(v512::neq16(at0, nppm), v512::neq16(at1, nppm));
 
-    return {Wordboard{at0, at1}, Bitboard{pinned_bb}};
+    return {Wordboard{std::bit_cast<u16x64>(std::array<v512, 2>{at0, at1})}, Bitboard{pinned_bb}};
 }
 
 const std::array<Wordboard, 2> Position::calc_attacks_slow() {
@@ -616,7 +613,7 @@ Wordboard Position::create_attack_table_superpiece_mask(Square                  
     v512 at0 = v512::unpacklo8(result_lo, result_hi);
     v512 at1 = v512::unpackhi8(result_lo, result_hi);
 
-    return {at0, at1};
+    return {std::bit_cast<u16x64>(std::array<v512, 2>{at0, at1})};
 }
 
 std::optional<Position> Position::parse(std::string_view str) {
@@ -929,8 +926,9 @@ HashKey Position::calc_minor_key_slow() const {
     HashKey key = 0;
     for (usize sq_idx = 0; sq_idx < 64; sq_idx++) {
         Place p = m_board.mailbox[sq_idx];
-        if (p.is_empty() || (p.ptype() != PieceType::Knight && p.ptype() != PieceType::Bishop
-            && p.ptype() != PieceType::King)) {
+        if (p.is_empty()
+            || (p.ptype() != PieceType::Knight && p.ptype() != PieceType::Bishop
+                && p.ptype() != PieceType::King)) {
             continue;
         }
         key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
