@@ -73,10 +73,9 @@ inline v512 attackers_from_rays(v512 ray_places) {
     constexpr u8 WPAWN_NEAR = B | Q | K | WP;
     constexpr u8 BPAWN_NEAR = B | Q | K | BP;
 
-    static const v128 PTYPE_TO_BITS{
-      std::array<u8, 16>{{0, 0, WP, BP, N, N, B, B, R, R, Q, Q, K, K, 0, 0}}};
+    static const u8x16 PTYPE_TO_BITS{{0, 0, WP, BP, N, N, B, B, R, R, Q, Q, K, K, 0, 0}};
 
-    static const v512 ATTACKER_MASK = v512{std::array<u8, 64>{
+    static const u8x64 ATTACKER_MASK{{
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // N
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NE
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // E
@@ -87,9 +86,8 @@ inline v512 attackers_from_rays(v512 ray_places) {
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NW
     }};
 
-    v512 bit_rays =
-      v512::permute8(v512::shr16(ray_places, 4) & v512::broadcast8(0x0F), PTYPE_TO_BITS);
-    return v512::gts8_vm(bit_rays & ATTACKER_MASK, v512::zero());
+    u8x64 bit_rays = std::bit_cast<u8x64>(ray_places).shr<4>().swizzle(PTYPE_TO_BITS);
+    return std::bit_cast<v512>(bit_rays.test(ATTACKER_MASK));
 }
 
 inline v512 slider_mask(v512 ray_places) {
