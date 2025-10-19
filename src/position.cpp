@@ -297,14 +297,17 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
     case PieceType::Bishop:
     case PieceType::Rook:
     case PieceType::Queen: {
-        auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-        v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
-        v512 raymask                 = geometry::superpiece_attacks(ray_places, ray_valid);
+        auto [a, b]      = geometry::superpiece_rays(sq);
+        u8x64 ray_coords = std::bit_cast<u8x64>(a);
+        m8x64 ray_valid  = std::bit_cast<m8x64>(b);
+        u8x64 ray_places = ray_coords.swizzle(m_board.to_vector());
+        m8x64 raymask    = std::bit_cast<m8x64>(geometry::superpiece_attacks(
+          std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
 
-        v512 inv_perm  = geometry::superpiece_inverse_rays_avx2(sq);
-        v512 boardmask = v512::permute8(inv_perm, raymask);
+        u8x64 inv_perm  = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(sq));
+        m8x64 boardmask = inv_perm.swizzle(raymask);
 
-        add_attacks(color, id, sq, ptype, boardmask);
+        add_attacks(color, id, sq, ptype, std::bit_cast<v512>(boardmask));
         return;
     }
     }
