@@ -1,15 +1,15 @@
 #pragma once
 
-#include <array>
-#include <bit>
-#include <cstring>
-#include <iosfwd>
-
 #include "bitboard.hpp"
 #include "common.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
+#include <array>
+#include <bit>
+#include <cstring>
+#include <iosfwd>
+#include <lps/lps.hpp>
 
 namespace Clockwork {
 
@@ -197,27 +197,32 @@ struct Byteboard {
         return std::bit_cast<v512>(mailbox);
     }
 
+    [[nodiscard]] u8x64 to_vector() const {
+        return std::bit_cast<u8x64>(mailbox);
+    }
+
     [[nodiscard]] Bitboard get_empty_bitboard() const {
-        return Bitboard{to_vec().zero8()};
+        return Bitboard{to_vector().zeros().to_bits()};
+    }
+
+    [[nodiscard]] Bitboard get_occupied_bitboard() const {
+        return Bitboard{to_vector().nonzeros().to_bits()};
     }
 
     [[nodiscard]] Bitboard get_color_bitboard(Color color) const {
         u64  color_bb = static_cast<u64>(0) - static_cast<u64>(color);
-        auto vec      = to_vec();
-        return Bitboard{~(v512::test8(vec, v512::broadcast8(0x10)) ^ color_bb) & vec.nonzero8()};
+        auto vec      = to_vector();
+        return Bitboard{~vec.test(u8x64::splat(0x10)).to_bits() ^ color_bb}
+             & get_occupied_bitboard();
     }
 
     [[nodiscard]] Bitboard bitboard_for(Color color, PieceType ptype) const {
         Place p{color, ptype, PieceId{0}};
-        return Bitboard{v512::eq8(to_vec() & v512::broadcast8(0xF0), v512::broadcast8(p.raw))};
+        return Bitboard{(to_vector() & u8x64::splat(0xF0)).eq(u8x64::splat(p.raw)).to_bits()};
     }
 
     constexpr Place& operator[](Square sq) {
         return mailbox[sq.raw];
-    }
-
-    [[nodiscard]] Bitboard get_occupied_bitboard() const {
-        return Bitboard{to_vec().nonzero8()};
     }
 
     constexpr Place operator[](Square sq) const {

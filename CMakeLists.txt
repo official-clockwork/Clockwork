@@ -154,7 +154,6 @@ else()
 
     do_test(test_piece_count)
     do_test(test_see)
-    do_test(test_see_prototype)
     do_test(test_is_legal)
     do_test(test_repetition)
     do_test(test_static_vector)

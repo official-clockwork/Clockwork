@@ -53,7 +53,7 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     auto [a, b]      = geometry::superpiece_rays(sq);
     u8x64 ray_coords = std::bit_cast<u8x64>(a);
     m8x64 ray_valid  = std::bit_cast<m8x64>(b);
-    u8x64 ray_places = ray_coords.swizzle(std::bit_cast<u8x64>(pos.board().to_vec()));
+    u8x64 ray_places = ray_coords.swizzle(pos.board().to_vector());
     u8x64 ray_attackers =
       std::bit_cast<m8x64>(geometry::attackers_from_rays(std::bit_cast<v512>(ray_places)))
         .mask(ray_places);
