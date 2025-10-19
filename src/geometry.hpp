@@ -122,20 +122,20 @@ inline v512 slider_mask(v512 ray_places_) {
     return std::bit_cast<v512>(ray_places.eq(ROOK_BISHOP_MASK) | ray_places.eq(QUEEN_MASK));
 }
 
-extern const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
+extern const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
 
 inline v512 superpiece_inverse_rays_avx2(Square sq) {
-    return SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw];
+    return std::bit_cast<v512>(SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw]);
 }
 
-extern const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE;
+extern const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE;
 
 inline v512 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     assert(ptype != PieceType::None);
-    i32  index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
-    v512 bit   = v512::broadcast8(static_cast<u8>(1 << index));
-    v512 table = PIECE_MOVES_AVX2_TABLE[sq.raw];
-    return v512::eq8_vm(table & bit, bit);
+    i32   index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
+    u8x64 bit   = u8x64::splat(static_cast<u8>(1 << index));
+    u8x64 table = PIECE_MOVES_AVX2_TABLE[sq.raw];
+    return std::bit_cast<v512>(table.test(bit));
 }
 
 }
