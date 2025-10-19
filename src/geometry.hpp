@@ -90,13 +90,13 @@ inline v512 attackers_from_rays(v512 ray_places) {
     return std::bit_cast<v512>(bit_rays.test(ATTACKER_MASK));
 }
 
-inline v512 slider_mask(v512 ray_places) {
+inline v512 slider_mask(v512 ray_places_) {
     constexpr u8 R    = static_cast<u8>(PieceType::Rook) << 5;
     constexpr u8 B    = static_cast<u8>(PieceType::Bishop) << 5;
     constexpr u8 Q    = static_cast<u8>(PieceType::Queen) << 5;
     constexpr u8 NONE = 1;
 
-    static const v512 ROOK_BISHOP_MASK = v512{std::array<u8, 64>{
+    static const u8x64 ROOK_BISHOP_MASK{{
       NONE, R, R, R, R, R, R, R,  // N
       NONE, B, B, B, B, B, B, B,  // NE
       NONE, R, R, R, R, R, R, R,  // E
@@ -106,7 +106,7 @@ inline v512 slider_mask(v512 ray_places) {
       NONE, R, R, R, R, R, R, R,  // W
       NONE, B, B, B, B, B, B, B,  // NW
     }};
-    static const v512 QUEEN_MASK       = v512{std::array<u8, 64>{
+    static const u8x64 QUEEN_MASK{{
       NONE, Q, Q, Q, Q, Q, Q, Q,  // N
       NONE, Q, Q, Q, Q, Q, Q, Q,  // NE
       NONE, Q, Q, Q, Q, Q, Q, Q,  // E
@@ -117,8 +117,9 @@ inline v512 slider_mask(v512 ray_places) {
       NONE, Q, Q, Q, Q, Q, Q, Q,  // NW
     }};
 
-    ray_places &= v512::broadcast8(0xE0);
-    return v512::eq8_vm(ray_places, ROOK_BISHOP_MASK) | v512::eq8_vm(ray_places, QUEEN_MASK);
+    u8x64 ray_places = std::bit_cast<u8x64>(ray_places_);
+    ray_places &= u8x64::splat(0xE0);
+    return std::bit_cast<v512>(ray_places.eq(ROOK_BISHOP_MASK) | ray_places.eq(QUEEN_MASK));
 }
 
 extern const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
