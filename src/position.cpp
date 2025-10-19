@@ -220,48 +220,55 @@ void Position::remove_attacks(bool color, PieceId id) {
 }
 
 v512 Position::toggle_rays(Square sq) {
-    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
+    auto [a, b]      = geometry::superpiece_rays(sq);
+    u8x64 ray_coords = std::bit_cast<u8x64>(a);
+    m8x64 ray_valid  = std::bit_cast<m8x64>(b);
+    u8x64 ray_places = ray_coords.swizzle(m_board.to_vector());
 
-    v512 all_sliders     = geometry::slider_mask(ray_places);
-    v512 raymask         = geometry::superpiece_attacks(ray_places, ray_valid);
-    v512 visible_sliders = raymask & all_sliders & ray_places;
+    m8x64 all_sliders =
+      std::bit_cast<m8x64>(geometry::slider_mask(std::bit_cast<v512>(ray_places)));
+    m8x64 raymask         = std::bit_cast<m8x64>(geometry::superpiece_attacks(
+      std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
+    u8x64 visible_sliders = (raymask & all_sliders).mask(ray_places);
 
-    v512 slider_ids = v512::sliderbroadcast(visible_sliders & v512::broadcast8(0x1F));
+    u8x64 slider_ids = geometry::slider_broadcast(visible_sliders & u8x64::splat(0x1F));
 
-    slider_ids = v512{slider_ids.raw[1], slider_ids.raw[0]} & raymask;  // flip rays
-    slider_ids |= raymask & v512::broadcast8(0x20);  // pack information for efficiency
+    slider_ids = raymask.mask(geometry::flip_rays(slider_ids));  // flip rays
+    slider_ids |= raymask.mask(u8x64::splat(0x20));              // pack information for efficiency
 
-    v512 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
+    u8x64 inv_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(sq));
 
     // Transform into board layout
-    slider_ids = v512::permute8(inv_perm, slider_ids);
+    slider_ids = inv_perm.swizzle(slider_ids);
 
     // Recover color information
-    v512 color = v512::eq8_vm(slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
+    u8x64 col = std::bit_cast<u8x64>(slider_ids).test(u8x64::splat(0x10)).to_vector();
     // Recover ray mask information
-    v512 ret = v512::eq8_vm(slider_ids & v512::broadcast8(0x20), v512::broadcast8(0x20));
+    m8x64 ret = std::bit_cast<u8x64>(slider_ids).test(u8x64::splat(0x20));
+
+    slider_ids &= u8x64::splat(0x0F);
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
-    static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
-                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-    static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    v512              at_lo = v512::permute8(slider_ids, BITS_LO);
-    v512              at_hi = v512::permute8(slider_ids, BITS_HI);
+    static const u8x16 BITS_LO{{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+                                0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+    u8x64              at_lo = std::bit_cast<u8x64>(slider_ids).swizzle(BITS_LO);
+    u8x64              at_hi = std::bit_cast<u8x64>(slider_ids).swizzle(BITS_HI);
 
-    v512 color0 = v512::unpacklo8(color, color);
-    v512 color1 = v512::unpackhi8(color, color);
+    u8x64  color0 = col.zip_low_128lanes(col);
+    u8x64  color1 = col.zip_high_128lanes(col);
+    u16x64 color  = std::bit_cast<u16x64>(std::array<u8x64, 2>{color0, color1});
 
-    v512 at0 = v512::unpacklo8(at_lo, at_hi);
-    v512 at1 = v512::unpackhi8(at_lo, at_hi);
+    u8x64  at0 = at_lo.zip_low_128lanes(at_hi);
+    u8x64  at1 = at_lo.zip_high_128lanes(at_hi);
+    u16x64 at  = std::bit_cast<u16x64>(std::array<u8x64, 2>{at0, at1});
 
-    m_attack_table[0].raw ^= std::bit_cast<u16x64>(
-      std::array<v512, 2>{v512::andnot(color0, at0), v512::andnot(color1, at1)});
-    m_attack_table[1].raw ^= std::bit_cast<u16x64>(std::array<v512, 2>{color0 & at0, color1 & at1});
+    m_attack_table[0].raw ^= lps::generic::andnot(color, at);
+    m_attack_table[1].raw ^= color & at;
 
-    return ret;
+    return std::bit_cast<v512>(ret);
 }
 
 void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
