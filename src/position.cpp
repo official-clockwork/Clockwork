@@ -64,8 +64,8 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
     }
     updates.adds.push_back({pcolor, ptype, to});
 
-    v512 m = toggle_rays(to);
-    add_attacks(color, p.id(), to, p.ptype(), std::bit_cast<m8x64>(m));
+    m8x64 m = toggle_rays(to);
+    add_attacks(color, p.id(), to, p.ptype(), m);
 }
 
 void Position::incrementally_mutate_piece(
@@ -233,7 +233,7 @@ void Position::remove_attacks(bool color, PieceId id) {
     m_attack_table[color].raw &= mask;
 }
 
-v512 Position::toggle_rays(Square sq) {
+m8x64 Position::toggle_rays(Square sq) {
     auto [a, b]      = geometry::superpiece_rays(sq);
     u8x64 ray_coords = std::bit_cast<u8x64>(a);
     m8x64 ray_valid  = std::bit_cast<m8x64>(b);
@@ -282,7 +282,7 @@ v512 Position::toggle_rays(Square sq) {
     m_attack_table[0].raw ^= lps::generic::andnot(color, at);
     m_attack_table[1].raw ^= color & at;
 
-    return std::bit_cast<v512>(ret);
+    return ret;
 }
 
 void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {

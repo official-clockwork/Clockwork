@@ -310,10 +310,10 @@ private:
     void
     incrementally_move_piece(bool color, Square from, Square to, Place p, PsqtUpdates& updates);
 
-    void remove_attacks(bool color, PieceId id);
-    v512 toggle_rays(Square sq);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask);
+    void  remove_attacks(bool color, PieceId id);
+    m8x64 toggle_rays(Square sq);
+    void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
+    void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask);
 };
 
 }
