@@ -45,8 +45,10 @@ inline std::tuple<v512, v512> superpiece_rays(Square sq) {
 }
 
 inline v512 superpiece_attacks(v512 ray_places, v512 ray_valid) {
-    return v512::andnot(v512::eq8_vm(ray_places, v512::sub64(ray_places, v512::broadcast64(0x101))),
-                        ray_valid);
+    return std::bit_cast<v512>(lps::generic::andnot(
+      std::bit_cast<u8x64>(ray_places)
+        .eq(std::bit_cast<u8x64>(std::bit_cast<u64x8>(ray_places) - u64x8::splat(0x101))),
+      std::bit_cast<m8x64>(ray_valid)));
 }
 
 inline u64 closest(u64 occupied) {
