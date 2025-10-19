@@ -44,7 +44,7 @@ public:
 
     static constexpr Bitboard rank_mask(i32 rank) {
         assert(rank >= 0 && rank <= 7);
-        return Bitboard{static_cast<u64>(0xFF) << rank};
+        return Bitboard{static_cast<u64>(0xFF) << (8 * rank)};
     }
 
     static constexpr Bitboard central_files() {
