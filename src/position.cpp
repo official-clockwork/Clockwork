@@ -602,10 +602,13 @@ const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
 
 Wordboard Position::create_attack_table_superpiece_mask(Square                   sq,
                                                         CreateSuperpieceMaskInfo cmi_arg) const {
-    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
-    v512 inverse_perm            = geometry::superpiece_inverse_rays_avx2(sq);
-    v512 ray_extent              = geometry::superpiece_attacks(ray_places, ray_valid);
+    auto [a, b]        = geometry::superpiece_rays(sq);
+    u8x64 ray_coords   = std::bit_cast<u8x64>(a);
+    m8x64 ray_valid    = std::bit_cast<m8x64>(b);
+    u8x64 ray_places   = ray_coords.swizzle(m_board.to_vector());
+    u8x64 inverse_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(sq));
+    m8x64 ray_extent   = std::bit_cast<m8x64>(geometry::superpiece_attacks(
+      std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
 
     // Ordering needs to be consistent with CreateSuperpieceMaskInfo
     constexpr usize DIAG       = 1;
@@ -616,7 +619,7 @@ Wordboard Position::create_attack_table_superpiece_mask(Square                  
     constexpr usize BPAWN_NEAR = 6;
     static_assert(sizeof(CreateSuperpieceMaskInfo) == sizeof(__m128i));
 
-    const v512 IDXS{std::array<u8, 64>{{
+    const u8x64 IDXS{{
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // N
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NE
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // E
@@ -625,21 +628,22 @@ Wordboard Position::create_attack_table_superpiece_mask(Square                  
       HORSE, WPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // SW
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // W
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NW
-    }}};
+    }};
 
-    v128 cmi = std::bit_cast<v128>(cmi_arg);
-    v128 lo{_mm_packus_epi16((cmi & v128::broadcast16(0xFF)).raw, _mm_setzero_si128())};
-    v128 hi{_mm_packus_epi16(v128::shr16(cmi, 8).raw, _mm_setzero_si128())};
+    u16x8 cmi = std::bit_cast<u16x8>(cmi_arg);
+    u8x16 lo  = (cmi & u16x8::splat(0xFF)).convert<u8>();
+    u8x16 hi  = cmi.shr<8>().convert<u8>();
 
-    v512 board_idxs = v512::permute8(inverse_perm, IDXS & ray_extent);
+    u8x64 board_idxs = inverse_perm.swizzle(ray_extent.mask(IDXS));
 
-    v512 result_lo = v512::permute8(board_idxs, lo);
-    v512 result_hi = v512::permute8(board_idxs, hi);
+    u8x64 result_lo = board_idxs.swizzle(lo);
+    u8x64 result_hi = board_idxs.swizzle(hi);
 
-    v512 at0 = v512::unpacklo8(result_lo, result_hi);
-    v512 at1 = v512::unpackhi8(result_lo, result_hi);
+    u8x64  at0 = result_lo.zip_low_128lanes(result_hi);
+    u8x64  at1 = result_lo.zip_high_128lanes(result_hi);
+    u16x64 at  = std::bit_cast<u16x64>(std::array<u8x64, 2>{at0, at1});
 
-    return {std::bit_cast<u16x64>(std::array<v512, 2>{at0, at1})};
+    return {at};
 }
 
 std::optional<Position> Position::parse(std::string_view str) {
