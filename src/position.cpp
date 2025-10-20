@@ -522,15 +522,17 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     v512 maybe_pinned = v512::andnot(enemy, closest);
 
     // Find enemy sliders of the correct type
-    v512 maybe_pinner1 = enemy & geometry::slider_mask(ray_places);
+    m8x64 maybe_pinner1 = std::bit_cast<m8x64>(enemy & geometry::slider_mask(ray_places));
 
     // Find second-closest pieces along each ray
-    v512 not_closest   = v512::andnot(closest, occupied);
-    v512 pin_raymask   = geometry::superpiece_attacks(not_closest, ray_valid);
-    v512 maybe_pinner2 = not_closest & pin_raymask;
+    m8x64 not_closest =
+      lps::generic::andnot(std::bit_cast<m8x64>(closest), std::bit_cast<m8x64>(occupied));
+    m8x64 pin_raymask   = std::bit_cast<m8x64>(geometry::superpiece_attacks(
+      std::bit_cast<v512>(not_closest), std::bit_cast<v512>(ray_valid)));
+    m8x64 maybe_pinner2 = not_closest & pin_raymask;
 
     // Pinners are second-closest pieces that are enemy sliders of the correct type.
-    v512 pinner = maybe_pinner1 & maybe_pinner2;
+    m8x64 pinner = maybe_pinner1 & maybe_pinner2;
 
     // Does this ray have a pinner?
     m64x8 no_pinner_mask = std::bit_cast<m64x8>(pinner).to_vector().zeros();
