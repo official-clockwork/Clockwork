@@ -50,14 +50,10 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     }
 
     // Extract all possible attackers to our position
-    auto [a, b]      = geometry::superpiece_rays(sq);
-    u8x64 ray_coords = std::bit_cast<u8x64>(a);
-    m8x64 ray_valid  = std::bit_cast<m8x64>(b);
-    u8x64 ray_places = ray_coords.swizzle(pos.board().to_vector());
-    u8x64 ray_attackers =
-      std::bit_cast<m8x64>(geometry::attackers_from_rays(std::bit_cast<v512>(ray_places)))
-        .mask(ray_places);
-    u8x64 ptypes = ray_valid.mask(ray_attackers & u8x64::splat(Place::PTYPE_MASK));
+    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
+    u8x64 ray_places             = ray_coords.swizzle(pos.board().to_vector());
+    u8x64 ray_attackers          = geometry::attackers_from_rays(ray_places).mask(ray_places);
+    u8x64 ptypes                 = ray_valid.mask(ray_attackers & u8x64::splat(Place::PTYPE_MASK));
 
     // Bitrays (not bitboards)
     u64 color     = ray_places.test(u8x64::splat(Place::COLOR_MASK)).to_bits();

@@ -26,7 +26,7 @@ forceinline std::tuple<u8x64, vm8x64> compress_coords(u8x64 list) {
 
 }  // namespace internal
 
-inline std::tuple<v512, v512> superpiece_rays(Square sq) {
+inline std::tuple<u8x64, m8x64> superpiece_rays(Square sq) {
     static const u8x64 OFFSETS{{
       0x1F, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,  // N
       0x21, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,  // NE
@@ -40,15 +40,13 @@ inline std::tuple<v512, v512> superpiece_rays(Square sq) {
 
     u8x64 sq_vec       = u8x64::splat(internal::expand_sq(sq));
     u8x64 uncompressed = sq_vec + OFFSETS;
-    auto [a, b]        = internal::compress_coords(std::bit_cast<u8x64>(uncompressed));
-    return {std::bit_cast<v512>(a), std::bit_cast<v512>(b)};
+    return internal::compress_coords(std::bit_cast<u8x64>(uncompressed));
 }
 
-inline v512 superpiece_attacks(v512 ray_places, v512 ray_valid) {
-    return std::bit_cast<v512>(lps::generic::andnot(
-      std::bit_cast<u8x64>(ray_places)
-        .eq(std::bit_cast<u8x64>(std::bit_cast<u64x8>(ray_places) - u64x8::splat(0x101))),
-      std::bit_cast<m8x64>(ray_valid)));
+inline m8x64 superpiece_attacks(u8x64 ray_places, m8x64 ray_valid) {
+    return lps::generic::andnot(
+      ray_places.eq(std::bit_cast<u8x64>(std::bit_cast<u64x8>(ray_places) - u64x8::splat(0x101))),
+      ray_valid);
 }
 
 inline u64 closest(u64 occupied) {
@@ -57,7 +55,7 @@ inline u64 closest(u64 occupied) {
     return x & occupied;
 }
 
-inline v512 attackers_from_rays(v512 ray_places) {
+inline m8x64 attackers_from_rays(u8x64 ray_places) {
     constexpr u8 K  = 1 << 0;
     constexpr u8 WP = 1 << 1;
     constexpr u8 BP = 1 << 2;
@@ -86,11 +84,11 @@ inline v512 attackers_from_rays(v512 ray_places) {
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NW
     }};
 
-    u8x64 bit_rays = std::bit_cast<u8x64>(ray_places).shr<4>().swizzle(PTYPE_TO_BITS);
-    return std::bit_cast<v512>(bit_rays.test(ATTACKER_MASK));
+    u8x64 bit_rays = ray_places.shr<4>().swizzle(PTYPE_TO_BITS);
+    return bit_rays.test(ATTACKER_MASK);
 }
 
-inline v512 slider_mask(v512 ray_places_) {
+inline m8x64 slider_mask(u8x64 ray_places) {
     constexpr u8 R    = static_cast<u8>(PieceType::Rook) << 5;
     constexpr u8 B    = static_cast<u8>(PieceType::Bishop) << 5;
     constexpr u8 Q    = static_cast<u8>(PieceType::Queen) << 5;
@@ -117,25 +115,24 @@ inline v512 slider_mask(v512 ray_places_) {
       NONE, Q, Q, Q, Q, Q, Q, Q,  // NW
     }};
 
-    u8x64 ray_places = std::bit_cast<u8x64>(ray_places_);
     ray_places &= u8x64::splat(0xE0);
-    return std::bit_cast<v512>(ray_places.eq(ROOK_BISHOP_MASK) | ray_places.eq(QUEEN_MASK));
+    return ray_places.eq(ROOK_BISHOP_MASK) | ray_places.eq(QUEEN_MASK);
 }
 
 extern const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
 
-inline v512 superpiece_inverse_rays_avx2(Square sq) {
-    return std::bit_cast<v512>(SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw]);
+inline u8x64 superpiece_inverse_rays_avx2(Square sq) {
+    return SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw];
 }
 
 extern const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE;
 
-inline v512 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
+inline m8x64 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     assert(ptype != PieceType::None);
     i32   index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
     u8x64 bit   = u8x64::splat(static_cast<u8>(1 << index));
     u8x64 table = PIECE_MOVES_AVX2_TABLE[sq.raw];
-    return std::bit_cast<v512>(table.test(bit));
+    return table.test(bit);
 }
 
 inline u8x64 slider_broadcast(u8x64 x) {

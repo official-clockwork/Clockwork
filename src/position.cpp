@@ -114,13 +114,9 @@ void Position::incrementally_move_piece(
   bool color, Square from, Square to, Place p, PsqtUpdates& updates) {
     remove_attacks(color, p.id());
 
-    auto [src_a, src_b]  = geometry::superpiece_rays(from);
-    u8x64 src_ray_coords = std::bit_cast<u8x64>(src_a);
-    m8x64 src_ray_valid  = std::bit_cast<m8x64>(src_b);
-    auto [dst_a, dst_b]  = geometry::superpiece_rays(to);
-    u8x64 dst_ray_coords = std::bit_cast<u8x64>(dst_a);
-    m8x64 dst_ray_valid  = std::bit_cast<m8x64>(dst_b);
-    u8x64 src_ray_places = src_ray_coords.swizzle(m_board.to_vector());
+    auto [src_ray_coords, src_ray_valid] = geometry::superpiece_rays(from);
+    auto [dst_ray_coords, dst_ray_valid] = geometry::superpiece_rays(to);
+    u8x64 src_ray_places                 = src_ray_coords.swizzle(m_board.to_vector());
 
     PieceType ptype = m_board[from].ptype();
 
@@ -160,14 +156,10 @@ void Position::incrementally_move_piece(
 
     u8x64 dst_ray_places = dst_ray_coords.swizzle(m_board.to_vector());
 
-    m8x64 src_all_sliders =
-      std::bit_cast<m8x64>(geometry::slider_mask(std::bit_cast<v512>(src_ray_places)));
-    m8x64 dst_all_sliders =
-      std::bit_cast<m8x64>(geometry::slider_mask(std::bit_cast<v512>(dst_ray_places)));
-    m8x64 src_raymask         = std::bit_cast<m8x64>(geometry::superpiece_attacks(
-      std::bit_cast<v512>(src_ray_places), std::bit_cast<v512>(src_ray_valid)));
-    m8x64 dst_raymask         = std::bit_cast<m8x64>(geometry::superpiece_attacks(
-      std::bit_cast<v512>(dst_ray_places), std::bit_cast<v512>(dst_ray_valid)));
+    m8x64 src_all_sliders     = geometry::slider_mask(src_ray_places);
+    m8x64 dst_all_sliders     = geometry::slider_mask(dst_ray_places);
+    m8x64 src_raymask         = geometry::superpiece_attacks(src_ray_places, src_ray_valid);
+    m8x64 dst_raymask         = geometry::superpiece_attacks(dst_ray_places, dst_ray_valid);
     u8x64 src_visible_sliders = (src_raymask & src_all_sliders).mask(src_ray_places);
     u8x64 dst_visible_sliders = (dst_raymask & dst_all_sliders).mask(dst_ray_places);
 
@@ -178,8 +170,8 @@ void Position::incrementally_move_piece(
     dst_slider_ids = dst_raymask.mask(geometry::flip_rays(dst_slider_ids));  // flip rays
     dst_slider_ids |= dst_raymask.mask(u8x64::splat(0x20));  // pack information for efficiency
 
-    u8x64 src_inv_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(from));
-    u8x64 dst_inv_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(to));
+    u8x64 src_inv_perm = geometry::superpiece_inverse_rays_avx2(from);
+    u8x64 dst_inv_perm = geometry::superpiece_inverse_rays_avx2(to);
 
     // Transform into board layout
     src_slider_ids = src_inv_perm.swizzle(src_slider_ids);
@@ -234,15 +226,11 @@ void Position::remove_attacks(bool color, PieceId id) {
 }
 
 m8x64 Position::toggle_rays(Square sq) {
-    auto [a, b]      = geometry::superpiece_rays(sq);
-    u8x64 ray_coords = std::bit_cast<u8x64>(a);
-    m8x64 ray_valid  = std::bit_cast<m8x64>(b);
-    u8x64 ray_places = ray_coords.swizzle(m_board.to_vector());
+    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
 
-    m8x64 all_sliders =
-      std::bit_cast<m8x64>(geometry::slider_mask(std::bit_cast<v512>(ray_places)));
-    m8x64 raymask         = std::bit_cast<m8x64>(geometry::superpiece_attacks(
-      std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
+    m8x64 all_sliders     = geometry::slider_mask(ray_places);
+    m8x64 raymask         = geometry::superpiece_attacks(ray_places, ray_valid);
     u8x64 visible_sliders = (raymask & all_sliders).mask(ray_places);
 
     u8x64 slider_ids = geometry::slider_broadcast(visible_sliders & u8x64::splat(0x1F));
@@ -250,7 +238,7 @@ m8x64 Position::toggle_rays(Square sq) {
     slider_ids = raymask.mask(geometry::flip_rays(slider_ids));  // flip rays
     slider_ids |= raymask.mask(u8x64::splat(0x20));              // pack information for efficiency
 
-    u8x64 inv_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(sq));
+    u8x64 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
 
     // Transform into board layout
     slider_ids = inv_perm.swizzle(slider_ids);
@@ -297,14 +285,11 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
     case PieceType::Bishop:
     case PieceType::Rook:
     case PieceType::Queen: {
-        auto [a, b]      = geometry::superpiece_rays(sq);
-        u8x64 ray_coords = std::bit_cast<u8x64>(a);
-        m8x64 ray_valid  = std::bit_cast<m8x64>(b);
-        u8x64 ray_places = ray_coords.swizzle(m_board.to_vector());
-        m8x64 raymask    = std::bit_cast<m8x64>(geometry::superpiece_attacks(
-          std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
+        auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
+        u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
+        m8x64 raymask                = geometry::superpiece_attacks(ray_places, ray_valid);
 
-        u8x64 inv_perm  = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(sq));
+        u8x64 inv_perm  = geometry::superpiece_inverse_rays_avx2(sq);
         m8x64 boardmask = inv_perm.swizzle(raymask);
 
         add_attacks(color, id, sq, ptype, boardmask);
@@ -314,7 +299,7 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
 }
 
 void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask) {
-    u8x64 moves = mask.mask(std::bit_cast<u8x64>(geometry::piece_moves_avx2(color, ptype, sq)));
+    u8x64 moves = (mask & geometry::piece_moves_avx2(color, ptype, sq)).to_vector();
 
     u8x64  m0 = moves.zip_low_128lanes(moves);
     u8x64  m1 = moves.zip_high_128lanes(moves);
@@ -505,11 +490,9 @@ Position Position::null_move() const {
 std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     Square king_square = king_sq(m_active_color);
 
-    auto [a, b]        = geometry::superpiece_rays(king_square);
-    u8x64 ray_coords   = std::bit_cast<u8x64>(a);
-    m8x64 ray_valid    = std::bit_cast<m8x64>(b);
-    u8x64 ray_places   = ray_coords.swizzle(m_board.to_vector());
-    u8x64 inverse_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(king_square));
+    auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
+    u8x64 inverse_perm           = geometry::superpiece_inverse_rays_avx2(king_square);
 
     // Ignore horse moves
     ray_valid &= m8x64{0xFEFEFEFEFEFEFEFE};
@@ -520,20 +503,15 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     u8x64 enemy_color = u8x64::splat(m_active_color == Color::White ? Place::COLOR_MASK : 0);
     m8x64 enemy       = occupied & (ray_places & color_mask).eq(enemy_color);
 
-    m8x64 closest = occupied
-                  & std::bit_cast<m8x64>(geometry::superpiece_attacks(
-                    std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
+    m8x64 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
     m8x64 maybe_pinned = lps::generic::andnot(enemy, closest);
 
     // Find enemy sliders of the correct type
-    m8x64 maybe_pinner1 =
-      enemy & std::bit_cast<m8x64>(geometry::slider_mask(std::bit_cast<v512>(ray_places)));
+    m8x64 maybe_pinner1 = enemy & geometry::slider_mask(ray_places);
 
     // Find second-closest pieces along each ray
-    m8x64 not_closest =
-      lps::generic::andnot(std::bit_cast<m8x64>(closest), std::bit_cast<m8x64>(occupied));
-    m8x64 pin_raymask   = std::bit_cast<m8x64>(geometry::superpiece_attacks(
-      std::bit_cast<v512>(not_closest), std::bit_cast<v512>(ray_valid)));
+    m8x64 not_closest   = lps::generic::andnot(closest, occupied);
+    m8x64 pin_raymask   = geometry::superpiece_attacks(not_closest.to_vector(), ray_valid);
     m8x64 maybe_pinner2 = not_closest & pin_raymask;
 
     // Pinners are second-closest pieces that are enemy sliders of the correct type.
@@ -541,12 +519,11 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 
     // Does this ray have a pinner?
     m64x8 no_pinner_mask = std::bit_cast<m64x8>(pinner).to_vector().zeros();
-    m8x64 pinned         = lps::generic::andnot(std::bit_cast<m8x64>(no_pinner_mask),
-                                                std::bit_cast<m8x64>(maybe_pinned));
+    m8x64 pinned         = lps::generic::andnot(std::bit_cast<m8x64>(no_pinner_mask), maybe_pinned);
 
     u8x64 nonmasked_pinned_ids =
-      geometry::lane_broadcast(pinned.mask(std::bit_cast<u8x64>(ray_places) & u8x64::splat(0xF)));
-    u8x64 pinned_ids = std::bit_cast<m8x64>(pin_raymask).mask(nonmasked_pinned_ids);
+      geometry::lane_broadcast(pinned.mask(ray_places & u8x64::splat(0xF)));
+    u8x64 pinned_ids = pin_raymask.mask(nonmasked_pinned_ids);
     // Transform into board layout
     pinned_ids = inverse_perm.swizzle(pinned_ids);
 
@@ -561,8 +538,8 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
     static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    u8x64              at_lo = std::bit_cast<u8x64>(pinned_ids).swizzle(BITS_LO);
-    u8x64              at_hi = std::bit_cast<u8x64>(pinned_ids).swizzle(BITS_HI);
+    u8x64              at_lo = pinned_ids.swizzle(BITS_LO);
+    u8x64              at_hi = pinned_ids.swizzle(BITS_HI);
 
     u16x64 nppm = u16x64::splat(nonpinned_piece_mask);
 
@@ -587,16 +564,12 @@ const std::array<Wordboard, 2> Position::calc_attacks_slow() {
 }
 
 const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
-    auto [a, b]      = geometry::superpiece_rays(sq);
-    u8x64 ray_coords = std::bit_cast<u8x64>(a);
-    m8x64 ray_valid  = std::bit_cast<m8x64>(b);
-    u8x64 ray_places = ray_coords.swizzle(m_board.to_vector());
+    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
 
-    m8x64 color   = ray_places.test(u8x64::splat(0x10));
-    m8x64 visible = std::bit_cast<m8x64>(geometry::superpiece_attacks(
-      std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
-    m8x64 attackers =
-      std::bit_cast<m8x64>(geometry::attackers_from_rays(std::bit_cast<v512>(ray_places)));
+    m8x64 color             = ray_places.test(u8x64::splat(0x10));
+    m8x64 visible           = geometry::superpiece_attacks(ray_places, ray_valid);
+    m8x64 attackers         = geometry::attackers_from_rays(ray_places);
     m8x64 visible_attackers = visible & attackers;
     m8x64 white_attackers   = ~color & visible_attackers;
     m8x64 black_attackers   = color & visible_attackers;
@@ -615,13 +588,10 @@ const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
 
 Wordboard Position::create_attack_table_superpiece_mask(Square                   sq,
                                                         CreateSuperpieceMaskInfo cmi_arg) const {
-    auto [a, b]        = geometry::superpiece_rays(sq);
-    u8x64 ray_coords   = std::bit_cast<u8x64>(a);
-    m8x64 ray_valid    = std::bit_cast<m8x64>(b);
-    u8x64 ray_places   = ray_coords.swizzle(m_board.to_vector());
-    u8x64 inverse_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(sq));
-    m8x64 ray_extent   = std::bit_cast<m8x64>(geometry::superpiece_attacks(
-      std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
+    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
+    u8x64 inverse_perm           = geometry::superpiece_inverse_rays_avx2(sq);
+    m8x64 ray_extent             = geometry::superpiece_attacks(ray_places, ray_valid);
 
     // Ordering needs to be consistent with CreateSuperpieceMaskInfo
     constexpr usize DIAG       = 1;
