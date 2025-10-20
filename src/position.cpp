@@ -505,26 +505,29 @@ Position Position::null_move() const {
 std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     Square king_square = king_sq(m_active_color);
 
-    auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);
-    v512  ray_places             = v512::permute8(ray_coords, m_board.to_vec());
+    auto [a, b]        = geometry::superpiece_rays(king_square);
+    u8x64 ray_coords   = std::bit_cast<u8x64>(a);
+    m8x64 ray_valid    = std::bit_cast<m8x64>(b);
+    u8x64 ray_places   = ray_coords.swizzle(m_board.to_vector());
     u8x64 inverse_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(king_square));
 
     // Ignore horse moves
-    ray_valid &= v512::broadcast64(0xFFFFFFFFFFFFFF00);
+    ray_valid &= m8x64{0xFEFEFEFEFEFEFEFE};
 
-    m8x64 occupied = lps::generic::andnot(std::bit_cast<u8x64>(ray_places).zeros(),
-                                          std::bit_cast<m8x64>(ray_valid));
+    m8x64 occupied = lps::generic::andnot(ray_places.zeros(), ray_valid);
 
     u8x64 color_mask  = u8x64::splat(Place::COLOR_MASK);
     u8x64 enemy_color = u8x64::splat(m_active_color == Color::White ? Place::COLOR_MASK : 0);
-    m8x64 enemy       = occupied & (std::bit_cast<u8x64>(ray_places) & color_mask).eq(enemy_color);
+    m8x64 enemy       = occupied & (ray_places & color_mask).eq(enemy_color);
 
-    m8x64 closest =
-      occupied & std::bit_cast<m8x64>(geometry::superpiece_attacks(ray_places, ray_valid));
+    m8x64 closest = occupied
+                  & std::bit_cast<m8x64>(geometry::superpiece_attacks(
+                    std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
     m8x64 maybe_pinned = lps::generic::andnot(enemy, closest);
 
     // Find enemy sliders of the correct type
-    m8x64 maybe_pinner1 = enemy & std::bit_cast<m8x64>(geometry::slider_mask(ray_places));
+    m8x64 maybe_pinner1 =
+      enemy & std::bit_cast<m8x64>(geometry::slider_mask(std::bit_cast<v512>(ray_places)));
 
     // Find second-closest pieces along each ray
     m8x64 not_closest =
