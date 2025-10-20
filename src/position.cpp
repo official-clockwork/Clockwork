@@ -578,25 +578,29 @@ const std::array<Wordboard, 2> Position::calc_attacks_slow() {
 }
 
 const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
-    auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
+    auto [a, b]      = geometry::superpiece_rays(sq);
+    u8x64 ray_coords = std::bit_cast<u8x64>(a);
+    m8x64 ray_valid  = std::bit_cast<m8x64>(b);
+    u8x64 ray_places = ray_coords.swizzle(m_board.to_vector());
 
-    u64  color             = v512::test8(ray_places, v512::broadcast8(0x10));
-    v512 visible           = geometry::superpiece_attacks(ray_places, ray_valid);
-    v512 attackers         = geometry::attackers_from_rays(ray_places);
-    u64  visible_attackers = (visible & attackers).nonzero8();
-    u64  white_attackers   = ~color & visible_attackers;
-    u64  black_attackers   = color & visible_attackers;
+    m8x64 color   = ray_places.test(u8x64::splat(0x10));
+    m8x64 visible = std::bit_cast<m8x64>(geometry::superpiece_attacks(
+      std::bit_cast<v512>(ray_places), std::bit_cast<v512>(ray_valid)));
+    m8x64 attackers =
+      std::bit_cast<m8x64>(geometry::attackers_from_rays(std::bit_cast<v512>(ray_places)));
+    m8x64 visible_attackers = visible & attackers;
+    m8x64 white_attackers   = ~color & visible_attackers;
+    m8x64 black_attackers   = color & visible_attackers;
 
-    i32  white_attackers_count = std::popcount(white_attackers);
-    i32  black_attackers_count = std::popcount(black_attackers);
-    v128 white_attackers_coord = v512::compress8(white_attackers, ray_coords).to128();
-    v128 black_attackers_coord = v512::compress8(black_attackers, ray_coords).to128();
+    usize white_attackers_count = white_attackers.popcount();
+    usize black_attackers_count = black_attackers.popcount();
+    u8x16 white_attackers_coord = white_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
+    u8x16 black_attackers_coord = black_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
     return {
-      PieceMask{
-        findset8(white_attackers_coord, white_attackers_count, m_piece_list_sq[0].to_vec())},
-      PieceMask{
-        findset8(black_attackers_coord, black_attackers_count, m_piece_list_sq[1].to_vec())},
+      PieceMask{findset8(std::bit_cast<v128>(white_attackers_coord), white_attackers_count,
+                         m_piece_list_sq[0].to_vec())},
+      PieceMask{findset8(std::bit_cast<v128>(black_attackers_coord), black_attackers_count,
+                         m_piece_list_sq[1].to_vec())},
     };
 }
 
