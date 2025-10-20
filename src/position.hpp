@@ -28,25 +28,26 @@ struct alignas(16) PieceList {
         return array[id.raw];
     }
 
-    [[nodiscard]] v128 to_vec() const {
-        static_assert(sizeof(array) == sizeof(v128));
-        return v128::load(array.data());
+    [[nodiscard]] u8x16 to_vector() const {
+        return std::bit_cast<u8x16>(array);
     }
 
     [[nodiscard]] PieceMask mask_valid() const {
-        return PieceMask{to_vec().nonzero8()};
+        return PieceMask{to_vector().nonzeros().to_bits()};
     }
 
     [[nodiscard]] PieceMask mask_eq(PieceType ptype) const {
-        return PieceMask{v128::eq8(to_vec(), v128::broadcast8(static_cast<u8>(ptype)))};
+        return PieceMask{to_vector().eq(u8x16::splat(static_cast<u8>(ptype))).to_bits()};
     }
 
     template<PieceType... ptype>
     [[nodiscard]] PieceMask mask_eq() const {
         constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
-        const v128 to_bits{std::array<u8, 16>{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0, 0,
-                                              0, 0, 0, 0, 0, 0}};
-        return PieceMask{(v128::permute8(to_vec(), to_bits) & v128::broadcast8(bits)).nonzero8()};
+        const u8x16  to_bits{{
+          0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+          0, 0, 0, 0, 0, 0, 0, 0,                          //
+        }};
+        return PieceMask{(to_vector().swizzle(to_bits) & u8x16::splat(bits)).nonzeros().to_bits()};
     }
 
     constexpr bool operator==(const PieceList& other) const {

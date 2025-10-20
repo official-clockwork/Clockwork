@@ -579,10 +579,10 @@ const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
     u8x16 white_attackers_coord = white_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
     u8x16 black_attackers_coord = black_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
     return {
-      PieceMask{findset8(std::bit_cast<v128>(white_attackers_coord), white_attackers_count,
-                         m_piece_list_sq[0].to_vec())},
-      PieceMask{findset8(std::bit_cast<v128>(black_attackers_coord), black_attackers_count,
-                         m_piece_list_sq[1].to_vec())},
+      PieceMask{geometry::find_set(white_attackers_coord, white_attackers_count,
+                                   m_piece_list_sq[0].to_vector())},
+      PieceMask{geometry::find_set(black_attackers_coord, black_attackers_count,
+                                   m_piece_list_sq[1].to_vector())},
     };
 }
 

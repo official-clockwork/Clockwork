@@ -156,4 +156,12 @@ inline u8x64 flip_rays(u8x64 x) {
     return std::bit_cast<u8x64>(std::array<u8x32, 2>{y[1], y[0]});
 }
 
+inline u16 find_set(u8x16 needle, usize needle_count, u8x16 haystack) {
+    u16 result = 0;
+    for (usize i = 0; i < needle_count; ++i) {
+        result |= haystack.eq(u8x16::splat(needle.read(i))).to_bits();
+    }
+    return result;
+}
+
 }
