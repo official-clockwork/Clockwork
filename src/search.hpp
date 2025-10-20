@@ -153,7 +153,7 @@ public:
     }
 
     [[nodiscard]] Value get_draw_score() const {
-        return (search_nodes() & 3) - 2; // Randomize between -2 and +2 
+        return (search_nodes() & 3) - 2;  // Randomize between -2 and +2
     }
 
 private:
