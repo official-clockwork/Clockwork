@@ -193,10 +193,6 @@ static_assert(sizeof(Place) == sizeof(u8));
 struct Byteboard {
     std::array<Place, 64> mailbox;
 
-    [[nodiscard]] v512 to_vec() const {
-        return std::bit_cast<v512>(mailbox);
-    }
-
     [[nodiscard]] u8x64 to_vector() const {
         return std::bit_cast<u8x64>(mailbox);
     }
