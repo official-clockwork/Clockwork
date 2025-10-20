@@ -512,17 +512,19 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     // Ignore horse moves
     ray_valid &= v512::broadcast64(0xFFFFFFFFFFFFFF00);
 
-    v512 occupied = v512::andnot(v512::eq8_vm(ray_places, v512::zero()), ray_valid);
+    m8x64 occupied = lps::generic::andnot(std::bit_cast<u8x64>(ray_places).zeros(),
+                                          std::bit_cast<m8x64>(ray_valid));
 
-    v512 color_mask  = v512::broadcast8(Place::COLOR_MASK);
-    v512 enemy_color = v512::broadcast8(m_active_color == Color::White ? Place::COLOR_MASK : 0);
-    v512 enemy       = occupied & v512::eq8_vm(ray_places & color_mask, enemy_color);
+    u8x64 color_mask  = u8x64::splat(Place::COLOR_MASK);
+    u8x64 enemy_color = u8x64::splat(m_active_color == Color::White ? Place::COLOR_MASK : 0);
+    m8x64 enemy       = occupied & (std::bit_cast<u8x64>(ray_places) & color_mask).eq(enemy_color);
 
-    v512 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
-    v512 maybe_pinned = v512::andnot(enemy, closest);
+    m8x64 closest =
+      occupied & std::bit_cast<m8x64>(geometry::superpiece_attacks(ray_places, ray_valid));
+    m8x64 maybe_pinned = lps::generic::andnot(enemy, closest);
 
     // Find enemy sliders of the correct type
-    m8x64 maybe_pinner1 = std::bit_cast<m8x64>(enemy & geometry::slider_mask(ray_places));
+    m8x64 maybe_pinner1 = enemy & std::bit_cast<m8x64>(geometry::slider_mask(ray_places));
 
     // Find second-closest pieces along each ray
     m8x64 not_closest =
