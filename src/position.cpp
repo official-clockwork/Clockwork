@@ -506,8 +506,8 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     Square king_square = king_sq(m_active_color);
 
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
-    v512 inverse_perm            = geometry::superpiece_inverse_rays_avx2(king_square);
+    v512  ray_places             = v512::permute8(ray_coords, m_board.to_vec());
+    u8x64 inverse_perm = std::bit_cast<u8x64>(geometry::superpiece_inverse_rays_avx2(king_square));
 
     // Ignore horse moves
     ray_valid &= v512::broadcast64(0xFFFFFFFFFFFFFF00);
@@ -533,13 +533,15 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     v512 pinner = maybe_pinner1 & maybe_pinner2;
 
     // Does this ray have a pinner?
-    v512 no_pinner_mask = v512::eq64_vm(pinner, v512::zero());
-    v512 pinned         = v512::andnot(no_pinner_mask, maybe_pinned);
+    m64x8 no_pinner_mask = std::bit_cast<m64x8>(pinner).to_vector().zeros();
+    m8x64 pinned         = lps::generic::andnot(std::bit_cast<m8x64>(no_pinner_mask),
+                                                std::bit_cast<m8x64>(maybe_pinned));
 
-    v512 nonmasked_pinned_ids = v512::lanebroadcast(pinned & ray_places & v512::broadcast8(0xF));
-    v512 pinned_ids           = pin_raymask & nonmasked_pinned_ids;
+    u8x64 nonmasked_pinned_ids =
+      geometry::lane_broadcast(pinned.mask(std::bit_cast<u8x64>(ray_places) & u8x64::splat(0xF)));
+    u8x64 pinned_ids = std::bit_cast<m8x64>(pin_raymask).mask(nonmasked_pinned_ids);
     // Transform into board layout
-    pinned_ids = v512::permute8(inverse_perm, pinned_ids);
+    pinned_ids = inverse_perm.swizzle(pinned_ids);
 
     u16 nonpinned_piece_mask = static_cast<u16>(
       ~((u64x8::splat(1) << (std::bit_cast<u64x8>(nonmasked_pinned_ids) & u64x8::splat(0xF)))

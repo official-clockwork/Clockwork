@@ -146,6 +146,14 @@ inline u8x64 slider_broadcast(u8x64 x) {
     return std::bit_cast<u8x64>(y);
 }
 
+inline u8x64 lane_broadcast(u8x64 x) {
+    u64x8 y = std::bit_cast<u64x8>(x);
+    y *= u64x8::splat(0x0101010101010101);
+    y = y.shr<56>();
+    y *= u64x8::splat(0x0101010101010101);
+    return std::bit_cast<u8x64>(y);
+}
+
 inline u8x64 flip_rays(u8x64 x) {
     auto y = std::bit_cast<std::array<u8x32, 2>>(x);
     return std::bit_cast<u8x64>(std::array<u8x32, 2>{y[1], y[0]});
