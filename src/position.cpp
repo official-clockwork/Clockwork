@@ -541,10 +541,10 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     // Transform into board layout
     pinned_ids = v512::permute8(inverse_perm, pinned_ids);
 
-    u16 nonpinned_piece_mask =
-      static_cast<u16>(~v512::reduceor64(v512::shl64(v512::broadcast64(1),
-                                                     nonmasked_pinned_ids & v512::broadcast64(0xF)))
-                       | 1);
+    u16 nonpinned_piece_mask = static_cast<u16>(
+      ~((u64x8::splat(1) << (std::bit_cast<u64x8>(nonmasked_pinned_ids) & u64x8::splat(0xF)))
+          .reduce_or())
+      | 1);
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never pinned), so 0 converts to 0.
