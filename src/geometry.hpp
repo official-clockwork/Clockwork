@@ -43,9 +43,8 @@ inline std::tuple<u8x64, m8x64> superpiece_rays(Square sq) {
 }
 
 inline m8x64 superpiece_attacks(u8x64 ray_places, m8x64 ray_valid) {
-    return lps::generic::andnot(
-      ray_places.eq(std::bit_cast<u8x64>(std::bit_cast<u64x8>(ray_places) - u64x8::splat(0x101))),
-      ray_valid);
+    return ray_valid.andnot(
+      ray_places.eq(std::bit_cast<u8x64>(std::bit_cast<u64x8>(ray_places) - u64x8::splat(0x101))));
 }
 
 inline u64 closest(u64 occupied) {

@@ -213,9 +213,8 @@ void Position::incrementally_move_piece(
     u16x64 src_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{src_at0, src_at1});
     u16x64 dst_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_at0, dst_at1});
 
-    m_attack_table[0].raw ^=
-      (lps::generic::andnot(src_color, src_at)) ^ (lps::generic::andnot(dst_color, dst_at));
-    m_attack_table[1].raw ^= (src_color & src_at) ^ (dst_color & dst_at);
+    m_attack_table[0].raw ^= src_at.andnot(src_color) ^ dst_at.andnot(dst_color);
+    m_attack_table[1].raw ^= (src_at & src_color) ^ (dst_at & dst_color);
 
     add_attacks(color, p.id(), to, p.ptype(), ret);
 }
@@ -267,8 +266,8 @@ m8x64 Position::toggle_rays(Square sq) {
     u8x64  at1 = at_lo.zip_high_128lanes(at_hi);
     u16x64 at  = std::bit_cast<u16x64>(std::array<u8x64, 2>{at0, at1});
 
-    m_attack_table[0].raw ^= lps::generic::andnot(color, at);
-    m_attack_table[1].raw ^= color & at;
+    m_attack_table[0].raw ^= at.andnot(color);
+    m_attack_table[1].raw ^= at & color;
 
     return ret;
 }
@@ -497,20 +496,20 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     // Ignore horse moves
     ray_valid &= m8x64{0xFEFEFEFEFEFEFEFE};
 
-    m8x64 occupied = lps::generic::andnot(ray_places.zeros(), ray_valid);
+    m8x64 occupied = ray_valid.andnot(ray_places.zeros());
 
     u8x64 color_mask  = u8x64::splat(Place::COLOR_MASK);
     u8x64 enemy_color = u8x64::splat(m_active_color == Color::White ? Place::COLOR_MASK : 0);
     m8x64 enemy       = occupied & (ray_places & color_mask).eq(enemy_color);
 
     m8x64 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
-    m8x64 maybe_pinned = lps::generic::andnot(enemy, closest);
+    m8x64 maybe_pinned = closest.andnot(enemy);
 
     // Find enemy sliders of the correct type
     m8x64 maybe_pinner1 = enemy & geometry::slider_mask(ray_places);
 
     // Find second-closest pieces along each ray
-    m8x64 not_closest   = lps::generic::andnot(closest, occupied);
+    m8x64 not_closest   = occupied.andnot(closest);
     m8x64 pin_raymask   = geometry::superpiece_attacks(not_closest.to_vector(), ray_valid);
     m8x64 maybe_pinner2 = not_closest & pin_raymask;
 
@@ -518,8 +517,8 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     m8x64 pinner = maybe_pinner1 & maybe_pinner2;
 
     // Does this ray have a pinner?
-    m64x8 no_pinner_mask = std::bit_cast<m64x8>(pinner).to_vector().zeros();
-    m8x64 pinned         = lps::generic::andnot(std::bit_cast<m8x64>(no_pinner_mask), maybe_pinned);
+    m8x64 no_pinner_mask = std::bit_cast<m8x64>(std::bit_cast<m64x8>(pinner).to_vector().zeros());
+    m8x64 pinned         = maybe_pinned.andnot(no_pinner_mask);
 
     u8x64 nonmasked_pinned_ids =
       geometry::lane_broadcast(pinned.mask(ray_places & u8x64::splat(0xF)));
