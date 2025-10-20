@@ -3,7 +3,6 @@
 #include "common.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
-#include "util/vec.hpp"
 #include <array>
 #include <cassert>
 #include <tuple>

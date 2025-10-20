@@ -600,7 +600,7 @@ Wordboard Position::create_attack_table_superpiece_mask(Square                  
     constexpr usize HORSE      = 4;
     constexpr usize WPAWN_NEAR = 5;
     constexpr usize BPAWN_NEAR = 6;
-    static_assert(sizeof(CreateSuperpieceMaskInfo) == sizeof(__m128i));
+    static_assert(sizeof(CreateSuperpieceMaskInfo) == sizeof(u16x8));
 
     const u8x64 IDXS{{
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // N

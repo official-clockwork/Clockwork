@@ -109,9 +109,7 @@ set(srcs
         src/util/pretty.hpp
         src/util/static_vector.hpp
         src/util/types.hpp
-        src/util/vec.hpp
-        src/util/vec/avx2.hpp
-        src/util/vec/avx512.hpp
+        src/util/vec/sse2.hpp
         src/tuning/globals.hpp
         src/tuning/graph.cpp
         src/tuning/graph.hpp
