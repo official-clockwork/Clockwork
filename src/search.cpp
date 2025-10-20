@@ -255,19 +255,28 @@ Move Worker::iterative_deepening(const Position& root_position) {
             beta  = last_search_score + delta;
         }
         Value score = -VALUE_INF;
+
+        int fail_high_reduction = 0;
+
         while (true) {
-            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta, search_depth,
-                                          0, false);
+            int asp_window_depth = search_depth - fail_high_reduction;
+
+            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta,
+                                          asp_window_depth, 0, false);
 
             if (m_stopped) {
                 break;
             }
 
             if (score <= alpha) {
-                beta  = (alpha + beta) / 2;
-                alpha = score - delta;
+                beta            = (alpha + beta) / 2;
+                alpha           = score - delta;
+                fail_high_reduction = 0;
             } else if (score >= beta) {
                 beta = score + delta;
+                if (fail_high_reduction < 3) {
+                    ++fail_high_reduction;
+                }
             } else {
                 break;
             }
