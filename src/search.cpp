@@ -269,8 +269,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
             }
 
             if (score <= alpha) {
-                beta            = (alpha + beta) / 2;
-                alpha           = score - delta;
+                beta                = (alpha + beta) / 2;
+                alpha               = score - delta;
                 fail_high_reduction = 0;
             } else if (score >= beta) {
                 beta = score + delta;
