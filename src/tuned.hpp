@@ -18,6 +18,7 @@ namespace Clockwork::tuned {
     /* NMP Values */                                              \
     NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)                       \
     NO_TUNE(nmp_base_r, 3, 1, 10, .5, 0.002)                      \
+    NO_TUNE(nmp_verif_min_depth, 14, 1, 40, .5, 0.002)            \
                                                                   \
     /* SEE Values */                                              \
     TUNE(quiesce_see_threshold, 0, -1000, 100, 20, 0.002)         \
