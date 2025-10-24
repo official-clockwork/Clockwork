@@ -6,7 +6,6 @@
 #include "position.hpp"
 #include "square.hpp"
 #include "util/static_vector.hpp"
-
 #include <bit>
 
 namespace Clockwork {

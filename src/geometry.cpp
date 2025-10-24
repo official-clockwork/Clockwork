@@ -1,5 +1,4 @@
 #include "geometry.hpp"
-
 #include <bit>
 
 namespace Clockwork::geometry {

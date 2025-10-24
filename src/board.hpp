@@ -216,6 +216,10 @@ struct Byteboard {
         return mailbox[sq.raw];
     }
 
+    [[nodiscard]] Bitboard get_occupied_bitboard() const {
+        return Bitboard{to_vec().nonzero8()};
+    }
+
     constexpr Place operator[](Square sq) const {
         return mailbox[sq.raw];
     }

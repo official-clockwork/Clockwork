@@ -31,9 +31,8 @@ int main() {
 
     // List of files to load
     const std::vector<std::string> fenFiles = {
-      "data/dfrc-data/dfrc-1m.txt",   "data/dfrc-data/dfrc-augmented.txt",
-      "data/dfrc-data/dfrc-100k.txt", "data/dfrc-data/dfrc-phase.txt",
-      "data/v2.2/filtered_data.txt",  "data/v2.1/filtered_data.txt",
+      "data/dfrcv1/dfrc-1m.txt",     "data/dfrcv0/v0.txt", "data/v2.2/filtered_data.txt",
+      "data/v2.1/filtered_data.txt", "data/v3/v3.txt",
     };
 
     // Number of threads to use, default to half available
@@ -147,6 +146,7 @@ int main() {
 
                     Graph::get().copy_parameter_values(current_parameter_values);
 
+                    uint32_t i = 0;
                     for (size_t j = subbatch_start; j < subbatch_end; ++j) {
                         size_t   idx    = indices[j];
                         f64      y      = results[idx];
@@ -154,6 +154,16 @@ int main() {
                         auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
                         subbatch_outputs.push_back(result);
                         subbatch_targets.push_back(y);
+                        if (++i == 1024) {
+                            i = 0;
+                            auto subbatch_loss =
+                              mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
+                              * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
+                            Graph::get().backward();
+                            Graph::get().clear_backwardables();
+                            subbatch_outputs.clear();
+                            subbatch_targets.clear();
+                        }
                     }
 
                     auto subbatch_loss =
@@ -278,6 +288,9 @@ int main() {
                   << std::endl;
         std::cout << "inline const PParam BISHOP_THREAT_QUEEN  = " << BISHOP_THREAT_QUEEN << ";"
                   << std::endl;
+        std::cout << std::endl;
+
+        print_table("BISHOP_PAWNS", BISHOP_PAWNS);
         std::cout << std::endl;
 
         auto printPsqtArray = [](const std::string& name, const auto& arr) {

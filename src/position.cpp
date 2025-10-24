@@ -1,10 +1,5 @@
 #include "position.hpp"
 
-#include <array>
-#include <bit>
-#include <iostream>
-#include <sstream>
-
 #include "board.hpp"
 #include "common.hpp"
 #include "geometry.hpp"
@@ -12,6 +7,10 @@
 #include "util/parse.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
+#include <array>
+#include <bit>
+#include <iostream>
+#include <sstream>
 
 namespace Clockwork {
 
@@ -35,6 +34,9 @@ void Position::incrementally_remove_piece(bool         color,
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= piece_key;
         }
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+            m_minor_key ^= piece_key;
+        }
     }
     updates.removes.push_back({pcolor, ptype, from});
     m_board[from] = Place::empty();
@@ -54,6 +56,9 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
         m_non_pawn_key[static_cast<usize>(pcolor)] ^= piece_key;
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= piece_key;
+        }
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+            m_minor_key ^= piece_key;
         }
     }
     updates.adds.push_back({pcolor, ptype, to});
@@ -77,6 +82,9 @@ void Position::incrementally_mutate_piece(
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= rem_piece_key;
         }
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+            m_minor_key ^= rem_piece_key;
+        }
     }
     updates.removes.push_back({m_board[sq].color(), ptype, sq});
     m_board[sq]       = p;
@@ -90,6 +98,9 @@ void Position::incrementally_mutate_piece(
         m_non_pawn_key[static_cast<usize>(m_board[sq].color())] ^= add_piece_key;
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= add_piece_key;
+        }
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+            m_minor_key ^= add_piece_key;
         }
     }
     updates.adds.push_back({p.color(), p.ptype(), sq});
@@ -119,6 +130,9 @@ void Position::incrementally_move_piece(
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= rem_piece_key;
         }
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+            m_minor_key ^= rem_piece_key;
+        }
     }
     updates.removes.push_back({m_board[from].color(), ptype, from});
     m_board[from]     = Place::empty();
@@ -132,6 +146,9 @@ void Position::incrementally_move_piece(
         m_non_pawn_key[static_cast<usize>(m_board[to].color())] ^= add_piece_key;
         if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
             m_major_key ^= add_piece_key;
+        }
+        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+            m_minor_key ^= add_piece_key;
         }
     }
     updates.adds.push_back({p.color(), p.ptype(), to});
@@ -830,6 +847,7 @@ std::optional<Position> Position::parse(std::string_view board,
     result.m_pawn_key     = result.calc_pawn_key_slow();
     result.m_non_pawn_key = result.calc_non_pawn_key_slow();
     result.m_major_key    = result.calc_major_key_slow();
+    result.m_minor_key    = result.calc_minor_key_slow();
 
     return result;
 }
@@ -898,6 +916,21 @@ HashKey Position::calc_major_key_slow() const {
         Place p = m_board.mailbox[sq_idx];
         if (p.is_empty() || p.ptype() == PieceType::Pawn || p.ptype() == PieceType::Knight
             || p.ptype() == PieceType::Bishop || p.ptype() == PieceType::King) {
+            continue;
+        }
+        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
+                                            [static_cast<usize>(p.ptype())][sq_idx];
+    }
+    return key;
+}
+
+HashKey Position::calc_minor_key_slow() const {
+    HashKey key = 0;
+    for (usize sq_idx = 0; sq_idx < 64; sq_idx++) {
+        Place p = m_board.mailbox[sq_idx];
+        if (p.is_empty()
+            || (p.ptype() != PieceType::Knight && p.ptype() != PieceType::Bishop
+                && p.ptype() != PieceType::King)) {
             continue;
         }
         key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]

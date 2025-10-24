@@ -1,6 +1,9 @@
 #include "movepick.hpp"
+#include "immintrin.h"
 #include "see.hpp"
 #include "tuned.hpp"
+#include <emmintrin.h>
+#include <immintrin.h>
 
 namespace Clockwork {
 
@@ -116,8 +119,36 @@ void MovePicker::score_moves(MoveList& moves) {
 }
 
 std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
-    usize best_idx = m_current_index;
-    for (usize i = m_current_index + 1; i < moves.size(); i++) {
+    __m128i best_indices = _mm_set1_epi32(static_cast<u32>(m_current_index));
+    __m128i best_values  = _mm_set1_epi32(m_scores[m_current_index]);
+
+    __m128i indices = _mm_add_epi32(best_indices, _mm_set_epi32(4, 3, 2, 1));
+    usize   i       = m_current_index + 1;
+    for (; i + 3 < moves.size(); i += 4, indices = _mm_add_epi32(indices, _mm_set1_epi32(4))) {
+        __m128i values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&m_scores[i]));
+
+        __m128i greater = _mm_cmpgt_epi32(values, best_values);
+
+        best_values  = _mm_blendv_epi8(best_values, values, greater);
+        best_indices = _mm_blendv_epi8(best_indices, indices, greater);
+    }
+
+    std::array<u32, 4> indices_array;
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(indices_array.data()), best_indices);
+    std::array<i32, 4> values_array;
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(values_array.data()), best_values);
+
+    usize best_vectorized_index = 0;
+
+    for (usize j = 1; j < 4; ++j) {
+        if (values_array[j] > values_array[best_vectorized_index]) {
+            best_vectorized_index = j;
+        }
+    }
+
+    usize best_idx = indices_array[best_vectorized_index];
+
+    for (; i < moves.size(); i++) {
         if (m_scores[i] > m_scores[best_idx]) {
             best_idx = i;
         }

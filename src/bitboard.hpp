@@ -33,6 +33,10 @@ public:
         return Bitboard{static_cast<u64>(1) << sq.raw};
     }
 
+    static constexpr Bitboard squares_of_color(Color c) {
+        return c == Color::White ? Bitboard{0x55AA55AA55AA55AA} : Bitboard{0xAA55AA55AA55AA55};
+    }
+
     static constexpr Bitboard file_mask(i32 file) {
         assert(file >= 0 && file <= 7);
         return Bitboard{static_cast<u64>(0x0101010101010101) << file};
@@ -40,7 +44,11 @@ public:
 
     static constexpr Bitboard rank_mask(i32 rank) {
         assert(rank >= 0 && rank <= 7);
-        return Bitboard{static_cast<u64>(0xFF) << rank};
+        return Bitboard{static_cast<u64>(0xFF) << (8 * rank)};
+    }
+
+    static constexpr Bitboard central_files() {
+        return file_mask(2) | file_mask(3) | file_mask(4) | file_mask(5);
     }
 
     [[nodiscard]] bool empty() const {

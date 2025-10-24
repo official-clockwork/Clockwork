@@ -34,7 +34,8 @@ i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::St
     return stats;
 }
 
-void History::update_cont_hist(const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus){
+void History::update_cont_hist(
+  const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
     i32       conthist = get_conthist(pos, move, ply, ss);
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
@@ -58,8 +59,8 @@ void History::update_cont_hist(const Position& pos, Move move, i32 ply, Search::
 }
 
 
-  void History::update_quiet_stats(
-    const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
+void History::update_quiet_stats(
+  const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
     auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
     auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
     usize stm_idx       = static_cast<usize>(pos.active_color());
@@ -90,12 +91,14 @@ void History::update_correction_history(const Position& pos, i32 depth, i32 diff
     u64   white_non_pawn_key = pos.get_non_pawn_key(Color::White);
     u64   black_non_pawn_key = pos.get_non_pawn_key(Color::Black);
     u64   major_key          = pos.get_major_key();
+    u64   minor_key          = pos.get_minor_key();
     usize pawn_index         = static_cast<usize>(pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize white_non_pawn_index =
       static_cast<usize>(white_non_pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize black_non_pawn_index =
       static_cast<usize>(black_non_pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize major_index = static_cast<usize>(major_key % CORRECTION_HISTORY_ENTRY_NB);
+    usize minor_index = static_cast<usize>(minor_key % CORRECTION_HISTORY_ENTRY_NB);
 
     i32 new_weight  = std::min(16, 1 + depth);
     i32 scaled_diff = diff * CORRECTION_HISTORY_GRAIN;
@@ -112,6 +115,7 @@ void History::update_correction_history(const Position& pos, i32 depth, i32 diff
     update_entry(m_non_pawn_corr_hist[0][side_index][white_non_pawn_index]);
     update_entry(m_non_pawn_corr_hist[1][side_index][black_non_pawn_index]);
     update_entry(m_major_corr_hist[side_index][major_index]);
+    update_entry(m_minor_corr_hist[side_index][minor_index]);
 }
 
 i32 History::get_correction(const Position& pos) {
@@ -120,18 +124,21 @@ i32 History::get_correction(const Position& pos) {
     u64   white_non_pawn_key = pos.get_non_pawn_key(Color::White);
     u64   black_non_pawn_key = pos.get_non_pawn_key(Color::Black);
     u64   major_key          = pos.get_major_key();
+    u64   minor_key          = pos.get_minor_key();
     usize pawn_index         = static_cast<usize>(pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize white_non_pawn_index =
       static_cast<usize>(white_non_pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize black_non_pawn_index =
       static_cast<usize>(black_non_pawn_key % CORRECTION_HISTORY_ENTRY_NB);
     usize major_index = static_cast<usize>(major_key % CORRECTION_HISTORY_ENTRY_NB);
+    usize minor_index = static_cast<usize>(minor_key % CORRECTION_HISTORY_ENTRY_NB);
 
     i32 correction = 0;
     correction += m_pawn_corr_hist[side_index][pawn_index];
     correction += m_non_pawn_corr_hist[0][side_index][white_non_pawn_index];
     correction += m_non_pawn_corr_hist[1][side_index][black_non_pawn_index];
     correction += m_major_corr_hist[side_index][major_index];
+    correction += m_minor_corr_hist[side_index][minor_index];
 
     return correction / CORRECTION_HISTORY_GRAIN;
 }
@@ -144,6 +151,7 @@ void History::clear() {
     std::memset(&m_non_pawn_corr_hist[0], 0, sizeof(CorrectionHistory));
     std::memset(&m_non_pawn_corr_hist[1], 0, sizeof(CorrectionHistory));
     std::memset(&m_major_corr_hist, 0, sizeof(CorrectionHistory));
+    std::memset(&m_minor_corr_hist, 0, sizeof(CorrectionHistory));
 }
 
 }

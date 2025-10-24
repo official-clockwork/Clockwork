@@ -1,12 +1,11 @@
 #pragma once
 
-#include <array>
-#include <optional>
-
 #include "history.hpp"
 #include "movegen.hpp"
 #include "position.hpp"
 #include "search.hpp"
+#include <array>
+#include <optional>
 
 namespace Clockwork {
 

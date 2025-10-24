@@ -1,16 +1,15 @@
 #pragma once
 
-#include <array>
-#include <bit>
-#include <cassert>
-#include <iosfwd>
-#include <tuple>
-
 #include "board.hpp"
 #include "move.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
 #include "util/vec.hpp"
+#include <array>
+#include <bit>
+#include <cassert>
+#include <iosfwd>
+#include <tuple>
 
 namespace Clockwork {
 
@@ -127,6 +126,9 @@ public:
     }
     [[nodiscard]] HashKey get_major_key() const {
         return m_major_key;
+    }
+    [[nodiscard]] HashKey get_minor_key() const {
+        return m_minor_key;
     }
 
     [[nodiscard]] Square king_sq(Color color) const {
@@ -270,6 +272,7 @@ public:
     [[nodiscard]] HashKey                calc_pawn_key_slow() const;
     [[nodiscard]] std::array<HashKey, 2> calc_non_pawn_key_slow() const;
     [[nodiscard]] HashKey                calc_major_key_slow() const;
+    [[nodiscard]] HashKey                calc_minor_key_slow() const;
 
     static std::optional<Position> parse(std::string_view str);
     static std::optional<Position> parse(std::string_view board,
@@ -297,7 +300,7 @@ private:
     HashKey                             m_pawn_key;
     std::array<HashKey, 2>              m_non_pawn_key;
     HashKey                             m_major_key;
-
+    HashKey                             m_minor_key;
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates& updates);
     void incrementally_add_piece(bool color, Place p, Square sq, PsqtUpdates& updates);
