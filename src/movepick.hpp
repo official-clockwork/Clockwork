@@ -24,15 +24,6 @@ public:
         m_stack(ss) {
     }
 
-    void skip_quiets();
-
-    Move next();
-
-    [[nodiscard]] bool is_legal(Move m) const {
-        return m_movegen.is_legal(m);
-    }
-
-private:
     enum class Stage {
         EmitTTMove,
         GenerateMoves,
@@ -45,6 +36,19 @@ private:
         End,
     };
 
+    void skip_quiets();
+
+    Move next();
+
+    [[nodiscard]] Stage stage() const {
+        return m_stage;
+    }
+
+    [[nodiscard]] bool is_legal(Move m) const {
+        return m_movegen.is_legal(m);
+    }
+
+private:
     void                 generate_moves();
     std::pair<Move, i32> pick_next(MoveList& moves);
     void                 score_moves(MoveList& moves);

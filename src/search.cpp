@@ -845,6 +845,11 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+        // Bad noisies pruning
+        if (!is_being_mated_score(best_value) && moves.stage() == MovePicker::Stage::EmitBadNoisy) {
+            break;
+        }
+
         // QS SEE Pruning
         if (!is_being_mated_score(best_value) && !SEE::see(pos, m, tuned::quiesce_see_threshold)) {
             continue;
