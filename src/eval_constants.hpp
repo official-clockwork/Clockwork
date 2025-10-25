@@ -13,7 +13,7 @@ inline const PParam QUEEN_MAT  = S(3655, 2890);
 inline const PParam TEMPO_VAL  = S(59, 15);
 
 inline const PParam BISHOP_PAIR_VAL  = S(80, 177);
-inline const PParam ROOK_CLOSED_VAL  = S(-59, 3)
+inline const PParam ROOK_CLOSED_VAL  = S(-59, 3);
 inline const PParam DOUBLED_PAWN_VAL = S(-45, -75);
 
 inline const PParam POTENTIAL_CHECKER_VAL = S(-74, -2);

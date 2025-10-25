@@ -223,7 +223,8 @@ int main() {
         std::cout << "inline const PParam BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";"
                   << std::endl;
 
-        std::cout << "inline const PParam ROOK_CLOSED_VAL  = " << ROOK_CLOSED_VAL << std::endl;
+        std::cout << "inline const PParam ROOK_CLOSED_VAL  = " << ROOK_CLOSED_VAL << ";"
+                  << std::endl;
         std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
                   << std::endl;
         std::cout << std::endl;
