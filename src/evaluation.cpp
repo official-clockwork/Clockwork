@@ -196,6 +196,18 @@ PScore evaluate_threats(const Position& pos) {
     return eval;
 }
 
+template <Color color>
+PScore evaluate_space(const Position& pos) {
+    PScore eval = PSCORE_ZERO;
+    Bitboard closed_files = Bitboard::fill_verticals(
+        pos.board().bitboard_for(color, PieceType::Pawn)
+    );
+
+    eval += ROOK_CLOSED_VAL * (closed_files & pos.bitboard_for(color, PieceType::Rook)).popcount();
+    
+    return eval;
+}
+
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     usize       phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -217,6 +229,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
     eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
+    eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     return eval->phase<24>(static_cast<i32>(phase));
 };

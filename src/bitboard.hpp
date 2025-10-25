@@ -51,6 +51,13 @@ public:
         return file_mask(2) | file_mask(3) | file_mask(4) | file_mask(5);
     }
 
+    [[nodiscard]] static Bitboard fill_verticals(const Bitboard mask) {
+        Bitboard result = mask | (mask >> 8);
+        result |= result >> 16;
+        result |= result >> 32;
+        return (result & Bitboard::rank_mask(0)) * Bitboard::file_mask(0);
+    }
+
     [[nodiscard]] bool empty() const {
         return m_raw == 0;
     }
@@ -168,6 +175,10 @@ public:
     }
     friend constexpr Bitboard operator|(Bitboard a, Bitboard b) {
         return Bitboard{a.m_raw | b.m_raw};
+    }
+
+    friend constexpr Bitboard operator*(Bitboard a, Bitboard b) {
+        return Bitboard{a.m_raw * b.m_raw};
     }
 
     friend constexpr Bitboard operator>>(Bitboard a, i32 shift) {
