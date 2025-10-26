@@ -455,20 +455,35 @@ Value Worker::search(
     }
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && !excluded
-        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta)) {
+        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta) && !m_in_nmp_verification) {
         int R =
           tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
 
         repetition_info.push(pos_after.get_hash_key(), true);
 
-        Value value = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
-                                              ply + 1, !cutnode);
+        Value null_score = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
+                                                   ply + 1, !cutnode);
 
         repetition_info.pop();
 
-        if (value >= beta) {
-            return is_mate_score(value) ? beta : value;
+        if (null_score >= beta) {
+            if (is_mate_score(null_score)) {
+                null_score = beta;
+            }
+
+            if (depth <= tuned::nmp_verif_min_depth) {
+                return null_score;
+            }
+
+            m_in_nmp_verification = true;
+            Value verification =
+              search<IS_MAIN, false>(pos, ss, beta - 1, beta, depth - R, ply, false);
+            m_in_nmp_verification = false;
+
+            if (verification >= beta) {
+                return null_score;
+            }
         }
     }
 

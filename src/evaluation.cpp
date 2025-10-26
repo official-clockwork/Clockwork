@@ -198,11 +198,16 @@ PScore evaluate_threats(const Position& pos) {
 
 template<Color color>
 PScore evaluate_space(const Position& pos) {
-    PScore   eval = PSCORE_ZERO;
-    Bitboard closed_files =
-      Bitboard::fill_verticals(pos.board().bitboard_for(color, PieceType::Pawn));
+    PScore          eval       = PSCORE_ZERO;
+    constexpr Color them       = color == Color::White ? Color::Black : Color::White;
+    Bitboard        ourfiles   = Bitboard::fill_verticals(pos.bitboard_for(color, PieceType::Pawn));
+    Bitboard        theirfiles = Bitboard::fill_verticals(pos.bitboard_for(them, PieceType::Pawn));
+    Bitboard        openfiles  = ~(ourfiles | theirfiles);
+    Bitboard        half_open_files = (~ourfiles) & theirfiles;
 
-    eval += ROOK_CLOSED_VAL * (closed_files & pos.bitboard_for(color, PieceType::Rook)).popcount();
+    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).popcount();
+    eval +=
+      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).popcount();
 
     return eval;
 }
