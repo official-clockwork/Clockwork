@@ -262,6 +262,8 @@ Move Worker::iterative_deepening(const Position& root_position) {
         while (true) {
             int asp_window_depth = search_depth - fail_high_reduction;
 
+            alpha = std::max(-VALUE_INF, alpha);
+            beta  = std::min(VALUE_INF, beta);
             score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta,
                                           asp_window_depth, 0, false);
 
