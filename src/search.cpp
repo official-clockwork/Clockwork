@@ -642,6 +642,10 @@ Value Worker::search(
 
             if (cutnode) {
                 reduction += 1024;
+                // If there is no available tt move, increase reduction
+                if (!tt_data || tt_data->move == Move::none()) {
+                    reduction += 1024;
+                }
             }
 
             if (ttpv) {
