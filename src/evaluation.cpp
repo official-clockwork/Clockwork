@@ -196,11 +196,12 @@ PScore evaluate_outposts(const Position& pos) {
 
     Bitboard viable_outposts = viable_outposts_ranks & ~opp_pawn_span_attacks;
     // Check for minor pieces on outposts
-    Bitboard minors = pos.bitboard_for(color, PieceType::Knight)
-                      | pos.bitboard_for(color, PieceType::Bishop);
-    Bitboard outpost_minors = minors & viable_outposts;
-
-    return OUTPOST_VAL * static_cast<i32>(outpost_minors.popcount());
+    PScore         eval         = PSCORE_ZERO;
+    eval += OUTPOST_KNIGHT_VAL * static_cast<i32>(
+      (pos.bitboard_for(color, PieceType::Knight) & viable_outposts).popcount());
+    eval += OUTPOST_BISHOP_VAL * static_cast<i32>(
+      (pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).popcount());
+    return eval;
 }
 
 
