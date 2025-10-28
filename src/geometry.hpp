@@ -39,7 +39,7 @@ forceinline std::tuple<u8x64, m8x64> superpiece_rays(Square sq) {
 
     u8x64 sq_vec       = u8x64::splat(internal::expand_sq(sq));
     u8x64 uncompressed = sq_vec + OFFSETS;
-    return internal::compress_coords(std::bit_cast<u8x64>(uncompressed));
+    return internal::compress_coords(uncompressed);
 }
 
 forceinline m8x64 superpiece_attacks(u8x64 ray_places, m8x64 ray_valid) {
