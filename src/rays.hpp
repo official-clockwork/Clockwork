@@ -1,14 +1,13 @@
 #pragma once
 
-#include <algorithm>
-#include <array>
-#include <bit>
-#include <cmath>
-
 #include "bitboard.hpp"
 #include "square.hpp"
 #include "util/bit.hpp"
 #include "util/types.hpp"
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cmath>
 
 namespace Clockwork::rays {
 

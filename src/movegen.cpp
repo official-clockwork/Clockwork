@@ -1,9 +1,4 @@
 #include "movegen.hpp"
-
-#include <bit>
-#include <cassert>
-#include <tuple>
-
 #include "bitboard.hpp"
 #include "common.hpp"
 #include "geometry.hpp"
@@ -12,6 +7,9 @@
 #include "rays.hpp"
 #include "util/bit.hpp"
 #include "util/types.hpp"
+#include <bit>
+#include <cassert>
+#include <tuple>
 
 namespace Clockwork {
 

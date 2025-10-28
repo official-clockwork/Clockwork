@@ -12,7 +12,6 @@ constexpr i32   MAX_PLY     = 256;
 constexpr Value VALUE_INF   = 32501;
 constexpr Value VALUE_MATED = 32500;
 constexpr Value VALUE_WIN   = 32000;
-constexpr Value VALUE_DRAW  = 0;
 
 constexpr bool is_mate_score(Value value) {
     return std::abs(value) >= VALUE_WIN;

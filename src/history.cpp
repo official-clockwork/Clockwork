@@ -34,7 +34,8 @@ i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::St
     return stats;
 }
 
-void History::update_cont_hist(const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus){
+void History::update_cont_hist(
+  const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
     i32       conthist = get_conthist(pos, move, ply, ss);
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
@@ -58,8 +59,8 @@ void History::update_cont_hist(const Position& pos, Move move, i32 ply, Search::
 }
 
 
-  void History::update_quiet_stats(
-    const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
+void History::update_quiet_stats(
+  const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
     auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
     auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
     usize stm_idx       = static_cast<usize>(pos.active_color());

@@ -9,6 +9,7 @@
 #include "util/ios_fmt_guard.hpp"
 #include "util/parse.hpp"
 #include "util/random.hpp"
+#include "util/version.hpp"
 #include <algorithm>
 #include <fstream>
 #include <ios>
@@ -54,7 +55,7 @@ void UCIHandler::execute_command(const std::string& line) {
     is >> std::skipws >> command;
 
     if (command == "uci") {
-        std::cout << "id name Clockwork\n";
+        std::cout << "id name Clockwork " << GIT_VERSION << "\n";
         std::cout << "id author The Clockwork community\n";
         std::cout << "option name UCI_Chess960 type check default false\n";
         std::cout << "option name UseSoftNodes type check default false\n";

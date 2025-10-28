@@ -1,4 +1,5 @@
 #pragma once
+
 #include "search.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"

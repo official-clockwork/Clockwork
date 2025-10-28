@@ -1,14 +1,13 @@
 #pragma once
 
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include "common.hpp"
 #include "position.hpp"
 #include "repetition_info.hpp"
 #include "search.hpp"
 #include "tt.hpp"
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace Clockwork::UCI {
 

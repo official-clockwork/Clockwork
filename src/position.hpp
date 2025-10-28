@@ -1,15 +1,14 @@
 #pragma once
 
+#include "board.hpp"
+#include "move.hpp"
+#include "square.hpp"
+#include "util/types.hpp"
 #include <array>
 #include <bit>
 #include <cassert>
 #include <iosfwd>
 #include <tuple>
-
-#include "board.hpp"
-#include "move.hpp"
-#include "square.hpp"
-#include "util/types.hpp"
 
 namespace Clockwork {
 

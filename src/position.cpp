@@ -1,10 +1,5 @@
 #include "position.hpp"
 
-#include <array>
-#include <bit>
-#include <iostream>
-#include <sstream>
-
 #include "board.hpp"
 #include "common.hpp"
 #include "geometry.hpp"
@@ -12,6 +7,10 @@
 #include "util/parse.hpp"
 #include "util/types.hpp"
 #include "zobrist.hpp"
+#include <array>
+#include <bit>
+#include <iostream>
+#include <sstream>
 
 namespace Clockwork {
 

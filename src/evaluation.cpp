@@ -1,16 +1,13 @@
-#include <array>
-#include <ranges>
-
+#include "evaluation.hpp"
 #include "bitboard.hpp"
 #include "common.hpp"
 #include "eval_constants.hpp"
+#include "eval_types.hpp"
 #include "position.hpp"
 #include "psqt_state.hpp"
-
-#include "evaluation.hpp"
-
-#include "eval_types.hpp"
 #include "square.hpp"
+#include <array>
+#include <ranges>
 
 namespace Clockwork {
 
@@ -104,11 +101,16 @@ PScore evaluate_pawns(const Position& pos) {
 
 template<Color color>
 PScore evaluate_pieces(const Position& pos) {
-    constexpr Color opp  = ~color;
-    PScore          eval = PSCORE_ZERO;
-    Bitboard own_pawns = pos.bitboard_for(color, PieceType::Pawn);
-    Bitboard blocked_pawns = own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
-    Bitboard bb = own_pawns | pos.attacked_by(opp, PieceType::Pawn);
+    constexpr Color opp       = ~color;
+    PScore          eval      = PSCORE_ZERO;
+    Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
+    Bitboard        blocked_pawns =
+      own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
+    constexpr Bitboard early_ranks     = color == Color::White
+                                         ? Bitboard::rank_mask(1) | Bitboard::rank_mask(2)
+                                         : Bitboard::rank_mask(5) | Bitboard::rank_mask(6);
+    Bitboard           own_early_pawns = own_pawns & early_ranks;
+    Bitboard bb = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
         eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
@@ -118,8 +120,10 @@ PScore evaluate_pieces(const Position& pos) {
         eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
         eval += BISHOP_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
         Square sq = pos.piece_list_sq(color)[id];
-        eval += BISHOP_PAWNS[
-            std::min(static_cast<usize>(8),(own_pawns & Bitboard::squares_of_color(sq.color())).popcount()) // Weird non standard positions which can have more than 8 pawns
+        eval += BISHOP_PAWNS[std::min(
+                  static_cast<usize>(8),
+                  (own_pawns & Bitboard::squares_of_color(sq.color()))
+                    .popcount())  // Weird non standard positions which can have more than 8 pawns
         ] * (1 + (blocked_pawns & Bitboard::central_files()).popcount());
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
@@ -192,6 +196,22 @@ PScore evaluate_threats(const Position& pos) {
     return eval;
 }
 
+template<Color color>
+PScore evaluate_space(const Position& pos) {
+    PScore          eval       = PSCORE_ZERO;
+    constexpr Color them       = color == Color::White ? Color::Black : Color::White;
+    Bitboard        ourfiles   = Bitboard::fill_verticals(pos.bitboard_for(color, PieceType::Pawn));
+    Bitboard        theirfiles = Bitboard::fill_verticals(pos.bitboard_for(them, PieceType::Pawn));
+    Bitboard        openfiles  = ~(ourfiles | theirfiles);
+    Bitboard        half_open_files = (~ourfiles) & theirfiles;
+
+    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).popcount();
+    eval +=
+      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).popcount();
+
+    return eval;
+}
+
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     usize       phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -213,6 +233,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
     eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
+    eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     return eval->phase<24>(static_cast<i32>(phase));
 };

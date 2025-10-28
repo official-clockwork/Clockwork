@@ -1,9 +1,9 @@
 #pragma once
-#include <utility>
-#include <vector>
 
 #include "common.hpp"
 #include "util/types.hpp"
+#include <utility>
+#include <vector>
 
 namespace Clockwork {
 

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "history.hpp"
 #include "move.hpp"
 #include "position.hpp"
@@ -151,6 +152,10 @@ public:
         return m_search_nodes.load(std::memory_order_relaxed);
     }
 
+    [[nodiscard]] Value get_draw_score() const {
+        return (search_nodes() & 3) - 2;  // Randomize between -2 and +2
+    }
+
 private:
     void thread_main();
 
@@ -170,6 +175,7 @@ private:
     std::atomic<bool>        m_exiting;
     std::array<u64, 64 * 64> m_node_counts;
     Depth                    m_seldepth;
+    bool                     m_in_nmp_verification = false;
 
     template<bool IS_MAIN>
     Move iterative_deepening(const Position& root_position);

@@ -69,16 +69,17 @@ time::TimePoint compute_soft_limit(time::TimePoint               search_start,
         soft_limit =
           min(soft_limit,
               search_start
-                + Milliseconds(static_cast<i64>(compute_buffer_time() * compute_nodestm_factor() * compute_complexitytm_factor())));
+                + Milliseconds(static_cast<i64>(compute_buffer_time() * compute_nodestm_factor()
+                                                * compute_complexitytm_factor())));
     }
 
     return soft_limit;
 }
 
 // Explicit instantiations
-template time::TimePoint
-compute_soft_limit<true>(time::TimePoint, const Search::SearchSettings&, const Color, const f64, const f64);
+template time::TimePoint compute_soft_limit<true>(
+  time::TimePoint, const Search::SearchSettings&, const Color, const f64, const f64);
 
-template time::TimePoint
-compute_soft_limit<false>(time::TimePoint, const Search::SearchSettings&, const Color, const f64, const f64);
+template time::TimePoint compute_soft_limit<false>(
+  time::TimePoint, const Search::SearchSettings&, const Color, const f64, const f64);
 }

@@ -2,7 +2,6 @@
 
 #include "common.hpp"
 #include "position.hpp"
-
 #include <algorithm>
 
 namespace Clockwork {

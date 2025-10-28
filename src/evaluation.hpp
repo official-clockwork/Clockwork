@@ -1,10 +1,9 @@
 #pragma once
-#include <array>
-
-#include "position.hpp"
 
 #include "eval_types.hpp"
+#include "position.hpp"
 #include "psqt_state.hpp"
+#include <array>
 
 namespace Clockwork {
 

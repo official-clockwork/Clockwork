@@ -1,4 +1,5 @@
 #pragma once
+
 #include "util/types.hpp"
 #include <cassert>
 #include <cstring>

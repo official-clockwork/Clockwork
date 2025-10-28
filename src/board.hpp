@@ -215,6 +215,12 @@ struct Byteboard {
         return Bitboard{(to_vector() & u8x64::splat(0xF0)).eq(u8x64::splat(p.raw)).to_bits()};
     }
 
+    [[nodiscard]] Bitboard bitboard_for(PieceType ptype) const {
+        Place p{Color::White, ptype, PieceId{0}};
+        return Bitboard{
+          (to_vector() & u8x64::splat(Place::PTYPE_MASK)).eq(u8x64::splat(p.raw)).to_bits()};
+    }
+
     constexpr Place& operator[](Square sq) {
         return mailbox[sq.raw];
     }

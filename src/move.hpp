@@ -3,8 +3,6 @@
 #include "common.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
-
-
 #include <optional>
 #include <string_view>
 

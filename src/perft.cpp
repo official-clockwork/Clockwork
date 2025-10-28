@@ -1,10 +1,9 @@
-#include <chrono>
-#include <iostream>
-
 #include "movegen.hpp"
 #include "position.hpp"
 #include "util/ios_fmt_guard.hpp"
 #include "util/types.hpp"
+#include <chrono>
+#include <iostream>
 
 namespace Clockwork {
 
