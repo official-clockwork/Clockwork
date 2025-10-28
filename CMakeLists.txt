@@ -34,6 +34,17 @@ add_library(git_hash ${CMAKE_BINARY_DIR}/gen/util/version.cpp src/util/version.h
 target_include_directories(git_hash PUBLIC src)
 add_dependencies(git_hash check_git_hash)
 
+# Checkout lps
+add_custom_target(checkout_lps COMMAND ${CMAKE_COMMAND}
+    -P ${CMAKE_CURRENT_LIST_DIR}/scripts/checkout_lps.cmake
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/vendor/lps_commit.txt)
+add_library(lps INTERFACE)
+target_include_directories(lps INTERFACE vendor/lps/include)
+add_dependencies(lps checkout_lps)
+
+execute_process(COMMAND ${GIT_EXECUTABLE} checkout ${LPS_COMMIT}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/vendor/lps)
+
 # Flags
 function(target_add_flags target)
 
@@ -62,8 +73,7 @@ function(target_add_flags target)
     target_include_directories(${target} PUBLIC src)
 
     # Libraries
-    target_include_directories(${target} PUBLIC vendor/lps/include)
-    target_link_libraries(${target} PUBLIC git_hash)
+    target_link_libraries(${target} PUBLIC git_hash lps)
 
     # LTO
     if (lto)
