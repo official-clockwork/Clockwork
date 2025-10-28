@@ -243,9 +243,9 @@ m8x64 Position::toggle_rays(Square sq) {
     slider_ids = inv_perm.swizzle(slider_ids);
 
     // Recover color information
-    u8x64 col = std::bit_cast<u8x64>(slider_ids).test(u8x64::splat(0x10)).to_vector();
+    u8x64 col = slider_ids.test(u8x64::splat(0x10)).to_vector();
     // Recover ray mask information
-    m8x64 ret = std::bit_cast<u8x64>(slider_ids).test(u8x64::splat(0x20));
+    m8x64 ret = slider_ids.test(u8x64::splat(0x20));
 
     slider_ids &= u8x64::splat(0x0F);
 
@@ -255,8 +255,8 @@ m8x64 Position::toggle_rays(Square sq) {
                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
     static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    u8x64              at_lo = std::bit_cast<u8x64>(slider_ids).swizzle(BITS_LO);
-    u8x64              at_hi = std::bit_cast<u8x64>(slider_ids).swizzle(BITS_HI);
+    u8x64              at_lo = slider_ids.swizzle(BITS_LO);
+    u8x64              at_hi = slider_ids.swizzle(BITS_HI);
 
     u8x64  color0 = col.zip_low_128lanes(col);
     u8x64  color1 = col.zip_high_128lanes(col);

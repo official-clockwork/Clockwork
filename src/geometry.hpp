@@ -25,7 +25,7 @@ forceinline std::tuple<u8x64, vm8x64> compress_coords(u8x64 list) {
 
 }  // namespace internal
 
-inline std::tuple<u8x64, m8x64> superpiece_rays(Square sq) {
+forceinline std::tuple<u8x64, m8x64> superpiece_rays(Square sq) {
     static const u8x64 OFFSETS{{
       0x1F, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70,  // N
       0x21, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,  // NE
@@ -42,18 +42,18 @@ inline std::tuple<u8x64, m8x64> superpiece_rays(Square sq) {
     return internal::compress_coords(std::bit_cast<u8x64>(uncompressed));
 }
 
-inline m8x64 superpiece_attacks(u8x64 ray_places, m8x64 ray_valid) {
+forceinline m8x64 superpiece_attacks(u8x64 ray_places, m8x64 ray_valid) {
     return ray_valid.andnot(
       ray_places.eq(std::bit_cast<u8x64>(std::bit_cast<u64x8>(ray_places) - u64x8::splat(0x101))));
 }
 
-inline u64 closest(u64 occupied) {
+forceinline u64 closest(u64 occupied) {
     u64 o = occupied | 0x8181818181818181;
     u64 x = o ^ (o - 0x0303030303030303);
     return x & occupied;
 }
 
-inline m8x64 attackers_from_rays(u8x64 ray_places) {
+forceinline m8x64 attackers_from_rays(u8x64 ray_places) {
     constexpr u8 K  = 1 << 0;
     constexpr u8 WP = 1 << 1;
     constexpr u8 BP = 1 << 2;
@@ -86,7 +86,7 @@ inline m8x64 attackers_from_rays(u8x64 ray_places) {
     return bit_rays.test(ATTACKER_MASK);
 }
 
-inline m8x64 slider_mask(u8x64 ray_places) {
+forceinline m8x64 slider_mask(u8x64 ray_places) {
     constexpr u8 R    = static_cast<u8>(PieceType::Rook) << 5;
     constexpr u8 B    = static_cast<u8>(PieceType::Bishop) << 5;
     constexpr u8 Q    = static_cast<u8>(PieceType::Queen) << 5;
@@ -119,13 +119,13 @@ inline m8x64 slider_mask(u8x64 ray_places) {
 
 extern const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE;
 
-inline u8x64 superpiece_inverse_rays_avx2(Square sq) {
+forceinline u8x64 superpiece_inverse_rays_avx2(Square sq) {
     return SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw];
 }
 
 extern const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE;
 
-inline m8x64 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
+forceinline m8x64 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     assert(ptype != PieceType::None);
     i32   index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
     u8x64 bit   = u8x64::splat(static_cast<u8>(1 << index));
@@ -133,28 +133,59 @@ inline m8x64 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     return table.test(bit);
 }
 
-inline u8x64 slider_broadcast(u8x64 x) {
+forceinline u8x64 slider_broadcast(u8x64 x) {
+#if LPS_AVX2
+    u8x64 y;
+    y.raw[0].raw      = _mm256_sad_epu8(x.raw[0].raw, _mm256_setzero_si256());
+    y.raw[1].raw      = _mm256_sad_epu8(x.raw[1].raw, _mm256_setzero_si256());
+    constexpr u8 NONE = 0xFF;
+    u8x32        EXPAND_IDX{{
+      NONE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+      NONE, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,  //
+      NONE, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,  //
+      NONE, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,  //
+    }};
+    y.raw[0] = EXPAND_IDX.swizzle(y.raw[0]);
+    y.raw[1] = EXPAND_IDX.swizzle(y.raw[1]);
+    return y;
+#else
     u64x8 y = std::bit_cast<u64x8>(x);
     y *= u64x8::splat(0x0101010101010101);
     y = y.shr<56>();
     y *= u64x8::splat(0x0101010101010100);
     return std::bit_cast<u8x64>(y);
+#endif
 }
 
-inline u8x64 lane_broadcast(u8x64 x) {
+forceinline u8x64 lane_broadcast(u8x64 x) {
+#if LPS_AVX2
+    u8x64 y;
+    y.raw[0].raw = _mm256_sad_epu8(x.raw[0].raw, _mm256_setzero_si256());
+    y.raw[1].raw = _mm256_sad_epu8(x.raw[1].raw, _mm256_setzero_si256());
+    u8x32 EXPAND_IDX{{
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+      0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,  //
+      0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,  //
+      0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,  //
+    }};
+    y.raw[0] = EXPAND_IDX.swizzle(y.raw[0]);
+    y.raw[1] = EXPAND_IDX.swizzle(y.raw[1]);
+    return y;
+#else
     u64x8 y = std::bit_cast<u64x8>(x);
     y *= u64x8::splat(0x0101010101010101);
     y = y.shr<56>();
     y *= u64x8::splat(0x0101010101010101);
     return std::bit_cast<u8x64>(y);
+#endif
 }
 
-inline u8x64 flip_rays(u8x64 x) {
+forceinline u8x64 flip_rays(u8x64 x) {
     auto y = std::bit_cast<std::array<u8x32, 2>>(x);
     return std::bit_cast<u8x64>(std::array<u8x32, 2>{y[1], y[0]});
 }
 
-inline u16 find_set(u8x16 needle, usize needle_count, u8x16 haystack) {
+forceinline u16 find_set(u8x16 needle, usize needle_count, u8x16 haystack) {
     u16 result = 0;
     for (usize i = 0; i < needle_count; ++i) {
         result |= haystack.eq(u8x16::splat(needle.read(i))).to_bits();
