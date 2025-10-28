@@ -110,6 +110,17 @@ public:
         return shift(dir);
     }
 
+    [[nodiscard]] Bitboard shift_relative(Color perspective, Direction dir, const i32 times) const {
+        if (perspective == Color::Black) {
+            dir = static_cast<Direction>((static_cast<u32>(dir) + 4) % 8);
+        }
+        Bitboard result = *this;
+        for (i32 i = 0; i < times; i++) {
+            result = result.shift(dir);
+        }
+        return result;
+    }
+
     [[nodiscard]] u64 value() const {
         return m_raw;
     }

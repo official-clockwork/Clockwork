@@ -17,6 +17,41 @@ static i32 chebyshev_distance(Square a, Square b) {
     return std::max(file_dist, rank_dist);
 }
 
+template<Color color>
+Bitboard pawn_spans(const Bitboard pawns) {
+    Bitboard res = pawns;
+    // rank 1 -> 2
+    res |= res.shift_relative(color, Direction::North);
+    // rank 2 -> 4
+    res |= res.shift_relative(color, Direction::North, 2);
+    // rank 4 -> 7
+    res |= res.shift_relative(color, Direction::North, 4);
+
+    return res;
+}
+
+template<Color color>
+Bitboard static_pawn_attacks(const Bitboard pawns) {
+    Bitboard attacks = pawns.shift_relative(color, Direction::NorthEast)
+                        | pawns.shift_relative(color, Direction::NorthWest);
+    return attacks;
+}
+
+template <Color color>
+Bitboard pawn_spans(const Bitboard pawns, Bitboard blockers) {
+    Bitboard res = pawns;
+    // rank 1 -> 2
+    res |= res.shift_relative(color, Direction::North) & ~blockers;
+    blockers |= blockers.shift_relative(color, Direction::North);
+    // rank 2 -> 4
+    res |= res.shift_relative(color, Direction::North, 2) & ~blockers;
+    blockers |= blockers.shift_relative(color, Direction::North, 2);
+    // rank 4 -> 7
+    res |= res.shift_relative(color, Direction::North, 4) & ~blockers;
+
+    return res;
+}
+
 std::array<Bitboard, 64> king_ring_table = []() {
     std::array<Bitboard, 64> king_ring_table{};
     for (u8 sq_idx = 0; sq_idx < 64; sq_idx++) {
@@ -143,6 +178,32 @@ PScore evaluate_pieces(const Position& pos) {
     return eval;
 }
 
+template <Color color>
+PScore evaluate_outposts(const Position& pos) {
+    // First calculate all the viable outpost squares
+    // A viable outpost square is one that is not attackable by enemy pawns and is:
+    // - on ranks 4,5,6 for white (5,4,3 for black)
+    // - not attackable by enemy pawns (now or never)
+    // - additional conditions will be added as we go
+    constexpr Color opp = ~color;
+    constexpr Bitboard viable_outposts_ranks = color == Color::White
+                                 ? Bitboard::rank_mask(3) | Bitboard::rank_mask(4) | Bitboard::rank_mask(5)
+                                 : Bitboard::rank_mask(2) | Bitboard::rank_mask(3) | Bitboard::rank_mask(4);
+    // Get enemy pawns to calculate the attacks and attack spans
+    Bitboard opp_pawns = pos.bitboard_for(opp, PieceType::Pawn);
+    Bitboard opp_pawn_span = pawn_spans<opp>(opp_pawns);
+    Bitboard opp_pawn_span_attacks = static_pawn_attacks<opp>(opp_pawns); // Note, this does NOT consider pins! Might need to test this more thoroughly.
+
+    Bitboard viable_outposts = viable_outposts_ranks & ~opp_pawn_span_attacks;
+    // Check for minor pieces on outposts
+    Bitboard minors = pos.bitboard_for(color, PieceType::Knight)
+                      | pos.bitboard_for(color, PieceType::Bishop);
+    Bitboard outpost_minors = minors & viable_outposts;
+
+    return OUTPOST_VAL * static_cast<i32>(outpost_minors.popcount());
+}
+
+
 template<Color color>
 PScore evaluate_potential_checkers(const Position& pos) {
     constexpr Color opp = ~color;
@@ -234,6 +295,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
           - evaluate_potential_checkers<Color::Black>(pos);
     eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
     eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
+    eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     return eval->phase<24>(static_cast<i32>(phase));
 };
