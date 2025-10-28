@@ -122,18 +122,11 @@ set(srcs
         src/tuned.cpp
         src/tuned.hpp
         src/tuning/globals.hpp
-        src/tuning/globals.hpp
-        src/tuning/graph.cpp
         src/tuning/graph.cpp
         src/tuning/graph.hpp
-        src/tuning/graph.hpp
-        src/tuning/loss.hpp
         src/tuning/loss.hpp
         src/tuning/optim.hpp
-        src/tuning/optim.hpp
         src/tuning/value.cpp
-        src/tuning/value.cpp
-        src/tuning/value.hpp
         src/tuning/value.hpp
         src/uci.cpp
         src/uci.hpp
