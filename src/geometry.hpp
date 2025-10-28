@@ -17,9 +17,9 @@ forceinline constexpr u8 expand_sq(Square sq) {
 }
 
 // 0rrr0fff → 00rrrfff
-forceinline std::tuple<u8x64, vm8x64> compress_coords(u8x64 list) {
-    vm8x64 valid      = (list & u8x64::splat(0x88)).zeros_vm();
-    u8x64  compressed = (list & u8x64::splat(0x07)) | (list & u8x64::splat(0x70)).shr<1>();
+forceinline std::tuple<u8x64, m8x64> compress_coords(u8x64 list) {
+    m8x64 valid      = (list & u8x64::splat(0x88)).zeros();
+    u8x64 compressed = (list & u8x64::splat(0x07)) | (list & u8x64::splat(0x70)).shr<1>();
     return {compressed, valid};
 }
 
