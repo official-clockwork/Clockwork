@@ -42,9 +42,6 @@ add_library(lps INTERFACE)
 target_include_directories(lps INTERFACE vendor/lps/include)
 add_dependencies(lps checkout_lps)
 
-execute_process(COMMAND ${GIT_EXECUTABLE} checkout ${LPS_COMMIT}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/vendor/lps)
-
 # Flags
 function(target_add_flags target)
 
