@@ -23,7 +23,7 @@ jobs:
           - clang++
         exclude:
           - os: macos-latest
-            arch: x86-64-v4
+            arch: znver4
     runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout Repo
@@ -62,11 +62,11 @@ jobs:
         run: make CXX=${{ matrix.compiler }} ARCH=${{ matrix.arch }}
 
       - name: Test
-        if: runner.os == 'Linux'
-        run: make CXX=${{ matrix.compiler }} test
+        if: runner.os == 'Linux' && matrix.arch != 'znver4'
+        run: make CXX=${{ matrix.compiler }} test ARCH=${{ matrix.arch }}
 
       - name: Check Bench
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.arch != 'znver4'
         run: |
           obtained=$(eval "./clockwork bench 2>&1" | tail -n 1 | awk '{print $1}')
           if [ "${{ env.benchref }}" != "$obtained" ]; then
@@ -94,7 +94,7 @@ jobs:
         include:
           - { arch: x86-64-v3, sys: mingw64, compiler: g++     }
           - { arch: x86-64-v3, sys: ucrt64,  compiler: g++     }
-          - { arch: x86-64-v4, sys: ucrt64,  compiler: g++     }
+          - { arch: znver4, sys: ucrt64,  compiler: g++     }
           - { arch: x86-64-v3, sys: clang64, compiler: clang++ }
     runs-on: windows-latest
     defaults:
@@ -145,9 +145,11 @@ jobs:
         run: make CXX=${{ matrix.compiler }} ARCH=${{ matrix.arch }}
 
       - name: Test
-        run: make CXX=${{ matrix.compiler }} test
+        if: matrix.arch != 'znver4'
+        run: make CXX=${{ matrix.compiler }} test ARCH=${{ matrix.arch }}
 
       - name: Check Bench
+        if: matrix.arch != 'znver4'
         run: |
           obtained=$(eval "./clockwork.exe bench 2>&1" | tail -n 1 | awk '{print $1}')
           if [ "${{ env.benchref }}" != "$obtained" ]; then
