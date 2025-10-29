@@ -193,8 +193,8 @@ PScore evaluate_outposts(const Position& pos) {
     Bitboard opp_pawns = pos.bitboard_for(opp, PieceType::Pawn);
     Bitboard opp_pawn_span = pawn_spans<opp>(opp_pawns);
     Bitboard opp_pawn_span_attacks = static_pawn_attacks<opp>(opp_pawns); // Note, this does NOT consider pins! Might need to test this more thoroughly.
-
-    Bitboard viable_outposts = viable_outposts_ranks & ~opp_pawn_span_attacks;
+    Bitboard pawn_defended_squares = pos.attacked_by(color, PieceType::Pawn);
+    Bitboard viable_outposts = viable_outposts_ranks & pawn_defended_squares & ~opp_pawn_span_attacks;
     // Check for minor pieces on outposts
     PScore         eval         = PSCORE_ZERO;
     eval += OUTPOST_KNIGHT_VAL * static_cast<i32>(
