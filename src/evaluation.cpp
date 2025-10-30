@@ -33,11 +33,11 @@ Bitboard pawn_spans(const Bitboard pawns) {
 template<Color color>
 Bitboard static_pawn_attacks(const Bitboard pawns) {
     Bitboard attacks = pawns.shift_relative(color, Direction::NorthEast)
-                        | pawns.shift_relative(color, Direction::NorthWest);
+                     | pawns.shift_relative(color, Direction::NorthWest);
     return attacks;
 }
 
-template <Color color>
+template<Color color>
 Bitboard pawn_spans(const Bitboard pawns, Bitboard blockers) {
     Bitboard res = pawns;
     // rank 1 -> 2
@@ -178,29 +178,34 @@ PScore evaluate_pieces(const Position& pos) {
     return eval;
 }
 
-template <Color color>
+template<Color color>
 PScore evaluate_outposts(const Position& pos) {
     // First calculate all the viable outpost squares
     // A viable outpost square is one that is not attackable by enemy pawns and is:
     // - on ranks 4,5,6 for white (5,4,3 for black)
     // - not attackable by enemy pawns (now or never)
     // - additional conditions will be added as we go
-    constexpr Color opp = ~color;
-    constexpr Bitboard viable_outposts_ranks = color == Color::White
-                                 ? Bitboard::rank_mask(3) | Bitboard::rank_mask(4) | Bitboard::rank_mask(5)
-                                 : Bitboard::rank_mask(2) | Bitboard::rank_mask(3) | Bitboard::rank_mask(4);
+    constexpr Color    opp = ~color;
+    constexpr Bitboard viable_outposts_ranks =
+      color == Color::White
+        ? Bitboard::rank_mask(3) | Bitboard::rank_mask(4) | Bitboard::rank_mask(5)
+        : Bitboard::rank_mask(2) | Bitboard::rank_mask(3) | Bitboard::rank_mask(4);
     // Get enemy pawns to calculate the attacks and attack spans
-    Bitboard opp_pawns = pos.bitboard_for(opp, PieceType::Pawn);
-    Bitboard opp_pawn_span = pawn_spans<opp>(opp_pawns);
-    Bitboard opp_pawn_span_attacks = static_pawn_attacks<opp>(opp_pawns); // Note, this does NOT consider pins! Might need to test this more thoroughly.
+    Bitboard opp_pawns             = pos.bitboard_for(opp, PieceType::Pawn);
+    Bitboard opp_pawn_span         = pawn_spans<opp>(opp_pawns);
+    Bitboard opp_pawn_span_attacks = static_pawn_attacks<opp>(
+      opp_pawns);  // Note, this does NOT consider pins! Might need to test this more thoroughly.
     Bitboard pawn_defended_squares = pos.attacked_by(color, PieceType::Pawn);
-    Bitboard viable_outposts = viable_outposts_ranks & pawn_defended_squares & ~opp_pawn_span_attacks;
+    Bitboard viable_outposts =
+      viable_outposts_ranks & pawn_defended_squares & ~opp_pawn_span_attacks;
     // Check for minor pieces on outposts
-    PScore         eval         = PSCORE_ZERO;
-    eval += OUTPOST_KNIGHT_VAL * static_cast<i32>(
-      (pos.bitboard_for(color, PieceType::Knight) & viable_outposts).popcount());
-    eval += OUTPOST_BISHOP_VAL * static_cast<i32>(
-      (pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).popcount());
+    PScore eval = PSCORE_ZERO;
+    eval +=
+      OUTPOST_KNIGHT_VAL
+      * static_cast<i32>((pos.bitboard_for(color, PieceType::Knight) & viable_outposts).popcount());
+    eval +=
+      OUTPOST_BISHOP_VAL
+      * static_cast<i32>((pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).popcount());
     return eval;
 }
 
