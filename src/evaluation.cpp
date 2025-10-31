@@ -135,6 +135,33 @@ PScore evaluate_pawns(const Position& pos) {
 }
 
 template<Color color>
+PScore evaluate_pawn_push_threats(const Position& pos) {
+    constexpr Color opp  = ~color;
+    PScore          eval = PSCORE_ZERO;
+
+    Bitboard our_pawns  = pos.bitboard_for(color, PieceType::Pawn);
+    Bitboard all_pieces = pos.board().get_occupied_bitboard();
+
+    Bitboard pushable = our_pawns & ~all_pieces.shift_relative(color, Direction::South);
+
+    Bitboard push_attacks =
+      pushable.shift_relative(color, Direction::North).shift_relative(color, Direction::NorthEast)
+      | pushable.shift_relative(color, Direction::North)
+          .shift_relative(color, Direction::NorthWest);
+
+    eval += PAWN_PUSH_THREAT_KNIGHT
+          * (push_attacks & pos.bitboard_for(opp, PieceType::Knight)).popcount();
+    eval += PAWN_PUSH_THREAT_BISHOP
+          * (push_attacks & pos.bitboard_for(opp, PieceType::Bishop)).popcount();
+    eval +=
+      PAWN_PUSH_THREAT_ROOK * (push_attacks & pos.bitboard_for(opp, PieceType::Rook)).popcount();
+    eval +=
+      PAWN_PUSH_THREAT_QUEEN * (push_attacks & pos.bitboard_for(opp, PieceType::Queen)).popcount();
+
+    return eval;
+}
+
+template<Color color>
 PScore evaluate_pieces(const Position& pos) {
     constexpr Color opp       = ~color;
     PScore          eval      = PSCORE_ZERO;
@@ -297,6 +324,8 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore eval = psqt_state.score();
     eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
+    eval +=
+      evaluate_pawn_push_threats<Color::White>(pos) - evaluate_pawn_push_threats<Color::Black>(pos);
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
     eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);

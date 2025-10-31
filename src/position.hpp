@@ -42,8 +42,22 @@ struct alignas(16) PieceList {
     [[nodiscard]] PieceMask mask_eq() const {
         constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
         const u8x16  to_bits{{
-          0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
-          0, 0, 0, 0, 0, 0, 0, 0,                          //
+          0x01,
+          0x02,
+          0x04,
+          0x08,
+          0x10,
+          0x20,
+          0x40,
+          0x80,  //
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,  //
         }};
         return PieceMask{(to_vector().swizzle(to_bits) & u8x16::splat(bits)).nonzeros().to_bits()};
     }
