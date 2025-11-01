@@ -66,6 +66,10 @@ public:
         return static_cast<usize>(std::popcount(m_raw));
     }
 
+    [[nodiscard]] i32 ipopcount() const {
+        return static_cast<i32>(std::popcount(m_raw));
+    }
+
     [[nodiscard]] Square msb() const {
         return Square{static_cast<u8>(std::countl_zero(m_raw))};
     }

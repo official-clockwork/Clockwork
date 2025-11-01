@@ -41,24 +41,12 @@ struct alignas(16) PieceList {
     template<PieceType... ptype>
     [[nodiscard]] PieceMask mask_eq() const {
         constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
+        // clang-format off
         const u8x16  to_bits{{
-          0x01,
-          0x02,
-          0x04,
-          0x08,
-          0x10,
-          0x20,
-          0x40,
-          0x80,  //
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,  //
+          0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+          0, 0, 0, 0, 0, 0, 0, 0,                          //
         }};
+        // clang-format on
         return PieceMask{(to_vector().swizzle(to_bits) & u8x16::splat(bits)).nonzeros().to_bits()};
     }
 
@@ -228,6 +216,10 @@ public:
 
     [[nodiscard]] usize piece_count(Color color) const {
         return 16 - piece_count(color, PieceType::None);
+    }
+
+    [[nodiscard]] isize ipiece_count(Color color, PieceType ptype) const {
+        return static_cast<isize>(piece_count(color, ptype));
     }
 
     [[nodiscard]] bool is_kp_endgame() const {

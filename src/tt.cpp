@@ -31,7 +31,7 @@ void aligned_free(void* ptr) {
 }
 
 [[nodiscard]] static u8 make_ttpv_bound(bool is_tt_pv, Bound bound) {
-    return static_cast<u8>(bound) | (static_cast<u8>(is_tt_pv) << 2);
+    return static_cast<u8>(bound) | (static_cast<u8>(static_cast<u8>(is_tt_pv) << 2));
 }
 
 i16 score_to_tt(Value score, i32 ply) {

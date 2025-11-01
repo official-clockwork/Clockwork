@@ -104,20 +104,22 @@ PScore evaluate_pawns(const Position& pos) {
         Square   push     = sq.push<color>();
         Bitboard stoppers = opp_pawns & passed_pawn_spans[static_cast<usize>(color)][sq.raw];
         if (stoppers.empty()) {
-            eval += PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
+            eval += PASSED_PAWN[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
             if (pos.attack_table(color).read(push).popcount()
                 > pos.attack_table(them).read(push).popcount()) {
-                eval += DEFENDED_PASSED_PUSH[sq.relative_sq(color).rank() - RANK_2];
+                eval +=
+                  DEFENDED_PASSED_PUSH[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
             }
             if (pos.piece_at(push) != PieceType::None) {
-                eval += BLOCKED_PASSED_PAWN[sq.relative_sq(color).rank() - RANK_2];
+                eval +=
+                  BLOCKED_PASSED_PAWN[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
             }
 
             i32 our_king_dist   = chebyshev_distance(our_king, sq);
             i32 their_king_dist = chebyshev_distance(their_king, sq);
 
-            eval += FRIENDLY_KING_PASSED_PAWN_DISTANCE[our_king_dist];
-            eval += ENEMY_KING_PASSED_PAWN_DISTANCE[their_king_dist];
+            eval += FRIENDLY_KING_PASSED_PAWN_DISTANCE[static_cast<usize>(our_king_dist)];
+            eval += ENEMY_KING_PASSED_PAWN_DISTANCE[static_cast<usize>(their_king_dist)];
         }
     }
 
@@ -128,7 +130,7 @@ PScore evaluate_pawns(const Position& pos) {
 
     Bitboard defended = pawns & pos.attacked_by(color, PieceType::Pawn);
     for (Square sq : defended) {
-        eval += DEFENDED_PAWN[sq.relative_sq(color).rank() - RANK_3];
+        eval += DEFENDED_PAWN[static_cast<usize>(sq.relative_sq(color).rank() - RANK_3)];
     }
 
     return eval;
@@ -150,13 +152,13 @@ PScore evaluate_pawn_push_threats(const Position& pos) {
           .shift_relative(color, Direction::NorthWest);
 
     eval += PAWN_PUSH_THREAT_KNIGHT
-          * (push_attacks & pos.bitboard_for(opp, PieceType::Knight)).popcount();
+          * (push_attacks & pos.bitboard_for(opp, PieceType::Knight)).ipopcount();
     eval += PAWN_PUSH_THREAT_BISHOP
-          * (push_attacks & pos.bitboard_for(opp, PieceType::Bishop)).popcount();
+          * (push_attacks & pos.bitboard_for(opp, PieceType::Bishop)).ipopcount();
     eval +=
-      PAWN_PUSH_THREAT_ROOK * (push_attacks & pos.bitboard_for(opp, PieceType::Rook)).popcount();
+      PAWN_PUSH_THREAT_ROOK * (push_attacks & pos.bitboard_for(opp, PieceType::Rook)).ipopcount();
     eval +=
-      PAWN_PUSH_THREAT_QUEEN * (push_attacks & pos.bitboard_for(opp, PieceType::Queen)).popcount();
+      PAWN_PUSH_THREAT_QUEEN * (push_attacks & pos.bitboard_for(opp, PieceType::Queen)).ipopcount();
 
     return eval;
 }
@@ -186,7 +188,7 @@ PScore evaluate_pieces(const Position& pos) {
                   static_cast<usize>(8),
                   (own_pawns & Bitboard::squares_of_color(sq.color()))
                     .popcount())  // Weird non standard positions which can have more than 8 pawns
-        ] * (1 + (blocked_pawns & Bitboard::central_files()).popcount());
+        ] * (1 + (blocked_pawns & Bitboard::central_files()).ipopcount());
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
@@ -265,27 +267,28 @@ PScore evaluate_threats(const Position& pos) {
 
     Bitboard pawn_attacks = pos.attacked_by(color, PieceType::Pawn);
     eval +=
-      PAWN_THREAT_KNIGHT * (pos.bitboard_for(opp, PieceType::Knight) & pawn_attacks).popcount();
+      PAWN_THREAT_KNIGHT * (pos.bitboard_for(opp, PieceType::Knight) & pawn_attacks).ipopcount();
     eval +=
-      PAWN_THREAT_BISHOP * (pos.bitboard_for(opp, PieceType::Bishop) & pawn_attacks).popcount();
-    eval += PAWN_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & pawn_attacks).popcount();
-    eval += PAWN_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & pawn_attacks).popcount();
+      PAWN_THREAT_BISHOP * (pos.bitboard_for(opp, PieceType::Bishop) & pawn_attacks).ipopcount();
+    eval += PAWN_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & pawn_attacks).ipopcount();
+    eval +=
+      PAWN_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & pawn_attacks).ipopcount();
 
     Bitboard knight_attacks = pos.attacked_by(color, PieceType::Knight);
+    eval += KNIGHT_THREAT_BISHOP
+          * (pos.bitboard_for(opp, PieceType::Bishop) & knight_attacks).ipopcount();
     eval +=
-      KNIGHT_THREAT_BISHOP * (pos.bitboard_for(opp, PieceType::Bishop) & knight_attacks).popcount();
+      KNIGHT_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & knight_attacks).ipopcount();
     eval +=
-      KNIGHT_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & knight_attacks).popcount();
-    eval +=
-      KNIGHT_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & knight_attacks).popcount();
+      KNIGHT_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & knight_attacks).ipopcount();
 
     Bitboard bishop_attacks = pos.attacked_by(color, PieceType::Bishop);
+    eval += BISHOP_THREAT_KNIGHT
+          * (pos.bitboard_for(opp, PieceType::Knight) & bishop_attacks).ipopcount();
     eval +=
-      BISHOP_THREAT_KNIGHT * (pos.bitboard_for(opp, PieceType::Knight) & bishop_attacks).popcount();
+      BISHOP_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & bishop_attacks).ipopcount();
     eval +=
-      BISHOP_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & bishop_attacks).popcount();
-    eval +=
-      BISHOP_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & bishop_attacks).popcount();
+      BISHOP_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & bishop_attacks).ipopcount();
 
     return eval;
 }
@@ -299,9 +302,9 @@ PScore evaluate_space(const Position& pos) {
     Bitboard        openfiles  = ~(ourfiles | theirfiles);
     Bitboard        half_open_files = (~ourfiles) & theirfiles;
 
-    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).popcount();
+    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
     eval +=
-      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).popcount();
+      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
 
     return eval;
 }
