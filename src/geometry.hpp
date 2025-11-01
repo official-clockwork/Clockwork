@@ -134,10 +134,20 @@ forceinline m8x64 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
 }
 
 forceinline u8x64 slider_broadcast(u8x64 x) {
-#if LPS_AVX2
-    u8x64 y;
-    y.raw[0].raw      = _mm256_sad_epu8(x.raw[0].raw, _mm256_setzero_si256());
-    y.raw[1].raw      = _mm256_sad_epu8(x.raw[1].raw, _mm256_setzero_si256());
+#if LPS_AVX512
+    constexpr u8 NONE = 0xFF;
+    u8x64        EXPAND_IDX{{
+      NONE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+      NONE, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,  //
+      NONE, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,  //
+      NONE, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,  //
+      NONE, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,  //
+      NONE, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,  //
+      NONE, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,  //
+      NONE, 0x38, 0x38, 0x38, 0x38, 0x38, 0x38, 0x38,  //
+    }};
+    return EXPAND_IDX.swizzle(u8x64{_mm512_sad_epu8(x.raw, _mm512_setzero_si512())});
+#elif LPS_AVX2
     constexpr u8 NONE = 0xFF;
     u8x32        EXPAND_IDX{{
       NONE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
@@ -145,9 +155,10 @@ forceinline u8x64 slider_broadcast(u8x64 x) {
       NONE, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,  //
       NONE, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,  //
     }};
-    y.raw[0] = EXPAND_IDX.swizzle(y.raw[0]);
-    y.raw[1] = EXPAND_IDX.swizzle(y.raw[1]);
-    return y;
+    u8x64        y;
+    y.raw[0].raw = _mm256_sad_epu8(x.raw[0].raw, _mm256_setzero_si256());
+    y.raw[1].raw = _mm256_sad_epu8(x.raw[1].raw, _mm256_setzero_si256());
+    return EXPAND_IDX.swizzle(y);
 #else
     u64x8 y = std::bit_cast<u64x8>(x);
     y *= u64x8::splat(0x0101010101010101);

@@ -56,7 +56,7 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     u8x64 ptypes                 = ray_valid.mask(ray_attackers & u8x64::splat(Place::PTYPE_MASK));
 
     // Bitrays (not bitboards)
-    u64 color     = ray_places.test_bm(u8x64::splat(Place::COLOR_MASK));
+    u64 color     = ray_places.test(u8x64::splat(Place::COLOR_MASK)).to_bits();
     u64 occupied  = (ray_places.nonzeros() & ray_valid).to_bits();
     u64 attackers = (ray_attackers.nonzeros() & ray_valid).to_bits();
 

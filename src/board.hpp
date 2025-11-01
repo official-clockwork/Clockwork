@@ -207,7 +207,8 @@ struct Byteboard {
     [[nodiscard]] Bitboard get_color_bitboard(Color color) const {
         u64  color_bb = static_cast<u64>(0) - static_cast<u64>(color);
         auto vec      = to_vector();
-        return Bitboard{~vec.test_bm(u8x64::splat(0x10)) ^ color_bb} & get_occupied_bitboard();
+        return Bitboard{~vec.test(u8x64::splat(0x10)).to_bits() ^ color_bb}
+             & get_occupied_bitboard();
     }
 
     [[nodiscard]] Bitboard bitboard_for(Color color, PieceType ptype) const {
@@ -247,7 +248,7 @@ struct Wordboard {
 
     [[nodiscard]] Bitboard get_piece_mask_bitboard(PieceMask piece_mask) const {
         u16x64 pm = u16x64::splat(piece_mask.value());
-        return Bitboard{raw.test_bm(pm)};
+        return Bitboard{raw.test(pm).to_bits()};
     }
 
     [[nodiscard]] usize count_matching_mask(PieceMask piece_mask) const {
