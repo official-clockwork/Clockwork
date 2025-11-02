@@ -158,7 +158,9 @@ forceinline u8x64 slider_broadcast(u8x64 x) {
     u8x64        y;
     y.raw[0].raw = _mm256_sad_epu8(x.raw[0].raw, _mm256_setzero_si256());
     y.raw[1].raw = _mm256_sad_epu8(x.raw[1].raw, _mm256_setzero_si256());
-    return EXPAND_IDX.swizzle(y);
+    y.raw[0]     = EXPAND_IDX.swizzle(y.raw[0]);
+    y.raw[1]     = EXPAND_IDX.swizzle(y.raw[1]);
+    return y;
 #else
     u64x8 y = std::bit_cast<u64x8>(x);
     y *= u64x8::splat(0x0101010101010101);
