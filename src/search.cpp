@@ -428,7 +428,7 @@ Value Worker::search(
     ss->static_eval   = -VALUE_INF;
     if (!is_in_check) {
         correction      = m_td.history.get_correction(pos);
-        raw_eval        = tt_data ? tt_data->eval : evaluate(pos);
+        raw_eval        = tt_data && !is_mate_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
         ss->static_eval = raw_eval + correction;
         improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
 
@@ -843,7 +843,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     Value static_eval = -VALUE_INF;
     if (!is_in_check) {
         correction  = m_td.history.get_correction(pos);
-        raw_eval    = tt_data ? tt_data->eval : evaluate(pos);
+        raw_eval    = tt_data && !is_mate_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
         static_eval = raw_eval + correction;
 
         if (!tt_data) {
