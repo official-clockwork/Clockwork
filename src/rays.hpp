@@ -64,6 +64,25 @@ inline constexpr Table INCLUSIVE_TABLE = generate_rays(
     return INCLUSIVE_TABLE[a.raw][b.raw];
 }
 
+inline constexpr Table EXCLUSIVE_TABLE = generate_rays(
+  [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
+      int        file  = a_file;
+      int        rank  = a_rank;
+      const auto first = Bitboard::from_square(Square::from_file_and_rank(file, rank));
+      Bitboard   last{};
+      for (; file != b_file || rank != b_rank; file += file_delta, rank += rank_delta) {
+          const auto x = Bitboard::from_square(Square::from_file_and_rank(file, rank));
+          last         = x;
+          bb |= x;
+      }
+      bb ^= first;
+      bb ^= last;
+  });
+
+[[nodiscard]] constexpr Bitboard exclusive(Square a, Square b) {
+    return EXCLUSIVE_TABLE[a.raw][b.raw];
+}
+
 inline constexpr Table INFINITE_EXCLUSIVE_TABLE = generate_rays(
   [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
       int file = a_file;
