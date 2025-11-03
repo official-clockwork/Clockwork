@@ -1,8 +1,8 @@
+#include "repetition_info.hpp"
 #include "bitboard.hpp"
 #include "cuckoo.hpp"
 #include "position.hpp"
 #include "rays.hpp"
-#include "repetition_info.hpp"
 #include "util/types.hpp"
 
 namespace Clockwork {
@@ -102,19 +102,12 @@ bool RepetitionInfo::has_game_cycle(const Position& pos, usize ply) {
                 return true;
             }
 
-            Place piece_from = pos.board()[mv.from()];
-            Place piece_to   = pos.board()[mv.to()];
-
-            Color moving_color;
-            if (!piece_from.is_empty()) {
-                moving_color = piece_from.color();
-            } else if (!piece_to.is_empty()) {
-                moving_color = piece_to.color();
-            } else {
-                assert(false);
+            auto piece = pos.board()[mv.from()];
+            if (piece.is_empty()) {
+                piece = pos.board()[mv.to()];
             }
 
-            return moving_color == pos.active_color();
+            return piece.color() == pos.active_color();
         }
     }
 
