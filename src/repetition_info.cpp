@@ -66,18 +66,18 @@ bool RepetitionInfo::has_game_cycle(const Position& pos, usize ply) {
     }
 
     auto old_key = [this](usize i) -> HashKey {
-        return m_repetition_table[m_repetition_table.size() - i - 1].first;
+        return m_repetition_table[m_repetition_table.size() - i].first;
     };
 
     Bitboard occ          = pos.board().get_occupied_bitboard();
     HashKey  original_key = pos.get_hash_key();
 
-    HashKey other = ~(original_key ^ old_key(1));
+    HashKey other = ~(original_key ^ old_key(2));
 
     for (usize i = 3; i <= end; i += 2) {
-        HashKey curr_key = old_key(i);
+        HashKey curr_key = old_key(i + 1);
 
-        other ^= ~(curr_key ^ old_key(i - 1));
+        other ^= ~(curr_key ^ old_key(i));
         if (other != 0) {
             continue;
         }
