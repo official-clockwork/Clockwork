@@ -59,14 +59,14 @@ void RepetitionInfo::reset() {
 }
 
 bool RepetitionInfo::has_game_cycle(const Position& pos, usize ply) {
-    usize end = std::min(pos.get_50mr_counter(), static_cast<u16>(m_repetition_table.size()));
+    usize end = std::min(pos.get_50mr_counter(), static_cast<u16>(m_repetition_table.size() - 1));
 
     if (end < 3) {
         return false;
     }
 
     auto old_key = [this](usize i) -> HashKey {
-        return m_repetition_table[m_repetition_table.size() - i].first;
+        return m_repetition_table[m_repetition_table.size() - i - 1].first;
     };
 
     Bitboard occ          = pos.board().get_occupied_bitboard();
