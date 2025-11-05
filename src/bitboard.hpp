@@ -151,7 +151,7 @@ public:
 
     struct Iterator {
     public:
-        Iterator &operator++() {
+        Iterator& operator++() {
             m_bb = clear_lowest_bit(m_bb);
             return *this;
         }
@@ -160,7 +160,7 @@ public:
             return Square{static_cast<u8>(std::countr_zero(m_bb))};
         }
 
-        bool operator==(const Iterator &) const = default;
+        bool operator==(const Iterator&) const = default;
 
     private:
         friend struct Bitboard;
@@ -180,7 +180,7 @@ public:
         return Iterator{0};
     }
 
-    bool operator==(const Bitboard &) const = default;
+    bool operator==(const Bitboard&) const = default;
 
     friend constexpr Bitboard operator~(Bitboard a) {
         return Bitboard{~a.m_raw};
@@ -203,10 +203,10 @@ public:
         return Bitboard{a.m_raw << shift};
     }
 
-    friend constexpr Bitboard &operator&=(Bitboard &a, Bitboard b) {
+    friend constexpr Bitboard& operator&=(Bitboard& a, Bitboard b) {
         return a = a & b;
     }
-    friend constexpr Bitboard &operator|=(Bitboard &a, Bitboard b) {
+    friend constexpr Bitboard& operator|=(Bitboard& a, Bitboard b) {
         return a = a | b;
     }
 

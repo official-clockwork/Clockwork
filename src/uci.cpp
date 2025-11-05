@@ -41,14 +41,14 @@ void UCIHandler::loop() {
     }
 }
 
-void UCIHandler::handle_command_line(i32 argc, char *argv[]) {
+void UCIHandler::handle_command_line(i32 argc, char* argv[]) {
     for (i32 i = 1; i < argc; ++i) {
         execute_command(argv[i]);
     }
     searcher.exit();
 }
 
-void UCIHandler::execute_command(const std::string &line) {
+void UCIHandler::execute_command(const std::string& line) {
     std::istringstream is{line};
 
     std::string command;
@@ -106,7 +106,7 @@ void UCIHandler::execute_command(const std::string &line) {
 }
 
 
-void UCIHandler::handle_bench(std::istringstream &is) {
+void UCIHandler::handle_bench(std::istringstream& is) {
     Depth depth = 16;
     if (!(is >> depth)) {
         is.clear();
@@ -115,7 +115,7 @@ void UCIHandler::handle_bench(std::istringstream &is) {
     Bench::benchmark(searcher, depth);
 }
 
-void UCIHandler::handle_go(std::istringstream &is) {
+void UCIHandler::handle_go(std::istringstream& is) {
     // Clear any previous settings
     settings = {};
     std::string token;
@@ -151,7 +151,7 @@ void UCIHandler::handle_go(std::istringstream &is) {
     searcher.launch_search(settings);
 }
 
-void UCIHandler::handle_position(std::istringstream &is) {
+void UCIHandler::handle_position(std::istringstream& is) {
     std::string token;
 
     m_repetition_info.reset();
@@ -195,7 +195,7 @@ void UCIHandler::handle_position(std::istringstream &is) {
     searcher.set_position(m_position, m_repetition_info);
 }
 
-void UCIHandler::handle_d(std::istringstream &) {
+void UCIHandler::handle_d(std::istringstream&) {
     IosFmtGuard guard{std::cout};
     std::cout << "   +------------------------+" << std::endl;
     for (i32 rank = 7; rank >= 0; rank--) {
@@ -214,7 +214,7 @@ void UCIHandler::handle_d(std::istringstream &) {
               << m_position.get_hash_key() << std::endl;
 }
 
-void UCIHandler::handle_setoption(std::istringstream &is) {
+void UCIHandler::handle_setoption(std::istringstream& is) {
     std::string token, name, value_str;
 
     is >> token;
@@ -271,7 +271,7 @@ void UCIHandler::handle_setoption(std::istringstream &is) {
     }
 }
 
-void UCIHandler::handle_attacks(std::istringstream &) {
+void UCIHandler::handle_attacks(std::istringstream&) {
     std::cout << m_position.attack_table(Color::White) << std::endl;
     std::cout << m_position.attack_table(Color::Black) << std::endl;
     std::cout << "White: ";
@@ -288,7 +288,7 @@ void UCIHandler::handle_attacks(std::istringstream &) {
     std::cout << std::endl;
 }
 
-void UCIHandler::handle_perft(std::istringstream &is) {
+void UCIHandler::handle_perft(std::istringstream& is) {
     std::string token;
     i32         depth = 1;
 
@@ -300,7 +300,7 @@ void UCIHandler::handle_perft(std::istringstream &is) {
     split_perft(m_position, static_cast<usize>(depth));
 }
 
-void UCIHandler::handle_genfens(std::istringstream &is) {
+void UCIHandler::handle_genfens(std::istringstream& is) {
     int         N             = 0;
     uint64_t    seed          = 0;
     bool        seed_provided = false;

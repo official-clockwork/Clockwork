@@ -3,7 +3,7 @@
 
 namespace Clockwork {
 
-i32 History::get_conthist(const Position &pos, Move move, i32 ply, Search::Stack *ss) const {
+i32 History::get_conthist(const Position& pos, Move move, i32 ply, Search::Stack* ss) const {
     i32 stats = 0;
 
     usize     stm_idx = static_cast<usize>(pos.active_color());
@@ -25,7 +25,7 @@ i32 History::get_conthist(const Position &pos, Move move, i32 ply, Search::Stack
     return stats;
 }
 
-i32 History::get_quiet_stats(const Position &pos, Move move, i32 ply, Search::Stack *ss) const {
+i32 History::get_quiet_stats(const Position& pos, Move move, i32 ply, Search::Stack* ss) const {
     auto to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
     auto from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
     i32  stats         = m_main_hist[static_cast<usize>(pos.active_color())][move.from_to()]
@@ -35,7 +35,7 @@ i32 History::get_quiet_stats(const Position &pos, Move move, i32 ply, Search::St
 }
 
 void History::update_cont_hist(
-  const Position &pos, Move move, i32 ply, Search::Stack *ss, i32 bonus) {
+  const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
     i32       conthist = get_conthist(pos, move, ply, ss);
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
@@ -60,7 +60,7 @@ void History::update_cont_hist(
 
 
 void History::update_quiet_stats(
-  const Position &pos, Move move, i32 ply, Search::Stack *ss, i32 bonus) {
+  const Position& pos, Move move, i32 ply, Search::Stack* ss, i32 bonus) {
     auto  to_attacked   = pos.is_square_attacked_by(move.to(), ~pos.active_color());
     auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
     usize stm_idx       = static_cast<usize>(pos.active_color());
@@ -68,7 +68,7 @@ void History::update_quiet_stats(
     update_cont_hist(pos, move, ply, ss, bonus);
 }
 
-i32 History::get_noisy_stats(const Position &pos, Move move) const {
+i32 History::get_noisy_stats(const Position& pos, Move move) const {
     usize     stm_idx  = static_cast<usize>(pos.active_color());
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
@@ -76,7 +76,7 @@ i32 History::get_noisy_stats(const Position &pos, Move move) const {
     return m_capt_hist[stm_idx][pt_idx][static_cast<usize>(captured)][move.to().raw];
 }
 
-void History::update_noisy_stats(const Position &pos, Move move, i32 bonus) {
+void History::update_noisy_stats(const Position& pos, Move move, i32 bonus) {
     usize     stm_idx  = static_cast<usize>(pos.active_color());
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
@@ -85,7 +85,7 @@ void History::update_noisy_stats(const Position &pos, Move move, i32 bonus) {
                       bonus);
 }
 
-void History::update_correction_history(const Position &pos, i32 depth, i32 diff) {
+void History::update_correction_history(const Position& pos, i32 depth, i32 diff) {
     usize side_index         = static_cast<usize>(pos.active_color());
     u64   pawn_key           = pos.get_pawn_key();
     u64   white_non_pawn_key = pos.get_non_pawn_key(Color::White);
@@ -103,7 +103,7 @@ void History::update_correction_history(const Position &pos, i32 depth, i32 diff
     i32 new_weight  = std::min(16, 1 + depth);
     i32 scaled_diff = diff * CORRECTION_HISTORY_GRAIN;
 
-    auto update_entry = [=](i32 &entry) {
+    auto update_entry = [=](i32& entry) {
         i32 update =
           entry * (CORRECTION_HISTORY_WEIGHT_SCALE - new_weight) + scaled_diff * new_weight;
 
@@ -118,7 +118,7 @@ void History::update_correction_history(const Position &pos, i32 depth, i32 diff
     update_entry(m_minor_corr_hist[side_index][minor_index]);
 }
 
-i32 History::get_correction(const Position &pos) {
+i32 History::get_correction(const Position& pos) {
     usize side_index         = static_cast<usize>(pos.active_color());
     u64   pawn_key           = pos.get_pawn_key();
     u64   white_non_pawn_key = pos.get_non_pawn_key(Color::White);

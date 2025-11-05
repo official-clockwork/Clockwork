@@ -15,12 +15,12 @@ template<size_t N>
 struct DebugInfo {
     std::array<std::atomic<int64_t>, N> data = {0};
 
-    [[nodiscard]] constexpr std::atomic<int64_t> &operator[](size_t index) {
+    [[nodiscard]] constexpr std::atomic<int64_t>& operator[](size_t index) {
         assert(index < N);
         return data[index];
     }
 
-    constexpr DebugInfo &operator=(const DebugInfo &other) {
+    constexpr DebugInfo& operator=(const DebugInfo& other) {
         for (size_t i = 0; i < N; i++) {
             data[i].store(other.data[i].load());
         }

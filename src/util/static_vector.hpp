@@ -20,8 +20,8 @@ class StaticVector {
 
 public:
     using value_type     = T;
-    using iterator       = T *;
-    using const_iterator = const T *;
+    using iterator       = T*;
+    using const_iterator = const T*;
     using size_type      = usize;
 
     StaticVector() :
@@ -43,19 +43,19 @@ public:
         std::uninitialized_value_construct_n(data(), len);
     }
 
-    StaticVector(const StaticVector &other) :
+    StaticVector(const StaticVector& other) :
         m_len(other.m_len) {
         std::uninitialized_copy(other.begin(), other.end(), data());
     }
 
-    StaticVector(StaticVector &&other) noexcept :
+    StaticVector(StaticVector&& other) noexcept :
         m_len(other.m_len) {
         std::uninitialized_move(other.begin(), other.end(), data());
         // technically, this isn't necessary, but it should help catch potential bugs.
         other.clear();
     }
 
-    StaticVector &operator=(const StaticVector &other) {
+    StaticVector& operator=(const StaticVector& other) {
         if (other.m_len > m_len) {
             std::copy_n(other.begin(), m_len, data());
             std::uninitialized_copy(other.begin() + m_len, other.end(), end());
@@ -67,7 +67,7 @@ public:
         return *this;
     }
 
-    StaticVector &operator=(StaticVector &&other) noexcept {
+    StaticVector& operator=(StaticVector&& other) noexcept {
         if (&other == this) {
             return *this;
         }
@@ -85,31 +85,31 @@ public:
 
     template<typename... Args>
         requires(std::constructible_from<T, Args...>)
-    iterator emplace_back(Args &&...args) {
+    iterator emplace_back(Args&&... args) {
         assert(m_len < cap);
-        T *res = std::construct_at(data() + m_len, std::forward<Args>(args)...);
+        T* res = std::construct_at(data() + m_len, std::forward<Args>(args)...);
         m_len++;
         return res;
     }
 
-    void append(const StaticVector &other) {
+    void append(const StaticVector& other) {
         assert(m_len + other.m_len <= cap);
         std::uninitialized_copy(other.begin(), other.end(), end());
         m_len += other.m_len;
     }
 
-    iterator push_back(const T &value) {
+    iterator push_back(const T& value) {
         assert(m_len < cap);
-        T *res = std::construct_at(data() + m_len, value);
+        T* res = std::construct_at(data() + m_len, value);
         m_len++;
         return res;
     }
 
-    iterator push_back(T &&value) {
+    iterator push_back(T&& value) {
         return emplace_back(std::move(value));
     }
 
-    void append(StaticVector &&other) {
+    void append(StaticVector&& other) {
         assert(m_len + other.m_len <= cap);
         std::uninitialized_move(other.begin(), other.end(), end());
         m_len += other.m_len;
@@ -117,7 +117,7 @@ public:
     }
 
     T pop_back() {
-        T &last = back();
+        T& last = back();
         T  res  = std::move(last);
         std::destroy_at(&last);
         m_len--;
@@ -150,7 +150,7 @@ public:
         m_len = new_size;
     }
 
-    void resize(usize new_size, const T &value) {
+    void resize(usize new_size, const T& value) {
         assert(new_size <= cap);
         if (new_size <= m_len) {
             std::destroy(begin() + new_size, end());
@@ -160,11 +160,11 @@ public:
         m_len = new_size;
     }
 
-    T &operator[](usize index) {
+    T& operator[](usize index) {
         assert(index < m_len);
         return data()[index];
     }
-    const T &operator[](usize index) const {
+    const T& operator[](usize index) const {
         assert(index < m_len);
         return data()[index];
     }
@@ -172,12 +172,12 @@ public:
     // We never access the raw bytes directly except to immediately call `std::construct_at`.
     // This means we don't need to call `std::launder`.
     // Unfortunately, the reinterpret_cast means this can't be constexpr.
-    [[nodiscard]] T *data() {
-        return reinterpret_cast<T *>(m_storage.data());
+    [[nodiscard]] T* data() {
+        return reinterpret_cast<T*>(m_storage.data());
     }
 
-    [[nodiscard]] const T *data() const {
-        return reinterpret_cast<const T *>(m_storage.data());
+    [[nodiscard]] const T* data() const {
+        return reinterpret_cast<const T*>(m_storage.data());
     }
 
     [[nodiscard]] iterator begin() {
@@ -200,21 +200,21 @@ public:
         return end();
     }
 
-    T &back() {
+    T& back() {
         assert(m_len > 0);
         return data()[m_len - 1];
     }
-    const T &back() const {
+    const T& back() const {
         assert(m_len > 0);
         return data()[m_len - 1];
     }
 
-    friend auto operator<=>(const StaticVector &lhs, const StaticVector &rhs) {
+    friend auto operator<=>(const StaticVector& lhs, const StaticVector& rhs) {
         return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(), rhs.begin(),
                                                       rhs.end());
     }
 
-    friend auto operator==(const StaticVector &lhs, const StaticVector &rhs) {
+    friend auto operator==(const StaticVector& lhs, const StaticVector& rhs) {
         return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
     }
 

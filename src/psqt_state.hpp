@@ -23,12 +23,12 @@ struct PsqtUpdates {
 struct PsqtState {
 public:
     PsqtState() = default;
-    PsqtState(const Position &pos) {
+    PsqtState(const Position& pos) {
         for (Color c : {Color::White, Color::Black}) {
             m_accumulators[static_cast<usize>(c)] = PSCORE_ZERO;
             m_king_sides[static_cast<usize>(c)]   = pos.king_side(c);
-            auto &pieces                          = pos.piece_list(c);
-            auto &squares                         = pos.piece_list_sq(c);
+            auto& pieces                          = pos.piece_list(c);
+            auto& squares                         = pos.piece_list_sq(c);
 
             for (u8 i = 0; i < 16; i++) {
                 PieceType pt = pieces[i];
@@ -41,18 +41,18 @@ public:
         }
     }
 
-    void apply_updates(const Position &pos, const PsqtUpdates &updates) {
+    void apply_updates(const Position& pos, const PsqtUpdates& updates) {
         Color reload_side;
         if (pos.king_side(Color::White) != m_king_sides[static_cast<usize>(Color::White)]) {
             reload_side = Color::White;
         } else if (pos.king_side(Color::Black) != m_king_sides[static_cast<usize>(Color::Black)]) {
             reload_side = Color::Black;
         } else {
-            for (const auto &add : updates.adds) {
+            for (const auto& add : updates.adds) {
                 add_piece(add.color, add.pt, add.sq);
             }
 
-            for (const auto &remove : updates.removes) {
+            for (const auto& remove : updates.removes) {
                 remove_piece(remove.color, remove.pt, remove.sq);
             }
             return;
@@ -61,7 +61,7 @@ public:
         m_king_sides[static_cast<usize>(reload_side)] = pos.king_side(reload_side);
         reload_accumulator(pos, reload_side);
 
-        for (const auto &remove : updates.removes) {
+        for (const auto& remove : updates.removes) {
             if (remove.color != reload_side) {
                 remove_piece(remove.color, remove.pt, remove.sq);
             }
@@ -73,14 +73,14 @@ public:
              - m_accumulators[static_cast<usize>(Color::Black)];
     }
 
-    bool operator==(const PsqtState &other) const noexcept = default;
-    bool operator!=(const PsqtState &other) const noexcept = default;
+    bool operator==(const PsqtState& other) const noexcept = default;
+    bool operator!=(const PsqtState& other) const noexcept = default;
 
 private:
-    void reload_accumulator(const Position &pos, Color c) {
+    void reload_accumulator(const Position& pos, Color c) {
         m_accumulators[static_cast<usize>(c)] = PSCORE_ZERO;
-        auto     &pieces                      = pos.piece_list(c);
-        auto     &squares                     = pos.piece_list_sq(c);
+        auto&     pieces                      = pos.piece_list(c);
+        auto&     squares                     = pos.piece_list_sq(c);
         PieceMask valid_pieces                = pieces.mask_valid();
 
         for (PieceId id : valid_pieces) {
@@ -98,7 +98,7 @@ private:
             sq = sq.flip_horizontal();
         }
 
-        auto &accumulator = m_accumulators[static_cast<usize>(color)];
+        auto& accumulator = m_accumulators[static_cast<usize>(color)];
         switch (pt) {
         case PieceType::Pawn:
             accumulator += PAWN_MAT + PAWN_PSQT[sq.raw - 8];
@@ -133,7 +133,7 @@ private:
             sq = sq.flip_horizontal();
         }
 
-        auto &accumulator = m_accumulators[static_cast<usize>(color)];
+        auto& accumulator = m_accumulators[static_cast<usize>(color)];
         switch (pt) {
         case PieceType::Pawn:
             accumulator -= PAWN_MAT + PAWN_PSQT[sq.raw - 8];

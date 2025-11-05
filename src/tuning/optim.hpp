@@ -30,16 +30,16 @@ public:
         m_pair_velocity.resize(m_counts.pair_parameter_count, f128::zero());
     }
 
-    void step(Parameters &values, const Parameters &gradients) {
+    void step(Parameters& values, const Parameters& gradients) {
         // ---- Value parameters ----
         for (size_t i = 0; i < m_counts.parameter_count; ++i) {
             if (Globals::get().is_parameter_constant(i)) {
                 continue;
             }
 
-            auto &p_value = values.parameters[i];
-            auto &p_grad  = gradients.parameters[i];
-            auto &v       = m_value_velocity[i];
+            auto& p_value = values.parameters[i];
+            auto& p_grad  = gradients.parameters[i];
+            auto& v       = m_value_velocity[i];
 
             v = m_momentum * v - m_lr * p_grad;
 
@@ -52,9 +52,9 @@ public:
                 continue;
             }
 
-            auto &p_value = values.pair_parameters[i];
-            auto &p_grad  = gradients.pair_parameters[i];
-            auto &v       = m_pair_velocity[i];
+            auto& p_value = values.pair_parameters[i];
+            auto& p_grad  = gradients.pair_parameters[i];
+            auto& v       = m_pair_velocity[i];
 
             const f128 lr_grad = f128::mul_scalar(p_grad, m_lr);
 
@@ -112,7 +112,7 @@ public:
         m_pair_v.resize(m_counts.pair_parameter_count, f128::zero());
     }
 
-    void step(Parameters &values, const Parameters &gradients) {
+    void step(Parameters& values, const Parameters& gradients) {
         m_t += 1;
 
         const f64 b1t      = std::pow(m_beta1, static_cast<f64>(m_t));
@@ -126,8 +126,8 @@ public:
                 continue;
             }
 
-            auto &p = values.parameters[i];
-            auto &g = gradients.parameters[i];
+            auto& p = values.parameters[i];
+            auto& g = gradients.parameters[i];
 
             m_m[i] = m_beta1 * m_m[i] + (1.0 - m_beta1) * g;
 
@@ -151,10 +151,10 @@ public:
                 continue;
             }
 
-            auto &p = values.pair_parameters[i];
-            auto &g = gradients.pair_parameters[i];
-            auto &m = m_pair_m[i];
-            auto &v = m_pair_v[i];
+            auto& p = values.pair_parameters[i];
+            auto& g = gradients.pair_parameters[i];
+            auto& m = m_pair_m[i];
+            auto& v = m_pair_v[i];
 
             const f128 g2 = f128::mul(g, g);
 

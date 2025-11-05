@@ -52,7 +52,7 @@ template<typename F>
 }
 
 inline constexpr Table INCLUSIVE_TABLE = generate_rays(
-  [](Bitboard &bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
+  [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
       int file = a_file;
       int rank = a_rank;
       for (; file != b_file || rank != b_rank; file += file_delta, rank += rank_delta) {
@@ -65,7 +65,7 @@ inline constexpr Table INCLUSIVE_TABLE = generate_rays(
 }
 
 inline constexpr Table INFINITE_EXCLUSIVE_TABLE = generate_rays(
-  [](Bitboard &bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
+  [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
       int file = a_file;
       int rank = a_rank;
       for (; file >= 0 && file <= 7 && rank >= 0 && rank <= 7;

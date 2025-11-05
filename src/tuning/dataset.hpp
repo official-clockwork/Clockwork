@@ -17,7 +17,7 @@ namespace Clockwork::Autograd {
 class Dataset {
 private:
     std::string              m_file_path;
-    char                    *m_mapped_data;
+    char*                    m_mapped_data;
     size_t                   m_file_size;
     std::vector<std::string> m_lines;
 
@@ -25,10 +25,10 @@ private:
     void parse_lines();
 
 public:
-    Dataset(const std::string &file_path);
+    Dataset(const std::string& file_path);
     ~Dataset();
 
-    const std::vector<std::string> &lines() const {
+    const std::vector<std::string>& lines() const {
         return m_lines;
     }
     size_t size() const {
@@ -38,12 +38,12 @@ public:
 
 class DataLoader {
 private:
-    const Dataset &m_dataset;
+    const Dataset& m_dataset;
     size_t         m_batch_size;
     size_t         m_index;
 
 public:
-    DataLoader(const Dataset &dataset, size_t batch_size);
+    DataLoader(const Dataset& dataset, size_t batch_size);
 
     bool                     has_next() const;
     std::vector<std::string> next_batch();

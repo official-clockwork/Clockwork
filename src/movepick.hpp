@@ -14,7 +14,7 @@ bool quiet_move(Move move);
 class MovePicker {
 public:
     explicit MovePicker(
-      const Position &pos, const History &history, Move tt_move, i32 ply, Search::Stack *ss) :
+      const Position& pos, const History& history, Move tt_move, i32 ply, Search::Stack* ss) :
         m_pos(pos),
         m_history(history),
         m_movegen(pos),
@@ -50,15 +50,15 @@ public:
 
 private:
     void                 generate_moves();
-    std::pair<Move, i32> pick_next(MoveList &moves);
-    void                 score_moves(MoveList &moves);
+    std::pair<Move, i32> pick_next(MoveList& moves);
+    void                 score_moves(MoveList& moves);
 
     i32 score_move(Move move) const;
 
     Stage m_stage = Stage::EmitTTMove;
 
-    const Position      &m_pos;
-    const History       &m_history;
+    const Position&      m_pos;
+    const History&       m_history;
     MoveGen              m_movegen;
     MoveList             m_noisy;
     MoveList             m_quiet;
@@ -70,7 +70,7 @@ private:
     Move           m_tt_move;
     Move           m_killer;
     i32            m_ply;
-    Search::Stack *m_stack;
+    Search::Stack* m_stack;
 };
 
 }  // namespace Clockwork

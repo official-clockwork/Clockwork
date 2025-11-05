@@ -39,7 +39,7 @@ int main() {
 
     std::cout << "Running on " << thread_count << " threads" << std::endl;
 
-    for (const auto &filename : fenFiles) {
+    for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
         if (!fenFile) {
             std::cerr << "Error opening " << filename << std::endl;
@@ -250,11 +250,11 @@ int main() {
                   << ";" << std::endl;
         std::cout << std::endl;
 
-        auto print_table = [](const std::string &name, const auto &table) {
+        auto print_table = [](const std::string& name, const auto& table) {
             std::cout << "inline const std::array<PParam, " << table.size() << "> " << name
                       << " = {" << std::endl
                       << "   ";
-            for (const auto &val : table) {
+            for (const auto& val : table) {
                 std::cout << " " << val << ",";
             }
             std::cout << std::endl << "};" << std::endl;
@@ -313,7 +313,7 @@ int main() {
         print_table("BISHOP_PAWNS", BISHOP_PAWNS);
         std::cout << std::endl;
 
-        auto printPsqtArray = [](const std::string &name, const auto &arr) {
+        auto printPsqtArray = [](const std::string& name, const auto& arr) {
             std::cout << "inline const std::array<PParam, " << arr.size() << "> " << name << " = {"
                       << std::endl;
             for (std::size_t i = 0; i < arr.size(); ++i) {

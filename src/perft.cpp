@@ -8,7 +8,7 @@
 namespace Clockwork {
 
 template<bool print>
-static u64 core(const Position &position, usize depth) {
+static u64 core(const Position& position, usize depth) {
     if (depth == 0) {
         return 1;
     }
@@ -40,11 +40,11 @@ static u64 core(const Position &position, usize depth) {
     return result;
 }
 
-u64 perft(const Position &position, usize depth) {
+u64 perft(const Position& position, usize depth) {
     return core<false>(position, depth);
 }
 
-void split_perft(const Position &position, usize depth) {
+void split_perft(const Position& position, usize depth) {
     IosFmtGuard guard{std::cout};
 
     auto start_time = std::chrono::steady_clock::now();

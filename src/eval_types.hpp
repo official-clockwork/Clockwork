@@ -55,20 +55,20 @@ public:
         return static_cast<Score>(v);
     }
 
-    [[nodiscard]] constexpr auto operator+(const PScore &other) const {
+    [[nodiscard]] constexpr auto operator+(const PScore& other) const {
         return PScore{m_score + other.m_score};
     }
 
-    constexpr auto operator+=(const PScore &other) -> auto & {
+    constexpr auto operator+=(const PScore& other) -> auto& {
         m_score += other.m_score;
         return *this;
     }
 
-    [[nodiscard]] constexpr auto operator-(const PScore &other) const {
+    [[nodiscard]] constexpr auto operator-(const PScore& other) const {
         return PScore{m_score - other.m_score};
     }
 
-    constexpr auto operator-=(const PScore &other) -> auto & {
+    constexpr auto operator-=(const PScore& other) -> auto& {
         m_score -= other.m_score;
         return *this;
     }
@@ -77,7 +77,7 @@ public:
         return PScore{m_score * v};
     }
 
-    constexpr auto operator*=(i32 v) -> auto & {
+    constexpr auto operator*=(i32 v) -> auto& {
         m_score *= v;
         return *this;
     }
@@ -86,9 +86,9 @@ public:
         return PScore{-m_score};
     }
 
-    [[nodiscard]] constexpr bool operator==(const PScore &other) const = default;
+    [[nodiscard]] constexpr bool operator==(const PScore& other) const = default;
 
-    [[nodiscard]] constexpr const PScore *operator->() const {
+    [[nodiscard]] constexpr const PScore* operator->() const {
         return this;
     }
 
@@ -99,7 +99,7 @@ public:
         return static_cast<Value>((mg() * alpha + eg() * (max - alpha)) / max);
     }
 
-    friend std::ostream &operator<<(std::ostream &stream, const PScore &score) {
+    friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {
         stream << "(" << score.mg() << "\t" << score.eg() << ")";
         return stream;
     }

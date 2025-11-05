@@ -75,11 +75,11 @@ struct Square {
         return Square{static_cast<u8>(raw + (color == Color::White ? 8 : -8))};
     }
 
-    friend std::ostream &operator<<(std::ostream &os, Square sq) {
+    friend std::ostream& operator<<(std::ostream& os, Square sq) {
         char file = static_cast<char>('a' + sq.file());
         return os << file << sq.rank() + 1;
     }
 
-    const std::strong_ordering operator<=>(const Square &) const = default;
+    const std::strong_ordering operator<=>(const Square&) const = default;
 };
 }  // namespace Clockwork

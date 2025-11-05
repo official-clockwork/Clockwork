@@ -45,8 +45,8 @@ public:
     TT(size_t mb = DEFAULT_SIZE_MB);
     ~TT();
 
-    std::optional<TTData> probe(const Position &position, i32 ply) const;
-    void                  store(const Position &position,
+    std::optional<TTData> probe(const Position& position, i32 ply) const;
+    void                  store(const Position& position,
                                 i32             ply,
                                 Value           eval,
                                 Move            move,
@@ -58,7 +58,7 @@ public:
     void                  clear();
 
 private:
-    TTEntry *m_entries;
+    TTEntry* m_entries;
     size_t   m_size;
 };
 

@@ -87,7 +87,7 @@ std::array<std::array<Bitboard, 64>, 2> passed_pawn_spans = []() {
 }();
 
 template<Color color>
-PScore evaluate_pawns(const Position &pos) {
+PScore evaluate_pawns(const Position& pos) {
     constexpr i32   RANK_2 = 1;
     constexpr i32   RANK_3 = 2;
     constexpr Color them   = color == Color::White ? Color::Black : Color::White;
@@ -137,7 +137,7 @@ PScore evaluate_pawns(const Position &pos) {
 }
 
 template<Color color>
-PScore evaluate_pawn_push_threats(const Position &pos) {
+PScore evaluate_pawn_push_threats(const Position& pos) {
     constexpr Color opp  = ~color;
     PScore          eval = PSCORE_ZERO;
 
@@ -164,7 +164,7 @@ PScore evaluate_pawn_push_threats(const Position &pos) {
 }
 
 template<Color color>
-PScore evaluate_pieces(const Position &pos) {
+PScore evaluate_pieces(const Position& pos) {
     constexpr Color opp       = ~color;
     PScore          eval      = PSCORE_ZERO;
     Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
@@ -208,7 +208,7 @@ PScore evaluate_pieces(const Position &pos) {
 }
 
 template<Color color>
-PScore evaluate_outposts(const Position &pos) {
+PScore evaluate_outposts(const Position& pos) {
     // First calculate all the viable outpost squares
     // A viable outpost square is one that is not attackable by enemy pawns and is:
     // - on ranks 4,5,6 for white (5,4,3 for black)
@@ -240,7 +240,7 @@ PScore evaluate_outposts(const Position &pos) {
 
 
 template<Color color>
-PScore evaluate_potential_checkers(const Position &pos) {
+PScore evaluate_potential_checkers(const Position& pos) {
     constexpr Color opp = ~color;
 
     const PieceMask orth   = pos.get_piece_mask<PieceType::Rook, PieceType::Queen>(opp);
@@ -261,7 +261,7 @@ PScore evaluate_potential_checkers(const Position &pos) {
 }
 
 template<Color color>
-PScore evaluate_threats(const Position &pos) {
+PScore evaluate_threats(const Position& pos) {
     constexpr Color opp  = ~color;
     PScore          eval = PSCORE_ZERO;
 
@@ -294,7 +294,7 @@ PScore evaluate_threats(const Position &pos) {
 }
 
 template<Color color>
-PScore evaluate_space(const Position &pos) {
+PScore evaluate_space(const Position& pos) {
     PScore          eval       = PSCORE_ZERO;
     constexpr Color them       = color == Color::White ? Color::Black : Color::White;
     Bitboard        ourfiles   = Bitboard::fill_verticals(pos.bitboard_for(color, PieceType::Pawn));
@@ -309,7 +309,7 @@ PScore evaluate_space(const Position &pos) {
     return eval;
 }
 
-Score evaluate_white_pov(const Position &pos, const PsqtState &psqt_state) {
+Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     usize       phase = pos.piece_count(Color::White, PieceType::Knight)
                 + pos.piece_count(Color::Black, PieceType::Knight)
@@ -338,7 +338,7 @@ Score evaluate_white_pov(const Position &pos, const PsqtState &psqt_state) {
     return static_cast<Score>(eval->phase<24>(static_cast<i32>(phase)));
 };
 
-Score evaluate_stm_pov(const Position &pos, const PsqtState &psqt_state) {
+Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us = pos.active_color();
     return static_cast<Score>((us == Color::White) ? evaluate_white_pov(pos, psqt_state)
                                                    : -evaluate_white_pov(pos, psqt_state));

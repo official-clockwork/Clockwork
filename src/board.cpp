@@ -7,7 +7,7 @@
 
 namespace Clockwork {
 
-std::ostream &operator<<(std::ostream &os, const Wordboard &at) {
+std::ostream& operator<<(std::ostream& os, const Wordboard& at) {
     IosFmtGuard guard{os};
 
     for (i32 rank = 7; rank >= 0; rank--) {

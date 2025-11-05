@@ -72,7 +72,7 @@ struct f128 {
     }
 
     // ---- Arithmetic ----
-    static inline f128 add(const f128 &a, const f128 &b) {
+    static inline f128 add(const f128& a, const f128& b) {
 #if F128_USE_SSE2
         f128 r;
         r.v = _mm_add_pd(a.v, b.v);
@@ -82,7 +82,7 @@ struct f128 {
 #endif
     }
 
-    static inline f128 sub(const f128 &a, const f128 &b) {
+    static inline f128 sub(const f128& a, const f128& b) {
 #if F128_USE_SSE2
         f128 r;
         r.v = _mm_sub_pd(a.v, b.v);
@@ -92,7 +92,7 @@ struct f128 {
 #endif
     }
 
-    static inline f128 mul(const f128 &a, const f128 &b) {
+    static inline f128 mul(const f128& a, const f128& b) {
 #if F128_USE_SSE2
         f128 r;
         r.v = _mm_mul_pd(a.v, b.v);
@@ -102,7 +102,7 @@ struct f128 {
 #endif
     }
 
-    static inline f128 div(const f128 &a, const f128 &b) {
+    static inline f128 div(const f128& a, const f128& b) {
 #if F128_USE_SSE2
         f128 r;
         r.v = _mm_div_pd(a.v, b.v);
@@ -112,7 +112,7 @@ struct f128 {
 #endif
     }
 
-    static inline f128 neg(const f128 &a) {
+    static inline f128 neg(const f128& a) {
 #if F128_USE_SSE2
         __m128d zero = _mm_setzero_pd();
         f128    r;
@@ -124,23 +124,23 @@ struct f128 {
     }
 
     // ---- Scalar ops ----
-    static inline f128 add_scalar(const f128 &a, double s) {
+    static inline f128 add_scalar(const f128& a, double s) {
         return add(a, broadcast(s));
     }
 
-    static inline f128 sub_scalar(const f128 &a, double s) {
+    static inline f128 sub_scalar(const f128& a, double s) {
         return sub(a, broadcast(s));
     }
 
-    static inline f128 mul_scalar(const f128 &a, double s) {
+    static inline f128 mul_scalar(const f128& a, double s) {
         return mul(a, broadcast(s));
     }
 
-    static inline f128 div_scalar(const f128 &a, double s) {
+    static inline f128 div_scalar(const f128& a, double s) {
         return div(a, broadcast(s));
     }
 
-    static inline f128 scalar_div(double s, const f128 &a) {
+    static inline f128 scalar_div(double s, const f128& a) {
 #if F128_USE_SSE2
         __m128d num = _mm_set1_pd(s);
         f128    r;
@@ -152,7 +152,7 @@ struct f128 {
     }
 
     // ---- Math functions ----
-    static inline f128 sqrt(const f128 &a) {
+    static inline f128 sqrt(const f128& a) {
 #if F128_USE_SSE2
         f128 r;
         r.v = _mm_sqrt_pd(a.v);
@@ -163,7 +163,7 @@ struct f128 {
     }
 
     // ---- FMA-style (useful for gradient updates) ----
-    static inline f128 madd(const f128 &a, const f128 &b, const f128 &c) {
+    static inline f128 madd(const f128& a, const f128& b, const f128& c) {
         // a + b*c
 #if F128_USE_SSE2
         f128 r;
@@ -175,7 +175,7 @@ struct f128 {
     }
 
     // ---- Printing ----
-    friend std::ostream &operator<<(std::ostream &os, const f128 &f) {
+    friend std::ostream& operator<<(std::ostream& os, const f128& f) {
         os << "(" << f.first() << ", " << f.second() << ")";
         return os;
     }

@@ -88,7 +88,7 @@ public:
 
     struct Iterator {
     public:
-        Iterator &operator++() {
+        Iterator& operator++() {
             m_raw = clear_lowest_bit(m_raw);
             return *this;
         }
@@ -97,7 +97,7 @@ public:
             return PieceId{static_cast<u8>(std::countr_zero(m_raw))};
         }
 
-        bool operator==(const Iterator &) const = default;
+        bool operator==(const Iterator&) const = default;
 
     private:
         friend struct PieceMask;
@@ -117,7 +117,7 @@ public:
         return Iterator{0};
     }
 
-    bool operator==(const PieceMask &) const = default;
+    bool operator==(const PieceMask&) const = default;
 
     friend constexpr PieceMask operator~(PieceMask a) {
         return PieceMask{static_cast<u16>(~a.m_raw)};
@@ -129,10 +129,10 @@ public:
         return PieceMask{static_cast<u16>(a.m_raw | b.m_raw)};
     }
 
-    friend constexpr PieceMask &operator&=(PieceMask &a, PieceMask b) {
+    friend constexpr PieceMask& operator&=(PieceMask& a, PieceMask b) {
         return a = a & b;
     }
-    friend constexpr PieceMask &operator|=(PieceMask &a, PieceMask b) {
+    friend constexpr PieceMask& operator|=(PieceMask& a, PieceMask b) {
         return a = a | b;
     }
 
@@ -184,7 +184,7 @@ struct Place {
         return STR[static_cast<usize>(color())][static_cast<usize>(ptype())];
     }
 
-    bool operator==(const Place &) const = default;
+    bool operator==(const Place&) const = default;
 };
 
 static_assert(sizeof(Place) == sizeof(u8));
@@ -222,7 +222,7 @@ struct Byteboard {
           (to_vector() & u8x64::splat(Place::PTYPE_MASK)).eq(u8x64::splat(p.raw)).to_bits()};
     }
 
-    constexpr Place &operator[](Square sq) {
+    constexpr Place& operator[](Square sq) {
         return mailbox[sq.raw];
     }
 
@@ -230,7 +230,7 @@ struct Byteboard {
         return mailbox[sq.raw];
     }
 
-    bool operator==(const Byteboard &other) const = default;
+    bool operator==(const Byteboard& other) const = default;
 };
 
 static_assert(sizeof(Byteboard) == 64);
@@ -258,7 +258,7 @@ struct Wordboard {
 
     [[nodiscard]] PieceMask read(Square sq) const {
         PieceMask value;
-        std::memcpy(&value, reinterpret_cast<const char *>(&raw) + sq.raw * sizeof(PieceMask),
+        std::memcpy(&value, reinterpret_cast<const char*>(&raw) + sq.raw * sizeof(PieceMask),
                     sizeof(PieceMask));
         return value;
     }
@@ -271,12 +271,12 @@ struct Wordboard {
         return count;
     }
 
-    friend inline Wordboard operator&(const Wordboard &a, const Wordboard &b) {
+    friend inline Wordboard operator&(const Wordboard& a, const Wordboard& b) {
         return Wordboard{a.raw & b.raw};
     }
 
-    bool                 operator==(const Wordboard &other) const = default;
-    friend std::ostream &operator<<(std::ostream &os, const Wordboard &at);
+    bool                 operator==(const Wordboard& other) const = default;
+    friend std::ostream& operator<<(std::ostream& os, const Wordboard& at);
 };
 
 static_assert(sizeof(Wordboard) == 128);

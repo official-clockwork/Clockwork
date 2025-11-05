@@ -235,14 +235,14 @@ public:
         return result;
     }
 
-    static ValuePtr sum(const std::vector<ValuePtr> &inputs) {
+    static ValuePtr sum(const std::vector<ValuePtr>& inputs) {
         if (inputs.empty()) {
             return Value::create(0.0);
         }
 
         f64 sum = 0.0;
         f64 c   = 0.0;
-        for (auto &v : inputs) {
+        for (auto& v : inputs) {
             f64 y = v->m_value - c;
             f64 t = sum + y;
             c     = (t - sum) - y;
@@ -253,7 +253,7 @@ public:
 
         result->m_backward_func = [inputs](ValuePtr out) {
             f64 grad = out->m_gradient;
-            for (auto &v : inputs) {
+            for (auto& v : inputs) {
                 v->m_gradient += grad;
             }
         };
@@ -286,7 +286,7 @@ public:
         return a->m_value >= b->m_value;
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const ValuePtr &value) {
+    friend std::ostream& operator<<(std::ostream& os, const ValuePtr& value) {
         os << "Value(data=" << value->get_value() << ", grad=" << value->get_gradient() << ")";
         return os;
     }
@@ -317,7 +317,7 @@ public:
         m_gradients(f128::zero()) {
     }
 
-    explicit Pair(const f128 &values, bool constant = false) :
+    explicit Pair(const f128& values, bool constant = false) :
         m_constant(constant),
         m_values(values),
         m_gradients(f128::zero()) {
@@ -325,7 +325,7 @@ public:
 
     static PairPtr create(f64 first, f64 second);
 
-    static PairPtr create(const f128 &values);
+    static PairPtr create(const f128& values);
 
     inline f64 first() const {
         return m_values.first();
@@ -355,7 +355,7 @@ public:
         m_gradients = f128::zero();
     }
 
-    inline void set_values(const f128 &values) {
+    inline void set_values(const f128& values) {
         m_values = values;
     }
     inline void set_values(f64 first, f64 second) {
@@ -371,7 +371,7 @@ public:
     }
 
     // ------------------- Arithmetic -------------------
-    friend PairPtr operator+(const PairPtr &a, const PairPtr &b) {
+    friend PairPtr operator+(const PairPtr& a, const PairPtr& b) {
         f128    result_values = f128::add(a->m_values, b->m_values);
         PairPtr result        = Pair::create(result_values);
 
@@ -382,7 +382,7 @@ public:
         return result;
     }
 
-    friend PairPtr operator-(const PairPtr &a, const PairPtr &b) {
+    friend PairPtr operator-(const PairPtr& a, const PairPtr& b) {
         f128    result_values = f128::sub(a->m_values, b->m_values);
         PairPtr result        = Pair::create(result_values);
 
@@ -394,7 +394,7 @@ public:
     }
 
     // ------------------- Scalar multiplication -------------------
-    friend PairPtr operator*(const PairPtr &a, f64 scalar) {
+    friend PairPtr operator*(const PairPtr& a, f64 scalar) {
         f128    result_values = f128::mul_scalar(a->m_values, scalar);
         PairPtr result        = Pair::create(result_values);
 
@@ -405,12 +405,12 @@ public:
         return result;
     }
 
-    friend PairPtr operator*(f64 scalar, const PairPtr &a) {
+    friend PairPtr operator*(f64 scalar, const PairPtr& a) {
         return a * scalar;
     }
 
     // ------------------- Pair * Value -------------------
-    friend PairPtr operator*(const PairPtr &a, const ValuePtr &v) {
+    friend PairPtr operator*(const PairPtr& a, const ValuePtr& v) {
         f64     v_val         = v->get_value();
         f128    result_values = f128::mul_scalar(a->m_values, v_val);
         PairPtr result        = Pair::create(result_values);
@@ -426,12 +426,12 @@ public:
         return result;
     }
 
-    friend PairPtr operator*(const ValuePtr &v, const PairPtr &a) {
+    friend PairPtr operator*(const ValuePtr& v, const PairPtr& a) {
         return a * v;
     }
 
     // ------------------- Pair / scalar -------------------
-    friend PairPtr operator/(const PairPtr &a, f64 scalar) {
+    friend PairPtr operator/(const PairPtr& a, f64 scalar) {
         f128    result_values = f128::div_scalar(a->m_values, scalar);
         PairPtr result        = Pair::create(result_values);
 
@@ -443,7 +443,7 @@ public:
     }
 
     // ------------------- Scalar / Pair -------------------
-    friend PairPtr operator/(f64 scalar, const PairPtr &a) {
+    friend PairPtr operator/(f64 scalar, const PairPtr& a) {
         f128    result_values = f128::scalar_div(scalar, a->m_values);
         PairPtr result        = Pair::create(result_values);
 
@@ -457,7 +457,7 @@ public:
     }
 
     // ------------------- Pair / Value -------------------
-    friend PairPtr operator/(const PairPtr &a, const ValuePtr &v) {
+    friend PairPtr operator/(const PairPtr& a, const ValuePtr& v) {
         f64     v_val         = v->get_value();
         f128    result_values = f128::div_scalar(a->m_values, v_val);
         PairPtr result        = Pair::create(result_values);
@@ -475,7 +475,7 @@ public:
     }
 
     // ------------------- Value / Pair -------------------
-    friend PairPtr operator/(const ValuePtr &v, const PairPtr &a) {
+    friend PairPtr operator/(const ValuePtr& v, const PairPtr& a) {
         f64     v_val         = v->get_value();
         f128    result_values = f128::scalar_div(v_val, a->m_values);
         PairPtr result        = Pair::create(result_values);
@@ -526,7 +526,7 @@ public:
     }
 
     // ------------------- Print -------------------
-    friend std::ostream &operator<<(std::ostream &os, const PairPtr &p) {
+    friend std::ostream& operator<<(std::ostream& os, const PairPtr& p) {
 #ifdef VERBOSE_AUTOGRAD
         os << "Pair(first=" << p->first() << ", second=" << p->second()
            << ", grad_first=" << p->grad_first() << ", grad_second=" << p->grad_second() << ")";
@@ -542,86 +542,86 @@ public:
 // Inplace ops (we can't do them as member functions because we use shared pointers)
 
 // ValuePtr += ValuePtr
-inline ValuePtr &operator+=(ValuePtr &a, const ValuePtr &b) {
+inline ValuePtr& operator+=(ValuePtr& a, const ValuePtr& b) {
     a = a + b;
     return a;
 }
 
 // ValuePtr -= ValuePtr
-inline ValuePtr &operator-=(ValuePtr &a, const ValuePtr &b) {
+inline ValuePtr& operator-=(ValuePtr& a, const ValuePtr& b) {
     a = a - b;
     return a;
 }
 
 // ValuePtr *= ValuePtr
-inline ValuePtr &operator*=(ValuePtr &a, const ValuePtr &b) {
+inline ValuePtr& operator*=(ValuePtr& a, const ValuePtr& b) {
     a = a * b;
     return a;
 }
 
 // ValuePtr /= ValuePtr
-inline ValuePtr &operator/=(ValuePtr &a, const ValuePtr &b) {
+inline ValuePtr& operator/=(ValuePtr& a, const ValuePtr& b) {
     a = a / b;
     return a;
 }
 
 
 // ValuePtr += scalar
-inline ValuePtr &operator+=(ValuePtr &a, f64 b) {
+inline ValuePtr& operator+=(ValuePtr& a, f64 b) {
     a = a + b;
     return a;
 }
 
 // ValuePtr -= scalar
-inline ValuePtr &operator-=(ValuePtr &a, f64 b) {
+inline ValuePtr& operator-=(ValuePtr& a, f64 b) {
     a = a - b;
     return a;
 }
 
 // ValuePtr *= scalar
-inline ValuePtr &operator*=(ValuePtr &a, f64 b) {
+inline ValuePtr& operator*=(ValuePtr& a, f64 b) {
     a = a * b;
     return a;
 }
 
 // ValuePtr /= scalar
-inline ValuePtr &operator/=(ValuePtr &a, f64 b) {
+inline ValuePtr& operator/=(ValuePtr& a, f64 b) {
     a = a / b;
     return a;
 }
 
 // PairPtr += PairPtr
-inline PairPtr &operator+=(PairPtr &a, const PairPtr &b) {
+inline PairPtr& operator+=(PairPtr& a, const PairPtr& b) {
     a = a + b;
     return a;
 }
 
 // PairPtr -= PairPtr
-inline PairPtr &operator-=(PairPtr &a, const PairPtr &b) {
+inline PairPtr& operator-=(PairPtr& a, const PairPtr& b) {
     a = a - b;
     return a;
 }
 
 // PairPtr *= scalar
-inline PairPtr &operator*=(PairPtr &a, f64 scalar) {
+inline PairPtr& operator*=(PairPtr& a, f64 scalar) {
     a = a * scalar;
     return a;
 }
 
 // PairPtr *= ValuePtr
-inline PairPtr &operator*=(PairPtr &a, const ValuePtr &v) {
+inline PairPtr& operator*=(PairPtr& a, const ValuePtr& v) {
     a = a * v;
     return a;
 }
 
 // PairPtr /= scalar
-inline PairPtr &operator/=(PairPtr &a, f64 scalar) {
+inline PairPtr& operator/=(PairPtr& a, f64 scalar) {
     a = a / scalar;
     return a;
 }
 
 // PairPtr /= ValuePtr
-inline PairPtr &operator/=(PairPtr &a, const ValuePtr &v) {
+inline PairPtr& operator/=(PairPtr& a, const ValuePtr& v) {
     a = a / v;
     return a;
 }

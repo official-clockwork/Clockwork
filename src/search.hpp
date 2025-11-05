@@ -43,7 +43,7 @@ public:
         m_pv.clear();
     }
 
-    void set(Move move, const PV &child_pv_line) {
+    void set(Move move, const PV& child_pv_line) {
         m_pv.clear();
         m_pv.push_back(move);
         m_pv.append(child_pv_line.m_pv);
@@ -53,7 +53,7 @@ public:
         return m_pv.empty() ? Move::none() : m_pv[0];
     }
 
-    friend std::ostream &operator<<(std::ostream &os, const PV &pv);
+    friend std::ostream& operator<<(std::ostream& os, const PV& pv);
 
 private:
     StaticVector<Move, MAX_PLY + 1> m_pv;
@@ -63,7 +63,7 @@ struct Stack {
     Value          static_eval = 0;
     Move           killer      = Move::none();
     Move           excluded_move;
-    ContHistEntry *cont_hist_entry = nullptr;
+    ContHistEntry* cont_hist_entry = nullptr;
     i32            fail_high_count = 0;
     PV             pv;
 };
@@ -80,7 +80,7 @@ struct ThreadData {
     History                history;
     std::vector<PsqtState> psqt_states;
 
-    PsqtState &push_psqt_state() {
+    PsqtState& push_psqt_state() {
         psqt_states.push_back(psqt_states.back());
         return psqt_states.back();
     }
@@ -108,7 +108,7 @@ public:
 
     Searcher();
     ~Searcher();
-    void set_position(const Position &root_position, const RepetitionInfo &repetition_info);
+    void set_position(const Position& root_position, const RepetitionInfo& repetition_info);
     void launch_search(SearchSettings settings);
     void stop_searching();
     void wait();
@@ -130,7 +130,7 @@ public:
     Position       root_position;
     RepetitionInfo repetition_info;
 
-    Worker(Searcher &searcher, ThreadType thread_type);
+    Worker(Searcher& searcher, ThreadType thread_type);
     ~Worker();
 
     void exit();
@@ -166,7 +166,7 @@ private:
     std::atomic<u64>         m_search_nodes;
     time::TimePoint          m_search_start;
     time::TimePoint          m_last_info_time;
-    Searcher                &m_searcher;
+    Searcher&                m_searcher;
     std::thread              m_thread;
     ThreadType               m_thread_type;
     SearchLimits             m_search_limits;
@@ -178,13 +178,13 @@ private:
     bool                     m_in_nmp_verification = false;
 
     template<bool IS_MAIN>
-    Move iterative_deepening(const Position &root_position);
+    Move iterative_deepening(const Position& root_position);
     template<bool IS_MAIN, bool PV_NODE>
     Value search(
-      const Position &pos, Stack *ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode);
+      const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode);
     template<bool IS_MAIN>
-    Value quiesce(const Position &pos, Stack *ss, Value alpha, Value beta, i32 ply);
-    Value evaluate(const Position &pos);
+    Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
+    Value evaluate(const Position& pos);
     bool  check_tm_hard_limit();
 };
 

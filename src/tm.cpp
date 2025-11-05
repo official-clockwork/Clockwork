@@ -5,7 +5,7 @@
 
 namespace Clockwork::TM {
 time::TimePoint compute_hard_limit(time::TimePoint               search_start,
-                                   const Search::SearchSettings &settings,
+                                   const Search::SearchSettings& settings,
                                    const Color                   stm) {
     using namespace std;
     using namespace time;
@@ -32,7 +32,7 @@ time::TimePoint compute_hard_limit(time::TimePoint               search_start,
 
 template<bool ADJUST_FOR_NODES_TM>
 time::TimePoint compute_soft_limit(time::TimePoint               search_start,
-                                   const Search::SearchSettings &settings,
+                                   const Search::SearchSettings& settings,
                                    const Color                   stm,
                                    const f64                     nodes_tm_fraction,
                                    const f64                     complexity) {
@@ -78,8 +78,8 @@ time::TimePoint compute_soft_limit(time::TimePoint               search_start,
 
 // Explicit instantiations
 template time::TimePoint compute_soft_limit<true>(
-  time::TimePoint, const Search::SearchSettings &, const Color, const f64, const f64);
+  time::TimePoint, const Search::SearchSettings&, const Color, const f64, const f64);
 
 template time::TimePoint compute_soft_limit<false>(
-  time::TimePoint, const Search::SearchSettings &, const Color, const f64, const f64);
+  time::TimePoint, const Search::SearchSettings&, const Color, const f64, const f64);
 }  // namespace Clockwork::TM

@@ -44,7 +44,7 @@ bool MoveGen::is_legal(Move m) const {
     }
 }
 
-void MoveGen::generate_moves(MoveList &noisy, MoveList &quiet) {
+void MoveGen::generate_moves(MoveList& noisy, MoveList& quiet) {
     PieceMask checkers = m_position.checker_mask();
     switch (checkers.popcount()) {
     case 0:
@@ -239,8 +239,8 @@ bool MoveGen::is_legal_two_checkers(Move m, PieceMask checkers) const {
 }
 
 template<bool king_moves>
-void MoveGen::generate_moves_to(MoveList &noisy,
-                                MoveList &quiet,
+void MoveGen::generate_moves_to(MoveList& noisy,
+                                MoveList& quiet,
                                 Bitboard  valid_dests,
                                 bool      can_ep) {
     Color active_color = m_position.active_color();
@@ -328,7 +328,7 @@ void MoveGen::generate_moves_to(MoveList &noisy,
     }
 }
 
-void MoveGen::generate_king_moves_to(MoveList &noisy, MoveList &quiet, Bitboard valid_dests) {
+void MoveGen::generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests) {
     Color active_color = m_position.active_color();
 
     Bitboard empty = m_position.board().get_empty_bitboard();
@@ -348,14 +348,14 @@ void MoveGen::generate_king_moves_to(MoveList &noisy, MoveList &quiet, Bitboard 
     write(quiet, at, active & empty & ~danger, king_mask, MoveFlags::Normal);
 }
 
-void MoveGen::generate_moves_one_checker(MoveList &noisy, MoveList &quiet, PieceMask checker) {
+void MoveGen::generate_moves_one_checker(MoveList& noisy, MoveList& quiet, PieceMask checker) {
     auto [valid_dests, non_checker_ray, has_ep] = valid_destinations_one_checker(checker);
 
     generate_moves_to<false>(noisy, quiet, valid_dests, has_ep);
     generate_king_moves_to(noisy, quiet, non_checker_ray);
 }
 
-void MoveGen::generate_moves_two_checkers(MoveList &noisy, MoveList &quiet, PieceMask checkers) {
+void MoveGen::generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, PieceMask checkers) {
     Bitboard non_checker_ray = valid_destinations_two_checkers(checkers);
 
     generate_king_moves_to(noisy, quiet, non_checker_ray);
@@ -419,15 +419,15 @@ bool MoveGen::is_hside_castling_legal(Bitboard empty, Bitboard danger) const {
     }
 }
 
-void MoveGen::write(MoveList &moves, Square dest, PieceMask piecemask, MoveFlags mf) {
+void MoveGen::write(MoveList& moves, Square dest, PieceMask piecemask, MoveFlags mf) {
     for (PieceId id : piecemask) {
         Square src = m_position.piece_list_sq(m_active_color)[id];
         moves.push_back(Move{src, dest, mf});
     }
 }
 
-void MoveGen::write(MoveList                        &moves,
-                    const std::array<PieceMask, 64> &at,
+void MoveGen::write(MoveList&                        moves,
+                    const std::array<PieceMask, 64>& at,
                     Bitboard                         dest_bb,
                     PieceMask                        piecemask,
                     MoveFlags                        mf) {
@@ -436,7 +436,7 @@ void MoveGen::write(MoveList                        &moves,
     }
 }
 
-void MoveGen::write_pawn(MoveList &moves, Bitboard src_bb, i32 shift, MoveFlags mf) {
+void MoveGen::write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf) {
     for (Square src : src_bb) {
         Square dest{static_cast<u8>(src.raw + shift)};
         moves.push_back(Move{src, dest, mf});
