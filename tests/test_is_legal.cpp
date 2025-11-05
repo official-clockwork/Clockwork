@@ -12,7 +12,7 @@
 using namespace Clockwork;
 
 template<bool print>
-u64 is_legal_perft(const Position& position, usize depth) {
+u64 is_legal_perft(const Position &position, usize depth) {
     if (depth == 0) {
         return 1;
     }

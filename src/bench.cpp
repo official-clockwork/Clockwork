@@ -64,7 +64,7 @@ const std::array<std::string, 53> BENCH_FENS = {{
   "2r2n2/8/3k4/8/8/4KN2/8/6R1 w - - 0 1",
 }};
 
-void benchmark(Search::Searcher& searcher, Depth depth) {
+void benchmark(Search::Searcher &searcher, Depth depth) {
     u64 nodes = 0;
 
     // Mock search limits for bench
@@ -90,4 +90,4 @@ void benchmark(Search::Searcher& searcher, Depth depth) {
     std::cout << nodes << " nodes " << time::nps(nodes, end_time - start_time) << " nps"
               << std::endl;
 }
-}
+}  // namespace Clockwork::Bench

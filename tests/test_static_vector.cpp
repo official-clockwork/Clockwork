@@ -19,7 +19,7 @@ struct TestType {
         ctr += 1;
     }
 
-    TestType(const TestType& other) :
+    TestType(const TestType &other) :
         x(other.x) {
         ctr += 1;
     }
@@ -32,17 +32,17 @@ struct TestType {
         ctr += 1;
     }
 
-    TestType& operator=(const TestType& other) = default;
+    TestType &operator=(const TestType &other) = default;
 
-    friend bool operator==(const TestType& lhs, const TestType& rhs) = default;
+    friend bool operator==(const TestType &lhs, const TestType &rhs) = default;
 };
 
 struct OnlyMoves {
-    OnlyMoves()                                = default;
-    OnlyMoves(const OnlyMoves&)                = delete;
-    OnlyMoves(OnlyMoves&&) noexcept            = default;
-    OnlyMoves& operator=(const OnlyMoves&)     = delete;
-    OnlyMoves& operator=(OnlyMoves&&) noexcept = default;
+    OnlyMoves()                                 = default;
+    OnlyMoves(const OnlyMoves &)                = delete;
+    OnlyMoves(OnlyMoves &&) noexcept            = default;
+    OnlyMoves &operator=(const OnlyMoves &)     = delete;
+    OnlyMoves &operator=(OnlyMoves &&) noexcept = default;
 };
 
 void push_pop_back() {

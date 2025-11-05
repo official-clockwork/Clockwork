@@ -18,7 +18,7 @@ PairPtr Pair::create(f64 first, f64 second) {
     return res;
 }
 
-PairPtr Pair::create(const f128& values) {
+PairPtr Pair::create(const f128 &values) {
     PairPtr res = std::make_shared<Pair>(values, true);
     Graph::get().register_value(res);
     return res;

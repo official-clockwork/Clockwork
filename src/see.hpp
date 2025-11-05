@@ -17,7 +17,7 @@ inline Value value(PieceType ptype) {
     return TABLE[static_cast<usize>(ptype)];
 }
 
-inline Value gain(const Position& pos, Move move) {
+inline Value gain(const Position &pos, Move move) {
     if (move.is_castle()) {
         return 0;
     }
@@ -32,7 +32,7 @@ inline Value gain(const Position& pos, Move move) {
     return score;
 }
 
-inline bool see(const Position& pos, Move move, Value threshold) {
+inline bool see(const Position &pos, Move move, Value threshold) {
     Square sq  = move.to();
     Color  stm = pos.active_color();
 
@@ -104,4 +104,4 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     return stm != pos.active_color();
 }
 
-}
+}  // namespace Clockwork::SEE

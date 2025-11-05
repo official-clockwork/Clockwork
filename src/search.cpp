@@ -31,7 +31,7 @@ static constexpr i32 stat_bonus(Depth bonus_depth) {
     return std::min(1896, 4 * bonus_depth * bonus_depth + 120 * bonus_depth - 120);
 }
 
-std::ostream& operator<<(std::ostream& os, const PV& pv) {
+std::ostream &operator<<(std::ostream &os, const PV &pv) {
     for (Move m : pv.m_pv) {
         os << m << ' ';
     }
@@ -47,10 +47,10 @@ Searcher::~Searcher() {
     exit();
 }
 
-void Searcher::set_position(const Position& root_position, const RepetitionInfo& repetition_info) {
+void Searcher::set_position(const Position &root_position, const RepetitionInfo &repetition_info) {
     std::unique_lock lock_guard{mutex};
 
-    for (auto& worker : m_workers) {
+    for (auto &worker : m_workers) {
         worker->root_position   = root_position;
         worker->repetition_info = repetition_info;
     }
@@ -62,7 +62,7 @@ void Searcher::launch_search(SearchSettings settings_) {
 
         settings = settings_;
 
-        for (auto& worker : m_workers) {
+        for (auto &worker : m_workers) {
             worker->prepare();
         }
     }
@@ -71,7 +71,7 @@ void Searcher::launch_search(SearchSettings settings_) {
 }
 
 void Searcher::stop_searching() {
-    for (auto& worker : m_workers) {
+    for (auto &worker : m_workers) {
         worker->set_stopped();
     }
 }
@@ -87,7 +87,7 @@ void Searcher::initialize(size_t thread_count) {
     }
     {
         std::unique_lock lock_guard{mutex};
-        for (auto& worker : m_workers) {
+        for (auto &worker : m_workers) {
             worker->exit();
         }
         idle_barrier->arrive_and_wait();
@@ -111,7 +111,7 @@ void Searcher::exit() {
 
 void Searcher::reset() {
     std::unique_lock lock_guard{mutex};
-    for (auto& worker : m_workers) {
+    for (auto &worker : m_workers) {
         worker->reset_thread_data();
     }
     tt.clear();
@@ -119,13 +119,13 @@ void Searcher::reset() {
 
 u64 Searcher::node_count() {
     u64 nodes = 0;
-    for (auto& worker : m_workers) {
+    for (auto &worker : m_workers) {
         nodes += worker->search_nodes();
     }
     return nodes;
 }
 
-Worker::Worker(Searcher& searcher, ThreadType thread_type) :
+Worker::Worker(Searcher &searcher, ThreadType thread_type) :
     m_searcher(searcher),
     m_thread_type(thread_type) {
     m_stopped = false;
@@ -209,7 +209,7 @@ void Worker::start_searching() {
 }
 
 template<bool IS_MAIN>
-Move Worker::iterative_deepening(const Position& root_position) {
+Move Worker::iterative_deepening(const Position &root_position) {
     constexpr usize                             SS_PADDING = 2;
     std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
 
@@ -346,7 +346,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
 template<bool IS_MAIN, bool PV_NODE>
 Value Worker::search(
-  const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode) {
+  const Position &pos, Stack *ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode) {
     ss->pv.clear();
 
     if (m_stopped) {
@@ -794,7 +794,7 @@ Value Worker::search(
 }
 
 template<bool IS_MAIN>
-Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
+Value Worker::quiesce(const Position &pos, Stack *ss, Value alpha, Value beta, i32 ply) {
     ss->pv.clear();
 
     if (m_stopped) {
@@ -928,7 +928,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     return best_value;
 }
 
-Value Worker::evaluate(const Position& pos) {
+Value Worker::evaluate(const Position &pos) {
 #ifndef EVAL_TUNING
     return std::clamp<Value>(
       static_cast<Value>(Clockwork::evaluate_stm_pov(pos, m_td.psqt_states.back())), -VALUE_WIN + 1,
@@ -937,5 +937,5 @@ Value Worker::evaluate(const Position& pos) {
     return -VALUE_INF;  // Not implemented in tune mode
 #endif
 }
-}
-}
+}  // namespace Search
+}  // namespace Clockwork

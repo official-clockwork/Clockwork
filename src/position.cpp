@@ -17,7 +17,7 @@ namespace Clockwork {
 void Position::incrementally_remove_piece(bool         color,
                                           PieceId      id,
                                           Square       from,
-                                          PsqtUpdates& updates) {
+                                          PsqtUpdates &updates) {
     remove_attacks(color, id);
     toggle_rays(from);
 
@@ -42,7 +42,7 @@ void Position::incrementally_remove_piece(bool         color,
     m_board[from] = Place::empty();
 }
 
-void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdates& updates) {
+void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdates &updates) {
     // TODO: check if some speed left on the table for zobrist here
     m_board[to]      = p;
     Color     pcolor = p.color();
@@ -68,7 +68,7 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
 }
 
 void Position::incrementally_mutate_piece(
-  bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates& updates) {
+  bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates &updates) {
     PieceType ptype = m_board[sq].ptype();
 
     // TODO: check if some speed left on the table for zobrist here
@@ -110,7 +110,7 @@ void Position::incrementally_mutate_piece(
 }
 
 void Position::incrementally_move_piece(
-  bool color, Square from, Square to, Place p, PsqtUpdates& updates) {
+  bool color, Square from, Square to, Place p, PsqtUpdates &updates) {
     remove_attacks(color, p.id());
 
     auto [src_ray_coords, src_ray_valid] = geometry::superpiece_rays(from);
@@ -219,7 +219,7 @@ void Position::incrementally_move_piece(
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
-    u16x64 mask = u16x64::splat(~id.to_piece_mask().value());
+    u16x64 mask = u16x64::splat(static_cast<u16>(~id.to_piece_mask().value()));
     m_attack_table[color].raw &= mask;
 }
 
@@ -308,7 +308,7 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m
 }
 
 template<bool UPDATE_PSQT>
-Position Position::move(Move m, PsqtState* psqtState) const {
+Position Position::move(Move m, PsqtState *psqtState) const {
     Position    new_pos = *this;
     PsqtUpdates updates{};
 
@@ -466,8 +466,8 @@ Position Position::move(Move m, PsqtState* psqtState) const {
     return new_pos;
 }
 
-template Position Position::move<true>(Move m, PsqtState* psqtState) const;
-template Position Position::move<false>(Move m, PsqtState* psqtState) const;
+template Position Position::move<true>(Move m, PsqtState *psqtState) const;
+template Position Position::move<false>(Move m, PsqtState *psqtState) const;
 
 Position Position::null_move() const {
     Position new_pos = *this;
@@ -670,7 +670,7 @@ std::optional<Position> Position::parse(std::string_view board,
             };
 
             auto put_piece = [&](Color color, PieceType ptype) -> bool {
-                u8& current_id = id[static_cast<usize>(color)];
+                u8 &current_id = id[static_cast<usize>(color)];
                 if (current_id >= 0x10) {
                     return false;
                 }
@@ -954,7 +954,7 @@ HashKey Position::calc_minor_key_slow() const {
     return key;
 }
 
-std::ostream& operator<<(std::ostream& os, const Position& position) {
+std::ostream &operator<<(std::ostream &os, const Position &position) {
     i32  blanks      = 0;
     auto emit_blanks = [&] {
         if (blanks != 0) {
@@ -1024,4 +1024,4 @@ u16 Position::get_50mr_counter() const {
     return m_50mr;
 }
 
-}
+}  // namespace Clockwork

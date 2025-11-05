@@ -23,7 +23,7 @@ struct Parameters {
         return result;
     }
 
-    void accumulate(const Parameters& b) {
+    void accumulate(const Parameters &b) {
         assert(b.parameters.size() == parameters.size());
         assert(b.pair_parameters.size() == pair_parameters.size());
         for (usize i = 0; i < parameters.size(); i++) {
@@ -34,7 +34,7 @@ struct Parameters {
         }
     }
 
-    void weighted_accumulate(double weight, const Parameters& b) {
+    void weighted_accumulate(double weight, const Parameters &b) {
         assert(b.parameters.size() == parameters.size());
         assert(b.pair_parameters.size() == pair_parameters.size());
         for (usize i = 0; i < parameters.size(); i++) {
@@ -47,4 +47,4 @@ struct Parameters {
     }
 };
 
-}
+}  // namespace Clockwork::Autograd

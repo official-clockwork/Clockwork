@@ -5,7 +5,7 @@ namespace Clockwork {
 
 class IosFmtGuard {
 public:
-    explicit IosFmtGuard(std::ostream& stream) :
+    explicit IosFmtGuard(std::ostream &stream) :
         m_stream(stream),
         m_state(nullptr) {
         m_state.copyfmt(m_stream);
@@ -16,8 +16,8 @@ public:
     }
 
 private:
-    std::ostream& m_stream;
+    std::ostream &m_stream;
     std::ios      m_state;
 };
 
-}
+}  // namespace Clockwork

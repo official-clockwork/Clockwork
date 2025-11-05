@@ -112,13 +112,13 @@ void MovePicker::generate_moves() {
     m_movegen.generate_moves(m_noisy, m_quiet);
 }
 
-void MovePicker::score_moves(MoveList& moves) {
+void MovePicker::score_moves(MoveList &moves) {
     for (usize i = 0; i < moves.size(); i++) {
         m_scores[i] = score_move(moves[i]);
     }
 }
 
-std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
+std::pair<Move, i32> MovePicker::pick_next(MoveList &moves) {
     u32x4 best_indices = u32x4::splat(static_cast<u32>(m_current_index));
     i32x4 best_values  = i32x4::splat(m_scores[m_current_index]);
 
@@ -169,4 +169,4 @@ i32 MovePicker::score_move(Move move) const {
     }
 }
 
-}
+}  // namespace Clockwork

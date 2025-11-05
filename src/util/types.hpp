@@ -50,12 +50,12 @@ using FloatSeconds = std::chrono::duration<f64>;
 using Milliseconds = std::chrono::duration<i64, std::milli>;
 
 template<typename T>
-constexpr T cast(const auto& x) {
+constexpr T cast(const auto &x) {
     return std::chrono::duration_cast<T>(x);
 }
 
-constexpr u64 nps(u64 nodes, const auto& elapsed) {
+constexpr u64 nps(u64 nodes, const auto &elapsed) {
     return static_cast<u64>(static_cast<f64>(nodes) / cast<FloatSeconds>(elapsed).count());
 }
 }  // namespace time
-}
+}  // namespace Clockwork

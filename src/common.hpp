@@ -91,4 +91,4 @@ constexpr bool is_slider(PieceType ptype) {
     return ptype >= PieceType::Bishop && ptype <= PieceType::Queen;
 }
 
-}
+}  // namespace Clockwork

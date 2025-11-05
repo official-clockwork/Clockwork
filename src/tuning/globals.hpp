@@ -17,12 +17,12 @@ class PairPlaceholder;
 
 class Globals {
 public:
-    static Globals& get() {
+    static Globals &get() {
         static Globals instance;
         return instance;
     }
 
-    usize register_param(ValuePlaceholder* param) {
+    usize register_param(ValuePlaceholder *param) {
         if (m_locked) {
             std::cerr << "Attempted to register new global parameter after Globals has been locked"
                       << std::endl;
@@ -33,7 +33,7 @@ public:
         return index;
     }
 
-    usize register_param(PairPlaceholder* param) {
+    usize register_param(PairPlaceholder *param) {
         if (m_locked) {
             std::cerr << "Attempted to register new global parameter after Globals has been locked"
                       << std::endl;
@@ -44,12 +44,12 @@ public:
         return index;
     }
 
-    std::vector<ValuePlaceholder*> get_parameters() const {
+    std::vector<ValuePlaceholder *> get_parameters() const {
         lock();
         return m_parameters;
     }
 
-    std::vector<PairPlaceholder*> get_pair_parameters() const {
+    std::vector<PairPlaceholder *> get_pair_parameters() const {
         lock();
         return m_pair_parameters;
     }
@@ -68,9 +68,9 @@ private:
         m_locked = true;
     }
 
-    mutable std::atomic<bool>      m_locked = false;
-    std::vector<ValuePlaceholder*> m_parameters;
-    std::vector<PairPlaceholder*>  m_pair_parameters;
+    mutable std::atomic<bool>       m_locked = false;
+    std::vector<ValuePlaceholder *> m_parameters;
+    std::vector<PairPlaceholder *>  m_pair_parameters;
 };
 
 class ValuePlaceholder {
@@ -115,7 +115,7 @@ inline bool Globals::is_parameter_constant(usize i) const {
     return m_parameters[i]->constant();
 }
 
-inline std::ostream& operator<<(std::ostream& os, ValuePlaceholder a) {
+inline std::ostream &operator<<(std::ostream &os, ValuePlaceholder a) {
     os << static_cast<ValuePtr>(a);
     return os;
 }
@@ -182,7 +182,7 @@ inline bool Globals::is_pair_parameter_constant(usize i) const {
     return m_pair_parameters[i]->constant();
 }
 
-inline std::ostream& operator<<(std::ostream& os, PairPlaceholder a) {
+inline std::ostream &operator<<(std::ostream &os, PairPlaceholder a) {
     os << static_cast<PairPtr>(a);
     return os;
 }

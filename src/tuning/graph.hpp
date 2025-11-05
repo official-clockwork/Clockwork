@@ -34,35 +34,35 @@ private:
 
     Graph();
 
-    void register_param(const ValuePtr& param) {
+    void register_param(const ValuePtr &param) {
         m_parameters.push_back(param);
     }
 
-    void register_param(const PairPtr& param) {
+    void register_param(const PairPtr &param) {
         m_pair_parameters.push_back(param);
     }
 
 public:
-    static Graph& get() {
+    static Graph &get() {
         thread_local Graph instance;
         return instance;
     }
 
     // ------------------ Registration ------------------
-    void register_value(const BackwardablePtr& node) {
+    void register_value(const BackwardablePtr &node) {
         m_backwardables.push_back(node);
     }
 
-    void register_value(const ValuePtr& node) {
+    void register_value(const ValuePtr &node) {
         m_backwardables.push_back(std::static_pointer_cast<Backwardable>(node));
     }
 
-    void register_value(const PairPtr& node) {
+    void register_value(const PairPtr &node) {
         m_backwardables.push_back(std::static_pointer_cast<Backwardable>(node));
     }
 
     // ------------------- Copy Values -------------------
-    void copy_parameter_values(const Parameters& source) {
+    void copy_parameter_values(const Parameters &source) {
         if (source.parameters.size() != m_parameters.size()
             || source.pair_parameters.size() != m_pair_parameters.size()) {
             std::cerr << "Graph parameters count have desynced" << std::endl;
@@ -125,10 +125,10 @@ public:
 
     // ------------------ Cleanup ------------------
     void cleanup() {
-        for (auto& param : m_parameters) {
+        for (auto &param : m_parameters) {
             param->zero_grad();
         }
-        for (auto& param : m_pair_parameters) {
+        for (auto &param : m_pair_parameters) {
             param->zero_grad();
         }
 
@@ -137,20 +137,20 @@ public:
 
     // ------------------ Reset ------------------
     void init_zeros() {
-        for (auto& param : m_parameters) {
+        for (auto &param : m_parameters) {
             param->set_value(0.0);
         }
-        for (auto& param : m_pair_parameters) {
+        for (auto &param : m_pair_parameters) {
             param->set_values(0.0, 0.0);
         }
         cleanup();
     }
 
     // ------------------ Accessors ------------------
-    const std::vector<ValuePtr>& get_parameters() const {
+    const std::vector<ValuePtr> &get_parameters() const {
         return m_parameters;
     }
-    const std::vector<PairPtr>& get_pair_parameters() const {
+    const std::vector<PairPtr> &get_pair_parameters() const {
         return m_pair_parameters;
     }
     ValuePtr get_parameter(usize index) const {

@@ -4,7 +4,7 @@
 
 namespace Clockwork {
 
-std::optional<Move> Move::parse(std::string_view str, const Position& ctx) {
+std::optional<Move> Move::parse(std::string_view str, const Position &ctx) {
     if (str.size() != 4 && str.size() != 5) {
         return std::nullopt;
     }
@@ -76,4 +76,4 @@ std::optional<Move> Move::parse(std::string_view str, const Position& ctx) {
     return Move(*from, *to, *mf);
 }
 
-}
+}  // namespace Clockwork

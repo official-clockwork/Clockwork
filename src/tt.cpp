@@ -11,7 +11,7 @@ static u64 mulhi64(u64 a, u64 b) {
     return static_cast<u64>(result >> 64);
 }
 
-void* aligned_alloc(size_t alignment, size_t size) {
+void *aligned_alloc(size_t alignment, size_t size) {
 #ifdef _WIN32
     return _aligned_malloc(size, alignment);
 #else
@@ -19,7 +19,7 @@ void* aligned_alloc(size_t alignment, size_t size) {
 #endif
 }
 
-void aligned_free(void* ptr) {
+void aligned_free(void *ptr) {
     if (ptr == nullptr) {
         return;
     }
@@ -64,9 +64,9 @@ TT::~TT() {
     aligned_free(m_entries);
 }
 
-std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
+std::optional<TTData> TT::probe(const Position &pos, i32 ply) const {
     size_t      idx   = mulhi64(pos.get_hash_key(), m_size);
-    const auto& entry = m_entries[idx];
+    const auto &entry = m_entries[idx];
     if (entry.key16 == shrink_key(pos.get_hash_key())) {
         TTData data = {.eval       = entry.eval,
                        .move       = entry.move,
@@ -78,7 +78,7 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     return {};
 }
 
-void TT::store(const Position& pos,
+void TT::store(const Position &pos,
                i32             ply,
                Value           eval,
                Move            move,
@@ -87,7 +87,7 @@ void TT::store(const Position& pos,
                bool            ttpv,
                Bound           bound) {
     size_t idx       = mulhi64(pos.get_hash_key(), m_size);
-    auto&  entry     = m_entries[idx];
+    auto  &entry     = m_entries[idx];
     entry.key16      = shrink_key(pos.get_hash_key());
     entry.move       = move;
     entry.score      = score_to_tt(score, ply);
@@ -103,7 +103,7 @@ void TT::resize(size_t mb) {
     size_t entries = bytes / sizeof(TTEntry);
 
     m_size    = entries;
-    m_entries = static_cast<TTEntry*>(aligned_alloc(TT_ALIGNMENT, bytes));
+    m_entries = static_cast<TTEntry *>(aligned_alloc(TT_ALIGNMENT, bytes));
     clear();
 }
 
@@ -111,4 +111,4 @@ void TT::clear() {
     std::fill(m_entries, m_entries + m_size, TTEntry{});
 }
 
-}
+}  // namespace Clockwork

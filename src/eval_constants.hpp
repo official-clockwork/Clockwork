@@ -156,4 +156,4 @@ inline const std::array<PParam, 64> KING_PSQT = {
 };
 // Epoch duration: 61.8411s
 // clang-format on
-}
+}  // namespace Clockwork

@@ -19,7 +19,7 @@ template<typename T>
 struct alignas(16) PieceList {
     std::array<T, 16> array{};
 
-    constexpr T& operator[](PieceId id) {
+    constexpr T &operator[](PieceId id) {
         return array[id.raw];
     }
     constexpr T operator[](PieceId id) const {
@@ -50,7 +50,7 @@ struct alignas(16) PieceList {
         return PieceMask{(to_vector().swizzle(to_bits) & u8x16::splat(bits)).nonzeros().to_bits()};
     }
 
-    constexpr bool operator==(const PieceList& other) const {
+    constexpr bool operator==(const PieceList &other) const {
         return array == other.array;
     }
 };
@@ -77,7 +77,7 @@ struct RookInfo {
         return static_cast<size_t>(aside.is_valid()) | (static_cast<size_t>(hside.is_valid()) << 1);
     }
 
-    constexpr bool operator==(const RookInfo&) const = default;
+    constexpr bool operator==(const RookInfo &) const = default;
 };
 
 struct CreateSuperpieceMaskInfo {
@@ -96,16 +96,16 @@ struct Position {
 public:
     constexpr Position() = default;
 
-    [[nodiscard]] const Byteboard& board() const {
+    [[nodiscard]] const Byteboard &board() const {
         return m_board;
     }
-    [[nodiscard]] const Wordboard& attack_table(Color color) const {
+    [[nodiscard]] const Wordboard &attack_table(Color color) const {
         return m_attack_table[static_cast<usize>(color)];
     }
-    [[nodiscard]] const PieceList<PieceType>& piece_list(Color color) const {
+    [[nodiscard]] const PieceList<PieceType> &piece_list(Color color) const {
         return m_piece_list[static_cast<usize>(color)];
     }
-    [[nodiscard]] const PieceList<Square>& piece_list_sq(Color color) const {
+    [[nodiscard]] const PieceList<Square> &piece_list_sq(Color color) const {
         return m_piece_list_sq[static_cast<usize>(color)];
     }
     [[nodiscard]] Color active_color() const {
@@ -255,13 +255,13 @@ public:
     }
 
     template<bool UPDATE_PSQT>
-    [[nodiscard]] Position move(Move m, PsqtState* psqt_state) const;
+    [[nodiscard]] Position move(Move m, PsqtState *psqt_state) const;
     [[nodiscard]] Position null_move() const;
 
     [[nodiscard]] Position move(Move m) const {
         return move<false>(m, nullptr);
     }
-    [[nodiscard]] Position move(Move m, PsqtState& psqt_state) const {
+    [[nodiscard]] Position move(Move m, PsqtState &psqt_state) const {
         return move<true>(m, &psqt_state);
     }
 
@@ -288,8 +288,8 @@ public:
                                          std::string_view irreversible_clock,
                                          std::string_view ply);
 
-    bool                 operator==(const Position&) const = default;
-    friend std::ostream& operator<<(std::ostream& os, const Position& position);
+    bool                 operator==(const Position &) const = default;
+    friend std::ostream &operator<<(std::ostream &os, const Position &position);
 
 private:
     std::array<Wordboard, 2>            m_attack_table{};
@@ -308,12 +308,12 @@ private:
     HashKey                             m_major_key;
     HashKey                             m_minor_key;
 
-    void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates& updates);
-    void incrementally_add_piece(bool color, Place p, Square sq, PsqtUpdates& updates);
+    void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates &updates);
+    void incrementally_add_piece(bool color, Place p, Square sq, PsqtUpdates &updates);
     void incrementally_mutate_piece(
-      bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates& updates);
+      bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates &updates);
     void
-    incrementally_move_piece(bool color, Square from, Square to, Place p, PsqtUpdates& updates);
+    incrementally_move_piece(bool color, Square from, Square to, Place p, PsqtUpdates &updates);
 
     void  remove_attacks(bool color, PieceId id);
     m8x64 toggle_rays(Square sq);
@@ -321,4 +321,4 @@ private:
     void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask);
 };
 
-}
+}  // namespace Clockwork

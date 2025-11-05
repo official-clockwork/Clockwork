@@ -206,4 +206,4 @@ forceinline u16 find_set(u8x16 needle, usize needle_count, u8x16 haystack) {
     return result;
 }
 
-}
+}  // namespace Clockwork::geometry
