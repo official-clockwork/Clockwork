@@ -4,6 +4,7 @@
 #include "square.hpp"
 #include "util/types.hpp"
 #include <array>
+#include <bit>
 #include <cassert>
 #include <tuple>
 #include <utility>
