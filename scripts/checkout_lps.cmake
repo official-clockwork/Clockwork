@@ -37,5 +37,5 @@ execute_process(
     RESULT_VARIABLE CHECKOUT_FAILED)
 
 if (CHECKOUT_FAILED)
-    message(FATAL_ERROR "Could checkout lps commit ${LPS_COMMIT}")
+    message(FATAL_ERROR "Could not checkout lps commit ${LPS_COMMIT}")
 endif()
