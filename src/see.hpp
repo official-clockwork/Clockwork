@@ -104,4 +104,4 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     return stm != pos.active_color();
 }
 
-}
+}  // namespace Clockwork::SEE

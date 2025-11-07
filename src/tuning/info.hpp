@@ -47,4 +47,4 @@ struct Parameters {
     }
 };
 
-}
+}  // namespace Clockwork::Autograd

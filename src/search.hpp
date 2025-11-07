@@ -188,5 +188,5 @@ private:
     bool  check_tm_hard_limit();
 };
 
-}
-}
+}  // namespace Search
+}  // namespace Clockwork

@@ -24,6 +24,8 @@ jobs:
         exclude:
           - os: macos-latest
             arch: znver4
+        include:
+          - { os: { runner: ubuntu-latest }, arch: x86-64-v3, compiler: g++-12 }
     runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout Repo

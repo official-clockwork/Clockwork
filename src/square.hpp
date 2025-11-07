@@ -82,4 +82,4 @@ struct Square {
 
     const std::strong_ordering operator<=>(const Square&) const = default;
 };
-}
+}  // namespace Clockwork

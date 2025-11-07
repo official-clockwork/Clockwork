@@ -16,4 +16,4 @@ time::TimePoint compute_soft_limit(time::TimePoint               search_start,
                                    const f64                     nodes_tm_fraction,
                                    const f64                     complexity);
 // Will add soft tm and other helper functions here
-}
+}  // namespace Clockwork::TM

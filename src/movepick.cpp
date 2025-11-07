@@ -169,4 +169,4 @@ i32 MovePicker::score_move(Move move) const {
     }
 }
 
-}
+}  // namespace Clockwork

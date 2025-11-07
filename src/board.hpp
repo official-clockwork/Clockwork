@@ -281,4 +281,4 @@ struct Wordboard {
 
 static_assert(sizeof(Wordboard) == 128);
 
-}
+}  // namespace Clockwork

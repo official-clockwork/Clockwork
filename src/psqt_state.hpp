@@ -163,4 +163,4 @@ private:
     std::array<bool, 2>   m_king_sides;
 };
 
-}
+}  // namespace Clockwork

@@ -73,4 +73,4 @@ private:
     Search::Stack* m_stack;
 };
 
-}
+}  // namespace Clockwork

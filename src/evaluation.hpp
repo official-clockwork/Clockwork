@@ -18,4 +18,4 @@ inline Score evaluate_stm_pov(const Position& pos) {
     return evaluate_stm_pov(pos, PsqtState{pos});
 }
 
-};
+};  // namespace Clockwork

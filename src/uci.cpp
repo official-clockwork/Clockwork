@@ -389,4 +389,4 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
     }
 }
 
-}
+}  // namespace Clockwork::UCI

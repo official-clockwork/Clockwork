@@ -12,20 +12,20 @@ inline const PParam ROOK_MAT   = S(1712, 1681);
 inline const PParam QUEEN_MAT  = S(3665, 2887);
 inline const PParam TEMPO_VAL  = S(59, 15);
 
-inline const PParam BISHOP_PAIR_VAL  = S(80, 177);
-inline const PParam ROOK_OPEN_VAL  = S(104, -28);
+inline const PParam BISHOP_PAIR_VAL    = S(80, 177);
+inline const PParam ROOK_OPEN_VAL      = S(104, -28);
 inline const PParam ROOK_SEMIOPEN_VAL  = S(39, 13);
 
 inline const PParam DOUBLED_PAWN_VAL = S(-37, -78);
 
 inline const PParam POTENTIAL_CHECKER_VAL = S(-74, -2);
-inline const PParam OUTPOST_KNIGHT_VAL = S(7, 51);
-inline const PParam OUTPOST_BISHOP_VAL = S(43, 44);
+inline const PParam OUTPOST_KNIGHT_VAL    = S(7, 51);
+inline const PParam OUTPOST_BISHOP_VAL    = S(43, 44);
 
 inline const PParam PAWN_PUSH_THREAT_KNIGHT = S(54, 18);
 inline const PParam PAWN_PUSH_THREAT_BISHOP = S(56, -14);
-inline const PParam PAWN_PUSH_THREAT_ROOK = S(34, 33);
-inline const PParam PAWN_PUSH_THREAT_QUEEN = S(55, -52);
+inline const PParam PAWN_PUSH_THREAT_ROOK   = S(34, 33);
+inline const PParam PAWN_PUSH_THREAT_QUEEN  = S(55, -52);
 
 inline const std::array<PParam, 6> PAWN_PHALANX = {
     S(20, 19), S(63, 31), S(74, 70), S(191, 140), S(561, 241), S(931, 1149),
@@ -156,4 +156,4 @@ inline const std::array<PParam, 64> KING_PSQT = {
 };
 // Epoch duration: 61.8411s
 // clang-format on
-}
+}  // namespace Clockwork

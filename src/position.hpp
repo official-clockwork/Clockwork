@@ -321,4 +321,4 @@ private:
     void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask);
 };
 
-}
+}  // namespace Clockwork

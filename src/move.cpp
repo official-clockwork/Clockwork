@@ -76,4 +76,4 @@ std::optional<Move> Move::parse(std::string_view str, const Position& ctx) {
     return Move(*from, *to, *mf);
 }
 
-}
+}  // namespace Clockwork

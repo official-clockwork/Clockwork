@@ -58,4 +58,4 @@ constexpr u64 nps(u64 nodes, const auto& elapsed) {
     return static_cast<u64>(static_cast<f64>(nodes) / cast<FloatSeconds>(elapsed).count());
 }
 }  // namespace time
-}
+}  // namespace Clockwork

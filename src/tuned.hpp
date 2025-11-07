@@ -44,4 +44,4 @@ void uci_print_tunable_options();
 void uci_print_tunable_values();
 bool uci_parse_tunable(std::string_view name, std::string_view value);
 
-}
+}  // namespace Clockwork::tuned

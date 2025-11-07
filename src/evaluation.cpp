@@ -335,13 +335,13 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
     eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
-    return eval->phase<24>(static_cast<i32>(phase));
+    return static_cast<Score>(eval->phase<24>(static_cast<i32>(phase)));
 };
 
 Score evaluate_stm_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us = pos.active_color();
-    return (us == Color::White) ? evaluate_white_pov(pos, psqt_state)
-                                : -evaluate_white_pov(pos, psqt_state);
+    return static_cast<Score>((us == Color::White) ? evaluate_white_pov(pos, psqt_state)
+                                                   : -evaluate_white_pov(pos, psqt_state));
 }
 
 }  // namespace Clockwork

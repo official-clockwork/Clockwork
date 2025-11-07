@@ -219,7 +219,7 @@ void Position::incrementally_move_piece(
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
-    u16x64 mask = u16x64::splat(~id.to_piece_mask().value());
+    u16x64 mask = u16x64::splat(static_cast<u16>(~id.to_piece_mask().value()));
     m_attack_table[color].raw &= mask;
 }
 
@@ -1024,4 +1024,4 @@ u16 Position::get_50mr_counter() const {
     return m_50mr;
 }
 
-}
+}  // namespace Clockwork

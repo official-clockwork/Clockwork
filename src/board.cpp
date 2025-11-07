@@ -23,4 +23,4 @@ std::ostream& operator<<(std::ostream& os, const Wordboard& at) {
     return os;
 }
 
-}
+}  // namespace Clockwork

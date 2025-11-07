@@ -99,4 +99,4 @@ const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE = []() {
     return table;
 }();
 
-}
+}  // namespace Clockwork::geometry

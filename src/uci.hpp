@@ -41,4 +41,4 @@ private:
     void handle_genfens(std::istringstream&);
 };
 
-}
+}  // namespace Clockwork::UCI

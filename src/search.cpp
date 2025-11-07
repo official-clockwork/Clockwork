@@ -938,5 +938,5 @@ Value Worker::evaluate(const Position& pos) {
     return -VALUE_INF;  // Not implemented in tune mode
 #endif
 }
-}
-}
+}  // namespace Search
+}  // namespace Clockwork

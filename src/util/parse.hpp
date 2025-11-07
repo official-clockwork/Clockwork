@@ -23,4 +23,4 @@ inline std::optional<T> parse_number(std::string_view s) {
     }
 }
 
-}
+}  // namespace Clockwork

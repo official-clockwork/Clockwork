@@ -111,4 +111,4 @@ void TT::clear() {
     std::fill(m_entries, m_entries + m_size, TTEntry{});
 }
 
-}
+}  // namespace Clockwork

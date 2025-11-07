@@ -154,4 +154,4 @@ void History::clear() {
     std::memset(&m_minor_corr_hist, 0, sizeof(CorrectionHistory));
 }
 
-}
+}  // namespace Clockwork

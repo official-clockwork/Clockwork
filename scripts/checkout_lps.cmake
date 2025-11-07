@@ -24,10 +24,18 @@ if (COMMIT_NOT_PRESENT)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} fetch
         WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../vendor/lps"
-        COMMAND_ERROR_IS_FATAL ANY)
+        RESULT_VARIABLE FETCH_FAILED)
+
+    if (FETCH_FAILED)
+        message(FATAL_ERROR "Could not fetch lps from upstream.")
+    endif()
 endif ()
 
 execute_process(
     COMMAND ${GIT_EXECUTABLE} -c advice.detachedHead=false checkout ${LPS_COMMIT}
     WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/../vendor/lps"
-    COMMAND_ERROR_IS_FATAL ANY)
+    RESULT_VARIABLE CHECKOUT_FAILED)
+
+if (CHECKOUT_FAILED)
+    message(FATAL_ERROR "Could not checkout lps commit ${LPS_COMMIT}")
+endif()

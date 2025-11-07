@@ -219,11 +219,11 @@ int main() {
         std::cout << "inline const PParam TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PParam BISHOP_PAIR_VAL  = " << BISHOP_PAIR_VAL << ";"
+        std::cout << "inline const PParam BISHOP_PAIR_VAL   = " << BISHOP_PAIR_VAL << ";"
                   << std::endl;
-
-        std::cout << "inline const PParam ROOK_OPEN_VAL  = " << ROOK_OPEN_VAL << ";" << std::endl;
-        std::cout << "inline const PParam ROOK_SEMIOPEN_VAL  = " << ROOK_SEMIOPEN_VAL << ";"
+        std::cout << "inline const PParam ROOK_OPEN_VAL     = " << ROOK_OPEN_VAL << ";"
+                  << std::endl;
+        std::cout << "inline const PParam ROOK_SEMIOPEN_VAL = " << ROOK_SEMIOPEN_VAL << ";"
                   << std::endl;
         std::cout << std::endl;
         std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
@@ -233,9 +233,9 @@ int main() {
         std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
                   << std::endl;
 
-        std::cout << "inline const PParam OUTPOST_KNIGHT_VAL = " << OUTPOST_KNIGHT_VAL << ";"
+        std::cout << "inline const PParam OUTPOST_KNIGHT_VAL    = " << OUTPOST_KNIGHT_VAL << ";"
                   << std::endl;
-        std::cout << "inline const PParam OUTPOST_BISHOP_VAL = " << OUTPOST_BISHOP_VAL << ";"
+        std::cout << "inline const PParam OUTPOST_BISHOP_VAL    = " << OUTPOST_BISHOP_VAL << ";"
                   << std::endl;
 
         std::cout << std::endl;
@@ -244,9 +244,9 @@ int main() {
                   << ";" << std::endl;
         std::cout << "inline const PParam PAWN_PUSH_THREAT_BISHOP = " << PAWN_PUSH_THREAT_BISHOP
                   << ";" << std::endl;
-        std::cout << "inline const PParam PAWN_PUSH_THREAT_ROOK = " << PAWN_PUSH_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam PAWN_PUSH_THREAT_QUEEN = " << PAWN_PUSH_THREAT_QUEEN
+        std::cout << "inline const PParam PAWN_PUSH_THREAT_ROOK   = " << PAWN_PUSH_THREAT_ROOK
+                  << ";" << std::endl;
+        std::cout << "inline const PParam PAWN_PUSH_THREAT_QUEEN  = " << PAWN_PUSH_THREAT_QUEEN
                   << ";" << std::endl;
         std::cout << std::endl;
 

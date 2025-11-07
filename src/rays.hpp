@@ -86,4 +86,4 @@ inline constexpr Table INFINITE_EXCLUSIVE_TABLE = generate_rays(
     return INFINITE_EXCLUSIVE_TABLE[a.raw][b.raw];
 }
 
-}
+}  // namespace Clockwork::rays
