@@ -671,7 +671,6 @@ Value Worker::search(
             if (quiet) {
                 reduction += (1024 - move_history / 8);
                 reduction += (ss->static_eval + 500 + 100 * depth <= alpha && !is_in_check) * 1024;
-                
             }
 
             if (!quiet) {
