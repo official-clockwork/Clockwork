@@ -61,6 +61,7 @@ void Searcher::launch_search(SearchSettings settings_) {
         std::unique_lock lock_guard{mutex};
 
         settings = settings_;
+        tt.increment_age();
 
         for (auto& worker : m_workers) {
             worker->prepare();
