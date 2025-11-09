@@ -66,30 +66,6 @@ TT::~TT() {
     aligned_free(m_clusters);
 }
 
-//  let index = self.wrap_key(key);
-// let key = TT::pack_key(key);
-
-// let cluster = self.table[index].load();
-
-// for i in 0..CLUSTER_SIZE {
-//     let entry = cluster.entries[i];
-
-//     if entry.key != key {
-//         continue;
-//     }
-
-//     return Some(TTHit {
-//         mov: entry.m,
-//         depth: entry.depth.into(),
-//         bound: entry.info.flag(),
-//         value: reconstruct_gt_truth_score(entry.score.into(), ply, clock),
-//         eval: entry.evaluation.into(),
-//         was_pv: entry.info.pv(),
-//     });
-// }
-
-// None
-
 std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     size_t     idx     = mulhi64(pos.get_hash_key(), m_size);
     const auto cluster = this->m_clusters[idx].load();
