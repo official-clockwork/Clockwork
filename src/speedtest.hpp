@@ -7,5 +7,5 @@ namespace Speedtest {
 
 void speedtest(Search::Searcher& searcher);
 
-} // namespace Speedtest
-} // namespace Clockwork
+}  // namespace Speedtest
+}  // namespace Clockwork
