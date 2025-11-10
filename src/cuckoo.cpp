@@ -102,6 +102,8 @@ void Cuckoo::init() {
 
     assert(count == 3668);
 
+    (void)count;
+
     // woo C++ evil initialisation
     std::ranges::copy(temp_keys, keys.begin());
     std::ranges::copy(temp_moves, moves.begin());
