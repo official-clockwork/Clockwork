@@ -75,8 +75,8 @@ inline constexpr Table EXCLUSIVE_TABLE = generate_rays(
           last         = x;
           bb |= x;
       }
-      bb ^= first;
-      bb ^= last;
+      bb &= ~first;
+      bb &= ~last;
   });
 
 [[nodiscard]] constexpr Bitboard exclusive(Square a, Square b) {
