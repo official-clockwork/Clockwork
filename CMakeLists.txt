@@ -111,6 +111,8 @@ set(srcs
         src/repetition_info.hpp
         src/search.cpp
         src/search.hpp
+        src/speedtest.cpp
+        src/speedtest.hpp
         src/square.hpp
         src/tm.cpp
         src/tm.hpp
@@ -175,5 +177,6 @@ else()
     do_test(test_static_vector)
     do_test(test_perft)
     do_test(test_position)
+    do_test(test_speedtest)
 
 endif()

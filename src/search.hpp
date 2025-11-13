@@ -27,6 +27,7 @@ struct SearchSettings {
     i64   move_time  = -1;
     u64   hard_nodes = 0;
     u64   soft_nodes = 0;
+    bool  silent     = false;
 };
 
 // Forward declare for Searcher
