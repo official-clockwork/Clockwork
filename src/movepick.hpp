@@ -19,7 +19,6 @@ public:
         m_history(history),
         m_movegen(pos),
         m_tt_move(tt_move),
-        m_killer(ss->killer),
         m_ply(ply),
         m_stack(ss) {
     }
@@ -29,7 +28,6 @@ public:
         GenerateMoves,
         ScoreNoisy,
         EmitGoodNoisy,
-        EmitKiller,
         ScoreQuiet,
         EmitQuiet,
         EmitBadNoisy,
@@ -68,7 +66,6 @@ private:
     std::array<i32, 256> m_scores;
 
     Move           m_tt_move;
-    Move           m_killer;
     i32            m_ply;
     Search::Stack* m_stack;
 };

@@ -59,15 +59,7 @@ Move MovePicker::next() {
             goto emit_bad_noisy;
         }
 
-        m_stage = Stage::EmitKiller;
-
-        [[fallthrough]];
-
-    case Stage::EmitKiller:
         m_stage = Stage::ScoreQuiet;
-        if (m_tt_move != m_killer && m_killer != Move::none() && m_movegen.is_legal(m_killer)) {
-            return m_killer;
-        }
 
         [[fallthrough]];
 
@@ -81,7 +73,7 @@ Move MovePicker::next() {
     case Stage::EmitQuiet:
         while (m_current_index < m_quiet.size()) {
             auto [curr, score] = pick_next(m_quiet);
-            if (curr != m_tt_move && curr != m_killer) {
+            if (curr != m_tt_move) {
                 return curr;
             }
         }
@@ -95,7 +87,7 @@ emit_bad_noisy:
     case Stage::EmitBadNoisy:
         while (m_current_index < m_bad_noisy.size()) {
             Move curr = m_bad_noisy[m_current_index++];
-            if (curr != m_tt_move && curr != m_killer) {
+            if (curr != m_tt_move) {
                 return curr;
             }
         }
