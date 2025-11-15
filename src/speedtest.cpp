@@ -387,11 +387,11 @@ void speedtest(Search::Searcher& searcher) {
         std::cout.flush();
     }
 
-    auto   end_time    = time::Clock::now();
-    auto   duration_ms = time::cast<time::Milliseconds>(end_time - start_time).count();
-    f64    nps         = (duration_ms > 0)
-                         ? (static_cast<f64>(total_nodes) * 1000.0 / static_cast<f64>(duration_ms))
-                         : 0.0;
+    auto end_time    = time::Clock::now();
+    auto duration_ms = time::cast<time::Milliseconds>(end_time - start_time).count();
+    f64  nps         = (duration_ms > 0)
+                       ? (static_cast<f64>(total_nodes) * 1000.0 / static_cast<f64>(duration_ms))
+                       : 0.0;
 
     std::cout << std::endl;
     std::cout << "Speedtest finished." << std::endl;
