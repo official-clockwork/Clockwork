@@ -48,11 +48,24 @@ void MoveGen::generate_moves(MoveList& noisy, MoveList& quiet) {
     PieceMask checkers = m_position.checker_mask();
     switch (checkers.popcount()) {
     case 0:
-        return generate_moves_to<true>(noisy, quiet, ~Bitboard{0}, true);
+        return generate_moves_to<true, true>(noisy, quiet, ~Bitboard{0}, true);
     case 1:
-        return generate_moves_one_checker(noisy, quiet, checkers);
+        return generate_moves_one_checker<true>(noisy, quiet, checkers);
     default:
-        return generate_moves_two_checkers(noisy, quiet, checkers);
+        return generate_moves_two_checkers<true>(noisy, quiet, checkers);
+    }
+}
+
+void MoveGen::generate_noisy_moves(MoveList& noisy) {
+    MoveList  quiet;
+    PieceMask checkers = m_position.checker_mask();
+    switch (checkers.popcount()) {
+    case 0:
+        return generate_moves_to<true, false>(noisy, quiet, ~Bitboard{0}, true);
+    case 1:
+        return generate_moves_one_checker<false>(noisy, quiet, checkers);
+    default:
+        return generate_moves_two_checkers<false>(noisy, quiet, checkers);
     }
 }
 
@@ -238,7 +251,7 @@ bool MoveGen::is_legal_two_checkers(Move m, PieceMask checkers) const {
     return is_legal_king_move(m, non_checker_ray);
 }
 
-template<bool king_moves>
+template<bool king_moves, bool gen_quiet>
 void MoveGen::generate_moves_to(MoveList& noisy,
                                 MoveList& quiet,
                                 Bitboard  valid_dests,
@@ -288,24 +301,26 @@ void MoveGen::generate_moves_to(MoveList& noisy,
     // Non-promotion pawn captures
     write(noisy, at, pawn_active & enemy & ~promo_zone, pawn_mask, MoveFlags::CaptureBit);
 
-    // Castling
-    if constexpr (king_moves) {
-        Square   king_sq   = m_position.king_sq(active_color);
-        RookInfo rook_info = m_position.rook_info(active_color);
-        if (is_aside_castling_legal(empty, danger)) {
-            quiet.push_back(Move{king_sq, rook_info.aside, MoveFlags::Castle});
+    if constexpr (gen_quiet) {
+        // Castling
+        if constexpr (king_moves) {
+            Square   king_sq   = m_position.king_sq(active_color);
+            RookInfo rook_info = m_position.rook_info(active_color);
+            if (is_aside_castling_legal(empty, danger)) {
+                quiet.push_back(Move{king_sq, rook_info.aside, MoveFlags::Castle});
+            }
+            if (is_hside_castling_legal(empty, danger)) {
+                quiet.push_back(Move{king_sq, rook_info.hside, MoveFlags::Castle});
+            }
         }
-        if (is_hside_castling_legal(empty, danger)) {
-            quiet.push_back(Move{king_sq, rook_info.hside, MoveFlags::Castle});
-        }
+
+        // Undefended non-pawn quiets
+        write(quiet, at, nonpawn_active & empty & ~danger, non_pawn_mask, MoveFlags::Normal);
+
+        // Defended non-pawn quiets
+        write(quiet, at, nonpawn_active & empty & danger, non_pawn_mask & ~king_mask,
+              MoveFlags::Normal);
     }
-
-    // Undefended non-pawn quiets
-    write(quiet, at, nonpawn_active & empty & ~danger, non_pawn_mask, MoveFlags::Normal);
-
-    // Defended non-pawn quiets
-    write(quiet, at, nonpawn_active & empty & danger, non_pawn_mask & ~king_mask,
-          MoveFlags::Normal);
 
     // Pawn quiets
     {
@@ -318,16 +333,19 @@ void MoveGen::generate_moves_to(MoveList& noisy,
           valid_pawns(active_color, bb, empty, valid_dests);
 
         write_pawn(noisy, promo, single_shift, MoveFlags::PromoQueen);
-        write_pawn(quiet, promo, single_shift, MoveFlags::PromoKnight);
-        write_pawn(quiet, promo, single_shift, MoveFlags::PromoRook);
-        write_pawn(quiet, promo, single_shift, MoveFlags::PromoBishop);
 
-        write_pawn(quiet, single_push, single_shift, MoveFlags::Normal);
+        if constexpr (gen_quiet) {
+            write_pawn(quiet, promo, single_shift, MoveFlags::PromoKnight);
+            write_pawn(quiet, promo, single_shift, MoveFlags::PromoRook);
+            write_pawn(quiet, promo, single_shift, MoveFlags::PromoBishop);
 
-        write_pawn(quiet, double_push, double_shift, MoveFlags::Normal);
+            write_pawn(quiet, single_push, single_shift, MoveFlags::Normal);
+            write_pawn(quiet, double_push, double_shift, MoveFlags::Normal);
+        }
     }
 }
 
+template<bool gen_quiet>
 void MoveGen::generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests) {
     Color active_color = m_position.active_color();
 
@@ -344,21 +362,26 @@ void MoveGen::generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard 
 
     // Undefended captures
     write(noisy, at, active & enemy & ~danger, king_mask, MoveFlags::CaptureBit);
-    // Undefended quiets
-    write(quiet, at, active & empty & ~danger, king_mask, MoveFlags::Normal);
+
+    if constexpr (gen_quiet) {
+        // Undefended quiets
+        write(quiet, at, active & empty & ~danger, king_mask, MoveFlags::Normal);
+    }
 }
 
+template<bool gen_quiet>
 void MoveGen::generate_moves_one_checker(MoveList& noisy, MoveList& quiet, PieceMask checker) {
     auto [valid_dests, non_checker_ray, has_ep] = valid_destinations_one_checker(checker);
 
-    generate_moves_to<false>(noisy, quiet, valid_dests, has_ep);
-    generate_king_moves_to(noisy, quiet, non_checker_ray);
+    generate_moves_to<false, gen_quiet>(noisy, quiet, valid_dests, has_ep);
+    generate_king_moves_to<gen_quiet>(noisy, quiet, non_checker_ray);
 }
 
+template<bool gen_quiet>
 void MoveGen::generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, PieceMask checkers) {
     Bitboard non_checker_ray = valid_destinations_two_checkers(checkers);
 
-    generate_king_moves_to(noisy, quiet, non_checker_ray);
+    generate_king_moves_to<gen_quiet>(noisy, quiet, non_checker_ray);
 }
 
 bool MoveGen::is_aside_castling_legal(Bitboard empty, Bitboard danger) const {

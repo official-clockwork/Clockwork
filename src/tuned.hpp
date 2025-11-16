@@ -20,6 +20,10 @@ namespace Clockwork::tuned {
     NO_TUNE(nmp_base_r, 3, 1, 10, .5, 0.002)                      \
     NO_TUNE(nmp_verif_min_depth, 14, 1, 40, .5, 0.002)            \
                                                                   \
+    /* ProbCut Values */                                          \
+    TUNE(probcut_margin, 150, 50, 250, 10, 0.002)                 \
+    TUNE(probcut_see, 100, 0, 200, 10, 0.002)                     \
+                                                                  \
     /* SEE Values */                                              \
     TUNE(quiesce_see_threshold, 0, -1000, 100, 20, 0.002)         \
     TUNE(movepicker_see_capthist_divisor, 48, 16, 192, 10, 0.002) \

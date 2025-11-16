@@ -24,6 +24,21 @@ public:
         m_stack(ss) {
     }
 
+    // for ProbCut
+    explicit MovePicker(const Position& pos,
+                        const History&  history,
+                        Move            tt_move,
+                        Value           threshold) :
+        m_pos(pos),
+        m_history(history),
+        m_movegen(pos),
+        m_tt_move(tt_move),
+        m_killer(Move::none()),
+        m_ply(0),
+        m_stack(nullptr),
+        m_threshold(threshold) {
+    }
+
     enum class Stage {
         EmitTTMove,
         GenerateMoves,
@@ -67,10 +82,11 @@ private:
     bool                 m_skip_quiets   = false;
     std::array<i32, 256> m_scores;
 
-    Move           m_tt_move;
-    Move           m_killer;
-    i32            m_ply;
-    Search::Stack* m_stack;
+    Move                 m_tt_move;
+    Move                 m_killer;
+    i32                  m_ply;
+    Search::Stack*       m_stack;
+    std::optional<Value> m_threshold;
 };
 
 }  // namespace Clockwork

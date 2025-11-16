@@ -23,6 +23,7 @@ public:
     [[nodiscard]] bool is_legal(Move m) const;
 
     void generate_moves(MoveList& noisy, MoveList& quiet);
+    void generate_noisy_moves(MoveList& noisy);
 
 private:
     [[nodiscard]] std::tuple<Bitboard, Bitboard, bool>
@@ -37,11 +38,16 @@ private:
     [[nodiscard]] bool is_aside_castling_legal(Bitboard empty, Bitboard danger) const;
     [[nodiscard]] bool is_hside_castling_legal(Bitboard empty, Bitboard danger) const;
 
-    template<bool king_moves>
+    template<bool king_moves, bool gen_quiet>
     void generate_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests, bool can_ep);
+
+    template<bool gen_quiet>
     void generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests);
 
+    template<bool gen_quiet>
     void generate_moves_one_checker(MoveList& noisy, MoveList& quiet, PieceMask checker);
+
+    template<bool gen_quiet>
     void generate_moves_two_checkers(MoveList& noisy, MoveList& quiet, PieceMask checkers);
 
     // Write moves that go to dest. Source are pieces in piecemask.
