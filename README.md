@@ -31,15 +31,19 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 - Test search heuristics that are not possible when the evaluation function is a black-box.
 
 ### Our Innovations and features
-- **Internal autograd engine** - Write the evaluation function once, then simply run `make evaltune` to tune on our publicly available data.
+- **Internal autograd engine**
+  - Write the evaluation function once, then simply run `make evaltune` to tune on our publicly available data.
 
-- **Incremental AVX2/AVX512 attack tables (affectionately "LilyTech")** - Extremely fast generation of attack tables, crucial for efficient HCE engines.
+- **Incremental AVX2/AVX512 attack tables (affectionately "LilyTech")**
+  - Extremely fast generation of attack tables, crucial for efficient HCE engines.
 
-- **Completely original evaluation data** - Starting from handcrafted material values, refined via iterative data generation and tuning.
+- **Completely original evaluation data**
+  - Starting from handcrafted material values, refined via iterative data generation and tuning.
 
 - **Modern C++ (C++20)** with strict styling guidelines and automatic formatting, enforced through our Continuous Integrations pipeline.
 
-- **OpenBench integration** - Full testing and data-generation pipeline: [Clockwork OpenBench](http://clockworkopenbench.pythonanywhere.com).
+- **OpenBench integration**
+  - Full testing and data-generation pipeline: [Clockwork OpenBench](http://clockworkopenbench.pythonanywhere.com).
 
 ---
 
