@@ -28,12 +28,8 @@ public:
     Dataset(const std::string& file_path);
     ~Dataset();
 
-    const std::vector<std::string>& lines() const {
-        return m_lines;
-    }
-    size_t size() const {
-        return m_lines.size();
-    }
+    const std::vector<std::string>& lines() const { return m_lines; }
+    size_t                          size() const { return m_lines.size(); }
 };
 
 class DataLoader {

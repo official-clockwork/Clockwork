@@ -40,8 +40,7 @@ std::ostream& operator<<(std::ostream& os, const PV& pv) {
 
 Searcher::Searcher() :
     idle_barrier(std::make_unique<std::barrier<>>(1)),
-    started_barrier(std::make_unique<std::barrier<>>(1)) {
-}
+    started_barrier(std::make_unique<std::barrier<>>(1)) {}
 
 Searcher::~Searcher() {
     exit();
@@ -188,15 +187,14 @@ void Worker::start_searching() {
         m_search_start = time::Clock::now();
 
         m_search_limits = {
-          .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings,
-                                                    root_position.active_color()),
-          .soft_time_limit = TM::compute_soft_limit<false>(m_search_start, m_searcher.settings,
-                                                           root_position.active_color(), 0.0, 0.0),
-          .soft_node_limit = m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes
-                                                                : std::numeric_limits<u64>::max(),
-          .hard_node_limit = m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes
-                                                                : std::numeric_limits<u64>::max(),
-          .depth_limit     = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
+          .hard_time_limit = TM::compute_hard_limit(m_search_start, m_searcher.settings, root_position.active_color()),
+          .soft_time_limit =
+            TM::compute_soft_limit<false>(m_search_start, m_searcher.settings, root_position.active_color(), 0.0, 0.0),
+          .soft_node_limit =
+            m_searcher.settings.soft_nodes > 0 ? m_searcher.settings.soft_nodes : std::numeric_limits<u64>::max(),
+          .hard_node_limit =
+            m_searcher.settings.hard_nodes > 0 ? m_searcher.settings.hard_nodes : std::numeric_limits<u64>::max(),
+          .depth_limit = m_searcher.settings.depth > 0 ? m_searcher.settings.depth : MAX_PLY};
 
         Move best_move = iterative_deepening<true>(root_position);
 
@@ -238,12 +236,11 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Get current time
         auto curr_time = time::Clock::now();
 
-        std::cout << std::dec << "info depth " << last_search_depth << " seldepth " << last_seldepth
-                  << " score " << format_score(last_search_score) << " nodes "
-                  << m_searcher.node_count() << " nps "
+        std::cout << std::dec << "info depth " << last_search_depth << " seldepth " << last_seldepth << " score "
+                  << format_score(last_search_score) << " nodes " << m_searcher.node_count() << " nps "
                   << time::nps(m_searcher.node_count(), curr_time - m_search_start) << " time "
-                  << time::cast<time::Milliseconds>(curr_time - m_search_start).count() << " pv "
-                  << last_pv << std::endl;
+                  << time::cast<time::Milliseconds>(curr_time - m_search_start).count() << " pv " << last_pv
+                  << std::endl;
     };
 
     m_node_counts.fill(0);
@@ -266,8 +263,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
             alpha = std::max(-VALUE_INF, alpha);
             beta  = std::min(VALUE_INF, beta);
-            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta,
-                                          asp_window_depth, 0, false);
+            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta, asp_window_depth, 0, false);
 
             if (m_stopped) {
                 break;
@@ -306,10 +302,9 @@ Move Worker::iterative_deepening(const Position& root_position) {
             break;
         }
 
-        const auto total_nodes = std::reduce(std::begin(m_node_counts), std::end(m_node_counts), 0);
-        const auto best_move_nodes = m_node_counts[last_best_move.from_to()];
-        const auto nodes_tm_fraction =
-          static_cast<f64>(best_move_nodes) / static_cast<f64>(total_nodes);
+        const auto total_nodes       = std::reduce(std::begin(m_node_counts), std::end(m_node_counts), 0);
+        const auto best_move_nodes   = m_node_counts[last_best_move.from_to()];
+        const auto nodes_tm_fraction = static_cast<f64>(best_move_nodes) / static_cast<f64>(total_nodes);
 
         // Check soft node limit
         if (IS_MAIN && search_nodes() >= m_search_limits.soft_node_limit) {
@@ -326,8 +321,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
                 complexity = 0.6 * abs(base_search_score - score) * std::log(search_depth);
             }
             m_search_limits.soft_time_limit = TM::compute_soft_limit<true>(
-              m_search_start, m_searcher.settings, root_position.active_color(), nodes_tm_fraction,
-              complexity);
+              m_search_start, m_searcher.settings, root_position.active_color(), nodes_tm_fraction, complexity);
         }
 
         // check soft time limit
@@ -350,8 +344,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
 }
 
 template<bool IS_MAIN, bool PV_NODE>
-Value Worker::search(
-  const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode) {
+Value Worker::search(const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode) {
     ss->pv.clear();
 
     if (m_stopped) {
@@ -416,8 +409,7 @@ Value Worker::search(
 
     if (!PV_NODE && tt_data) {
         if (tt_data->depth >= depth
-            && (tt_data->bound() == Bound::Exact
-                || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
+            && (tt_data->bound() == Bound::Exact || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
                 || (tt_data->bound() == Bound::Upper && tt_data->score <= alpha))) {
             return tt_data->score;
         }
@@ -435,7 +427,7 @@ Value Worker::search(
         correction      = m_td.history.get_correction(pos);
         raw_eval        = tt_data && !is_mate_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
         ss->static_eval = raw_eval + correction;
-        improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
+        improving       = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
 
         if (!tt_data) {
             m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, ttpv, Bound::None);
@@ -461,14 +453,12 @@ Value Worker::search(
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && !excluded
         && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta) && !m_in_nmp_verification) {
-        int R =
-          tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
+        int      R         = tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
 
         repetition_info.push(pos_after.get_hash_key(), true);
 
-        Value null_score = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
-                                                   ply + 1, !cutnode);
+        Value null_score = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R, ply + 1, !cutnode);
 
         repetition_info.pop();
 
@@ -482,8 +472,7 @@ Value Worker::search(
             }
 
             m_in_nmp_verification = true;
-            Value verification =
-              search<IS_MAIN, false>(pos, ss, beta - 1, beta, depth - R, ply, false);
+            Value verification    = search<IS_MAIN, false>(pos, ss, beta - 1, beta, depth - R, ply, false);
             m_in_nmp_verification = false;
 
             if (verification >= beta) {
@@ -493,8 +482,7 @@ Value Worker::search(
     }
 
     // Razoring
-    if (!PV_NODE && !excluded && !is_in_check && depth <= 7
-        && ss->static_eval + 707 * depth < alpha) {
+    if (!PV_NODE && !excluded && !is_in_check && depth <= 7 && ss->static_eval + 707 * depth < alpha) {
         const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
@@ -558,10 +546,10 @@ Value Worker::search(
             Value singular_beta  = tt_data->score - depth * 5;
             int   singular_depth = depth / 2;
 
-            ss->excluded_move    = m;
-            Value singular_value = search<IS_MAIN, false>(pos, ss, singular_beta - 1, singular_beta,
-                                                          singular_depth, ply, cutnode);
-            ss->excluded_move    = Move::none();
+            ss->excluded_move = m;
+            Value singular_value =
+              search<IS_MAIN, false>(pos, ss, singular_beta - 1, singular_beta, singular_depth, ply, cutnode);
+            ss->excluded_move = Move::none();
 
             if (singular_value < singular_beta) {
                 extension = 1;
@@ -594,22 +582,18 @@ Value Worker::search(
 
             if (SEE::value(captured) > SEE::value(PieceType::Pawn)) {
                 if (non_pawn_material < 0) {
-                    non_pawn_material =
-                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Queen)
-                                       + pos.ipiece_count(Color::Black, PieceType::Queen))
-                      * SEE::value(PieceType::Queen);
-                    non_pawn_material +=
-                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Rook)
-                                       + pos.ipiece_count(Color::Black, PieceType::Rook))
-                      * SEE::value(PieceType::Rook);
-                    non_pawn_material +=
-                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Bishop)
-                                       + pos.ipiece_count(Color::Black, PieceType::Bishop))
-                      * SEE::value(PieceType::Bishop);
-                    non_pawn_material +=
-                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Knight)
-                                       + pos.ipiece_count(Color::Black, PieceType::Knight))
-                      * SEE::value(PieceType::Knight);
+                    non_pawn_material = static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Queen)
+                                                         + pos.ipiece_count(Color::Black, PieceType::Queen))
+                                      * SEE::value(PieceType::Queen);
+                    non_pawn_material += static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Rook)
+                                                          + pos.ipiece_count(Color::Black, PieceType::Rook))
+                                       * SEE::value(PieceType::Rook);
+                    non_pawn_material += static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Bishop)
+                                                          + pos.ipiece_count(Color::Black, PieceType::Bishop))
+                                       * SEE::value(PieceType::Bishop);
+                    non_pawn_material += static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Knight)
+                                                          + pos.ipiece_count(Color::Black, PieceType::Knight))
+                                       * SEE::value(PieceType::Knight);
                 }
 
                 if (non_pawn_material <= 2 * SEE::value(PieceType::Rook)) {
@@ -634,11 +618,9 @@ Value Worker::search(
             i32 reduction;
 
             if (quiet) {
-                reduction =
-                  static_cast<i32>(788 + 208 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+                reduction = static_cast<i32>(788 + 208 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
             } else {
-                reduction =
-                  static_cast<i32>(256 + 197 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+                reduction = static_cast<i32>(256 + 197 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
             }
 
             reduction -= 1024 * PV_NODE;
@@ -685,25 +667,20 @@ Value Worker::search(
             reduction /= 1024;
 
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
-            value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
-                                            ply + 1, true);
+            value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth, ply + 1, true);
             if (value > alpha && reduced_depth < new_depth) {
-                value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
-                                                ply + 1, !cutnode);
+                value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1, !cutnode);
                 if (quiet && (value <= alpha || value >= beta)) {
                     m_td.history.update_cont_hist(pos, m, ply, ss,
-                                                  value <= alpha ? -stat_bonus(new_depth)
-                                                                 : stat_bonus(new_depth));
+                                                  value <= alpha ? -stat_bonus(new_depth) : stat_bonus(new_depth));
                 }
             }
         } else if (!PV_NODE || moves_played > 1) {
-            value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
-                                            ply + 1, !cutnode);
+            value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth, ply + 1, !cutnode);
         }
 
         if (PV_NODE && (moves_played == 1 || value > alpha)) {
-            value =
-              -search<IS_MAIN, true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1, false);
+            value = -search<IS_MAIN, true>(pos_after, ss + 1, -beta, -alpha, new_depth, ply + 1, false);
         }
         const auto nodes_after = m_search_nodes.load(std::memory_order::relaxed);
         if (ROOT_NODE) {
@@ -778,17 +755,12 @@ Value Worker::search(
     }
 
     if (!excluded) {
-        Bound bound   = best_value >= beta        ? Bound::Lower
-                      : best_move != Move::none() ? Bound::Exact
-                                                  : Bound::Upper;
-        Move  tt_move = best_move != Move::none() ? best_move
-                      : tt_data                   ? tt_data->move
-                                                  : Move::none();
+        Bound bound   = best_value >= beta ? Bound::Lower : best_move != Move::none() ? Bound::Exact : Bound::Upper;
+        Move  tt_move = best_move != Move::none() ? best_move : tt_data ? tt_data->move : Move::none();
         m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, depth, ttpv, bound);
 
         // Update to correction history.
-        if (!is_in_check
-            && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
+        if (!is_in_check && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
             && !((bound == Bound::Lower && best_value <= ss->static_eval)
                  || (bound == Bound::Upper && best_value >= ss->static_eval))) {
             m_td.history.update_correction_history(pos, depth, best_value - raw_eval);
@@ -833,8 +805,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     // TT Probing
     auto tt_data = m_searcher.tt.probe(pos, ply);
     if (tt_data
-        && (tt_data->bound() == Bound::Exact
-            || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
+        && (tt_data->bound() == Bound::Exact || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
             || (tt_data->bound() == Bound::Upper && tt_data->score <= alpha))) {
         return tt_data->score;
     }
@@ -936,9 +907,8 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
 Value Worker::evaluate(const Position& pos) {
 #ifndef EVAL_TUNING
-    return std::clamp<Value>(
-      static_cast<Value>(Clockwork::evaluate_stm_pov(pos, m_td.psqt_states.back())), -VALUE_WIN + 1,
-      VALUE_WIN - 1);
+    return std::clamp<Value>(static_cast<Value>(Clockwork::evaluate_stm_pov(pos, m_td.psqt_states.back())),
+                             -VALUE_WIN + 1, VALUE_WIN - 1);
 #else
     return -VALUE_INF;  // Not implemented in tune mode
 #endif

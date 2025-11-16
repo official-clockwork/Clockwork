@@ -28,9 +28,7 @@ public:
         m_len(0) {
         // don't zero `m_storage`
     }
-    ~StaticVector() {
-        clear();
-    }
+    ~StaticVector() { clear(); }
 
     StaticVector(std::initializer_list<T> list) :
         m_len(list.size()) {
@@ -105,9 +103,7 @@ public:
         return res;
     }
 
-    iterator push_back(T&& value) {
-        return emplace_back(std::move(value));
-    }
+    iterator push_back(T&& value) { return emplace_back(std::move(value)); }
 
     void append(StaticVector&& other) {
         assert(m_len + other.m_len <= cap);
@@ -129,15 +125,9 @@ public:
         m_len = 0;
     }
 
-    [[nodiscard]] usize size() const {
-        return m_len;
-    }
-    [[nodiscard]] usize capacity() const {
-        return cap;
-    }
-    [[nodiscard]] bool empty() const {
-        return m_len == 0;
-    }
+    [[nodiscard]] usize size() const { return m_len; }
+    [[nodiscard]] usize capacity() const { return cap; }
+    [[nodiscard]] bool  empty() const { return m_len == 0; }
 
     /// This value initializes elements, that is, it zeros primitive types like `int`.
     void resize(usize new_size) {
@@ -172,33 +162,17 @@ public:
     // We never access the raw bytes directly except to immediately call `std::construct_at`.
     // This means we don't need to call `std::launder`.
     // Unfortunately, the reinterpret_cast means this can't be constexpr.
-    [[nodiscard]] T* data() {
-        return reinterpret_cast<T*>(m_storage.data());
-    }
+    [[nodiscard]] T* data() { return reinterpret_cast<T*>(m_storage.data()); }
 
-    [[nodiscard]] const T* data() const {
-        return reinterpret_cast<const T*>(m_storage.data());
-    }
+    [[nodiscard]] const T* data() const { return reinterpret_cast<const T*>(m_storage.data()); }
 
-    [[nodiscard]] iterator begin() {
-        return data();
-    }
-    [[nodiscard]] const_iterator begin() const {
-        return data();
-    }
-    [[nodiscard]] const_iterator cbegin() const {
-        return begin();
-    }
+    [[nodiscard]] iterator       begin() { return data(); }
+    [[nodiscard]] const_iterator begin() const { return data(); }
+    [[nodiscard]] const_iterator cbegin() const { return begin(); }
 
-    [[nodiscard]] iterator end() {
-        return begin() + m_len;
-    }
-    [[nodiscard]] const_iterator end() const {
-        return begin() + m_len;
-    }
-    [[nodiscard]] const_iterator cend() const {
-        return end();
-    }
+    [[nodiscard]] iterator       end() { return begin() + m_len; }
+    [[nodiscard]] const_iterator end() const { return begin() + m_len; }
+    [[nodiscard]] const_iterator cend() const { return end(); }
 
     T& back() {
         assert(m_len > 0);
@@ -210,8 +184,7 @@ public:
     }
 
     friend auto operator<=>(const StaticVector& lhs, const StaticVector& rhs) {
-        return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(), rhs.begin(),
-                                                      rhs.end());
+        return std::lexicographical_compare_three_way(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
     }
 
     friend auto operator==(const StaticVector& lhs, const StaticVector& rhs) {

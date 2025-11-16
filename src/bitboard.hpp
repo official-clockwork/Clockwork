@@ -26,12 +26,9 @@ public:
     constexpr Bitboard() = default;
 
     constexpr explicit Bitboard(u64 raw) :
-        m_raw(raw) {
-    }
+        m_raw(raw) {}
 
-    static constexpr Bitboard from_square(Square sq) {
-        return Bitboard{static_cast<u64>(1) << sq.raw};
-    }
+    static constexpr Bitboard from_square(Square sq) { return Bitboard{static_cast<u64>(1) << sq.raw}; }
 
     static constexpr Bitboard squares_of_color(Color c) {
         return c == Color::White ? Bitboard{0x55AA55AA55AA55AA} : Bitboard{0xAA55AA55AA55AA55};
@@ -47,9 +44,7 @@ public:
         return Bitboard{static_cast<u64>(0xFF) << (8 * rank)};
     }
 
-    static constexpr Bitboard central_files() {
-        return file_mask(2) | file_mask(3) | file_mask(4) | file_mask(5);
-    }
+    static constexpr Bitboard central_files() { return file_mask(2) | file_mask(3) | file_mask(4) | file_mask(5); }
 
     [[nodiscard]] static Bitboard fill_verticals(const Bitboard mask) {
         Bitboard result = mask | (mask >> 8);
@@ -58,25 +53,15 @@ public:
         return (result & Bitboard::rank_mask(0)) * Bitboard::file_mask(0);
     }
 
-    [[nodiscard]] bool empty() const {
-        return m_raw == 0;
-    }
+    [[nodiscard]] bool empty() const { return m_raw == 0; }
 
-    [[nodiscard]] usize popcount() const {
-        return static_cast<usize>(std::popcount(m_raw));
-    }
+    [[nodiscard]] usize popcount() const { return static_cast<usize>(std::popcount(m_raw)); }
 
-    [[nodiscard]] i32 ipopcount() const {
-        return static_cast<i32>(std::popcount(m_raw));
-    }
+    [[nodiscard]] i32 ipopcount() const { return static_cast<i32>(std::popcount(m_raw)); }
 
-    [[nodiscard]] Square msb() const {
-        return Square{static_cast<u8>(std::countl_zero(m_raw))};
-    }
+    [[nodiscard]] Square msb() const { return Square{static_cast<u8>(std::countl_zero(m_raw))}; }
 
-    [[nodiscard]] Square lsb() const {
-        return Square{static_cast<u8>(std::countr_zero(m_raw))};
-    }
+    [[nodiscard]] Square lsb() const { return Square{static_cast<u8>(std::countr_zero(m_raw))}; }
 
     // Rank closest to player
     [[nodiscard]] u8 front_rank(Color color) const {
@@ -125,21 +110,13 @@ public:
         return result;
     }
 
-    [[nodiscard]] u64 value() const {
-        return m_raw;
-    }
+    [[nodiscard]] u64 value() const { return m_raw; }
 
-    [[nodiscard]] bool is_set(Square sq) const {
-        return (m_raw >> sq.raw) & 1;
-    }
+    [[nodiscard]] bool is_set(Square sq) const { return (m_raw >> sq.raw) & 1; }
 
-    void clear(Square sq) {
-        m_raw &= ~from_square(sq).m_raw;
-    }
+    void clear(Square sq) { m_raw &= ~from_square(sq).m_raw; }
 
-    void set(Square sq) {
-        m_raw |= from_square(sq).m_raw;
-    }
+    void set(Square sq) { m_raw |= from_square(sq).m_raw; }
 
     void set(Square sq, bool value) {
         if (value) {
@@ -156,9 +133,7 @@ public:
             return *this;
         }
 
-        Square operator*() const {
-            return Square{static_cast<u8>(std::countr_zero(m_bb))};
-        }
+        Square operator*() const { return Square{static_cast<u8>(std::countr_zero(m_bb))}; }
 
         bool operator==(const Iterator&) const = default;
 
@@ -166,49 +141,28 @@ public:
         friend struct Bitboard;
 
         explicit constexpr Iterator(u64 bb) :
-            m_bb(bb) {
-        }
+            m_bb(bb) {}
 
         u64 m_bb;
     };
 
-    [[nodiscard]] Iterator begin() const {
-        return Iterator{m_raw};
-    }
+    [[nodiscard]] Iterator begin() const { return Iterator{m_raw}; }
 
-    [[nodiscard]] Iterator end() const {
-        return Iterator{0};
-    }
+    [[nodiscard]] Iterator end() const { return Iterator{0}; }
 
     bool operator==(const Bitboard&) const = default;
 
-    friend constexpr Bitboard operator~(Bitboard a) {
-        return Bitboard{~a.m_raw};
-    }
-    friend constexpr Bitboard operator&(Bitboard a, Bitboard b) {
-        return Bitboard{a.m_raw & b.m_raw};
-    }
-    friend constexpr Bitboard operator|(Bitboard a, Bitboard b) {
-        return Bitboard{a.m_raw | b.m_raw};
-    }
+    friend constexpr Bitboard operator~(Bitboard a) { return Bitboard{~a.m_raw}; }
+    friend constexpr Bitboard operator&(Bitboard a, Bitboard b) { return Bitboard{a.m_raw & b.m_raw}; }
+    friend constexpr Bitboard operator|(Bitboard a, Bitboard b) { return Bitboard{a.m_raw | b.m_raw}; }
 
-    friend constexpr Bitboard operator*(Bitboard a, Bitboard b) {
-        return Bitboard{a.m_raw * b.m_raw};
-    }
+    friend constexpr Bitboard operator*(Bitboard a, Bitboard b) { return Bitboard{a.m_raw * b.m_raw}; }
 
-    friend constexpr Bitboard operator>>(Bitboard a, i32 shift) {
-        return Bitboard{a.m_raw >> shift};
-    }
-    friend constexpr Bitboard operator<<(Bitboard a, i32 shift) {
-        return Bitboard{a.m_raw << shift};
-    }
+    friend constexpr Bitboard operator>>(Bitboard a, i32 shift) { return Bitboard{a.m_raw >> shift}; }
+    friend constexpr Bitboard operator<<(Bitboard a, i32 shift) { return Bitboard{a.m_raw << shift}; }
 
-    friend constexpr Bitboard& operator&=(Bitboard& a, Bitboard b) {
-        return a = a & b;
-    }
-    friend constexpr Bitboard& operator|=(Bitboard& a, Bitboard b) {
-        return a = a | b;
-    }
+    friend constexpr Bitboard& operator&=(Bitboard& a, Bitboard b) { return a = a & b; }
+    friend constexpr Bitboard& operator|=(Bitboard& a, Bitboard b) { return a = a | b; }
 
 private:
     u64 m_raw = 0;

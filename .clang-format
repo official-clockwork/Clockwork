@@ -6,16 +6,19 @@ AlignEscapedNewlines: LeftWithLastLine
 AlignOperands: AlignAfterOperator
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllArgumentsOnNextLine: true
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortLambdasOnASingleLine: None
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
 AlwaysBreakTemplateDeclarations: Yes
+
 BasedOnStyle: WebKit
 BitFieldColonSpacing: After
-BinPackParameters: false
+BinPackParameters: true
+BinPackArguments: true
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Custom
 BraceWrapping:
@@ -31,19 +34,24 @@ BraceWrapping:
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: AfterColon
 BreakStringLiterals: false
-ColumnLimit: 100
+
+ColumnLimit: 120
 ContinuationIndentWidth: 2
 Cpp11BracedListStyle: true
+
 IndentAccessModifiers: false
 IndentGotoLabels: false
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
 InsertBraces: true
 InsertTrailingCommas: None
+InsertNewlineAtEOF: true
+
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
 PackConstructorInitializers: Never
 ReflowComments: false
+
 SortIncludes: CaseInsensitive
 SortUsingDeclarations: false
 SpaceAfterTemplateKeyword: false
@@ -52,4 +60,3 @@ SpaceBeforeCpp11BracedList: false
 SpaceBeforeInheritanceColon: true
 SpaceInEmptyBlock: false
 SpacesBeforeTrailingComments: 2
-InsertNewlineAtEOF: true

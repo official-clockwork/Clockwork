@@ -34,10 +34,8 @@ int main() {
     REQUIRE(pos.piece_count<PieceType::King>(Color::White) == 1);
     REQUIRE(pos.piece_count<PieceType::King>(Color::Black) == 1);
 
-    REQUIRE(
-      (pos.piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White) == 1));
-    REQUIRE(
-      (pos.piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::Black) == 1));
+    REQUIRE((pos.piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::White) == 1));
+    REQUIRE((pos.piece_count<PieceType::Pawn, PieceType::Rook, PieceType::Queen>(Color::Black) == 1));
 
     return 0;
 }

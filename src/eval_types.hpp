@@ -21,20 +21,16 @@ class PScore {
 private:
     i32 m_score;
     explicit constexpr PScore(i32 score) :
-        m_score{score} {
-    }
+        m_score{score} {}
 
 public:
     constexpr PScore() :
-        m_score{} {
-    }
+        m_score{} {}
 
     constexpr PScore(Score midgame, Score endgame) :
         m_score{static_cast<i32>(static_cast<u32>(endgame) << 16) + midgame} {
-        assert(std::numeric_limits<i16>::min() <= midgame
-               && std::numeric_limits<i16>::max() >= midgame);
-        assert(std::numeric_limits<i16>::min() <= endgame
-               && std::numeric_limits<i16>::max() >= endgame);
+        assert(std::numeric_limits<i16>::min() <= midgame && std::numeric_limits<i16>::max() >= midgame);
+        assert(std::numeric_limits<i16>::min() <= endgame && std::numeric_limits<i16>::max() >= endgame);
     }
 
     [[nodiscard]] inline auto mg() const {
@@ -55,42 +51,32 @@ public:
         return static_cast<Score>(v);
     }
 
-    [[nodiscard]] constexpr auto operator+(const PScore& other) const {
-        return PScore{m_score + other.m_score};
-    }
+    [[nodiscard]] constexpr auto operator+(const PScore& other) const { return PScore{m_score + other.m_score}; }
 
     constexpr auto operator+=(const PScore& other) -> auto& {
         m_score += other.m_score;
         return *this;
     }
 
-    [[nodiscard]] constexpr auto operator-(const PScore& other) const {
-        return PScore{m_score - other.m_score};
-    }
+    [[nodiscard]] constexpr auto operator-(const PScore& other) const { return PScore{m_score - other.m_score}; }
 
     constexpr auto operator-=(const PScore& other) -> auto& {
         m_score -= other.m_score;
         return *this;
     }
 
-    [[nodiscard]] constexpr auto operator*(i32 v) const {
-        return PScore{m_score * v};
-    }
+    [[nodiscard]] constexpr auto operator*(i32 v) const { return PScore{m_score * v}; }
 
     constexpr auto operator*=(i32 v) -> auto& {
         m_score *= v;
         return *this;
     }
 
-    [[nodiscard]] constexpr auto operator-() const {
-        return PScore{-m_score};
-    }
+    [[nodiscard]] constexpr auto operator-() const { return PScore{-m_score}; }
 
     [[nodiscard]] constexpr bool operator==(const PScore& other) const = default;
 
-    [[nodiscard]] constexpr const PScore* operator->() const {
-        return this;
-    }
+    [[nodiscard]] constexpr const PScore* operator->() const { return this; }
 
     // Phasing between two scores
     template<i32 max>

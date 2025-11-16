@@ -68,12 +68,10 @@ void dbg_extremes_of(int64_t value, size_t slot) {
     ++extremes.at(slot)[0];
 
     int64_t current_max = extremes.at(slot)[1].load();
-    while (current_max < value && !extremes.at(slot)[1].compare_exchange_weak(current_max, value)) {
-    }
+    while (current_max < value && !extremes.at(slot)[1].compare_exchange_weak(current_max, value)) {}
 
     int64_t current_min = extremes.at(slot)[2].load();
-    while (current_min > value && !extremes.at(slot)[2].compare_exchange_weak(current_min, value)) {
-    }
+    while (current_min > value && !extremes.at(slot)[2].compare_exchange_weak(current_min, value)) {}
 }
 
 void dbg_correl_of(int64_t value1, int64_t value2, size_t slot) {
@@ -89,17 +87,13 @@ void dbg_correl_of(int64_t value1, int64_t value2, size_t slot) {
 void dbg_print() {
 
     int64_t n;
-    auto    e = [&n](int64_t x) {
-        return static_cast<double>(x) / static_cast<double>(n);
-    };
-    auto sqr = [](double x) {
-        return x * x;
-    };
+    auto    e   = [&n](int64_t x) { return static_cast<double>(x) / static_cast<double>(n); };
+    auto    sqr = [](double x) { return x * x; };
 
     for (size_t i = 0; i < MAX_DEBUG_SLOTS; ++i) {
         if ((n = hit[i][0])) {
-            std::cerr << "Hit #" << i << ": Total " << n << " Hits " << hit[i][1]
-                      << " Hit Rate (%) " << 100.0 * e(hit[i][1]) << std::endl;
+            std::cerr << "Hit #" << i << ": Total " << n << " Hits " << hit[i][1] << " Hit Rate (%) "
+                      << 100.0 * e(hit[i][1]) << std::endl;
         }
     }
 
@@ -118,16 +112,15 @@ void dbg_print() {
 
     for (size_t i = 0; i < MAX_DEBUG_SLOTS; ++i) {
         if ((n = extremes[i][0])) {
-            std::cerr << "Extremity #" << i << ": Total " << n << " Min " << extremes[i][2]
-                      << " Max " << extremes[i][1] << std::endl;
+            std::cerr << "Extremity #" << i << ": Total " << n << " Min " << extremes[i][2] << " Max " << extremes[i][1]
+                      << std::endl;
         }
     }
 
     for (size_t i = 0; i < MAX_DEBUG_SLOTS; ++i) {
         if ((n = correl[i][0])) {
             double r = (e(correl[i][5]) - e(correl[i][1]) * e(correl[i][3]))
-                     / (sqrt(e(correl[i][2]) - sqr(e(correl[i][1])))
-                        * sqrt(e(correl[i][4]) - sqr(e(correl[i][3]))));
+                     / (sqrt(e(correl[i][2]) - sqr(e(correl[i][1]))) * sqrt(e(correl[i][4]) - sqr(e(correl[i][3]))));
             std::cerr << "Correl. #" << i << ": Total " << n << " Coefficient " << r << std::endl;
         }
     }

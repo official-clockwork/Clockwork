@@ -15,18 +15,15 @@ void move(std::string_view movestr) {
     Move move  = Move::parse(movestr, g_position).value();
     g_position = g_position.move(move);
     g_repetition_info.push(g_position.get_hash_key(), g_position.is_reversible(move));
-    std::cout << "move: " << movestr << " " << std::hex << std::setw(16)
-              << g_position.get_hash_key() << std::endl;
+    std::cout << "move: " << movestr << " " << std::hex << std::setw(16) << g_position.get_hash_key() << std::endl;
 }
 
 void repeat_in_history() {
     std::cout << "repeat_in_history" << std::endl;
-    g_position =
-      Position::parse("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").value();
+    g_position = Position::parse("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").value();
     g_repetition_info.reset();
     g_repetition_info.push(g_position.get_hash_key(), false);
-    std::cout << "startpos: " << std::hex << std::setw(16) << g_position.get_hash_key()
-              << std::endl;
+    std::cout << "startpos: " << std::hex << std::setw(16) << g_position.get_hash_key() << std::endl;
     REQUIRE(g_repetition_info.detect_repetition(0) == false);
     move("g1f3");
     REQUIRE(g_repetition_info.detect_repetition(0) == false);
@@ -48,12 +45,10 @@ void repeat_in_history() {
 
 void repeat_in_search() {
     std::cout << "repeat_in_search" << std::endl;
-    g_position =
-      Position::parse("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").value();
+    g_position = Position::parse("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").value();
     g_repetition_info.reset();
     g_repetition_info.push(g_position.get_hash_key(), false);
-    std::cout << "startpos: " << std::hex << std::setw(16) << g_position.get_hash_key()
-              << std::endl;
+    std::cout << "startpos: " << std::hex << std::setw(16) << g_position.get_hash_key() << std::endl;
     REQUIRE(g_repetition_info.detect_repetition(0) == false);
     move("g1f3");
     REQUIRE(g_repetition_info.detect_repetition(1) == false);

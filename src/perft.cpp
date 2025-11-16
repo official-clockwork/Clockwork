@@ -57,8 +57,7 @@ void split_perft(const Position& position, usize depth) {
     f64                        mnps       = static_cast<f64>(total) / elapsed.count() / 1000000.0;
 
     std::cout << std::setprecision(1) << std::fixed;
-    std::cout << "perft to depth " << depth << " complete in " << elapsed_ms << "ms (" << mnps
-              << " Mnps)" << std::endl;
+    std::cout << "perft to depth " << depth << " complete in " << elapsed_ms << "ms (" << mnps << " Mnps)" << std::endl;
 }
 
 }  // namespace Clockwork

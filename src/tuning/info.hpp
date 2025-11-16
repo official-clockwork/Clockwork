@@ -41,8 +41,7 @@ struct Parameters {
             parameters[i] += weight * b.parameters[i];
         }
         for (usize i = 0; i < pair_parameters.size(); i++) {
-            pair_parameters[i] =
-              f128::madd(pair_parameters[i], f128::broadcast(weight), b.pair_parameters[i]);
+            pair_parameters[i] = f128::madd(pair_parameters[i], f128::broadcast(weight), b.pair_parameters[i]);
         }
     }
 };

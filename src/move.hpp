@@ -37,41 +37,23 @@ struct Move {
         raw = static_cast<u16>(from.raw | (to.raw << 6) | static_cast<u16>(flags));
     }
 
-    static constexpr Move none() {
-        return {};
-    }
+    static constexpr Move none() { return {}; }
 
-    [[nodiscard]] constexpr Square from() const {
-        return Square{static_cast<u8>(raw & 0x3F)};
-    }
+    [[nodiscard]] constexpr Square from() const { return Square{static_cast<u8>(raw & 0x3F)}; }
 
-    [[nodiscard]] constexpr Square to() const {
-        return Square{static_cast<u8>((raw >> 6) & 0x3F)};
-    }
+    [[nodiscard]] constexpr Square to() const { return Square{static_cast<u8>((raw >> 6) & 0x3F)}; }
 
-    [[nodiscard]] constexpr u16 from_to() const {
-        return raw & 0xFFF;
-    }
+    [[nodiscard]] constexpr u16 from_to() const { return raw & 0xFFF; }
 
-    [[nodiscard]] constexpr MoveFlags flags() const {
-        return MoveFlags{static_cast<u16>(raw & (0xF << 12))};
-    }
+    [[nodiscard]] constexpr MoveFlags flags() const { return MoveFlags{static_cast<u16>(raw & (0xF << 12))}; }
 
-    [[nodiscard]] constexpr bool is_capture() const {
-        return raw & static_cast<u16>(MoveFlags::CaptureBit);
-    }
+    [[nodiscard]] constexpr bool is_capture() const { return raw & static_cast<u16>(MoveFlags::CaptureBit); }
 
-    [[nodiscard]] constexpr bool is_promotion() const {
-        return raw & static_cast<u16>(MoveFlags::PromotionBit);
-    }
+    [[nodiscard]] constexpr bool is_promotion() const { return raw & static_cast<u16>(MoveFlags::PromotionBit); }
 
-    [[nodiscard]] constexpr bool is_castle() const {
-        return flags() == MoveFlags::Castle;
-    }
+    [[nodiscard]] constexpr bool is_castle() const { return flags() == MoveFlags::Castle; }
 
-    [[nodiscard]] constexpr bool is_en_passant() const {
-        return flags() == MoveFlags::EnPassant;
-    }
+    [[nodiscard]] constexpr bool is_en_passant() const { return flags() == MoveFlags::EnPassant; }
 
     [[nodiscard]] constexpr std::optional<PieceType> promo() const {
         if (!is_promotion()) {

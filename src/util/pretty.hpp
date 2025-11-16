@@ -28,8 +28,7 @@ inline void print_progress(size_t current, size_t total, size_t bar_width = 40) 
         }
     }
 
-    std::cout << "] " << static_cast<int>(progress * 100.0f) << "% (" << current << "/" << total
-              << ")" << std::flush;
+    std::cout << "] " << static_cast<int>(progress * 100.0f) << "% (" << current << "/" << total << ")" << std::flush;
 }
 
 }  // namespace Clockwork

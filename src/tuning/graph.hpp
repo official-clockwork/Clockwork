@@ -34,13 +34,9 @@ private:
 
     Graph();
 
-    void register_param(const ValuePtr& param) {
-        m_parameters.push_back(param);
-    }
+    void register_param(const ValuePtr& param) { m_parameters.push_back(param); }
 
-    void register_param(const PairPtr& param) {
-        m_pair_parameters.push_back(param);
-    }
+    void register_param(const PairPtr& param) { m_pair_parameters.push_back(param); }
 
 public:
     static Graph& get() {
@@ -49,9 +45,7 @@ public:
     }
 
     // ------------------ Registration ------------------
-    void register_value(const BackwardablePtr& node) {
-        m_backwardables.push_back(node);
-    }
+    void register_value(const BackwardablePtr& node) { m_backwardables.push_back(node); }
 
     void register_value(const ValuePtr& node) {
         m_backwardables.push_back(std::static_pointer_cast<Backwardable>(node));
@@ -119,9 +113,7 @@ public:
         }
     }
 
-    void clear_backwardables() {
-        m_backwardables.clear();
-    }
+    void clear_backwardables() { m_backwardables.clear(); }
 
     // ------------------ Cleanup ------------------
     void cleanup() {
@@ -147,18 +139,10 @@ public:
     }
 
     // ------------------ Accessors ------------------
-    const std::vector<ValuePtr>& get_parameters() const {
-        return m_parameters;
-    }
-    const std::vector<PairPtr>& get_pair_parameters() const {
-        return m_pair_parameters;
-    }
-    ValuePtr get_parameter(usize index) const {
-        return m_parameters[index];
-    }
-    PairPtr get_pair_parameter(usize index) const {
-        return m_pair_parameters[index];
-    }
+    const std::vector<ValuePtr>& get_parameters() const { return m_parameters; }
+    const std::vector<PairPtr>&  get_pair_parameters() const { return m_pair_parameters; }
+    ValuePtr                     get_parameter(usize index) const { return m_parameters[index]; }
+    PairPtr                      get_pair_parameter(usize index) const { return m_pair_parameters[index]; }
 };
 
 }  // namespace Clockwork::Autograd

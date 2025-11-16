@@ -13,16 +13,14 @@ bool quiet_move(Move move);
 
 class MovePicker {
 public:
-    explicit MovePicker(
-      const Position& pos, const History& history, Move tt_move, i32 ply, Search::Stack* ss) :
+    explicit MovePicker(const Position& pos, const History& history, Move tt_move, i32 ply, Search::Stack* ss) :
         m_pos(pos),
         m_history(history),
         m_movegen(pos),
         m_tt_move(tt_move),
         m_killer(ss->killer),
         m_ply(ply),
-        m_stack(ss) {
-    }
+        m_stack(ss) {}
 
     enum class Stage {
         EmitTTMove,
@@ -40,13 +38,9 @@ public:
 
     Move next();
 
-    [[nodiscard]] Stage stage() const {
-        return m_stage;
-    }
+    [[nodiscard]] Stage stage() const { return m_stage; }
 
-    [[nodiscard]] bool is_legal(Move m) const {
-        return m_movegen.is_legal(m);
-    }
+    [[nodiscard]] bool is_legal(Move m) const { return m_movegen.is_legal(m); }
 
 private:
     void                 generate_moves();

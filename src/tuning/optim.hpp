@@ -66,12 +66,8 @@ public:
         }
     }
 
-    void set_lr(f64 lr) {
-        m_lr = lr;
-    }
-    f64 get_lr() const {
-        return m_lr;
-    }
+    void set_lr(f64 lr) { m_lr = lr; }
+    f64  get_lr() const { return m_lr; }
 };
 
 
@@ -92,12 +88,8 @@ private:
     std::vector<f128> m_pair_v;
 
 public:
-    explicit AdamW(ParameterCountInfo counts,
-                   f64                lr           = 1e-3,
-                   f64                beta1        = 0.9,
-                   f64                beta2        = 0.999,
-                   f64                eps          = 1e-8,
-                   f64                weight_decay = 0.01) :
+    explicit AdamW(ParameterCountInfo counts, f64 lr = 1e-3, f64 beta1 = 0.9, f64 beta2 = 0.999, f64 eps = 1e-8,
+                   f64 weight_decay = 0.01) :
         m_counts(counts),
         m_lr(lr),
         m_beta1(beta1),
@@ -182,12 +174,8 @@ public:
         }
     }
 
-    void set_lr(f64 lr) {
-        m_lr = lr;
-    }
-    f64 get_lr() const {
-        return m_lr;
-    }
+    void set_lr(f64 lr) { m_lr = lr; }
+    f64  get_lr() const { return m_lr; }
 };
 
 }  // namespace Clockwork::Autograd

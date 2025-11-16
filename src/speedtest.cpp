@@ -371,9 +371,8 @@ void speedtest(Search::Searcher& searcher) {
         }
 
         const int bar_width = 50;
-        float     progress =
-          static_cast<float>(positions_processed) / static_cast<float>(total_positions);
-        int bar_pos = static_cast<int>(bar_width * progress);
+        float     progress  = static_cast<float>(positions_processed) / static_cast<float>(total_positions);
+        int       bar_pos   = static_cast<int>(bar_width * progress);
 
         std::cout << "[";
         for (int i = 0; i < bar_width; ++i) {
@@ -389,9 +388,7 @@ void speedtest(Search::Searcher& searcher) {
 
     auto end_time    = time::Clock::now();
     auto duration_ms = time::cast<time::Milliseconds>(end_time - start_time).count();
-    f64  nps         = (duration_ms > 0)
-                       ? (static_cast<f64>(total_nodes) * 1000.0 / static_cast<f64>(duration_ms))
-                       : 0.0;
+    f64  nps = (duration_ms > 0) ? (static_cast<f64>(total_nodes) * 1000.0 / static_cast<f64>(duration_ms)) : 0.0;
 
     std::cout << std::endl;
     std::cout << "Speedtest finished." << std::endl;

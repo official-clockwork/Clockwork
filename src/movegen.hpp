@@ -25,9 +25,8 @@ public:
     void generate_moves(MoveList& noisy, MoveList& quiet);
 
 private:
-    [[nodiscard]] std::tuple<Bitboard, Bitboard, bool>
-                           valid_destinations_one_checker(PieceMask checker) const;
-    [[nodiscard]] Bitboard valid_destinations_two_checkers(PieceMask checker) const;
+    [[nodiscard]] std::tuple<Bitboard, Bitboard, bool> valid_destinations_one_checker(PieceMask checker) const;
+    [[nodiscard]] Bitboard                             valid_destinations_two_checkers(PieceMask checker) const;
 
     [[nodiscard]] bool is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) const;
     [[nodiscard]] bool is_legal_king_move(Move m, Bitboard valid_dests) const;
@@ -48,11 +47,8 @@ private:
     void write(MoveList& moves, Square dest, PieceMask piecemask, MoveFlags mf);
 
     // Write moves that go to all squares in dest_bb. Possible sources are pieces in piecemask, masked as appropriate by attack_table.
-    void write(MoveList&                        moves,
-               const std::array<PieceMask, 64>& attack_table,
-               Bitboard                         dest_bb,
-               PieceMask                        piecemask,
-               MoveFlags                        mf);
+    void write(MoveList& moves, const std::array<PieceMask, 64>& attack_table, Bitboard dest_bb, PieceMask piecemask,
+               MoveFlags mf);
 
     // Write quiet pawn moves that start from src_bb, moved by shift.
     void write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf);

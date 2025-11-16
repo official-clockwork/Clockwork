@@ -69,8 +69,7 @@ public:
     }
 
     PScore score() const {
-        return m_accumulators[static_cast<usize>(Color::White)]
-             - m_accumulators[static_cast<usize>(Color::Black)];
+        return m_accumulators[static_cast<usize>(Color::White)] - m_accumulators[static_cast<usize>(Color::Black)];
     }
 
     bool operator==(const PsqtState& other) const noexcept = default;
