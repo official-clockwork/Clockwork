@@ -18,4 +18,4 @@ public:
 
 // Define static member outside the class
 inline u64 Random::state = 9049990082738480776ULL;
-}
+}  // namespace Clockwork

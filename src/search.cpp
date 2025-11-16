@@ -61,6 +61,7 @@ void Searcher::launch_search(SearchSettings settings_) {
         std::unique_lock lock_guard{mutex};
 
         settings = settings_;
+        tt.increment_age();
 
         for (auto& worker : m_workers) {
             worker->prepare();
@@ -200,7 +201,9 @@ void Worker::start_searching() {
         Move best_move = iterative_deepening<true>(root_position);
 
         // Print (and make sure to flush) the best move
-        std::cout << "bestmove " << best_move << std::endl;
+        if (!m_searcher.settings.silent) {
+            std::cout << "bestmove " << best_move << std::endl;
+        }
 
         m_searcher.stop_searching();
     } else {
@@ -255,19 +258,30 @@ Move Worker::iterative_deepening(const Position& root_position) {
             beta  = last_search_score + delta;
         }
         Value score = -VALUE_INF;
+
+        int fail_high_reduction = 0;
+
         while (true) {
-            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta, search_depth,
-                                          0, false);
+            int asp_window_depth = search_depth - fail_high_reduction;
+
+            alpha = std::max(-VALUE_INF, alpha);
+            beta  = std::min(VALUE_INF, beta);
+            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta,
+                                          asp_window_depth, 0, false);
 
             if (m_stopped) {
                 break;
             }
 
             if (score <= alpha) {
-                beta  = (alpha + beta) / 2;
-                alpha = score - delta;
+                beta                = (alpha + beta) / 2;
+                alpha               = score - delta;
+                fail_high_reduction = 0;
             } else if (score >= beta) {
                 beta = score + delta;
+                if (fail_high_reduction < 3) {
+                    ++fail_high_reduction;
+                }
             } else {
                 break;
             }
@@ -321,14 +335,14 @@ Move Worker::iterative_deepening(const Position& root_position) {
             break;
         }
 
-        if (IS_MAIN) {
+        if (IS_MAIN && !m_searcher.settings.silent) {
             print_info_line();
         }
     }
 
     // Print last info line
     // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
-    if (IS_MAIN) {
+    if (IS_MAIN && !m_searcher.settings.silent) {
         print_info_line();
     }
 
@@ -380,15 +394,15 @@ Value Worker::search(
     if (!ROOT_NODE) {
         // Repetition check
         if (repetition_info.detect_repetition(static_cast<usize>(ply))) {
-            return VALUE_DRAW;
+            return get_draw_score();
         }
         // 50 mr check
         if (pos.get_50mr_counter() >= 100) {
-            return VALUE_DRAW;
+            return get_draw_score();
         }
         // Insufficient material check
         if (pos.is_insufficient_material()) {
-            return VALUE_DRAW;
+            return get_draw_score();
         }
     }
 
@@ -419,7 +433,7 @@ Value Worker::search(
     ss->static_eval   = -VALUE_INF;
     if (!is_in_check) {
         correction      = m_td.history.get_correction(pos);
-        raw_eval        = tt_data ? tt_data->eval : evaluate(pos);
+        raw_eval        = tt_data && !is_mate_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
         ss->static_eval = raw_eval + correction;
         improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
 
@@ -446,20 +460,35 @@ Value Worker::search(
     }
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && !excluded
-        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta)) {
+        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta) && !m_in_nmp_verification) {
         int R =
           tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
         Position pos_after = pos.null_move();
 
         repetition_info.push(pos_after.get_hash_key(), true);
 
-        Value value = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
-                                              ply + 1, !cutnode);
+        Value null_score = -search<IS_MAIN, false>(pos_after, ss + 1, -beta, -beta + 1, depth - R,
+                                                   ply + 1, !cutnode);
 
         repetition_info.pop();
 
-        if (value >= beta) {
-            return is_mate_score(value) ? beta : value;
+        if (null_score >= beta) {
+            if (is_mate_score(null_score)) {
+                null_score = beta;
+            }
+
+            if (depth <= tuned::nmp_verif_min_depth) {
+                return null_score;
+            }
+
+            m_in_nmp_verification = true;
+            Value verification =
+              search<IS_MAIN, false>(pos, ss, beta - 1, beta, depth - R, ply, false);
+            m_in_nmp_verification = false;
+
+            if (verification >= beta) {
+                return null_score;
+            }
         }
     }
 
@@ -517,7 +546,7 @@ Value Worker::search(
 
             Value see_threshold = quiet ? -67 * depth : -22 * depth * depth;
             // SEE PVS Pruning
-            if (depth <= 10 && !SEE::see(pos, m, see_threshold - move_history * 20 / 1024)) {
+            if (!SEE::see(pos, m, see_threshold - move_history * 20 / 1024)) {
                 continue;
             }
         }
@@ -565,18 +594,22 @@ Value Worker::search(
 
             if (SEE::value(captured) > SEE::value(PieceType::Pawn)) {
                 if (non_pawn_material < 0) {
-                    non_pawn_material = (pos.piece_count(Color::White, PieceType::Queen)
-                                         + pos.piece_count(Color::Black, PieceType::Queen))
-                                      * SEE::value(PieceType::Queen);
-                    non_pawn_material += (pos.piece_count(Color::White, PieceType::Rook)
-                                          + pos.piece_count(Color::Black, PieceType::Rook))
-                                       * SEE::value(PieceType::Rook);
-                    non_pawn_material += (pos.piece_count(Color::White, PieceType::Bishop)
-                                          + pos.piece_count(Color::Black, PieceType::Bishop))
-                                       * SEE::value(PieceType::Bishop);
-                    non_pawn_material += (pos.piece_count(Color::White, PieceType::Knight)
-                                          + pos.piece_count(Color::Black, PieceType::Knight))
-                                       * SEE::value(PieceType::Knight);
+                    non_pawn_material =
+                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Queen)
+                                       + pos.ipiece_count(Color::Black, PieceType::Queen))
+                      * SEE::value(PieceType::Queen);
+                    non_pawn_material +=
+                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Rook)
+                                       + pos.ipiece_count(Color::Black, PieceType::Rook))
+                      * SEE::value(PieceType::Rook);
+                    non_pawn_material +=
+                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Bishop)
+                                       + pos.ipiece_count(Color::Black, PieceType::Bishop))
+                      * SEE::value(PieceType::Bishop);
+                    non_pawn_material +=
+                      static_cast<i32>(pos.ipiece_count(Color::White, PieceType::Knight)
+                                       + pos.ipiece_count(Color::Black, PieceType::Knight))
+                      * SEE::value(PieceType::Knight);
                 }
 
                 if (non_pawn_material <= 2 * SEE::value(PieceType::Rook)) {
@@ -618,6 +651,10 @@ Value Worker::search(
 
             if (cutnode) {
                 reduction += 1024;
+                // If there is no available tt move, increase reduction
+                if (!tt_data || tt_data->move == Move::none()) {
+                    reduction += 1024;
+                }
             }
 
             if (ttpv) {
@@ -638,6 +675,7 @@ Value Worker::search(
 
             if (quiet) {
                 reduction += (1024 - move_history / 8);
+                reduction += (ss->static_eval + 500 + 100 * depth <= alpha && !is_in_check) * 1024;
             }
 
             if (!quiet) {
@@ -734,7 +772,7 @@ Value Worker::search(
             if (pos.is_in_check()) {
                 return mated_in(ply);
             } else {
-                return VALUE_DRAW;
+                return get_draw_score();
             }
         }
     }
@@ -784,7 +822,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // 50 mr check
     if (pos.get_50mr_counter() >= 100) {
-        return VALUE_DRAW;
+        return get_draw_score();
     }
 
     // Return eval if we exceed the max ply.
@@ -811,7 +849,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     Value static_eval = -VALUE_INF;
     if (!is_in_check) {
         correction  = m_td.history.get_correction(pos);
-        raw_eval    = tt_data ? tt_data->eval : evaluate(pos);
+        raw_eval    = tt_data && !is_mate_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
         static_eval = raw_eval + correction;
 
         if (!tt_data) {
@@ -836,6 +874,11 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+        // Bad noisies pruning
+        if (!is_being_mated_score(best_value) && moves.stage() == MovePicker::Stage::EmitBadNoisy) {
+            break;
+        }
+
         // QS SEE Pruning
         if (!is_being_mated_score(best_value) && !SEE::see(pos, m, tuned::quiesce_see_threshold)) {
             continue;
@@ -893,10 +936,12 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
 Value Worker::evaluate(const Position& pos) {
 #ifndef EVAL_TUNING
-    return static_cast<Value>(Clockwork::evaluate_stm_pov(pos, m_td.psqt_states.back()));
+    return std::clamp<Value>(
+      static_cast<Value>(Clockwork::evaluate_stm_pov(pos, m_td.psqt_states.back())), -VALUE_WIN + 1,
+      VALUE_WIN - 1);
 #else
     return -VALUE_INF;  // Not implemented in tune mode
 #endif
 }
-}
-}
+}  // namespace Search
+}  // namespace Clockwork

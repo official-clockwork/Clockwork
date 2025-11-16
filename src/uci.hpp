@@ -37,8 +37,9 @@ private:
     void handle_d(std::istringstream&);
     void handle_attacks(std::istringstream&);
     void handle_perft(std::istringstream&);
+    void handle_speedtest(std::istringstream&);
 
     void handle_genfens(std::istringstream&);
 };
 
-}
+}  // namespace Clockwork::UCI

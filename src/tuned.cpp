@@ -49,4 +49,4 @@ bool uci_parse_tunable([[maybe_unused]] std::string_view name,
 #endif
     return false;
 }
-}
+}  // namespace Clockwork::tuned

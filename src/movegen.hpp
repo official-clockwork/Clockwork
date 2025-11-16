@@ -64,4 +64,4 @@ private:
     Wordboard       m_pin_mask;
     Bitboard        m_pinned;
 };
-}
+}  // namespace Clockwork

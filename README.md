@@ -53,6 +53,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
   - `d` : Print the current position.  
   - `eval` : Returns the static evaluation of the current position from the point of view of the side to move.
   - `genfens` : Internal command to generate starting positions for data generation workloads.    
+  - `speedtest` : Runs a benchmark over a series of internal positions to measure the engine's nps speed.
 
 ---
 

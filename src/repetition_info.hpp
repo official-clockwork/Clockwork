@@ -21,4 +21,4 @@ private:
     std::vector<std::pair<HashKey, bool>> m_repetition_table;
 };
 
-}
+}  // namespace Clockwork

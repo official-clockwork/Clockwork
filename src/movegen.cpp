@@ -469,4 +469,4 @@ bool MoveGen::is_ep_clearance_pinned(PieceMask ep_attackers_mask) const {
     return !after_ep.is_valid();
 }
 
-}
+}  // namespace Clockwork

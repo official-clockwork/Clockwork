@@ -5,7 +5,6 @@
 #include "move.hpp"
 #include "position.hpp"
 #include "util/types.hpp"
-#include "util/vec.hpp"
 #include <array>
 #include <bit>
 #include <cassert>
@@ -52,17 +51,17 @@ inline bool see(const Position& pos, Move move, Value threshold) {
 
     // Extract all possible attackers to our position
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-    v512 ray_places              = v512::permute8(ray_coords, pos.board().to_vec());
-    v512 ray_attackers           = ray_places & geometry::attackers_from_rays(ray_places);
-    v512 ptypes                  = ray_attackers & ray_valid & v512::broadcast8(Place::PTYPE_MASK);
+    u8x64 ray_places             = ray_coords.swizzle(pos.board().to_vector());
+    u8x64 ray_attackers          = geometry::attackers_from_rays(ray_places).mask(ray_places);
+    u8x64 ptypes                 = ray_valid.mask(ray_attackers & u8x64::splat(Place::PTYPE_MASK));
 
     // Bitrays (not bitboards)
-    u64 color     = v512::test8(ray_places, v512::broadcast8(Place::COLOR_MASK));
-    u64 occupied  = v512::test8(ray_places, ray_valid);
-    u64 attackers = v512::test8(ray_attackers, ray_valid);
+    u64 color     = ray_places.test(u8x64::splat(Place::COLOR_MASK)).to_bits();
+    u64 occupied  = (ray_places.nonzeros() & ray_valid).to_bits();
+    u64 attackers = (ray_attackers.nonzeros() & ray_valid).to_bits();
 
     // Remove already moved piece
-    occupied ^= v512::eq8(ray_coords, v512::broadcast8(move.from().raw));
+    occupied ^= ray_coords.eq(u8x64::splat(move.from().raw)).to_bits();
     if (move.is_en_passant()) {
         occupied &= pos.active_color() == Color::Black ? 0xFFFFFFFFFFFFFFFD : 0xFFFFFFFDFFFFFFFF;
     }
@@ -70,22 +69,22 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     // Extract bitrays for each piece type
     std::array<u64, 8> ptype_bits{
       0,  // None
-      v512::eq8(ptypes, v512::broadcast8(static_cast<u8>(PieceType::Pawn) << Place::PTYPE_SHIFT)),
+      ptypes.eq(u8x64::splat(static_cast<u8>(PieceType::Pawn) << Place::PTYPE_SHIFT)).to_bits(),
       0x0101010101010101,  // Knight
-      v512::eq8(ptypes, v512::broadcast8(static_cast<u8>(PieceType::Bishop) << Place::PTYPE_SHIFT)),
-      v512::eq8(ptypes, v512::broadcast8(static_cast<u8>(PieceType::Rook) << Place::PTYPE_SHIFT)),
-      v512::eq8(ptypes, v512::broadcast8(static_cast<u8>(PieceType::Queen) << Place::PTYPE_SHIFT)),
-      v512::eq8(ptypes, v512::broadcast8(static_cast<u8>(PieceType::King) << Place::PTYPE_SHIFT)),
+      ptypes.eq(u8x64::splat(static_cast<u8>(PieceType::Bishop) << Place::PTYPE_SHIFT)).to_bits(),
+      ptypes.eq(u8x64::splat(static_cast<u8>(PieceType::Rook) << Place::PTYPE_SHIFT)).to_bits(),
+      ptypes.eq(u8x64::splat(static_cast<u8>(PieceType::Queen) << Place::PTYPE_SHIFT)).to_bits(),
+      ptypes.eq(u8x64::splat(static_cast<u8>(PieceType::King) << Place::PTYPE_SHIFT)).to_bits(),
       0,  // Invalid
     };
-    v512 ptype_vec{ptype_bits};
+    u64x8 ptype_vec{ptype_bits};
 
     auto current_attackers = [&]() {
         return geometry::closest(occupied) & (stm == Color::Black ? color : ~color) & attackers;
     };
 
     while (u64 current = current_attackers()) {
-        i32  next  = std::countr_zero((ptype_vec & v512::broadcast64(current)).nonzero64());
+        i32  next  = std::countr_zero((ptype_vec & u64x8::splat(current)).nonzeros().to_bits());
         auto ptype = static_cast<PieceType>(next);
         u64  br    = ptype_bits[static_cast<size_t>(next)] & current;
         occupied ^= lowest_bit(br);
@@ -105,4 +104,4 @@ inline bool see(const Position& pos, Move move, Value threshold) {
     return stm != pos.active_color();
 }
 
-}
+}  // namespace Clockwork::SEE

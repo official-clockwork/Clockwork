@@ -66,4 +66,4 @@ private:
     CorrectionHistory                m_minor_corr_hist    = {};
 };
 
-}
+}  // namespace Clockwork

@@ -24,4 +24,4 @@ template<typename T>
     return 1;
 }
 
-}
+}  // namespace Clockwork

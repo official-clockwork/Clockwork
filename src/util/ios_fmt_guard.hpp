@@ -20,4 +20,4 @@ private:
     std::ios      m_state;
 };
 
-}
+}  // namespace Clockwork

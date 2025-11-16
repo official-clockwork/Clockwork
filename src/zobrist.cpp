@@ -32,4 +32,4 @@ void Zobrist::init_zobrist_keys() {
     side_key = Random::rand_64();
 }
 
-}
+}  // namespace Clockwork

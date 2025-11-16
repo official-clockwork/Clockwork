@@ -69,7 +69,7 @@ jobs:
             extension: '.exe'
         arch:
           - x86-64-v3
-          - x86-64-v4
+          - znver4
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

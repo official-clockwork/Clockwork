@@ -5,6 +5,7 @@
 #include "perft.hpp"
 #include "position.hpp"
 #include "search.hpp"
+#include "speedtest.hpp"
 #include "tuned.hpp"
 #include "util/ios_fmt_guard.hpp"
 #include "util/parse.hpp"
@@ -92,6 +93,8 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_perft(is);
     } else if (command == "bench") {
         handle_bench(is);
+    } else if (command == "speedtest") {
+        handle_speedtest(is);
     }
 #ifndef EVAL_TUNING
     else if (command == "eval") {
@@ -389,4 +392,8 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
     }
 }
 
+void UCIHandler::handle_speedtest(std::istringstream&) {
+    Speedtest::speedtest(searcher);
 }
+
+}  // namespace Clockwork::UCI

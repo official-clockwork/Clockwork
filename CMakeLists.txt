@@ -34,6 +34,14 @@ add_library(git_hash ${CMAKE_BINARY_DIR}/gen/util/version.cpp src/util/version.h
 target_include_directories(git_hash PUBLIC src)
 add_dependencies(git_hash check_git_hash)
 
+# Checkout lps
+add_custom_target(checkout_lps COMMAND ${CMAKE_COMMAND}
+    -P ${CMAKE_CURRENT_LIST_DIR}/scripts/checkout_lps.cmake
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/vendor/lps_commit.txt)
+add_library(lps INTERFACE)
+target_include_directories(lps INTERFACE vendor/lps/include)
+add_dependencies(lps checkout_lps)
+
 # Flags
 function(target_add_flags target)
 
@@ -58,8 +66,11 @@ function(target_add_flags target)
         -fsanitize=address,undefined
         >)
 
+    # Include directories
+    target_include_directories(${target} PUBLIC src)
+
     # Libraries
-    target_link_libraries(${target} PUBLIC git_hash)
+    target_link_libraries(${target} PUBLIC git_hash lps)
 
     # LTO
     if (lto)
@@ -100,6 +111,8 @@ set(srcs
         src/repetition_info.hpp
         src/search.cpp
         src/search.hpp
+        src/speedtest.cpp
+        src/speedtest.hpp
         src/square.hpp
         src/tm.cpp
         src/tm.hpp
@@ -121,9 +134,7 @@ set(srcs
         src/util/pretty.hpp
         src/util/static_vector.hpp
         src/util/types.hpp
-        src/util/vec.hpp
-        src/util/vec/avx2.hpp
-        src/util/vec/avx512.hpp
+        src/util/vec/sse2.hpp
         src/zobrist.cpp
         src/zobrist.hpp
 )
@@ -131,14 +142,12 @@ set(srcs
 if(CLOCKWORK_ENABLE_EVALTUNE)
 
     add_executable(clockwork-evaltune src/evaltune_main.cpp ${srcs})
-    target_include_directories(clockwork-evaltune PUBLIC src)
     target_compile_options(clockwork-evaltune PUBLIC -DEVAL_TUNING=1)
     target_add_flags(clockwork-evaltune)
 
 else()
 
     add_library(clockwork-lib OBJECT ${srcs})
-    target_include_directories(clockwork-lib PUBLIC src)
     target_add_flags(clockwork-lib)
 
     add_executable(clockwork src/main.cpp)
@@ -163,11 +172,11 @@ else()
 
     do_test(test_piece_count)
     do_test(test_see)
-    do_test(test_see_prototype)
     do_test(test_is_legal)
     do_test(test_repetition)
     do_test(test_static_vector)
     do_test(test_perft)
     do_test(test_position)
+    do_test(test_speedtest)
 
 endif()

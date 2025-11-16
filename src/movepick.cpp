@@ -119,24 +119,21 @@ void MovePicker::score_moves(MoveList& moves) {
 }
 
 std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
-    __m128i best_indices = _mm_set1_epi32(static_cast<u32>(m_current_index));
-    __m128i best_values  = _mm_set1_epi32(m_scores[m_current_index]);
+    u32x4 best_indices = u32x4::splat(static_cast<u32>(m_current_index));
+    i32x4 best_values  = i32x4::splat(m_scores[m_current_index]);
 
-    __m128i indices = _mm_add_epi32(best_indices, _mm_set_epi32(4, 3, 2, 1));
-    usize   i       = m_current_index + 1;
-    for (; i + 3 < moves.size(); i += 4, indices = _mm_add_epi32(indices, _mm_set1_epi32(4))) {
-        __m128i values = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&m_scores[i]));
+    u32x4 indicies = best_indices + u32x4{{1, 2, 3, 4}};
+    usize i        = m_current_index + 1;
+    for (; i + 3 < moves.size(); i += 4, indicies += u32x4::splat(4)) {
+        i32x4 values  = i32x4::load(&m_scores[i]);
+        m32x4 greater = values.gt(best_values);
 
-        __m128i greater = _mm_cmpgt_epi32(values, best_values);
-
-        best_values  = _mm_blendv_epi8(best_values, values, greater);
-        best_indices = _mm_blendv_epi8(best_indices, indices, greater);
+        best_values  = greater.select(best_values, values);
+        best_indices = greater.select(best_indices, indicies);
     }
 
-    std::array<u32, 4> indices_array;
-    _mm_storeu_si128(reinterpret_cast<__m128i*>(indices_array.data()), best_indices);
-    std::array<i32, 4> values_array;
-    _mm_storeu_si128(reinterpret_cast<__m128i*>(values_array.data()), best_values);
+    std::array<u32, 4> indices_array = best_indices.to_array();
+    std::array<i32, 4> values_array  = best_values.to_array();
 
     usize best_vectorized_index = 0;
 
@@ -172,4 +169,4 @@ i32 MovePicker::score_move(Move move) const {
     }
 }
 
-}
+}  // namespace Clockwork

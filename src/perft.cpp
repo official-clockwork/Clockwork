@@ -61,4 +61,4 @@ void split_perft(const Position& position, usize depth) {
               << " Mnps)" << std::endl;
 }
 
-}
+}  // namespace Clockwork

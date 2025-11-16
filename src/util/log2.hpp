@@ -18,4 +18,4 @@ namespace Clockwork {
     return static_cast<i64>(big + small);
 }
 
-}
+}  // namespace Clockwork

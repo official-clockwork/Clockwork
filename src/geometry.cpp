@@ -18,7 +18,7 @@ constexpr std::array<u8, 64> AVX2_OFFSETS{{
 // clang-format on
 
 
-const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
+const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
     // clang-format off
     constexpr u8 NONE = 0x80;
     constexpr std::array<u8, 256> BASE{{
@@ -41,7 +41,7 @@ const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
     }};
     // clang-format on
 
-    std::array<v512, 64> table;
+    std::array<u8x64, 64> table;
     for (u8 sq = 0; sq < 64; sq++) {
         u8                 esq = internal::expand_sq(Square{sq});
         std::array<u8, 64> b;
@@ -49,12 +49,12 @@ const std::array<v512, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
             u8 value = BASE[AVX2_OFFSETS[i] - esq];
             b[i]     = value;
         }
-        table[sq] = v512{b};
+        table[sq] = u8x64{b};
     }
     return table;
 }();
 
-const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE = []() {
+const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE = []() {
     // clang-format off
     constexpr u8 K = 1 << static_cast<i32>(PieceType::King);
     constexpr u8 Q = 1 << static_cast<i32>(PieceType::Queen);
@@ -87,16 +87,16 @@ const std::array<v512, 64> PIECE_MOVES_AVX2_TABLE = []() {
     }};
     // clang-format on
 
-    std::array<v512, 64> table;
+    std::array<u8x64, 64> table;
     for (u8 sq = 0; sq < 64; sq++) {
         u8                 esq = internal::expand_sq(Square{sq});
         std::array<u8, 64> b;
         for (usize i = 0; i < 64; i++) {
             b[i] = BASE[AVX2_OFFSETS[i] - esq];
         }
-        table[sq] = v512{b};
+        table[sq] = u8x64{b};
     }
     return table;
 }();
 
-}
+}  // namespace Clockwork::geometry

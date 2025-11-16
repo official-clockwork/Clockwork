@@ -51,12 +51,23 @@ public:
         return file_mask(2) | file_mask(3) | file_mask(4) | file_mask(5);
     }
 
+    [[nodiscard]] static Bitboard fill_verticals(const Bitboard mask) {
+        Bitboard result = mask | (mask >> 8);
+        result |= result >> 16;
+        result |= result >> 32;
+        return (result & Bitboard::rank_mask(0)) * Bitboard::file_mask(0);
+    }
+
     [[nodiscard]] bool empty() const {
         return m_raw == 0;
     }
 
     [[nodiscard]] usize popcount() const {
         return static_cast<usize>(std::popcount(m_raw));
+    }
+
+    [[nodiscard]] i32 ipopcount() const {
+        return static_cast<i32>(std::popcount(m_raw));
     }
 
     [[nodiscard]] Square msb() const {
@@ -101,6 +112,17 @@ public:
             dir = static_cast<Direction>((static_cast<u32>(dir) + 4) % 8);
         }
         return shift(dir);
+    }
+
+    [[nodiscard]] Bitboard shift_relative(Color perspective, Direction dir, const i32 times) const {
+        if (perspective == Color::Black) {
+            dir = static_cast<Direction>((static_cast<u32>(dir) + 4) % 8);
+        }
+        Bitboard result = *this;
+        for (i32 i = 0; i < times; i++) {
+            result = result.shift(dir);
+        }
+        return result;
     }
 
     [[nodiscard]] u64 value() const {
@@ -170,6 +192,10 @@ public:
         return Bitboard{a.m_raw | b.m_raw};
     }
 
+    friend constexpr Bitboard operator*(Bitboard a, Bitboard b) {
+        return Bitboard{a.m_raw * b.m_raw};
+    }
+
     friend constexpr Bitboard operator>>(Bitboard a, i32 shift) {
         return Bitboard{a.m_raw >> shift};
     }
@@ -188,4 +214,4 @@ private:
     u64 m_raw = 0;
 };
 
-}
+}  // namespace Clockwork

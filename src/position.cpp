@@ -63,7 +63,7 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
     }
     updates.adds.push_back({pcolor, ptype, to});
 
-    v512 m = toggle_rays(to);
+    m8x64 m = toggle_rays(to);
     add_attacks(color, p.id(), to, p.ptype(), m);
 }
 
@@ -115,7 +115,7 @@ void Position::incrementally_move_piece(
 
     auto [src_ray_coords, src_ray_valid] = geometry::superpiece_rays(from);
     auto [dst_ray_coords, dst_ray_valid] = geometry::superpiece_rays(to);
-    v512 src_ray_places                  = v512::permute8(src_ray_coords, m_board.to_vec());
+    u8x64 src_ray_places                 = src_ray_coords.swizzle(m_board.to_vector());
 
     PieceType ptype = m_board[from].ptype();
 
@@ -153,114 +153,120 @@ void Position::incrementally_move_piece(
     }
     updates.adds.push_back({p.color(), p.ptype(), to});
 
-    v512 dst_ray_places = v512::permute8(dst_ray_coords, m_board.to_vec());
+    u8x64 dst_ray_places = dst_ray_coords.swizzle(m_board.to_vector());
 
-    v512 src_all_sliders     = geometry::slider_mask(src_ray_places);
-    v512 dst_all_sliders     = geometry::slider_mask(dst_ray_places);
-    v512 src_raymask         = geometry::superpiece_attacks(src_ray_places, src_ray_valid);
-    v512 dst_raymask         = geometry::superpiece_attacks(dst_ray_places, dst_ray_valid);
-    v512 src_visible_sliders = src_raymask & src_all_sliders & src_ray_places;
-    v512 dst_visible_sliders = dst_raymask & dst_all_sliders & dst_ray_places;
+    m8x64 src_all_sliders     = geometry::slider_mask(src_ray_places);
+    m8x64 dst_all_sliders     = geometry::slider_mask(dst_ray_places);
+    m8x64 src_raymask         = geometry::superpiece_attacks(src_ray_places, src_ray_valid);
+    m8x64 dst_raymask         = geometry::superpiece_attacks(dst_ray_places, dst_ray_valid);
+    u8x64 src_visible_sliders = (src_raymask & src_all_sliders).mask(src_ray_places);
+    u8x64 dst_visible_sliders = (dst_raymask & dst_all_sliders).mask(dst_ray_places);
 
-    v512 src_slider_ids = v512::sliderbroadcast(src_visible_sliders & v512::broadcast8(0x1F));
-    v512 dst_slider_ids = v512::sliderbroadcast(dst_visible_sliders & v512::broadcast8(0x1F));
+    u8x64 src_slider_ids = geometry::slider_broadcast(src_visible_sliders & u8x64::splat(0x1F));
+    u8x64 dst_slider_ids = geometry::slider_broadcast(dst_visible_sliders & u8x64::splat(0x1F));
 
-    src_slider_ids = v512{src_slider_ids.raw[1], src_slider_ids.raw[0]} & src_raymask;  // flip rays
-    dst_slider_ids = v512{dst_slider_ids.raw[1], dst_slider_ids.raw[0]} & dst_raymask;  // flip rays
-    dst_slider_ids |= dst_raymask & v512::broadcast8(0x20);  // pack information for efficiency
+    src_slider_ids = src_raymask.mask(geometry::flip_rays(src_slider_ids));  // flip rays
+    dst_slider_ids = dst_raymask.mask(geometry::flip_rays(dst_slider_ids));  // flip rays
+    dst_slider_ids |= dst_raymask.mask(u8x64::splat(0x20));  // pack information for efficiency
 
-    v512 src_inv_perm = geometry::superpiece_inverse_rays_avx2(from);
-    v512 dst_inv_perm = geometry::superpiece_inverse_rays_avx2(to);
+    u8x64 src_inv_perm = geometry::superpiece_inverse_rays_avx2(from);
+    u8x64 dst_inv_perm = geometry::superpiece_inverse_rays_avx2(to);
 
     // Transform into board layout
-    src_slider_ids = v512::permute8(src_inv_perm, src_slider_ids);
-    dst_slider_ids = v512::permute8(dst_inv_perm, dst_slider_ids);
+    src_slider_ids = src_inv_perm.swizzle(src_slider_ids);
+    dst_slider_ids = dst_inv_perm.swizzle(dst_slider_ids);
 
     // Recover color information
-    v512 src_color = v512::eq8_vm(src_slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
-    v512 dst_color = v512::eq8_vm(dst_slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
+    u8x64 src_col = src_slider_ids.test(u8x64::splat(0x10)).to_vector();
+    u8x64 dst_col = dst_slider_ids.test(u8x64::splat(0x10)).to_vector();
     // Recover ray mask information
-    v512 ret = v512::eq8_vm(dst_slider_ids & v512::broadcast8(0x20), v512::broadcast8(0x20));
+    m8x64 ret = dst_slider_ids.test(u8x64::splat(0x20));
+
+    src_slider_ids &= u8x64::splat(0x0F);
+    dst_slider_ids &= u8x64::splat(0x0F);
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
-    static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
-                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-    static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    v512              src_at_lo = v512::permute8(src_slider_ids, BITS_LO);
-    v512              src_at_hi = v512::permute8(src_slider_ids, BITS_HI);
-    v512              dst_at_lo = v512::permute8(dst_slider_ids, BITS_LO);
-    v512              dst_at_hi = v512::permute8(dst_slider_ids, BITS_HI);
+    static const u8x16 BITS_LO{{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+                                0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+    u8x64              src_at_lo = src_slider_ids.swizzle(BITS_LO);
+    u8x64              src_at_hi = src_slider_ids.swizzle(BITS_HI);
+    u8x64              dst_at_lo = dst_slider_ids.swizzle(BITS_LO);
+    u8x64              dst_at_hi = dst_slider_ids.swizzle(BITS_HI);
 
-    v512 src_color0 = v512::unpacklo8(src_color, src_color);
-    v512 src_color1 = v512::unpackhi8(src_color, src_color);
-    v512 dst_color0 = v512::unpacklo8(dst_color, dst_color);
-    v512 dst_color1 = v512::unpackhi8(dst_color, dst_color);
+    u8x64 src_color0 = src_col.zip_low_128lanes(src_col);
+    u8x64 src_color1 = src_col.zip_high_128lanes(src_col);
+    u8x64 dst_color0 = dst_col.zip_low_128lanes(dst_col);
+    u8x64 dst_color1 = dst_col.zip_high_128lanes(dst_col);
 
-    v512 src_at0 = v512::unpacklo8(src_at_lo, src_at_hi);
-    v512 src_at1 = v512::unpackhi8(src_at_lo, src_at_hi);
-    v512 dst_at0 = v512::unpacklo8(dst_at_lo, dst_at_hi);
-    v512 dst_at1 = v512::unpackhi8(dst_at_lo, dst_at_hi);
+    u16x64 src_color = std::bit_cast<u16x64>(std::array<u8x64, 2>{src_color0, src_color1});
+    u16x64 dst_color = std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_color0, dst_color1});
 
-    m_attack_table[0].raw[0] ^=
-      (v512::andnot(src_color0, src_at0)) ^ (v512::andnot(dst_color0, dst_at0));
-    m_attack_table[0].raw[1] ^=
-      (v512::andnot(src_color1, src_at1)) ^ (v512::andnot(dst_color1, dst_at1));
-    m_attack_table[1].raw[0] ^= (src_color0 & src_at0) ^ (dst_color0 & dst_at0);
-    m_attack_table[1].raw[1] ^= (src_color1 & src_at1) ^ (dst_color1 & dst_at1);
+    u8x64 src_at0 = src_at_lo.zip_low_128lanes(src_at_hi);
+    u8x64 src_at1 = src_at_lo.zip_high_128lanes(src_at_hi);
+    u8x64 dst_at0 = dst_at_lo.zip_low_128lanes(dst_at_hi);
+    u8x64 dst_at1 = dst_at_lo.zip_high_128lanes(dst_at_hi);
+
+    u16x64 src_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{src_at0, src_at1});
+    u16x64 dst_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_at0, dst_at1});
+
+    m_attack_table[0].raw ^= src_at.andnot(src_color) ^ dst_at.andnot(dst_color);
+    m_attack_table[1].raw ^= (src_at & src_color) ^ (dst_at & dst_color);
 
     add_attacks(color, p.id(), to, p.ptype(), ret);
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
-    v512 mask = v512::broadcast16(~id.to_piece_mask().value());
-    m_attack_table[color].raw[0] &= mask;
-    m_attack_table[color].raw[1] &= mask;
+    u16x64 mask = u16x64::splat(static_cast<u16>(~id.to_piece_mask().value()));
+    m_attack_table[color].raw &= mask;
 }
 
-v512 Position::toggle_rays(Square sq) {
+m8x64 Position::toggle_rays(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
 
-    v512 all_sliders     = geometry::slider_mask(ray_places);
-    v512 raymask         = geometry::superpiece_attacks(ray_places, ray_valid);
-    v512 visible_sliders = raymask & all_sliders & ray_places;
+    m8x64 all_sliders     = geometry::slider_mask(ray_places);
+    m8x64 raymask         = geometry::superpiece_attacks(ray_places, ray_valid);
+    u8x64 visible_sliders = (raymask & all_sliders).mask(ray_places);
 
-    v512 slider_ids = v512::sliderbroadcast(visible_sliders & v512::broadcast8(0x1F));
+    u8x64 slider_ids = geometry::slider_broadcast(visible_sliders & u8x64::splat(0x1F));
 
-    slider_ids = v512{slider_ids.raw[1], slider_ids.raw[0]} & raymask;  // flip rays
-    slider_ids |= raymask & v512::broadcast8(0x20);  // pack information for efficiency
+    slider_ids = raymask.mask(geometry::flip_rays(slider_ids));  // flip rays
+    slider_ids |= raymask.mask(u8x64::splat(0x20));              // pack information for efficiency
 
-    v512 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
+    u8x64 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
 
     // Transform into board layout
-    slider_ids = v512::permute8(inv_perm, slider_ids);
+    slider_ids = inv_perm.swizzle(slider_ids);
 
     // Recover color information
-    v512 color = v512::eq8_vm(slider_ids & v512::broadcast8(0x10), v512::broadcast8(0x10));
+    u8x64 col = slider_ids.test(u8x64::splat(0x10)).to_vector();
     // Recover ray mask information
-    v512 ret = v512::eq8_vm(slider_ids & v512::broadcast8(0x20), v512::broadcast8(0x20));
+    m8x64 ret = slider_ids.test(u8x64::splat(0x20));
+
+    slider_ids &= u8x64::splat(0x0F);
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
-    static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
-                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-    static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    v512              at_lo = v512::permute8(slider_ids, BITS_LO);
-    v512              at_hi = v512::permute8(slider_ids, BITS_HI);
+    static const u8x16 BITS_LO{{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+                                0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+    u8x64              at_lo = slider_ids.swizzle(BITS_LO);
+    u8x64              at_hi = slider_ids.swizzle(BITS_HI);
 
-    v512 color0 = v512::unpacklo8(color, color);
-    v512 color1 = v512::unpackhi8(color, color);
+    u8x64  color0 = col.zip_low_128lanes(col);
+    u8x64  color1 = col.zip_high_128lanes(col);
+    u16x64 color  = std::bit_cast<u16x64>(std::array<u8x64, 2>{color0, color1});
 
-    v512 at0 = v512::unpacklo8(at_lo, at_hi);
-    v512 at1 = v512::unpackhi8(at_lo, at_hi);
+    u8x64  at0 = at_lo.zip_low_128lanes(at_hi);
+    u8x64  at1 = at_lo.zip_high_128lanes(at_hi);
+    u16x64 at  = std::bit_cast<u16x64>(std::array<u8x64, 2>{at0, at1});
 
-    m_attack_table[0].raw[1] ^= v512::andnot(color1, at1);
-    m_attack_table[0].raw[0] ^= v512::andnot(color0, at0);
-    m_attack_table[1].raw[0] ^= color0 & at0;
-    m_attack_table[1].raw[1] ^= color1 & at1;
+    m_attack_table[0].raw ^= at.andnot(color);
+    m_attack_table[1].raw ^= at & color;
 
     return ret;
 }
@@ -272,17 +278,17 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
     case PieceType::Pawn:
     case PieceType::Knight:
     case PieceType::King:
-        add_attacks(color, id, sq, ptype, v512::broadcast8(0xFF));
+        add_attacks(color, id, sq, ptype, m8x64::splat(true));
         return;
     case PieceType::Bishop:
     case PieceType::Rook:
     case PieceType::Queen: {
         auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-        v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
-        v512 raymask                 = geometry::superpiece_attacks(ray_places, ray_valid);
+        u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
+        m8x64 raymask                = geometry::superpiece_attacks(ray_places, ray_valid);
 
-        v512 inv_perm  = geometry::superpiece_inverse_rays_avx2(sq);
-        v512 boardmask = v512::permute8(inv_perm, raymask);
+        u8x64 inv_perm  = geometry::superpiece_inverse_rays_avx2(sq);
+        m8x64 boardmask = inv_perm.swizzle(raymask);
 
         add_attacks(color, id, sq, ptype, boardmask);
         return;
@@ -290,15 +296,15 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
     }
 }
 
-void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask) {
-    v512 moves = geometry::piece_moves_avx2(color, ptype, sq) & mask;
+void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask) {
+    u8x64 moves = (mask & geometry::piece_moves_avx2(color, ptype, sq)).to_vector();
 
-    v512 m0 = v512::unpacklo8(moves, moves);
-    v512 m1 = v512::unpackhi8(moves, moves);
+    u8x64  m0 = moves.zip_low_128lanes(moves);
+    u8x64  m1 = moves.zip_high_128lanes(moves);
+    u16x64 m  = std::bit_cast<u16x64>(std::array<u8x64, 2>{m0, m1});
 
-    v512 bit = v512::broadcast16(id.to_piece_mask().value());
-    m_attack_table[color].raw[0] |= bit & m0;
-    m_attack_table[color].raw[1] |= bit & m1;
+    u16x64 bit = u16x64::splat(id.to_piece_mask().value());
+    m_attack_table[color].raw |= m & bit;
 }
 
 template<bool UPDATE_PSQT>
@@ -483,63 +489,71 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     Square king_square = king_sq(m_active_color);
 
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(king_square);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
-    v512 inverse_perm            = geometry::superpiece_inverse_rays_avx2(king_square);
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
+    u8x64 inverse_perm           = geometry::superpiece_inverse_rays_avx2(king_square);
 
     // Ignore horse moves
-    ray_valid &= v512::broadcast64(0xFFFFFFFFFFFFFF00);
+    ray_valid &= m8x64{0xFEFEFEFEFEFEFEFE};
 
-    v512 occupied = v512::andnot(v512::eq8_vm(ray_places, v512::zero()), ray_valid);
+    m8x64 occupied = ray_valid.andnot(ray_places.zeros());
 
-    v512 color_mask  = v512::broadcast8(Place::COLOR_MASK);
-    v512 enemy_color = v512::broadcast8(m_active_color == Color::White ? Place::COLOR_MASK : 0);
-    v512 enemy       = occupied & v512::eq8_vm(ray_places & color_mask, enemy_color);
+    u8x64 color_mask  = u8x64::splat(Place::COLOR_MASK);
+    u8x64 enemy_color = u8x64::splat(m_active_color == Color::White ? Place::COLOR_MASK : 0);
+    m8x64 enemy       = occupied & (ray_places & color_mask).eq(enemy_color);
 
-    v512 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
-    v512 maybe_pinned = v512::andnot(enemy, closest);
+    m8x64 closest      = occupied & geometry::superpiece_attacks(ray_places, ray_valid);
+    m8x64 maybe_pinned = closest.andnot(enemy);
 
     // Find enemy sliders of the correct type
-    v512 maybe_pinner1 = enemy & geometry::slider_mask(ray_places);
+    m8x64 maybe_pinner1 = enemy & geometry::slider_mask(ray_places);
 
     // Find second-closest pieces along each ray
-    v512 not_closest   = v512::andnot(closest, occupied);
-    v512 pin_raymask   = geometry::superpiece_attacks(not_closest, ray_valid);
-    v512 maybe_pinner2 = not_closest & pin_raymask;
+    m8x64 not_closest   = occupied.andnot(closest);
+    m8x64 pin_raymask   = geometry::superpiece_attacks(not_closest.to_vector(), ray_valid);
+    m8x64 maybe_pinner2 = not_closest & pin_raymask;
 
     // Pinners are second-closest pieces that are enemy sliders of the correct type.
-    v512 pinner = maybe_pinner1 & maybe_pinner2;
+    m8x64 pinner = maybe_pinner1 & maybe_pinner2;
 
-    // Does this ray have a pinner?
-    v512 no_pinner_mask = v512::eq64_vm(pinner, v512::zero());
-    v512 pinned         = v512::andnot(no_pinner_mask, maybe_pinned);
+// Does this ray have a pinner?
+#if LPS_AVX512
+    m8x64 no_pinner_mask{
+      std::bit_cast<vm8x64>(std::bit_cast<u64x8>(pinner.to_vector()).zeros().to_vector())
+        .to_bits()};
+#else
+    m8x64 no_pinner_mask = std::bit_cast<m8x64>(std::bit_cast<m64x8>(pinner).to_vector().zeros());
+#endif
+    m8x64 pinned = maybe_pinned.andnot(no_pinner_mask);
 
-    v512 nonmasked_pinned_ids = v512::lanebroadcast(pinned & ray_places & v512::broadcast8(0xF));
-    v512 pinned_ids           = pin_raymask & nonmasked_pinned_ids;
+    u8x64 nonmasked_pinned_ids =
+      geometry::lane_broadcast(pinned.mask(ray_places & u8x64::splat(0xF)));
+    u8x64 pinned_ids = pin_raymask.mask(nonmasked_pinned_ids);
     // Transform into board layout
-    pinned_ids = v512::permute8(inverse_perm, pinned_ids);
+    pinned_ids = inverse_perm.swizzle(pinned_ids);
 
-    u16 nonpinned_piece_mask =
-      static_cast<u16>(~v512::reduceor64(v512::shl64(v512::broadcast64(1),
-                                                     nonmasked_pinned_ids & v512::broadcast64(0xF)))
-                       | 1);
+    u16 nonpinned_piece_mask = static_cast<u16>(
+      ~((u64x8::splat(1) << (std::bit_cast<u64x8>(nonmasked_pinned_ids) & u64x8::splat(0xF)))
+          .reduce_or())
+      | 1);
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never pinned), so 0 converts to 0.
-    static const v128 BITS_LO{std::array<u8, 16>{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
-                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-    static const v128 BITS_HI{std::array<u8, 16>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    v512              at_lo = v512::permute8(pinned_ids, BITS_LO);
-    v512              at_hi = v512::permute8(pinned_ids, BITS_HI);
+    static const u8x16 BITS_LO{{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+    static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+                                0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
+    u8x64              at_lo = pinned_ids.swizzle(BITS_LO);
+    u8x64              at_hi = pinned_ids.swizzle(BITS_HI);
 
-    v512 nppm = v512::broadcast16(nonpinned_piece_mask);
+    u16x64 nppm = u16x64::splat(nonpinned_piece_mask);
 
-    v512 at0 = v512::unpacklo8(at_lo, at_hi) | nppm;
-    v512 at1 = v512::unpackhi8(at_lo, at_hi) | nppm;
+    u16x64 at = std::bit_cast<u16x64>(
+      std::array<u8x64, 2>{at_lo.zip_low_128lanes(at_hi), at_lo.zip_high_128lanes(at_hi)});
+    at |= nppm;
 
-    u64 pinned_bb = concat64(v512::neq16(at0, nppm), v512::neq16(at1, nppm));
+    u64 pinned_bb = at.neq(nppm).to_bits();
 
-    return {Wordboard{at0, at1}, Bitboard{pinned_bb}};
+    return {Wordboard{at}, Bitboard{pinned_bb}};
 }
 
 const std::array<Wordboard, 2> Position::calc_attacks_slow() {
@@ -555,33 +569,33 @@ const std::array<Wordboard, 2> Position::calc_attacks_slow() {
 
 const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
 
-    u64  color             = v512::test8(ray_places, v512::broadcast8(0x10));
-    v512 visible           = geometry::superpiece_attacks(ray_places, ray_valid);
-    v512 attackers         = geometry::attackers_from_rays(ray_places);
-    u64  visible_attackers = (visible & attackers).nonzero8();
-    u64  white_attackers   = ~color & visible_attackers;
-    u64  black_attackers   = color & visible_attackers;
+    m8x64 color             = ray_places.test(u8x64::splat(0x10));
+    m8x64 visible           = geometry::superpiece_attacks(ray_places, ray_valid);
+    m8x64 attackers         = geometry::attackers_from_rays(ray_places);
+    m8x64 visible_attackers = visible & attackers;
+    m8x64 white_attackers   = ~color & visible_attackers;
+    m8x64 black_attackers   = color & visible_attackers;
 
-    i32  white_attackers_count = std::popcount(white_attackers);
-    i32  black_attackers_count = std::popcount(black_attackers);
-    v128 white_attackers_coord = v512::compress8(white_attackers, ray_coords).to128();
-    v128 black_attackers_coord = v512::compress8(black_attackers, ray_coords).to128();
+    usize white_attackers_count = white_attackers.popcount();
+    usize black_attackers_count = black_attackers.popcount();
+    u8x16 white_attackers_coord = white_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
+    u8x16 black_attackers_coord = black_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
     return {
-      PieceMask{
-        findset8(white_attackers_coord, white_attackers_count, m_piece_list_sq[0].to_vec())},
-      PieceMask{
-        findset8(black_attackers_coord, black_attackers_count, m_piece_list_sq[1].to_vec())},
+      PieceMask{geometry::find_set(white_attackers_coord, white_attackers_count,
+                                   m_piece_list_sq[0].to_vector())},
+      PieceMask{geometry::find_set(black_attackers_coord, black_attackers_count,
+                                   m_piece_list_sq[1].to_vector())},
     };
 }
 
 Wordboard Position::create_attack_table_superpiece_mask(Square                   sq,
                                                         CreateSuperpieceMaskInfo cmi_arg) const {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
-    v512 ray_places              = v512::permute8(ray_coords, m_board.to_vec());
-    v512 inverse_perm            = geometry::superpiece_inverse_rays_avx2(sq);
-    v512 ray_extent              = geometry::superpiece_attacks(ray_places, ray_valid);
+    u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
+    u8x64 inverse_perm           = geometry::superpiece_inverse_rays_avx2(sq);
+    m8x64 ray_extent             = geometry::superpiece_attacks(ray_places, ray_valid);
 
     // Ordering needs to be consistent with CreateSuperpieceMaskInfo
     constexpr usize DIAG       = 1;
@@ -590,9 +604,9 @@ Wordboard Position::create_attack_table_superpiece_mask(Square                  
     constexpr usize HORSE      = 4;
     constexpr usize WPAWN_NEAR = 5;
     constexpr usize BPAWN_NEAR = 6;
-    static_assert(sizeof(CreateSuperpieceMaskInfo) == sizeof(__m128i));
+    static_assert(sizeof(CreateSuperpieceMaskInfo) == sizeof(u16x8));
 
-    const v512 IDXS{std::array<u8, 64>{{
+    const u8x64 IDXS{{
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // N
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NE
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // E
@@ -601,21 +615,22 @@ Wordboard Position::create_attack_table_superpiece_mask(Square                  
       HORSE, WPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // SW
       HORSE, ORTH_NEAR,  ORTH, ORTH, ORTH, ORTH, ORTH, ORTH,  // W
       HORSE, BPAWN_NEAR, DIAG, DIAG, DIAG, DIAG, DIAG, DIAG,  // NW
-    }}};
+    }};
 
-    v128 cmi = std::bit_cast<v128>(cmi_arg);
-    v128 lo{_mm_packus_epi16((cmi & v128::broadcast16(0xFF)).raw, _mm_setzero_si128())};
-    v128 hi{_mm_packus_epi16(v128::shr16(cmi, 8).raw, _mm_setzero_si128())};
+    u16x8 cmi = std::bit_cast<u16x8>(cmi_arg);
+    u8x16 lo  = (cmi & u16x8::splat(0xFF)).convert<u8>();
+    u8x16 hi  = cmi.shr<8>().convert<u8>();
 
-    v512 board_idxs = v512::permute8(inverse_perm, IDXS & ray_extent);
+    u8x64 board_idxs = inverse_perm.swizzle(ray_extent.mask(IDXS));
 
-    v512 result_lo = v512::permute8(board_idxs, lo);
-    v512 result_hi = v512::permute8(board_idxs, hi);
+    u8x64 result_lo = board_idxs.swizzle(lo);
+    u8x64 result_hi = board_idxs.swizzle(hi);
 
-    v512 at0 = v512::unpacklo8(result_lo, result_hi);
-    v512 at1 = v512::unpackhi8(result_lo, result_hi);
+    u8x64  at0 = result_lo.zip_low_128lanes(result_hi);
+    u8x64  at1 = result_lo.zip_high_128lanes(result_hi);
+    u16x64 at  = std::bit_cast<u16x64>(std::array<u8x64, 2>{at0, at1});
 
-    return {at0, at1};
+    return {at};
 }
 
 std::optional<Position> Position::parse(std::string_view str) {
@@ -1009,4 +1024,8 @@ u16 Position::get_50mr_counter() const {
     return m_50mr;
 }
 
+u16 Position::get_ply() const {
+    return m_ply;
 }
+
+}  // namespace Clockwork

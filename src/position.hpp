@@ -4,7 +4,6 @@
 #include "move.hpp"
 #include "square.hpp"
 #include "util/types.hpp"
-#include "util/vec.hpp"
 #include <array>
 #include <bit>
 #include <cassert>
@@ -27,25 +26,28 @@ struct alignas(16) PieceList {
         return array[id.raw];
     }
 
-    [[nodiscard]] v128 to_vec() const {
-        static_assert(sizeof(array) == sizeof(v128));
-        return v128::load(array.data());
+    [[nodiscard]] u8x16 to_vector() const {
+        return std::bit_cast<u8x16>(array);
     }
 
     [[nodiscard]] PieceMask mask_valid() const {
-        return PieceMask{to_vec().nonzero8()};
+        return PieceMask{to_vector().nonzeros().to_bits()};
     }
 
     [[nodiscard]] PieceMask mask_eq(PieceType ptype) const {
-        return PieceMask{v128::eq8(to_vec(), v128::broadcast8(static_cast<u8>(ptype)))};
+        return PieceMask{to_vector().eq(u8x16::splat(static_cast<u8>(ptype))).to_bits()};
     }
 
     template<PieceType... ptype>
     [[nodiscard]] PieceMask mask_eq() const {
         constexpr u8 bits = (0 | ... | (1 << static_cast<u8>(ptype)));
-        const v128 to_bits{std::array<u8, 16>{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0, 0,
-                                              0, 0, 0, 0, 0, 0}};
-        return PieceMask{(v128::permute8(to_vec(), to_bits) & v128::broadcast8(bits)).nonzero8()};
+        // clang-format off
+        const u8x16  to_bits{{
+          0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
+          0, 0, 0, 0, 0, 0, 0, 0,                          //
+        }};
+        // clang-format on
+        return PieceMask{(to_vector().swizzle(to_bits) & u8x16::splat(bits)).nonzeros().to_bits()};
     }
 
     constexpr bool operator==(const PieceList& other) const {
@@ -216,6 +218,10 @@ public:
         return 16 - piece_count(color, PieceType::None);
     }
 
+    [[nodiscard]] isize ipiece_count(Color color, PieceType ptype) const {
+        return static_cast<isize>(piece_count(color, ptype));
+    }
+
     [[nodiscard]] bool is_kp_endgame() const {
         for (Color color : {Color::White, Color::Black}) {
             if (!(piece_count(color) == 1 + piece_count(color, PieceType::Pawn))) {
@@ -263,6 +269,8 @@ public:
 
     [[nodiscard]] u16 get_50mr_counter() const;
 
+    [[nodiscard]] u16 get_ply() const;
+
     [[nodiscard]] bool is_reversible(Move move);
 
     const std::array<Wordboard, 2> calc_attacks_slow();
@@ -309,10 +317,10 @@ private:
     void
     incrementally_move_piece(bool color, Square from, Square to, Place p, PsqtUpdates& updates);
 
-    void remove_attacks(bool color, PieceId id);
-    v512 toggle_rays(Square sq);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
-    void add_attacks(bool color, PieceId id, Square sq, PieceType ptype, v512 mask);
+    void  remove_attacks(bool color, PieceId id);
+    m8x64 toggle_rays(Square sq);
+    void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
+    void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask);
 };
 
-}
+}  // namespace Clockwork

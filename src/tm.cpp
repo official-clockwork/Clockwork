@@ -82,4 +82,4 @@ template time::TimePoint compute_soft_limit<true>(
 
 template time::TimePoint compute_soft_limit<false>(
   time::TimePoint, const Search::SearchSettings&, const Color, const f64, const f64);
-}
+}  // namespace Clockwork::TM

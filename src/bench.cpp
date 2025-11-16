@@ -90,4 +90,4 @@ void benchmark(Search::Searcher& searcher, Depth depth) {
     std::cout << nodes << " nodes " << time::nps(nodes, end_time - start_time) << " nps"
               << std::endl;
 }
-}
+}  // namespace Clockwork::Bench
