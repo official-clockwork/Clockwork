@@ -504,7 +504,7 @@ Value Worker::search(
     // ProbCut
     if (!PV_NODE && !is_in_check && depth >= 5 && !excluded && !is_mate_score(beta)) {
         const Value probcut_beta  = beta + tuned::probcut_margin;
-        const Depth probcut_depth = depth - 4;
+        const Depth probcut_depth = std::clamp<Depth>(depth - 4, 1, depth - 1);
 
         if (!tt_data || tt_data->depth + 3 < depth || tt_data->score >= probcut_beta) {
             MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(),
