@@ -1,5 +1,5 @@
 #include "tt.hpp"
-#include <algorithm> // For std::min
+#include <algorithm>  // For std::min
 
 namespace Clockwork {
 
@@ -191,7 +191,7 @@ i32 TT::hashfull() const {
     }
 
     constexpr i32 CLUSTERS_TO_SAMPLE = 1000;
-    i32           occupied_count = 0;
+    i32           occupied_count     = 0;
 
     size_t num_to_probe = std::min(static_cast<size_t>(CLUSTERS_TO_SAMPLE), m_size);
     if (num_to_probe == 0) {
