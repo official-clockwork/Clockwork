@@ -23,9 +23,7 @@ struct TestType {
         x(other.x) {
         ctr += 1;
     }
-    ~TestType() {
-        ctr -= 1;
-    }
+    ~TestType() { ctr -= 1; }
 
     explicit TestType(isize x) :
         x(x) {

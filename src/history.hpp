@@ -48,9 +48,7 @@ public:
     void clear();
 
 private:
-    static void update_hist_entry(i32& entry, i32 bonus) {
-        entry += bonus - entry * std::abs(bonus) / HISTORY_MAX;
-    }
+    static void update_hist_entry(i32& entry, i32 bonus) { entry += bonus - entry * std::abs(bonus) / HISTORY_MAX; }
 
     static void update_hist_entry_banger(i32& entry, i32 base, i32 bonus) {
         entry += bonus - base * std::abs(bonus) / HISTORY_MAX;

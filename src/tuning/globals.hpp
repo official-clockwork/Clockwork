@@ -24,8 +24,7 @@ public:
 
     usize register_param(ValuePlaceholder* param) {
         if (m_locked) {
-            std::cerr << "Attempted to register new global parameter after Globals has been locked"
-                      << std::endl;
+            std::cerr << "Attempted to register new global parameter after Globals has been locked" << std::endl;
             std::terminate();
         }
         usize index = m_parameters.size();
@@ -35,8 +34,7 @@ public:
 
     usize register_param(PairPlaceholder* param) {
         if (m_locked) {
-            std::cerr << "Attempted to register new global parameter after Globals has been locked"
-                      << std::endl;
+            std::cerr << "Attempted to register new global parameter after Globals has been locked" << std::endl;
             std::terminate();
         }
         usize index = m_pair_parameters.size();
@@ -64,9 +62,7 @@ public:
     bool is_pair_parameter_constant(usize i) const;
 
 private:
-    void lock() const {
-        m_locked = true;
-    }
+    void lock() const { m_locked = true; }
 
     mutable std::atomic<bool>      m_locked = false;
     std::vector<ValuePlaceholder*> m_parameters;
@@ -78,32 +74,19 @@ public:
     explicit ValuePlaceholder(f64 default_value, bool constant) :
         m_index(Globals::get().register_param(this)),
         m_default_value(default_value),
-        m_constant(constant) {
-    }
+        m_constant(constant) {}
 
-    static ValuePlaceholder create_tunable(f64 a) {
-        return ValuePlaceholder(a, false);
-    }
+    static ValuePlaceholder create_tunable(f64 a) { return ValuePlaceholder(a, false); }
 
-    static ValuePlaceholder create(f64 a) {
-        return ValuePlaceholder(a, true);
-    }
+    static ValuePlaceholder create(f64 a) { return ValuePlaceholder(a, true); }
 
-    operator ValuePtr() const {
-        return Graph::get().get_parameter(m_index);
-    }
+    operator ValuePtr() const { return Graph::get().get_parameter(m_index); }
 
-    usize index() const {
-        return m_index;
-    }
+    usize index() const { return m_index; }
 
-    f64 default_value() const {
-        return m_default_value;
-    }
+    f64 default_value() const { return m_default_value; }
 
-    bool constant() const {
-        return m_constant;
-    }
+    bool constant() const { return m_constant; }
 
 private:
     usize m_index;
@@ -145,32 +128,19 @@ public:
     explicit PairPlaceholder(f128 default_value, bool constant) :
         m_index(Globals::get().register_param(this)),
         m_default_value(default_value),
-        m_constant(constant) {
-    }
+        m_constant(constant) {}
 
-    static PairPlaceholder create_tunable(f64 a, f64 b) {
-        return PairPlaceholder(f128::make(a, b), false);
-    }
+    static PairPlaceholder create_tunable(f64 a, f64 b) { return PairPlaceholder(f128::make(a, b), false); }
 
-    static PairPlaceholder create(f64 a, f64 b) {
-        return PairPlaceholder(f128::make(a, b), true);
-    }
+    static PairPlaceholder create(f64 a, f64 b) { return PairPlaceholder(f128::make(a, b), true); }
 
-    operator PairPtr() const {
-        return Graph::get().get_pair_parameter(m_index);
-    }
+    operator PairPtr() const { return Graph::get().get_pair_parameter(m_index); }
 
-    usize index() const {
-        return m_index;
-    }
+    usize index() const { return m_index; }
 
-    f128 default_value() const {
-        return m_default_value;
-    }
+    f128 default_value() const { return m_default_value; }
 
-    bool constant() const {
-        return m_constant;
-    }
+    bool constant() const { return m_constant; }
 
 private:
     usize m_index;

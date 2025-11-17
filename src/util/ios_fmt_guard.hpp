@@ -11,9 +11,7 @@ public:
         m_state.copyfmt(m_stream);
     }
 
-    ~IosFmtGuard() {
-        m_stream.copyfmt(m_state);
-    }
+    ~IosFmtGuard() { m_stream.copyfmt(m_state); }
 
 private:
     std::ostream& m_stream;

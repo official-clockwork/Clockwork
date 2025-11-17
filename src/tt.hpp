@@ -22,15 +22,9 @@ struct TTEntry {
     u8   depth;
     u8   info;
 
-    [[nodiscard]] Bound bound() const {
-        return static_cast<Bound>(info & 0b011);
-    }
-    [[nodiscard]] bool ttpv() const {
-        return static_cast<bool>(info & 0b100);
-    }
-    [[nodiscard]] u8 age() const {
-        return info >> 3;
-    }
+    [[nodiscard]] Bound bound() const { return static_cast<Bound>(info & 0b011); }
+    [[nodiscard]] bool  ttpv() const { return static_cast<bool>(info & 0b100); }
+    [[nodiscard]] u8    age() const { return info >> 3; }
 };
 
 struct TTCluster {
@@ -70,15 +64,9 @@ struct TTData {
     Depth depth;
     u8    info;
 
-    [[nodiscard]] Bound bound() const {
-        return static_cast<Bound>(info & 0b011);
-    }
-    [[nodiscard]] bool ttpv() const {
-        return static_cast<bool>(info & 0b100);
-    }
-    [[nodiscard]] u8 age() const {
-        return info >> 3;
-    }
+    [[nodiscard]] Bound bound() const { return static_cast<Bound>(info & 0b011); }
+    [[nodiscard]] bool  ttpv() const { return static_cast<bool>(info & 0b100); }
+    [[nodiscard]] u8    age() const { return info >> 3; }
 };
 
 class TT {
@@ -93,17 +81,11 @@ public:
     ~TT();
 
     std::optional<TTData> probe(const Position& position, i32 ply) const;
-    void                  store(const Position& position,
-                                i32             ply,
-                                Value           eval,
-                                Move            move,
-                                Value           score,
-                                Depth           depth,
-                                bool            ttpv,
-                                Bound           bound);
-    void                  resize(size_t mb);
-    void                  clear();
-    void                  increment_age();
+    void store(const Position& position, i32 ply, Value eval, Move move, Value score, Depth depth, bool ttpv,
+               Bound bound);
+    void resize(size_t mb);
+    void clear();
+    void increment_age();
 
 private:
     TTClusterMemory* m_clusters;

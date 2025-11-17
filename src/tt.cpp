@@ -31,8 +31,7 @@ void aligned_free(void* ptr) {
 }
 
 [[nodiscard]] static u8 make_tt_info(bool is_tt_pv, Bound bound, u8 age) {
-    return static_cast<u8>(bound) | (static_cast<u8>(static_cast<u8>(is_tt_pv) << 2))
-         | static_cast<u8>(age << 3);
+    return static_cast<u8>(bound) | (static_cast<u8>(static_cast<u8>(is_tt_pv) << 2)) | static_cast<u8>(age << 3);
 }
 
 i16 score_to_tt(Value score, i32 ply) {
@@ -88,14 +87,7 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     return {};
 }
 
-void TT::store(const Position& pos,
-               i32             ply,
-               Value           eval,
-               Move            move,
-               Value           score,
-               Depth           depth,
-               bool            ttpv,
-               Bound           bound) {
+void TT::store(const Position& pos, i32 ply, Value eval, Move move, Value score, Depth depth, bool ttpv, Bound bound) {
     size_t     cluster_index = mulhi64(pos.get_hash_key(), m_size);
     auto       cluster       = this->m_clusters[cluster_index].load();
     const auto key           = shrink_key(pos.get_hash_key());
@@ -129,10 +121,7 @@ void TT::store(const Position& pos,
 
     // give entries a bonus for type:
     // exact = 3, lower = 2, upper = 1
-    i32 insert_flag_bonus = bound == Bound::Exact ? 3
-                          : bound == Bound::Lower ? 2
-                          : bound == Bound::Upper ? 1
-                                                  : 0;
+    i32 insert_flag_bonus = bound == Bound::Exact ? 3 : bound == Bound::Lower ? 2 : bound == Bound::Upper ? 1 : 0;
     i32 record_flag_bonus = tte.bound() == Bound::Exact ? 3
                           : tte.bound() == Bound::Lower ? 2
                           : tte.bound() == Bound::Upper ? 1
@@ -140,9 +129,8 @@ void TT::store(const Position& pos,
 
     i32 age_differential = (MAX_AGE + m_age - tte.age()) & AGE_MASK;
 
-    i32 insert_priority =
-      depth + insert_flag_bonus + (age_differential * age_differential) / 4;  //+ i32::from(pv);
-    i32 record_prority = tte.depth + record_flag_bonus;
+    i32 insert_priority = depth + insert_flag_bonus + (age_differential * age_differential) / 4;  //+ i32::from(pv);
+    i32 record_prority  = tte.depth + record_flag_bonus;
 
     if (tte.key16 != key || (bound == Bound::Exact && tte.bound() != Bound::Exact)
         || insert_priority * 3 >= record_prority * 2) {

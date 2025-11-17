@@ -14,18 +14,14 @@
 
 namespace Clockwork {
 
-void Position::incrementally_remove_piece(bool         color,
-                                          PieceId      id,
-                                          Square       from,
-                                          PsqtUpdates& updates) {
+void Position::incrementally_remove_piece(bool color, PieceId id, Square from, PsqtUpdates& updates) {
     remove_attacks(color, id);
     toggle_rays(from);
 
     // TODO: check if some speed left on the table for zobrist here
-    Color     pcolor    = m_board[from].color();
-    PieceType ptype     = m_board[from].ptype();
-    u64       piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(pcolor)]
-                                                 [static_cast<usize>(ptype)][from.raw];
+    Color     pcolor = m_board[from].color();
+    PieceType ptype  = m_board[from].ptype();
+    u64 piece_key    = Zobrist::piece_square_zobrist[static_cast<usize>(pcolor)][static_cast<usize>(ptype)][from.raw];
     m_hash_key ^= piece_key;
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= piece_key;
@@ -44,11 +40,10 @@ void Position::incrementally_remove_piece(bool         color,
 
 void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdates& updates) {
     // TODO: check if some speed left on the table for zobrist here
-    m_board[to]      = p;
-    Color     pcolor = p.color();
-    PieceType ptype  = p.ptype();
-    u64       piece_key =
-      Zobrist::piece_square_zobrist[static_cast<usize>(pcolor)][static_cast<usize>(ptype)][to.raw];
+    m_board[to]         = p;
+    Color     pcolor    = p.color();
+    PieceType ptype     = p.ptype();
+    u64       piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(pcolor)][static_cast<usize>(ptype)][to.raw];
     m_hash_key ^= piece_key;
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= piece_key;
@@ -67,13 +62,13 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
     add_attacks(color, p.id(), to, p.ptype(), m);
 }
 
-void Position::incrementally_mutate_piece(
-  bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates& updates) {
+void Position::incrementally_mutate_piece(bool old_color, PieceId old_id, Square sq, bool new_color, Place p,
+                                          PsqtUpdates& updates) {
     PieceType ptype = m_board[sq].ptype();
 
     // TODO: check if some speed left on the table for zobrist here
-    u64 rem_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
-                                                     [static_cast<usize>(ptype)][sq.raw];
+    u64 rem_piece_key =
+      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())][static_cast<usize>(ptype)][sq.raw];
     m_hash_key ^= rem_piece_key;
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= rem_piece_key;
@@ -87,10 +82,10 @@ void Position::incrementally_mutate_piece(
         }
     }
     updates.removes.push_back({m_board[sq].color(), ptype, sq});
-    m_board[sq]       = p;
-    ptype             = m_board[sq].ptype();
-    u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
-                                                     [static_cast<usize>(ptype)][sq.raw];
+    m_board[sq] = p;
+    ptype       = m_board[sq].ptype();
+    u64 add_piece_key =
+      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())][static_cast<usize>(ptype)][sq.raw];
     m_hash_key ^= add_piece_key;
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= add_piece_key;
@@ -109,8 +104,7 @@ void Position::incrementally_mutate_piece(
     add_attacks(new_color, p.id(), sq, p.ptype());
 }
 
-void Position::incrementally_move_piece(
-  bool color, Square from, Square to, Place p, PsqtUpdates& updates) {
+void Position::incrementally_move_piece(bool color, Square from, Square to, Place p, PsqtUpdates& updates) {
     remove_attacks(color, p.id());
 
     auto [src_ray_coords, src_ray_valid] = geometry::superpiece_rays(from);
@@ -120,8 +114,8 @@ void Position::incrementally_move_piece(
     PieceType ptype = m_board[from].ptype();
 
     // TODO: check if some speed left on the table for zobrist here
-    u64 rem_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[from].color())]
-                                                     [static_cast<usize>(ptype)][from.raw];
+    u64 rem_piece_key =
+      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[from].color())][static_cast<usize>(ptype)][from.raw];
     m_hash_key ^= rem_piece_key;
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= rem_piece_key;
@@ -135,10 +129,10 @@ void Position::incrementally_move_piece(
         }
     }
     updates.removes.push_back({m_board[from].color(), ptype, from});
-    m_board[from]     = Place::empty();
-    m_board[to]       = p;
-    u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())]
-                                                     [static_cast<usize>(ptype)][to.raw];
+    m_board[from] = Place::empty();
+    m_board[to]   = p;
+    u64 add_piece_key =
+      Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())][static_cast<usize>(ptype)][to.raw];
     m_hash_key ^= add_piece_key;
     if (ptype == PieceType::Pawn) {
         m_pawn_key ^= add_piece_key;
@@ -167,7 +161,7 @@ void Position::incrementally_move_piece(
 
     src_slider_ids = src_raymask.mask(geometry::flip_rays(src_slider_ids));  // flip rays
     dst_slider_ids = dst_raymask.mask(geometry::flip_rays(dst_slider_ids));  // flip rays
-    dst_slider_ids |= dst_raymask.mask(u8x64::splat(0x20));  // pack information for efficiency
+    dst_slider_ids |= dst_raymask.mask(u8x64::splat(0x20));                  // pack information for efficiency
 
     u8x64 src_inv_perm = geometry::superpiece_inverse_rays_avx2(from);
     u8x64 dst_inv_perm = geometry::superpiece_inverse_rays_avx2(to);
@@ -328,8 +322,7 @@ Position Position::move(Move m, PsqtState* psqtState) const {
     }
 
     // Compute old castle index for zobrist indexing and remove it
-    usize old_castle_index =
-      new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
+    usize old_castle_index = new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
     new_pos.m_hash_key ^= Zobrist::castling_zobrist[old_castle_index];
 
     const auto CHECK_SRC_CASTLING_RIGHTS = [&] {
@@ -452,8 +445,7 @@ Position Position::move(Move m, PsqtState* psqtState) const {
     }
 
     // Calculate the new castling index for zobrist indexing and add it back in
-    usize new_castle_index =
-      new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
+    usize new_castle_index = new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
     new_pos.m_hash_key ^= Zobrist::castling_zobrist[new_castle_index];
 
     new_pos.m_active_color = invert(m_active_color);
@@ -517,24 +509,19 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 
 // Does this ray have a pinner?
 #if LPS_AVX512
-    m8x64 no_pinner_mask{
-      std::bit_cast<vm8x64>(std::bit_cast<u64x8>(pinner.to_vector()).zeros().to_vector())
-        .to_bits()};
+    m8x64 no_pinner_mask{std::bit_cast<vm8x64>(std::bit_cast<u64x8>(pinner.to_vector()).zeros().to_vector()).to_bits()};
 #else
     m8x64 no_pinner_mask = std::bit_cast<m8x64>(std::bit_cast<m64x8>(pinner).to_vector().zeros());
 #endif
     m8x64 pinned = maybe_pinned.andnot(no_pinner_mask);
 
-    u8x64 nonmasked_pinned_ids =
-      geometry::lane_broadcast(pinned.mask(ray_places & u8x64::splat(0xF)));
-    u8x64 pinned_ids = pin_raymask.mask(nonmasked_pinned_ids);
+    u8x64 nonmasked_pinned_ids = geometry::lane_broadcast(pinned.mask(ray_places & u8x64::splat(0xF)));
+    u8x64 pinned_ids           = pin_raymask.mask(nonmasked_pinned_ids);
     // Transform into board layout
     pinned_ids = inverse_perm.swizzle(pinned_ids);
 
     u16 nonpinned_piece_mask = static_cast<u16>(
-      ~((u64x8::splat(1) << (std::bit_cast<u64x8>(nonmasked_pinned_ids) & u64x8::splat(0xF)))
-          .reduce_or())
-      | 1);
+      ~((u64x8::splat(1) << (std::bit_cast<u64x8>(nonmasked_pinned_ids) & u64x8::splat(0xF))).reduce_or()) | 1);
 
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never pinned), so 0 converts to 0.
@@ -547,8 +534,8 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 
     u16x64 nppm = u16x64::splat(nonpinned_piece_mask);
 
-    u16x64 at = std::bit_cast<u16x64>(
-      std::array<u8x64, 2>{at_lo.zip_low_128lanes(at_hi), at_lo.zip_high_128lanes(at_hi)});
+    u16x64 at =
+      std::bit_cast<u16x64>(std::array<u8x64, 2>{at_lo.zip_low_128lanes(at_hi), at_lo.zip_high_128lanes(at_hi)});
     at |= nppm;
 
     u64 pinned_bb = at.neq(nppm).to_bits();
@@ -583,15 +570,12 @@ const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
     u8x16 white_attackers_coord = white_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
     u8x16 black_attackers_coord = black_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
     return {
-      PieceMask{geometry::find_set(white_attackers_coord, white_attackers_count,
-                                   m_piece_list_sq[0].to_vector())},
-      PieceMask{geometry::find_set(black_attackers_coord, black_attackers_count,
-                                   m_piece_list_sq[1].to_vector())},
+      PieceMask{geometry::find_set(white_attackers_coord, white_attackers_count, m_piece_list_sq[0].to_vector())},
+      PieceMask{geometry::find_set(black_attackers_coord, black_attackers_count, m_piece_list_sq[1].to_vector())},
     };
 }
 
-Wordboard Position::create_attack_table_superpiece_mask(Square                   sq,
-                                                        CreateSuperpieceMaskInfo cmi_arg) const {
+Wordboard Position::create_attack_table_superpiece_mask(Square sq, CreateSuperpieceMaskInfo cmi_arg) const {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
     u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
     u8x64 inverse_perm           = geometry::superpiece_inverse_rays_avx2(sq);
@@ -643,11 +627,8 @@ std::optional<Position> Position::parse(std::string_view str) {
     return parse(board, color, castle, enpassant, irreversible_clock, ply);
 }
 
-std::optional<Position> Position::parse(std::string_view board,
-                                        std::string_view color,
-                                        std::string_view castle,
-                                        std::string_view enpassant,
-                                        std::string_view irreversible_clock,
+std::optional<Position> Position::parse(std::string_view board, std::string_view color, std::string_view castle,
+                                        std::string_view enpassant, std::string_view irreversible_clock,
                                         std::string_view ply) {
     Position result{};
 
@@ -876,8 +857,7 @@ HashKey Position::calc_hash_key_slow() const {
         if (p.is_empty()) {
             continue;
         }
-        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
-                                            [static_cast<usize>(p.ptype())][sq_idx];
+        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())][static_cast<usize>(p.ptype())][sq_idx];
     }
 
     // Add ep if available
@@ -905,8 +885,8 @@ HashKey Position::calc_pawn_key_slow() const {
         if (p.is_empty() || p.ptype() != PieceType::Pawn) {
             continue;
         }
-        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
-                                            [static_cast<usize>(PieceType::Pawn)][sq_idx];
+        key ^=
+          Zobrist::piece_square_zobrist[static_cast<usize>(p.color())][static_cast<usize>(PieceType::Pawn)][sq_idx];
     }
     return key;
 }
@@ -919,8 +899,7 @@ std::array<HashKey, 2> Position::calc_non_pawn_key_slow() const {
             continue;
         }
         key[static_cast<usize>(p.color())] ^=
-          Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
-                                       [static_cast<usize>(p.ptype())][sq_idx];
+          Zobrist::piece_square_zobrist[static_cast<usize>(p.color())][static_cast<usize>(p.ptype())][sq_idx];
     }
     return key;
 }
@@ -933,8 +912,7 @@ HashKey Position::calc_major_key_slow() const {
             || p.ptype() == PieceType::Bishop || p.ptype() == PieceType::King) {
             continue;
         }
-        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
-                                            [static_cast<usize>(p.ptype())][sq_idx];
+        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())][static_cast<usize>(p.ptype())][sq_idx];
     }
     return key;
 }
@@ -944,12 +922,10 @@ HashKey Position::calc_minor_key_slow() const {
     for (usize sq_idx = 0; sq_idx < 64; sq_idx++) {
         Place p = m_board.mailbox[sq_idx];
         if (p.is_empty()
-            || (p.ptype() != PieceType::Knight && p.ptype() != PieceType::Bishop
-                && p.ptype() != PieceType::King)) {
+            || (p.ptype() != PieceType::Knight && p.ptype() != PieceType::Bishop && p.ptype() != PieceType::King)) {
             continue;
         }
-        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())]
-                                            [static_cast<usize>(p.ptype())][sq_idx];
+        key ^= Zobrist::piece_square_zobrist[static_cast<usize>(p.color())][static_cast<usize>(p.ptype())][sq_idx];
     }
     return key;
 }

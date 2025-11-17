@@ -213,8 +213,7 @@ void UCIHandler::handle_d(std::istringstream&) {
     std::cout << "     a  b  c  d  e  f  g  h  " << std::endl;
     std::cout << std::endl;
     std::cout << "fen: " << m_position << std::endl;
-    std::cout << "key: " << std::hex << std::setw(16) << std::setfill('0')
-              << m_position.get_hash_key() << std::endl;
+    std::cout << "key: " << std::hex << std::setw(16) << std::setfill('0') << m_position.get_hash_key() << std::endl;
 }
 
 void UCIHandler::handle_setoption(std::istringstream& is) {
@@ -369,8 +368,7 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
     }
 
     if (N > static_cast<int>(lines.size())) {
-        std::cout << "Requested " << N << " positions, but only " << lines.size() << " available."
-                  << std::endl;
+        std::cout << "Requested " << N << " positions, but only " << lines.size() << " available." << std::endl;
         return;
     }
 

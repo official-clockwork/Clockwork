@@ -124,21 +124,13 @@ struct f128 {
     }
 
     // ---- Scalar ops ----
-    static inline f128 add_scalar(const f128& a, double s) {
-        return add(a, broadcast(s));
-    }
+    static inline f128 add_scalar(const f128& a, double s) { return add(a, broadcast(s)); }
 
-    static inline f128 sub_scalar(const f128& a, double s) {
-        return sub(a, broadcast(s));
-    }
+    static inline f128 sub_scalar(const f128& a, double s) { return sub(a, broadcast(s)); }
 
-    static inline f128 mul_scalar(const f128& a, double s) {
-        return mul(a, broadcast(s));
-    }
+    static inline f128 mul_scalar(const f128& a, double s) { return mul(a, broadcast(s)); }
 
-    static inline f128 div_scalar(const f128& a, double s) {
-        return div(a, broadcast(s));
-    }
+    static inline f128 div_scalar(const f128& a, double s) { return div(a, broadcast(s)); }
 
     static inline f128 scalar_div(double s, const f128& a) {
 #if F128_USE_SSE2

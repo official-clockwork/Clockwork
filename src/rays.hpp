@@ -36,8 +36,7 @@ template<typename F>
             int file_diff         = b_file - a_file;
             int rank_diff         = b_rank - a_rank;
 
-            if (file_diff == 0 || rank_diff == 0 || file_diff == rank_diff
-                || file_diff == -rank_diff) {
+            if (file_diff == 0 || rank_diff == 0 || file_diff == rank_diff || file_diff == -rank_diff) {
                 int file_delta = sign(file_diff);
                 int rank_delta = sign(rank_diff);
 
@@ -51,8 +50,8 @@ template<typename F>
     return result;
 }
 
-inline constexpr Table INCLUSIVE_TABLE = generate_rays(
-  [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
+inline constexpr Table INCLUSIVE_TABLE =
+  generate_rays([](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
       int file = a_file;
       int rank = a_rank;
       for (; file != b_file || rank != b_rank; file += file_delta, rank += rank_delta) {
@@ -64,18 +63,16 @@ inline constexpr Table INCLUSIVE_TABLE = generate_rays(
     return INCLUSIVE_TABLE[a.raw][b.raw];
 }
 
-inline constexpr Table INFINITE_EXCLUSIVE_TABLE = generate_rays(
-  [](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
+inline constexpr Table INFINITE_EXCLUSIVE_TABLE =
+  generate_rays([](Bitboard& bb, int a_file, int a_rank, int b_file, int b_rank, int rank_delta, int file_delta) {
       int file = a_file;
       int rank = a_rank;
-      for (; file >= 0 && file <= 7 && rank >= 0 && rank <= 7;
-           file += file_delta, rank += rank_delta) {
+      for (; file >= 0 && file <= 7 && rank >= 0 && rank <= 7; file += file_delta, rank += rank_delta) {
           bb |= Bitboard::from_square(Square::from_file_and_rank(file, rank));
       }
       file = a_file;
       rank = a_rank;
-      for (; file >= 0 && file <= 7 && rank >= 0 && rank <= 7;
-           file -= file_delta, rank -= rank_delta) {
+      for (; file >= 0 && file <= 7 && rank >= 0 && rank <= 7; file -= file_delta, rank -= rank_delta) {
           bb |= Bitboard::from_square(Square::from_file_and_rank(file, rank));
       }
       bb &= ~Bitboard::from_square(Square::from_file_and_rank(a_file, a_rank));

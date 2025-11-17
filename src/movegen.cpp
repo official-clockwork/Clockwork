@@ -13,8 +13,8 @@
 
 namespace Clockwork {
 
-static std::tuple<Bitboard, Bitboard, Bitboard, i32, i32>
-valid_pawns(Color color, Bitboard bb, Bitboard empty, Bitboard valid_dests) {
+static std::tuple<Bitboard, Bitboard, Bitboard, i32, i32> valid_pawns(Color color, Bitboard bb, Bitboard empty,
+                                                                      Bitboard valid_dests) {
     switch (color) {
     case Color::White: {
         Bitboard single = bb & ((empty & valid_dests) >> 8);
@@ -56,8 +56,7 @@ void MoveGen::generate_moves(MoveList& noisy, MoveList& quiet) {
     }
 }
 
-std::tuple<Bitboard, Bitboard, bool>
-MoveGen::valid_destinations_one_checker(PieceMask checker) const {
+std::tuple<Bitboard, Bitboard, bool> MoveGen::valid_destinations_one_checker(PieceMask checker) const {
     Color  active_color = m_position.active_color();
     Square king_sq      = m_position.king_sq(active_color);
 
@@ -66,8 +65,7 @@ MoveGen::valid_destinations_one_checker(PieceMask checker) const {
     PieceType checker_ptype = m_position.piece_list(invert(active_color))[checker_id];
 
     Bitboard valid_dests = rays::inclusive(king_sq, checker_sq);
-    Bitboard checker_ray =
-      is_slider(checker_ptype) ? rays::infinite_exclusive(king_sq, checker_sq) : Bitboard{};
+    Bitboard checker_ray = is_slider(checker_ptype) ? rays::infinite_exclusive(king_sq, checker_sq) : Bitboard{};
 
     return {valid_dests, ~checker_ray, checker_ptype == PieceType::Pawn};
 }
@@ -102,9 +100,8 @@ bool MoveGen::is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) co
     bool enemy_dest = !empty_dest && m_position.board()[m.to()].color() != active_color;
 
     // valid_attack implies valid from square in the move! (exception: quiet pawn moves)
-    PieceMask at_dest =
-      m_position.attack_table(active_color).read(m.to()) & m_pin_mask.read(m.to());
-    bool valid_attack = at_dest.is_set(src.id());
+    PieceMask at_dest      = m_position.attack_table(active_color).read(m.to()) & m_pin_mask.read(m.to());
+    bool      valid_attack = at_dest.is_set(src.id());
 
     // There are positions where enpassant is legal but is not set in valid_dests
     if (src.ptype() == PieceType::Pawn && m.flags() == MoveFlags::EnPassant) {
@@ -136,8 +133,7 @@ bool MoveGen::is_legal_no_checkers(Move m, Bitboard valid_dests, bool can_ep) co
         if (m.flags() == MoveFlags::Normal || m.is_promotion()) {
             Bitboard empty        = m_position.board().get_empty_bitboard();
             Bitboard pinned_pawns = m_pinned & ~Bitboard::file_mask(king_sq.file());
-            Bitboard bb =
-              m_position.board().bitboard_for(active_color, PieceType::Pawn) & ~pinned_pawns;
+            Bitboard bb           = m_position.board().bitboard_for(active_color, PieceType::Pawn) & ~pinned_pawns;
             auto [single_push, double_push, promo, single_shift, double_shift] =
               valid_pawns(active_color, bb, empty, valid_dests);
 
@@ -239,26 +235,20 @@ bool MoveGen::is_legal_two_checkers(Move m, PieceMask checkers) const {
 }
 
 template<bool king_moves>
-void MoveGen::generate_moves_to(MoveList& noisy,
-                                MoveList& quiet,
-                                Bitboard  valid_dests,
-                                bool      can_ep) {
+void MoveGen::generate_moves_to(MoveList& noisy, MoveList& quiet, Bitboard valid_dests, bool can_ep) {
     Color active_color = m_position.active_color();
 
     Bitboard empty = m_position.board().get_empty_bitboard();
     Bitboard enemy = m_position.board().get_color_bitboard(invert(active_color));
 
-    std::array<PieceMask, 64> at =
-      (m_position.attack_table(active_color) & m_pin_mask).to_mailbox();
+    std::array<PieceMask, 64> at = (m_position.attack_table(active_color) & m_pin_mask).to_mailbox();
 
     PieceMask king_mask = PieceMask::king();
     PieceMask pawn_mask = m_position.piece_list(active_color).mask_eq(PieceType::Pawn);
 
-    Bitboard pawn_active =
-      m_position.attack_table(active_color).get_piece_mask_bitboard(pawn_mask) & valid_dests;
-    Bitboard nonpawn_active =
-      m_position.attack_table(active_color).get_piece_mask_bitboard(~pawn_mask) & valid_dests;
-    Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
+    Bitboard pawn_active    = m_position.attack_table(active_color).get_piece_mask_bitboard(pawn_mask) & valid_dests;
+    Bitboard nonpawn_active = m_position.attack_table(active_color).get_piece_mask_bitboard(~pawn_mask) & valid_dests;
+    Bitboard danger         = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
 
     PieceMask valid_plist = m_position.piece_list(active_color).mask_valid();
     if constexpr (!king_moves) {
@@ -276,8 +266,7 @@ void MoveGen::generate_moves_to(MoveList& noisy,
     // Undefended non-pawn captures
     write(noisy, at, nonpawn_active & enemy & ~danger, non_pawn_mask, MoveFlags::CaptureBit);
     // Defended non-pawn captures
-    write(noisy, at, nonpawn_active & enemy & danger, non_pawn_mask & ~king_mask,
-          MoveFlags::CaptureBit);
+    write(noisy, at, nonpawn_active & enemy & danger, non_pawn_mask & ~king_mask, MoveFlags::CaptureBit);
 
     Bitboard promo_zone{static_cast<u64>(0xFF) << (active_color == Color::White ? 56 : 0)};
     // Capture-with-promotion
@@ -304,16 +293,14 @@ void MoveGen::generate_moves_to(MoveList& noisy,
     write(quiet, at, nonpawn_active & empty & ~danger, non_pawn_mask, MoveFlags::Normal);
 
     // Defended non-pawn quiets
-    write(quiet, at, nonpawn_active & empty & danger, non_pawn_mask & ~king_mask,
-          MoveFlags::Normal);
+    write(quiet, at, nonpawn_active & empty & danger, non_pawn_mask & ~king_mask, MoveFlags::Normal);
 
     // Pawn quiets
     {
         Square   king_sq      = m_position.king_sq(active_color);
         Bitboard pinned_pawns = m_pinned & ~Bitboard::file_mask(king_sq.file());
 
-        Bitboard bb =
-          m_position.board().bitboard_for(active_color, PieceType::Pawn) & ~pinned_pawns;
+        Bitboard bb = m_position.board().bitboard_for(active_color, PieceType::Pawn) & ~pinned_pawns;
         auto [single_push, double_push, promo, single_shift, double_shift] =
           valid_pawns(active_color, bb, empty, valid_dests);
 
@@ -338,8 +325,7 @@ void MoveGen::generate_king_moves_to(MoveList& noisy, MoveList& quiet, Bitboard 
 
     PieceMask king_mask = PieceMask::king();
 
-    Bitboard active =
-      m_position.attack_table(active_color).get_piece_mask_bitboard(king_mask) & valid_dests;
+    Bitboard active = m_position.attack_table(active_color).get_piece_mask_bitboard(king_mask) & valid_dests;
     Bitboard danger = m_position.attack_table(invert(active_color)).get_attacked_bitboard();
 
     // Undefended captures
@@ -378,13 +364,10 @@ bool MoveGen::is_aside_castling_legal(Bitboard empty, Bitboard danger) const {
         if (m_pinned.is_set(aside)) {
             return false;
         }
-        u8 king_ray = rays::inclusive(king_sq, Square::from_file_and_rank(2, king_sq.rank()))
-                        .front_rank(active_color);
-        u8 rook_ray = rays::inclusive(aside, Square::from_file_and_rank(3, aside.rank()))
-                        .front_rank(active_color);
+        u8 king_ray = rays::inclusive(king_sq, Square::from_file_and_rank(2, king_sq.rank())).front_rank(active_color);
+        u8 rook_ray = rays::inclusive(aside, Square::from_file_and_rank(3, aside.rank())).front_rank(active_color);
         u8 should_be_empty = king_ray | rook_ray;
-        return (rank_empty & should_be_empty) == should_be_empty
-            && (rank_safe & king_ray) == king_ray;
+        return (rank_empty & should_be_empty) == should_be_empty && (rank_safe & king_ray) == king_ray;
     } else {
         return (rank_empty & 0x1F) == 0x1F && (rank_safe & 0x1C) == 0x1C;
     }
@@ -407,13 +390,10 @@ bool MoveGen::is_hside_castling_legal(Bitboard empty, Bitboard danger) const {
         if (m_pinned.is_set(hside)) {
             return false;
         }
-        u8 king_ray = rays::inclusive(king_sq, Square::from_file_and_rank(6, king_sq.rank()))
-                        .front_rank(active_color);
-        u8 rook_ray = rays::inclusive(hside, Square::from_file_and_rank(5, hside.rank()))
-                        .front_rank(active_color);
+        u8 king_ray = rays::inclusive(king_sq, Square::from_file_and_rank(6, king_sq.rank())).front_rank(active_color);
+        u8 rook_ray = rays::inclusive(hside, Square::from_file_and_rank(5, hside.rank())).front_rank(active_color);
         u8 should_be_empty = king_ray | rook_ray;
-        return (rank_empty & should_be_empty) == should_be_empty
-            && (rank_safe & king_ray) == king_ray;
+        return (rank_empty & should_be_empty) == should_be_empty && (rank_safe & king_ray) == king_ray;
     } else {
         return (rank_empty & 0xF0) == 0xF0 && (rank_safe & 0x70) == 0x70;
     }
@@ -426,11 +406,8 @@ void MoveGen::write(MoveList& moves, Square dest, PieceMask piecemask, MoveFlags
     }
 }
 
-void MoveGen::write(MoveList&                        moves,
-                    const std::array<PieceMask, 64>& at,
-                    Bitboard                         dest_bb,
-                    PieceMask                        piecemask,
-                    MoveFlags                        mf) {
+void MoveGen::write(MoveList& moves, const std::array<PieceMask, 64>& at, Bitboard dest_bb, PieceMask piecemask,
+                    MoveFlags mf) {
     for (Square dest : dest_bb) {
         write(moves, dest, piecemask & at[dest.raw], mf);
     }
