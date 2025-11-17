@@ -104,6 +104,7 @@ public:
     void                  resize(size_t mb);
     void                  clear();
     void                  increment_age();
+    i32                   hashfull() const;
 
 private:
     TTClusterMemory* m_clusters;
