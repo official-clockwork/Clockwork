@@ -117,37 +117,43 @@ void Position::incrementally_move_piece(
     auto [dst_ray_coords, dst_ray_valid] = geometry::superpiece_rays(to);
     u8x64 src_ray_places                 = src_ray_coords.swizzle(m_board.to_vector());
 
-    PieceType ptype = m_board[from].ptype();
-
     // TODO: check if some speed left on the table for zobrist here
-    u64 rem_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[from].color())]
-                                                     [static_cast<usize>(ptype)][from.raw];
+    PieceType from_ptype = m_board[from].ptype();
+    u64 rem_piece_key    = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[from].color())]
+                                                     [static_cast<usize>(from_ptype)][from.raw];
     m_hash_key ^= rem_piece_key;
-    if (ptype == PieceType::Pawn) {
+    if (from_ptype == PieceType::Pawn) {
         m_pawn_key ^= rem_piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(m_board[from].color())] ^= rem_piece_key;
-        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+        if (from_ptype == PieceType::Rook || from_ptype == PieceType::Queen
+            || from_ptype == PieceType::King) {
             m_major_key ^= rem_piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+        if (from_ptype == PieceType::Knight || from_ptype == PieceType::Bishop
+            || from_ptype == PieceType::King) {
             m_minor_key ^= rem_piece_key;
         }
     }
-    updates.removes.push_back({m_board[from].color(), ptype, from});
-    m_board[from]     = Place::empty();
-    m_board[to]       = p;
-    u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())]
-                                                     [static_cast<usize>(ptype)][to.raw];
+    updates.removes.push_back({m_board[from].color(), from_ptype, from});
+
+    m_board[from] = Place::empty();
+    m_board[to]   = p;
+
+    PieceType to_ptype      = p.ptype();
+    u64       add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())]
+                                                     [static_cast<usize>(to_ptype)][to.raw];
     m_hash_key ^= add_piece_key;
-    if (ptype == PieceType::Pawn) {
+    if (to_ptype == PieceType::Pawn) {
         m_pawn_key ^= add_piece_key;
     } else {
         m_non_pawn_key[static_cast<usize>(m_board[to].color())] ^= add_piece_key;
-        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
+        if (to_ptype == PieceType::Rook || to_ptype == PieceType::Queen
+            || to_ptype == PieceType::King) {
             m_major_key ^= add_piece_key;
         }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
+        if (to_ptype == PieceType::Knight || to_ptype == PieceType::Bishop
+            || to_ptype == PieceType::King) {
             m_minor_key ^= add_piece_key;
         }
     }
