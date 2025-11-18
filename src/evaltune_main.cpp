@@ -25,13 +25,15 @@ using namespace Clockwork;
 
 int main() {
 
+    constexpr size_t MICRO_BATCH_FLUSH = 1024;
+
     // Load fens from multiple files.
     std::vector<Position> positions;
     std::vector<f64>      results;
 
     // List of files to load
     const std::vector<std::string> fenFiles = {
-      "data/dfrc-1m.txt", "data/dfrcv0.txt", "data/v2.2.txt", "data/v2.1.txt", "data/v3/v3.txt",
+      "data/dfrcv1.txt", "data/dfrcv0.txt", "data/v2.2.txt", "data/v2.1.txt", "data/v3.txt",
     };
 
     // Number of threads to use, default to half available
@@ -105,6 +107,7 @@ int main() {
 
     const size_t        total_batches = (positions.size() + batch_size - 1) / batch_size;
     std::vector<size_t> indices(positions.size());
+    std::iota(indices.begin(), indices.end(), 0);
 
     Parameters batch_gradients = Parameters::zeros(parameter_count);
 
@@ -132,43 +135,65 @@ int main() {
 
                     size_t batch_end = std::min(batch_start + batch_size, positions.size());
                     size_t current_batch_size = batch_end - batch_start;
+                    if (current_batch_size == 0) {
+                        continue;
+                    }
+
                     size_t subbatch_size = (current_batch_size + thread_count - 1) / thread_count;
 
                     size_t subbatch_start = batch_start + subbatch_size * thread_idx;
                     size_t subbatch_end   = std::min(subbatch_start + subbatch_size, batch_end);
                     size_t current_subbatch_size = subbatch_end - subbatch_start;
+                    if (current_subbatch_size == 0) {
+                        // edge case if last batch is smaller than thread count
+                        // TODO: better load balancing for small batches in general, might even be worth skipping threading if last batch is small enough
+                        batch_barrier.arrive_and_wait();
+                        continue;
+                    }
 
                     subbatch_outputs.clear();
                     subbatch_targets.clear();
-                    subbatch_outputs.reserve(current_subbatch_size);
-                    subbatch_targets.reserve(current_subbatch_size);
+                    subbatch_outputs.reserve(std::min(current_subbatch_size, MICRO_BATCH_FLUSH));
+                    subbatch_targets.reserve(std::min(current_subbatch_size, MICRO_BATCH_FLUSH));
 
+                    // ensure model parameters are the current ones and gradients start at zero for this thread
                     Graph::get().copy_parameter_values(current_parameter_values);
+                    Graph::get()
+                      .zero_grad();
 
-                    uint32_t i = 0;
                     for (size_t j = subbatch_start; j < subbatch_end; ++j) {
-                        size_t   idx    = indices[j];
-                        f64      y      = results[idx];
-                        Position pos    = positions[idx];
-                        auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
+                        size_t   idx = indices[j];
+                        f64      y   = results[idx];
+                        Position pos = positions[idx];
+
+                        // compute model output (creates nodes in Graph)
+                        auto result = (evaluate_white_pov(pos) * K)->sigmoid();
                         subbatch_outputs.push_back(result);
                         subbatch_targets.push_back(y);
-                        if (++i == 1024) {
-                            i = 0;
-                            auto subbatch_loss =
+
+                        // flush when microbatch size reached
+                        if (subbatch_outputs.size() >= MICRO_BATCH_FLUSH) {
+                            auto micro_loss =
                               mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
                               * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
                             Graph::get().backward();
-                            Graph::get().clear_backwardables();
+                            Graph::get()
+                              .clear_backwardables();
                             subbatch_outputs.clear();
                             subbatch_targets.clear();
                         }
                     }
 
-                    auto subbatch_loss =
-                      mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
-                      * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
-                    Graph::get().backward();
+                    // Final subbatch flush
+                    if (!subbatch_outputs.empty()) {
+                        auto micro_loss =
+                          mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
+                          * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
+                        Graph::get().backward(); 
+                        Graph::get().clear_backwardables();
+                        subbatch_outputs.clear();
+                        subbatch_targets.clear();
+                    }
 
                     Parameters subbatch_gradients = Graph::get().get_all_parameter_gradients();
 
@@ -176,8 +201,9 @@ int main() {
                         std::lock_guard guard{mutex};
                         batch_gradients.accumulate(subbatch_gradients);
                     }
-                    batch_barrier.arrive_and_wait();
 
+                    // wait for other threads to finish accumulating
+                    batch_barrier.arrive_and_wait();
                     Graph::get().cleanup();
                 }
             }
@@ -190,7 +216,6 @@ int main() {
 
         const auto epoch_start_time = time::Clock::now();
 
-        std::iota(indices.begin(), indices.end(), 0);
         std::shuffle(indices.begin(), indices.end(), rng);
 
         epoch_barrier.arrive_and_wait();

@@ -146,6 +146,15 @@ public:
         cleanup();
     }
 
+    void zero_grad() {
+        for (auto& param : m_parameters) {
+            param->zero_grad();
+        }
+        for (auto& param : m_pair_parameters) {
+            param->zero_grad();
+        }
+    }
+
     // ------------------ Accessors ------------------
     const std::vector<ValuePtr>& get_parameters() const {
         return m_parameters;
