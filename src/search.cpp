@@ -501,7 +501,15 @@ Value Worker::search(
         }
     }
 
-    // ProbCut
+    // ProbCut (~6 elo)
+    // This is a forward pruning technique. The core idea is to perform a
+    // shallow search (quiescence search, followed by a limited-depth full
+    // search if qsearch fails high) on promising noisy moves (captures/promotions)
+    // with a significantly raised beta value (beta + margin).
+    // If any such move fails high (scores >= probcut_beta), we assume the current
+    // node will also fail high (score >= beta) and prune the remaining moves,
+    // returning the cutoff score immediately. This saves time by not searching
+    // moves in positions that are likely to be cutoffs anyway.
     if (!PV_NODE && !is_in_check && depth >= 5 && !excluded && !is_mate_score(beta)) {
         const Value probcut_beta  = beta + tuned::probcut_margin;
         const Depth probcut_depth = std::clamp<Depth>(depth - 4, 1, depth - 1);
