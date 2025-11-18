@@ -501,6 +501,51 @@ Value Worker::search(
         }
     }
 
+    // ProbCut (~6 elo)
+    // This is a forward pruning technique. The core idea is to perform a
+    // shallow search (quiescence search, followed by a limited-depth full
+    // search if qsearch fails high) on promising noisy moves (captures/promotions)
+    // with a significantly raised beta value (beta + margin).
+    // If any such move fails high (scores >= probcut_beta), we assume the current
+    // node will also fail high (score >= beta) and prune the remaining moves,
+    // returning the cutoff score immediately. This saves time by not searching
+    // moves in positions that are likely to be cutoffs anyway.
+    if (!PV_NODE && !is_in_check && depth >= 5 && !excluded && !is_mate_score(beta)) {
+        const Value probcut_beta  = beta + tuned::probcut_margin;
+        const Depth probcut_depth = std::clamp<Depth>(depth - 4, 1, depth - 1);
+
+        if (!tt_data || tt_data->depth + 3 < depth || tt_data->score >= probcut_beta) {
+            MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(),
+                             tuned::probcut_see};
+
+            for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+
+                ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
+                Position pos_after  = pos.move(m, m_td.push_psqt_state());
+                repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
+
+                Value probcut_value =
+                  -quiesce<IS_MAIN>(pos_after, ss + 1, -probcut_beta, -probcut_beta + 1, ply + 1);
+
+                if (probcut_value >= probcut_beta) {
+                    probcut_value =
+                      -search<IS_MAIN, false>(pos_after, ss + 1, -probcut_beta, -probcut_beta + 1,
+                                              probcut_depth, ply + 1, !cutnode);
+                }
+
+                repetition_info.pop();
+                m_td.pop_psqt_state();
+                ss->cont_hist_entry = nullptr;
+
+                if (probcut_value >= probcut_beta) {
+                    m_searcher.tt.store(pos, ply, raw_eval, m, probcut_value, probcut_depth, false,
+                                        Bound::Lower);
+                    return probcut_value;
+                }
+            }
+        }
+    }
+
     MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;

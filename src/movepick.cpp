@@ -22,7 +22,8 @@ Move MovePicker::next() {
     switch (m_stage) {
     case Stage::EmitTTMove:
         m_stage = Stage::GenerateMoves;
-        if (m_tt_move != Move::none() && m_movegen.is_legal(m_tt_move)) {
+        if (m_tt_move != Move::none() && m_movegen.is_legal(m_tt_move)
+            && (!m_threshold || m_tt_move.is_capture())) {
             return m_tt_move;
         }
 
@@ -43,17 +44,28 @@ Move MovePicker::next() {
     case Stage::EmitGoodNoisy:
         while (m_current_index < m_noisy.size()) {
             auto [curr, score] = pick_next(m_noisy);
-            // Check see
-            if (curr != m_tt_move) {
-                if (SEE::see(m_pos, curr, -score / tuned::movepicker_see_capthist_divisor)) {
+
+            if (curr == m_tt_move) {
+                continue;
+            }
+
+            // ProbCut: Check SEE against fixed threshold
+            if (m_threshold) {
+                if (SEE::see(m_pos, curr, *m_threshold)) {
                     return curr;
-                } else {
-                    m_bad_noisy.push_back(curr);
                 }
+                continue;  // In ProbCut, we discard bad noisy moves immediately
+            }
+
+            // Normal: Check SEE for pruning
+            if (SEE::see(m_pos, curr, -score / tuned::movepicker_see_capthist_divisor)) {
+                return curr;
+            } else {
+                m_bad_noisy.push_back(curr);
             }
         }
 
-        if (m_skip_quiets) {
+        if (m_skip_quiets || m_threshold) {
             m_current_index = 0;
             m_stage         = Stage::EmitBadNoisy;
             goto emit_bad_noisy;
@@ -109,7 +121,11 @@ emit_bad_noisy:
 }
 
 void MovePicker::generate_moves() {
-    m_movegen.generate_moves(m_noisy, m_quiet);
+    if (m_threshold) {
+        m_movegen.generate_noisy_moves(m_noisy);
+    } else {
+        m_movegen.generate_moves(m_noisy, m_quiet);
+    }
 }
 
 void MovePicker::score_moves(MoveList& moves) {
