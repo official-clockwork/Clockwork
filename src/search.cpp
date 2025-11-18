@@ -510,8 +510,6 @@ Value Worker::search(
     i32        alpha_raises      = 0;
     Value      non_pawn_material = -1;
 
-    // Clear child's killer move.
-    (ss + 1)->killer = Move::none();
     // Clear child's fail high count
     (ss + 1)->fail_high_count = 0;
 
@@ -750,8 +748,6 @@ Value Worker::search(
         i32       bonus_depth = depth + (best_value >= beta + 100);
         const i32 bonus       = stat_bonus(bonus_depth);
         if (quiet_move(best_move)) {
-            ss->killer = best_move;
-
             m_td.history.update_quiet_stats(pos, best_move, ply, ss, bonus);
             for (Move quiet : quiets_played) {
                 m_td.history.update_quiet_stats(pos, quiet, ply, ss, -bonus);
