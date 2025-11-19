@@ -239,13 +239,17 @@ Move Worker::iterative_deepening(const Position& root_position) {
         auto curr_time = time::Clock::now();
 
         // Get hashfull
-        i32 hashfull_permill = m_searcher.tt.hashfull();
+        
 
         std::cout << std::dec << "info depth " << last_search_depth << " seldepth " << last_seldepth
                   << " score " << format_score(last_search_score) << " nodes "
                   << m_searcher.node_count() << " nps "
-                  << time::nps(m_searcher.node_count(), curr_time - m_search_start) << " hashfull "
-                  << hashfull_permill << " time "
+                  << time::nps(m_searcher.node_count(), curr_time - m_search_start);
+                  if (last_search_depth >= 16) 
+                  {
+                      std::cout << " hashfull " << m_searcher.tt.hashfull();
+                  }
+                  std::cout << " time "
                   << time::cast<time::Milliseconds>(curr_time - m_search_start).count() << " pv "
                   << last_pv << std::endl;
     };
