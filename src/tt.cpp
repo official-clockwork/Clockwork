@@ -1,4 +1,5 @@
 #include "tt.hpp"
+#include <algorithm>  // For std::min
 
 namespace Clockwork {
 
@@ -182,6 +183,33 @@ void TT::clear() {
 void TT::increment_age() {
     const u8 new_age = (this->m_age + 1) & AGE_MASK;
     this->m_age      = new_age;
+}
+
+i32 TT::hashfull() const {
+    if (m_size == 0) {
+        return 0;
+    }
+
+    constexpr i32 CLUSTERS_TO_SAMPLE = 1000;
+    i32           occupied_count     = 0;
+
+    size_t num_to_probe = std::min(static_cast<size_t>(CLUSTERS_TO_SAMPLE), m_size);
+    if (num_to_probe == 0) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < num_to_probe; ++i) {
+        const auto cluster = this->m_clusters[i].load();
+        for (const auto& entry : cluster.entries) {
+            if (entry.age() == m_age && entry.bound() != Bound::None) {
+                occupied_count++;
+            }
+        }
+    }
+
+    // Return permill (0-1000)
+    // Each cluster has 3 entries, so num_to_probe * 3 is the total number of entries sampled.
+    return static_cast<i32>((static_cast<u64>(occupied_count) * 1000) / (num_to_probe * 3));
 }
 
 }  // namespace Clockwork
