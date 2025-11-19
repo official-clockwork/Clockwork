@@ -201,13 +201,14 @@ i32 TT::hashfull() const {
     for (size_t i = 0; i < num_to_probe; ++i) {
         const auto cluster = this->m_clusters[i].load();
         for (const auto& entry : cluster.entries) {
-            if (entry.key16 != 0) {
+            if (entry.key16 != 0 && entry.age() == m_age) {
                 occupied_count++;
             }
         }
     }
 
     // Return permill (0-1000)
+    // Each cluster has 3 entries, so num_to_probe * 3 is the total number of entries sampled.
     return static_cast<i32>((static_cast<u64>(occupied_count) * 1000) / (num_to_probe * 3));
 }
 
