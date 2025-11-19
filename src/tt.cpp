@@ -200,15 +200,15 @@ i32 TT::hashfull() const {
 
     for (size_t i = 0; i < num_to_probe; ++i) {
         const auto cluster = this->m_clusters[i].load();
-        // Only check the primary entry for the cluster
-        const auto& entry = cluster.entries[0];
-        if (entry.age() == m_age) {
-            occupied_count++;
+        for (const auto& entry : cluster.entries) {
+            if (entry.key16 != 0) {
+                occupied_count++;
+            }
         }
     }
 
     // Return permill (0-1000)
-    return static_cast<i32>((static_cast<u64>(occupied_count) * 1000) / num_to_probe);
+    return static_cast<i32>((static_cast<u64>(occupied_count) * 1000) / (num_to_probe * 3));
 }
 
 }  // namespace Clockwork
