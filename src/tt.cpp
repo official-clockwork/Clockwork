@@ -201,7 +201,7 @@ i32 TT::hashfull() const {
     for (size_t i = 0; i < num_to_probe; ++i) {
         const auto cluster = this->m_clusters[i].load();
         for (const auto& entry : cluster.entries) {
-            if (entry.key16 != 0 && entry.age() == m_age) {
+            if (entry.age() == m_age && entry.bound() != Bound::None) {
                 occupied_count++;
             }
         }
