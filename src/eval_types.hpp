@@ -14,14 +14,19 @@
 #endif
 
 namespace Clockwork {
-#ifndef EVAL_TUNING
 
+#ifndef EVAL_TUNING
+// ============================================================================
+//   NORMAL BUILD (NO TUNING)
+// ============================================================================
 using Score = i16;
+
 class PScore {
 private:
     i32 m_score;
+
     explicit constexpr PScore(i32 score) :
-        m_score{score} {
+        m_score(score) {
     }
 
 public:
@@ -30,99 +35,105 @@ public:
     }
 
     constexpr PScore(Score midgame, Score endgame) :
-        m_score{static_cast<i32>(static_cast<u32>(endgame) << 16) + midgame} {
+        m_score(static_cast<i32>((u32(endgame) << 16) + u16(midgame))) {
         assert(std::numeric_limits<i16>::min() <= midgame
-               && std::numeric_limits<i16>::max() >= midgame);
+               && midgame <= std::numeric_limits<i16>::max());
         assert(std::numeric_limits<i16>::min() <= endgame
-               && std::numeric_limits<i16>::max() >= endgame);
+               && endgame <= std::numeric_limits<i16>::max());
     }
 
-    [[nodiscard]] inline auto mg() const {
-        const auto mg = static_cast<u16>(m_score);
-
-        i16 v{};
+    inline Score mg() const {
+        u16 mg = u16(m_score);
+        i16 v;
         std::memcpy(&v, &mg, sizeof(mg));
-
-        return static_cast<Score>(v);
+        return v;
     }
 
-    [[nodiscard]] inline auto eg() const {
-        const auto eg = static_cast<u16>(static_cast<u32>(m_score + 0x8000) >> 16);
-
-        i16 v{};
+    inline Score eg() const {
+        u16 eg = u16(u32(m_score + 0x8000) >> 16);
+        i16 v;
         std::memcpy(&v, &eg, sizeof(eg));
-
-        return static_cast<Score>(v);
+        return v;
     }
 
-    [[nodiscard]] constexpr auto operator+(const PScore& other) const {
-        return PScore{m_score + other.m_score};
+    // Operators identical to original version
+    constexpr PScore operator+(const PScore& o) const {
+        return PScore(m_score + o.m_score);
     }
-
-    constexpr auto operator+=(const PScore& other) -> auto& {
-        m_score += other.m_score;
+    constexpr PScore operator-(const PScore& o) const {
+        return PScore(m_score - o.m_score);
+    }
+    constexpr PScore operator*(i32 v) const {
+        return PScore(m_score * v);
+    }
+    constexpr PScore& operator+=(const PScore& o) {
+        m_score += o.m_score;
         return *this;
     }
-
-    [[nodiscard]] constexpr auto operator-(const PScore& other) const {
-        return PScore{m_score - other.m_score};
-    }
-
-    constexpr auto operator-=(const PScore& other) -> auto& {
-        m_score -= other.m_score;
+    constexpr PScore& operator-=(const PScore& o) {
+        m_score -= o.m_score;
         return *this;
     }
-
-    [[nodiscard]] constexpr auto operator*(i32 v) const {
-        return PScore{m_score * v};
-    }
-
-    constexpr auto operator*=(i32 v) -> auto& {
+    constexpr PScore& operator*=(i32 v) {
         m_score *= v;
         return *this;
     }
-
-    [[nodiscard]] constexpr auto operator-() const {
-        return PScore{-m_score};
+    constexpr PScore operator-() const {
+        return PScore(-m_score);
     }
 
-    [[nodiscard]] constexpr bool operator==(const PScore& other) const = default;
+    constexpr bool operator==(const PScore&) const = default;
 
-    [[nodiscard]] constexpr const PScore* operator->() const {
+    constexpr const PScore* operator->() const {
         return this;
     }
 
-    // Phasing between two scores
+    // Phase function (non-tuning: returns int)
     template<i32 max>
-    Value phase(i32 alpha) const {
+    inline Value phase(i32 alpha) const {
         assert(0 <= alpha && alpha <= max);
-        return static_cast<Value>((mg() * alpha + eg() * (max - alpha)) / max);
+        return Value((mg() * alpha + eg() * (max - alpha)) / max);
     }
 
-    friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {
-        stream << "(" << score.mg() << "\t" << score.eg() << ")";
-        return stream;
+    friend std::ostream& operator<<(std::ostream& os, const PScore& s) {
+        os << "(" << s.mg() << "\t" << s.eg() << ")";
+        return os;
     }
 };
 
 using PParam = PScore;
 
 #else
+// ============================================================================
+//   TUNING BUILD (NEW AUTOGRAD API)
+// ============================================================================
 
-using Score  = Autograd::ValuePtr;
-using PScore = Autograd::PairPtr;
-using PParam = Autograd::PairPlaceholder;
+using Score  = Autograd::ValueHandle;
+using PScore = Autograd::PairHandle;  // (mg, eg) handle
+using PParam = Autograd::PairHandle;  // tunable pair
 
 #endif
 
+
+// ============================================================================
+//   Macro Definitions
+// ============================================================================
+
 #ifdef EVAL_TUNING
-    #define S(a, b) Autograd::PairPlaceholder::create_tunable((a), (b))  // Defines a tunable pscore
+    // Tunable scalar pair (mg, eg)
+    #define S(a, b) Autograd::PairPlaceholder::create_tunable((a), (b))
+
+    // Constant (fixed) scalar pair (mg, eg)
     #define CS(a, b) Autograd::PairPlaceholder::create((a), (b))
-    #define PSCORE_ZERO Autograd::Pair::create(0, 0)
+
+    // Zero pair
+    #define PSCORE_ZERO Autograd::PairPlaceholder::create(0, 0)
+
 #else
-    #define S(a, b) PScore((a), (b))  // Defines a constant pscore when not tuning
-    #define CS(a, b) S((a), (b))
-    #define PSCORE_ZERO CS(0, 0)
+    // Non-tuning build: use fixed, non-autograd PScore
+    #define S(a, b) PScore((a), (b))
+    #define CS(a, b) PScore((a), (b))
+    #define PSCORE_ZERO PScore(0, 0)
 #endif
 
 }  // namespace Clockwork

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tuning/graph.hpp"
+#include "tuning/graph.hpp"  // Required for Graph::get()
 #include "tuning/info.hpp"
 #include "tuning/value.hpp"
 #include "util/types.hpp"
@@ -8,7 +8,7 @@
 #include <atomic>
 #include <exception>
 #include <iostream>
-#include <memory>
+#include <vector>
 
 namespace Clockwork::Autograd {
 
@@ -60,7 +60,6 @@ public:
     }
 
     bool is_parameter_constant(usize i) const;
-
     bool is_pair_parameter_constant(usize i) const;
 
 private:
@@ -89,18 +88,17 @@ public:
         return ValuePlaceholder(a, true);
     }
 
-    operator ValuePtr() const {
+    // Conversion to Handle: Delegates to the Graph
+    operator ValueHandle() const {
         return Graph::get().get_parameter(m_index);
     }
 
     usize index() const {
         return m_index;
     }
-
     f64 default_value() const {
         return m_default_value;
     }
-
     bool constant() const {
         return m_constant;
     }
@@ -110,35 +108,6 @@ private:
     f64   m_default_value;
     bool  m_constant;
 };
-
-inline bool Globals::is_parameter_constant(usize i) const {
-    return m_parameters[i]->constant();
-}
-
-inline std::ostream& operator<<(std::ostream& os, ValuePlaceholder a) {
-    os << static_cast<ValuePtr>(a);
-    return os;
-}
-
-inline ValuePtr operator-(ValuePlaceholder a) {
-    return -static_cast<ValuePtr>(a);
-}
-
-inline ValuePtr operator+(ValuePlaceholder a, ValuePlaceholder b) {
-    return static_cast<ValuePtr>(a) + static_cast<ValuePtr>(b);
-}
-
-inline ValuePtr operator-(ValuePlaceholder a, ValuePlaceholder b) {
-    return static_cast<ValuePtr>(a) - static_cast<ValuePtr>(b);
-}
-
-inline ValuePtr operator*(ValuePlaceholder a, i32 b) {
-    return static_cast<ValuePtr>(a) * b;
-}
-
-inline ValuePtr operator/(ValuePlaceholder a, i32 b) {
-    return static_cast<ValuePtr>(a) / b;
-}
 
 class PairPlaceholder {
 public:
@@ -156,18 +125,17 @@ public:
         return PairPlaceholder(f128::make(a, b), true);
     }
 
-    operator PairPtr() const {
+    // Conversion to Handle: Delegates to the Graph
+    operator PairHandle() const {
         return Graph::get().get_pair_parameter(m_index);
     }
 
     usize index() const {
         return m_index;
     }
-
     f128 default_value() const {
         return m_default_value;
     }
-
     bool constant() const {
         return m_constant;
     }
@@ -178,33 +146,41 @@ private:
     bool  m_constant;
 };
 
+inline bool Globals::is_parameter_constant(usize i) const {
+    return m_parameters[i]->constant();
+}
+
 inline bool Globals::is_pair_parameter_constant(usize i) const {
     return m_pair_parameters[i]->constant();
 }
 
-inline std::ostream& operator<<(std::ostream& os, PairPlaceholder a) {
-    os << static_cast<PairPtr>(a);
-    return os;
+// --- Helper Operators for Placeholders ---
+// These allow Placeholders to be used directly in arithmetic expressions by implicit conversion to Handles.
+
+inline ValueHandle operator-(ValuePlaceholder a) {
+    return -static_cast<ValueHandle>(a);
+}
+inline ValueHandle operator+(ValuePlaceholder a, ValuePlaceholder b) {
+    return static_cast<ValueHandle>(a) + static_cast<ValueHandle>(b);
+}
+inline ValueHandle operator-(ValuePlaceholder a, ValuePlaceholder b) {
+    return static_cast<ValueHandle>(a) - static_cast<ValueHandle>(b);
+}
+inline ValueHandle operator*(ValuePlaceholder a, i32 b) {
+    return static_cast<ValueHandle>(a) * static_cast<f64>(b);
+}
+inline ValueHandle operator/(ValuePlaceholder a, i32 b) {
+    return static_cast<ValueHandle>(a) / static_cast<f64>(b);
 }
 
-inline PairPtr operator-(PairPlaceholder a) {
-    return -static_cast<PairPtr>(a);
+inline PairHandle operator-(PairPlaceholder a) {
+    return -static_cast<PairHandle>(a);
 }
-
-inline PairPtr operator+(PairPlaceholder a, PairPlaceholder b) {
-    return static_cast<PairPtr>(a) + static_cast<PairPtr>(b);
+inline PairHandle operator+(PairPlaceholder a, PairPlaceholder b) {
+    return static_cast<PairHandle>(a) + static_cast<PairHandle>(b);
 }
-
-inline PairPtr operator-(PairPlaceholder a, PairPlaceholder b) {
-    return static_cast<PairPtr>(a) - static_cast<PairPtr>(b);
-}
-
-inline PairPtr operator*(PairPlaceholder a, i32 b) {
-    return static_cast<PairPtr>(a) * b;
-}
-
-inline PairPtr operator/(PairPlaceholder a, i32 b) {
-    return static_cast<PairPtr>(a) / b;
+inline PairHandle operator-(PairPlaceholder a, PairPlaceholder b) {
+    return static_cast<PairHandle>(a) - static_cast<PairHandle>(b);
 }
 
 }  // namespace Clockwork::Autograd
