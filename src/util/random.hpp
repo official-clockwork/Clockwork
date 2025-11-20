@@ -43,11 +43,9 @@ public:
     static constexpr u128 MULT = (u128)0x2360ED051FC65DA4ULL << 64 | (u128)0x4385DF649FCCF645ULL;
 
 
-    // Example 256-bit fixed seed, must be odd!
     static constexpr u256 FIXED_SEED{0x5132397362474669ULL, 0x62334a6864476c32ULL,
                                      0x5a53424951305567ULL, 0x5257356e6157356cULL};
 
-    // Static constructor to auto-seed on first use
     struct Init {
         Init() {
             Random::seed(FIXED_SEED);
@@ -55,7 +53,6 @@ public:
     };
     static inline Init _auto_init;
 
-    // Seed with raw 256-bit words
     static void seed(const u256& s) {
         u128 state_ = s.low128();
         u128 incr_  = s.high128() | 1;  // must be odd for LCG
