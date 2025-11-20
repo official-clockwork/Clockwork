@@ -85,7 +85,6 @@ public:
     }
 
 private:
-
     static void from_state_incr(u128 st, u128 inc) {
         state     = st;
         increment = inc;
