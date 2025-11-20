@@ -344,7 +344,7 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
     if (!seed_provided) {
         std::cout << "Seed not provided. Defaulting to 0." << std::endl;
     }
-    Clockwork::Random::state = seed;
+    Clockwork::Random::seed({seed, seed, seed | 1, seed ^ 0xDEADBEEFDEADBEEFULL});
 
     // Open the book file
     std::ifstream file(book);
