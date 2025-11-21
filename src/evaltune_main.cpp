@@ -25,30 +25,29 @@
 using namespace Clockwork;
 
 typedef struct {
-    double learning_rate;
-    double beta1;
-    double beta2;
-    double weight_decay;
+    f64 learning_rate;
+    f64 beta1;
+    f64 beta2;
+    f64 weight_decay;
 } AdamWParams;
 
 void print_help(char** argv) {
-    printf("Usage: %s [options]\n\n", argv[0]);
-    printf("Options:\n");
-    printf("  -h, --help                  Show this help message and exit.\n");
-    printf(
-      "  -t, --threads <number>      Number of threads to use (type: uint32_t, default: %u).\n",
-      std::thread::hardware_concurrency() / 2);
-    printf(
-      "  -e, --epochs <number>       Number of training epochs (type: int32_t, default: 1000).\n");
-    printf("  -b, --batch <number>        Batch size for training (type: size_t, default: %zu).\n",
-           static_cast<size_t>(16 * 16384));
-    printf(
-      "  -d, --decay <value>         Learning rate decay factor per epoch (type: double, default: 0.91).\n");
-    printf("\nAdamW Optimizer Parameters:\n");
-    printf("      --lr <value>            Learning rate (type: double, default: 10.0).\n");
-    printf("      --beta1 <value>         Beta1 parameter (type: double, default: 0.9).\n");
-    printf("      --beta2 <value>         Beta2 parameter (type: double, default: 0.999).\n");
-    printf("      --weight_decay <value>  Weight decay (type: double, default: 0.0).\n");
+    std::cout << "Usage: " << argv[0] << " [options]\n\n";
+    std::cout << "Options:\n";
+    std::cout << "  -h, --help                  Show this help message and exit.\n";
+    std::cout << "  -t, --threads <number>      Number of threads to use (type: uint32_t, default: "
+              << std::thread::hardware_concurrency() / 2 << ".\n";
+    std::cout
+      << "  -e, --epochs <number>       Number of training epochs (type: int32_t, default: 1000).\n";
+    std::cout << "  -b, --batch <number>        Batch size for training (type: size_t, default: "
+              << static_cast<size_t>(16 * 16384) << ").\n";
+    std::cout
+      << "  -d, --decay <value>         Learning rate decay factor per epoch (type: double, default: 0.91).\n";
+    std::cout << "\nAdamW Optimizer Parameters:\n";
+    std::cout << "      --lr <value>            Learning rate (type: double, default: 10.0).\n";
+    std::cout << "      --beta1 <value>         Beta1 parameter (type: double, default: 0.9).\n";
+    std::cout << "      --beta2 <value>         Beta2 parameter (type: double, default: 0.999).\n";
+    std::cout << "      --weight_decay <value>  Weight decay (type: double, default: 0.0).\n";
 }
 
 int main(int argc, char** argv) {
@@ -58,7 +57,7 @@ int main(int argc, char** argv) {
     uint32_t thread_count_p = std::thread::hardware_concurrency() / 2;
     int32_t  epochs_p       = 1000;
     size_t   batch_size_p   = 16 * 16384;
-    double   decay_p        = 0.91;
+    f64      decay_p        = 0.91;
 
     AdamWParams adam = {.learning_rate = 10.0, .beta1 = 0.9, .beta2 = 0.999, .weight_decay = 0.0};
 
@@ -101,14 +100,12 @@ int main(int argc, char** argv) {
             // Check if it's a flag without a value or an unknown flag
             if (arg.rfind("--", 0) == 0 || arg.rfind("-", 0) == 0) {
                 if (i + 1 >= argc || (argv[i + 1][0] == '-' && !std::isdigit(argv[i + 1][1]))) {
-                    printf(
-                      "Warning! Argument '%s' has a missing value.\n Run %s --help to list all arguments.",
-                      argv[i], argv[0]);
+                    std::cout << "Warning! Argument '" << argv[i] << "' has a missing value.\n Run "
+                              << argv[0] << " --help to list all arguments.";
                     exit(-1);
                 } else {
-                    printf(
-                      "Warning! Arg not recognized: '%s'\n Run %s --help to list all arguments.\n",
-                      argv[i], argv[0]);
+                    std::cout << "Warning! Arg not recognized: '" << argv[i] << "'\n Run "
+                              << argv[0] << " --help to list all arguments.\n";
                     exit(-1);
                 }
             }
