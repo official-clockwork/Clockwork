@@ -18,12 +18,102 @@
 #include <numeric>
 #include <random>
 #include <sstream>
+#include <string_view>
 #include <thread>
 #include <tuple>
 
 using namespace Clockwork;
 
-int main() {
+typedef struct {
+    double learning_rate;
+    double beta1;
+    double beta2;
+    double weight_decay;
+} AdamWParams;
+
+void print_help(char** argv) {
+    printf("Usage: %s [options]\n\n", argv[0]);
+    printf("Options:\n");
+    printf("  -h, --help                  Show this help message and exit.\n");
+    printf(
+      "  -t, --threads <number>      Number of threads to use (type: uint32_t, default: %u).\n",
+      std::thread::hardware_concurrency() / 2);
+    printf(
+      "  -e, --epochs <number>       Number of training epochs (type: int32_t, default: 1000).\n");
+    printf("  -b, --batch <number>        Batch size for training (type: size_t, default: %zu).\n",
+           static_cast<size_t>(16 * 16384));
+    printf(
+      "  -d, --decay <value>         Learning rate decay factor per epoch (type: double, default: 0.91).\n");
+    printf("\nAdamW Optimizer Parameters:\n");
+    printf("      --lr <value>            Learning rate (type: double, default: 10.0).\n");
+    printf("      --beta1 <value>         Beta1 parameter (type: double, default: 0.9).\n");
+    printf("      --beta2 <value>         Beta2 parameter (type: double, default: 0.999).\n");
+    printf("      --weight_decay <value>  Weight decay (type: double, default: 0.0).\n");
+}
+
+int main(int argc, char** argv) {
+
+    //Default params
+
+    uint32_t thread_count_p = std::thread::hardware_concurrency() / 2;
+    int32_t  epochs_p       = 1000;
+    size_t   batch_size_p   = 16 * 16384;
+    double   decay_p        = 0.91;
+
+    AdamWParams adam = {.learning_rate = 10.0, .beta1 = 0.9, .beta2 = 0.999, .weight_decay = 0.0};
+
+    //Args parsing
+    for (int i = 1; i < argc; ++i) {
+        std::string_view arg = argv[i];
+
+        if (arg == "--help" || arg == "-h") {
+            print_help(argv);
+            return 0;
+        }
+
+        // Thread Count check
+        if ((arg == "--threads" || arg == "-t") && i + 1 < argc) {
+            thread_count_p = static_cast<uint32_t>(std::stoul(argv[++i]));
+        }
+        // Epochs check
+        else if ((arg == "--epochs" || arg == "-e") && i + 1 < argc) {
+            epochs_p = static_cast<int32_t>(std::stoi(argv[++i]));
+        }
+        // Batch Size check
+        else if ((arg == "--batch" || arg == "-b") && i + 1 < argc) {
+            batch_size_p = static_cast<size_t>(std::stoull(argv[++i]));
+        }
+        // AdamW Params check
+        else if (arg == "--lr" && i + 1 < argc) {
+            adam.learning_rate = std::stod(argv[++i]);
+        } else if (arg == "--beta1" && i + 1 < argc) {
+            adam.beta1 = std::stod(argv[++i]);
+        } else if (arg == "--beta2" && i + 1 < argc) {
+            adam.beta2 = std::stod(argv[++i]);
+        } else if (arg == "--weight_decay" && i + 1 < argc) {
+            adam.weight_decay = std::stod(argv[++i]);
+        }
+
+        //Decay check
+        else if ((arg == "--decay" || arg == "-d") && i + 1 < argc) {
+            decay_p = std::stod(argv[++i]);
+        } else {
+            // Check if it's a flag without a value or an unknown flag
+            if (arg.rfind("--", 0) == 0 || arg.rfind("-", 0) == 0) {
+                if (i + 1 >= argc || (argv[i + 1][0] == '-' && !std::isdigit(argv[i + 1][1]))) {
+                    printf(
+                      "Warning! Argument '%s' has a missing value.\n Run %s --help to list all arguments.",
+                      argv[i], argv[0]);
+                    exit(-1);
+                } else {
+                    printf(
+                      "Warning! Arg not recognized: '%s'\n Run %s --help to list all arguments.\n",
+                      argv[i], argv[0]);
+                    exit(-1);
+                }
+            }
+        }
+    }
 
     // Load fens from multiple files.
     std::vector<Position> positions;
@@ -35,7 +125,7 @@ int main() {
     };
 
     // Number of threads to use, default to half available
-    const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
+    const u32 thread_count = std::max<u32>(1, thread_count_p);
 
     std::cout << "Running on " << thread_count << " threads" << std::endl;
 
@@ -95,11 +185,12 @@ int main() {
     const ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
     Parameters               current_parameter_values = Graph::get().get_all_parameter_values();
 
-    AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
+    AdamW optim(parameter_count, adam.learning_rate, adam.beta1, adam.beta2, 1e-8,
+                adam.weight_decay);
 
-    const i32    epochs     = 1000;
+    const i32    epochs     = epochs_p;
     const f64    K          = 1.0 / 400;
-    const size_t batch_size = 16 * 16384;  // Set batch size here
+    const size_t batch_size = batch_size_p;  // Set batch size here
 
     std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
 
@@ -342,7 +433,7 @@ int main() {
                   << "s" << std::endl;
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.91);
+            optim.set_lr(optim.get_lr() * decay_p);
         }
     }
 
