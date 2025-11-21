@@ -29,9 +29,6 @@ using namespace Clockwork::Autograd;
 
 int main() {
 
-    // ------------------------------
-    // Load FENs
-    // ------------------------------
     std::vector<Position> positions;
     std::vector<f64>      results;
 
