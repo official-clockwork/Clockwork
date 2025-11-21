@@ -24,12 +24,12 @@
 
 using namespace Clockwork;
 
-typedef struct {
-    f64 learning_rate;
-    f64 beta1;
-    f64 beta2;
-    f64 weight_decay;
-} AdamWParams;
+struct AdamWParams {
+    f64 learning_rate{10.0};
+    f64 beta1{0.9};
+    f64 beta2{0.999};
+    f64 weight_decay{0.0};
+};
 
 void print_help(char** argv) {
     std::cout << "Usage: " << argv[0] << " [options]\n\n";
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     size_t   batch_size_p   = 16 * 16384;
     f64      decay_p        = 0.91;
 
-    AdamWParams adam = {.learning_rate = 10.0, .beta1 = 0.9, .beta2 = 0.999, .weight_decay = 0.0};
+    AdamWParams adam_p;
 
     //Args parsing
     for (int i = 1; i < argc; ++i) {
@@ -84,13 +84,13 @@ int main(int argc, char** argv) {
         }
         // AdamW Params check
         else if (arg == "--lr" && i + 1 < argc) {
-            adam.learning_rate = std::stod(argv[++i]);
+            adam_p.learning_rate = std::stod(argv[++i]);
         } else if (arg == "--beta1" && i + 1 < argc) {
-            adam.beta1 = std::stod(argv[++i]);
+            adam_p.beta1 = std::stod(argv[++i]);
         } else if (arg == "--beta2" && i + 1 < argc) {
-            adam.beta2 = std::stod(argv[++i]);
+            adam_p.beta2 = std::stod(argv[++i]);
         } else if (arg == "--weight_decay" && i + 1 < argc) {
-            adam.weight_decay = std::stod(argv[++i]);
+            adam_p.weight_decay = std::stod(argv[++i]);
         }
 
         //Decay check
@@ -182,8 +182,8 @@ int main(int argc, char** argv) {
     const ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
     Parameters               current_parameter_values = Graph::get().get_all_parameter_values();
 
-    AdamW optim(parameter_count, adam.learning_rate, adam.beta1, adam.beta2, 1e-8,
-                adam.weight_decay);
+    AdamW optim(parameter_count, adam_p.learning_rate, adam_p.beta1, adam_p.beta2, 1e-8,
+                adam_p.weight_decay);
 
     const i32    epochs     = epochs_p;
     const f64    K          = 1.0 / 400;
