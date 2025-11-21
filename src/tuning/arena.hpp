@@ -21,7 +21,7 @@ public:
         return idx;
     }
 
-    // Emplace version we might want later for ops that return many values? 
+    // Emplace version we might want later for ops that return many values?
     // Might be seeing things.
     template<typename... Args>
     u32 emplace(Args&&... args) {
@@ -55,7 +55,6 @@ public:
             m_data.resize(n);
         }
     }
-
 };
 
 }  // namespace Clockwork::Autograd

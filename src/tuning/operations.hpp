@@ -31,7 +31,7 @@ enum class OpType : u8 {
     ValDivScalar,  // x / scalar
 
     // Pair Ops
-    PairCreate, 
+    PairCreate,
     PairAdd,
     PairSub,
     PairNeg,
@@ -56,7 +56,7 @@ enum class OpType : u8 {
 
 // A single node in the compute tape. Probably can be rewritten more compactly.
 struct Node {
-    OpType type; // This tells us which arenas to look at and how to interpret lhs/rhs
+    OpType type;  // This tells us which arenas to look at and how to interpret lhs/rhs
 
     u32 output_idx;  // Index in the respective arena (Value or Pair)
     u32 lhs_idx;     // Index of first operand

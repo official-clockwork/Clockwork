@@ -110,7 +110,7 @@ using PParam = PScore;
 
 using Score  = Autograd::ValueHandle;
 using PScore = Autograd::PairHandle;
-using PParam = Autograd::PairPlaceholder; // Handle for the TUNABLE parameter
+using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
 
 #endif
 

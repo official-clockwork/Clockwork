@@ -187,7 +187,7 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle pair, ValueHandle val)
 ValueHandle Graph::record_phase(PairHandle input, f64 alpha) {
     u32  out = m_values.alloc({0.0, 0.0});
     f128 p   = m_pairs[input.index].values;
-    
+
     f64 val             = alpha * p.first() + (1.0 - alpha) * p.second();
     m_values[out].value = val;
     m_tape.push_back({OpType::Phase, out, input.index, 0, alpha});
