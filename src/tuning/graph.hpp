@@ -40,8 +40,8 @@ public:
     static Graph& get();
 
     // Creation
-    ValueHandle create_value(f64 data, bool is_parameter = false);
-    PairHandle  create_pair(f128 data, bool is_parameter = false);
+    ValueHandle create_value(f64 data);
+    PairHandle  create_pair(f128 data);
 
     // Operation recording stuff
 

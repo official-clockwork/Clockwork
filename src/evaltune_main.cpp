@@ -39,7 +39,7 @@ int main() {
       "data/dfrcv1.txt", "data/dfrcv0.txt", "data/v2.2.txt", "data/v2.1.txt", "data/v3.txt",
     };
 
-    const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency());
+    const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 
     std::cout << "Running on " << thread_count << " threads\n";
 
@@ -88,10 +88,7 @@ int main() {
         return 1;
     }
 
-    // ------------------------------
-    //   Setup Autograd system
-    // ------------------------------
-
+    // Setup tuning
     const ParameterCountInfo parameter_count = Globals::get().get_parameter_counts();
 
     // This line loads the defaults from your S() macros
@@ -109,7 +106,9 @@ int main() {
 
     std::mt19937        rng(std::random_device{}());
     std::vector<size_t> indices(positions.size());
-    const size_t        total_batches = (positions.size() + batch_size - 1) / batch_size;
+    // Initialize indices 1..N
+    std::iota(indices.begin(), indices.end(), 0);
+    const size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
     // Shared gradient accumulator
     Parameters batch_gradients = Parameters::zeros(parameter_count);
@@ -123,13 +122,10 @@ int main() {
                                    batch_gradients = Parameters::zeros(parameter_count);
                                }};
 
-    // ------------------------------
-    // Worker threads
-    // ------------------------------
+    // Spawn worker threads
     for (u32 t = 0; t < thread_count; ++t) {
         std::thread([&, t]() {
             // Each thread uses its own Graph arena
-
             for (int epoch = 0; epoch < epochs; ++epoch) {
 
                 epoch_barrier.arrive_and_wait();
@@ -151,9 +147,7 @@ int main() {
                     outputs.reserve(sub_end - sub_start);
                     targets.reserve(sub_end - sub_start);
 
-                    // ------------------------------
-                    // Forward pass
-                    // ------------------------------
+                    // Forward
                     for (size_t j = sub_start; j < sub_end; ++j) {
                         size_t idx = indices[j];
 
@@ -163,9 +157,7 @@ int main() {
                         targets.push_back(y);
                     }
 
-                    // ------------------------------
-                    // Loss and backward
-                    // ------------------------------
+                    // Backward
                     ValueHandle loss = mse<f64, Reduction::Sum>(outputs, targets)
                                      * ValueHandle::create(1.0 / double(this_batch_size));
 
@@ -188,16 +180,13 @@ int main() {
         }).detach();
     }
 
-    // ------------------------------
-    // Main thread: epoch coordinator
-    // ------------------------------
+    // Epoch loop
     for (int epoch = 0; epoch < epochs; ++epoch) {
 
         std::cout << "Epoch " << epoch + 1 << "/" << epochs << "\n";
 
         const auto start = time::Clock::now();
 
-        std::iota(indices.begin(), indices.end(), 0);
         std::shuffle(indices.begin(), indices.end(), rng);
 
         epoch_barrier.arrive_and_wait();

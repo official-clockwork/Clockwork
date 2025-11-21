@@ -25,11 +25,11 @@ Graph& Graph::get() {
     return instance;
 }
 
-ValueHandle Graph::create_value(f64 data, bool is_parameter) {
+ValueHandle Graph::create_value(f64 data) {
     return ValueHandle(m_values.alloc({data, 0.0}));
 }
 
-PairHandle Graph::create_pair(f128 data, bool is_parameter) {
+PairHandle Graph::create_pair(f128 data) {
     return PairHandle(m_pairs.alloc({data, f128::zero()}));
 }
 
