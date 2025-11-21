@@ -51,16 +51,16 @@ struct PairHandle {
     }
 
     static PairHandle create(f64 first, f64 second);
-    static PairHandle create(const f128& values);
+    static PairHandle create(const f64x2& values);
     static PairHandle create_tunable(f64 a, f64 b) {
         return create(a, b);
     }
 
-    f128 get_values() const;
-    f128 get_gradients() const;
+    f64x2 get_values() const;
+    f64x2 get_gradients() const;
     f64  first() const;
     f64  second() const;
-    void set_values(const f128& v) const;
+    void set_values(const f64x2& v) const;
     void set_values(f64 f, f64 s) const;
     void zero_grad() const;
 

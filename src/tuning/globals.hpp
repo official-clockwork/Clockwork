@@ -111,18 +111,18 @@ private:
 
 class PairPlaceholder {
 public:
-    explicit PairPlaceholder(f128 default_value, bool constant) :
+    explicit PairPlaceholder(f64x2 default_value, bool constant) :
         m_index(Globals::get().register_param(this)),
         m_default_value(default_value),
         m_constant(constant) {
     }
 
     static PairPlaceholder create_tunable(f64 a, f64 b) {
-        return PairPlaceholder(f128::make(a, b), false);
+        return PairPlaceholder(f64x2::make(a, b), false);
     }
 
     static PairPlaceholder create(f64 a, f64 b) {
-        return PairPlaceholder(f128::make(a, b), true);
+        return PairPlaceholder(f64x2::make(a, b), true);
     }
 
     // Conversion to Handle: Delegates to the Graph
@@ -133,7 +133,7 @@ public:
     usize index() const {
         return m_index;
     }
-    f128 default_value() const {
+    f64x2 default_value() const {
         return m_default_value;
     }
     bool constant() const {
@@ -142,7 +142,7 @@ public:
 
 private:
     usize m_index;
-    f128  m_default_value;
+    f64x2  m_default_value;
     bool  m_constant;
 };
 

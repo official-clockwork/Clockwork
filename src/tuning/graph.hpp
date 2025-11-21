@@ -17,8 +17,8 @@ struct ValueData {
 };
 
 struct PairData {
-    f128 values;
-    f128 gradients;
+    f64x2 values;
+    f64x2 gradients;
 };
 
 class Graph {
@@ -41,7 +41,7 @@ public:
 
     // Creation
     ValueHandle create_value(f64 data);
-    PairHandle  create_pair(f128 data);
+    PairHandle  create_pair(f64x2 data);
 
     // Operation recording stuff
 

@@ -14,12 +14,12 @@ struct ParameterCountInfo {
 
 struct Parameters {
     std::vector<f64>  parameters;
-    std::vector<f128> pair_parameters;
+    std::vector<f64x2> pair_parameters;
 
     static Parameters zeros(ParameterCountInfo counts) {
         Parameters result;
         result.parameters.resize(counts.parameter_count, 0.0);
-        result.pair_parameters.resize(counts.pair_parameter_count, f128::zero());
+        result.pair_parameters.resize(counts.pair_parameter_count, f64x2::zero());
         return result;
     }
 
@@ -30,7 +30,7 @@ struct Parameters {
             parameters[i] += b.parameters[i];
         }
         for (usize i = 0; i < pair_parameters.size(); i++) {
-            pair_parameters[i] = f128::add(pair_parameters[i], b.pair_parameters[i]);
+            pair_parameters[i] = f64x2::add(pair_parameters[i], b.pair_parameters[i]);
         }
     }
 
@@ -42,7 +42,7 @@ struct Parameters {
         }
         for (usize i = 0; i < pair_parameters.size(); i++) {
             pair_parameters[i] =
-              f128::madd(pair_parameters[i], f128::broadcast(weight), b.pair_parameters[i]);
+              f64x2::madd(pair_parameters[i], f64x2::broadcast(weight), b.pair_parameters[i]);
         }
     }
 };

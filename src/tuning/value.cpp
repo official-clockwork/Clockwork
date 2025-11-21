@@ -69,17 +69,17 @@ void ValueHandle::set_value(f64 v) const {
 // PairHandle implementations
 
 PairHandle PairHandle::create(f64 first, f64 second) {
-    return Graph::get().create_pair(f128::make(first, second));
+    return Graph::get().create_pair(f64x2::make(first, second));
 }
 
-PairHandle PairHandle::create(const f128& values) {
+PairHandle PairHandle::create(const f64x2& values) {
     return Graph::get().create_pair(values);
 }
 
-f128 PairHandle::get_values() const {
+f64x2 PairHandle::get_values() const {
     return Graph::get().get_pair_data(*this).values;
 }
-f128 PairHandle::get_gradients() const {
+f64x2 PairHandle::get_gradients() const {
     return Graph::get().get_pair_data(*this).gradients;
 }
 f64 PairHandle::first() const {
@@ -89,15 +89,15 @@ f64 PairHandle::second() const {
     return get_values().second();
 }
 
-void PairHandle::set_values(const f128& v) const {
+void PairHandle::set_values(const f64x2& v) const {
     Graph::get().get_pair_data(*this).values = v;
 }
 void PairHandle::set_values(f64 f, f64 s) const {
-    set_values(f128::make(f, s));
+    set_values(f64x2::make(f, s));
 }
 
 void PairHandle::zero_grad() const {
-    Graph::get().get_pair_data(*this).gradients = f128::zero();
+    Graph::get().get_pair_data(*this).gradients = f64x2::zero();
 }
 
 

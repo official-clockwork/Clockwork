@@ -17,7 +17,7 @@ private:
     f64                m_momentum;
 
     std::vector<f64>  m_value_velocity;
-    std::vector<f128> m_pair_velocity;
+    std::vector<f64x2> m_pair_velocity;
 
 public:
     explicit SGD(ParameterCountInfo counts, f64 lr, f64 momentum = 0.9) :
@@ -25,7 +25,7 @@ public:
         m_lr(lr),
         m_momentum(momentum) {
         m_value_velocity.resize(m_counts.parameter_count, 0.0);
-        m_pair_velocity.resize(m_counts.pair_parameter_count, f128::zero());
+        m_pair_velocity.resize(m_counts.pair_parameter_count, f64x2::zero());
     }
 
     void step(Parameters& values, const Parameters& gradients) {
@@ -55,11 +55,11 @@ public:
             auto& p_grad  = gradients.pair_parameters[i];
             auto& v       = m_pair_velocity[i];
 
-            const f128 lr_grad     = f128::mul_scalar(p_grad, m_lr);
-            const f128 mom_v       = f128::mul_scalar(v, m_momentum);
-            const f128 neg_lr_grad = f128::neg(lr_grad);
-            v                      = f128::add(mom_v, neg_lr_grad);
-            p_value                = f128::add(p_value, v);
+            const f64x2 lr_grad     = f64x2::mul_scalar(p_grad, m_lr);
+            const f64x2 mom_v       = f64x2::mul_scalar(v, m_momentum);
+            const f64x2 neg_lr_grad = f64x2::neg(lr_grad);
+            v                      = f64x2::add(mom_v, neg_lr_grad);
+            p_value                = f64x2::add(p_value, v);
         }
     }
 
@@ -84,8 +84,8 @@ private:
 
     std::vector<f64>  m_m;
     std::vector<f64>  m_v;
-    std::vector<f128> m_pair_m;
-    std::vector<f128> m_pair_v;
+    std::vector<f64x2> m_pair_m;
+    std::vector<f64x2> m_pair_v;
 
 public:
     explicit AdamW(ParameterCountInfo counts,
@@ -103,8 +103,8 @@ public:
         m_t(0) {
         m_m.resize(m_counts.parameter_count, 0.0);
         m_v.resize(m_counts.parameter_count, 0.0);
-        m_pair_m.resize(m_counts.pair_parameter_count, f128::zero());
-        m_pair_v.resize(m_counts.pair_parameter_count, f128::zero());
+        m_pair_m.resize(m_counts.pair_parameter_count, f64x2::zero());
+        m_pair_v.resize(m_counts.pair_parameter_count, f64x2::zero());
     }
 
     void step(Parameters& values, const Parameters& gradients) {
@@ -147,18 +147,18 @@ public:
             auto& m = m_pair_m[i];
             auto& v = m_pair_v[i];
 
-            const f128 g2 = f128::mul(g, g);
+            const f64x2 g2 = f64x2::mul(g, g);
 
-            const f128 m_scaled = f128::mul_scalar(m, m_beta1);
-            const f128 g_scaled = f128::mul_scalar(g, (1.0 - m_beta1));
-            m                   = f128::add(m_scaled, g_scaled);
+            const f64x2 m_scaled = f64x2::mul_scalar(m, m_beta1);
+            const f64x2 g_scaled = f64x2::mul_scalar(g, (1.0 - m_beta1));
+            m                   = f64x2::add(m_scaled, g_scaled);
 
-            const f128 v_scaled  = f128::mul_scalar(v, m_beta2);
-            const f128 g2_scaled = f128::mul_scalar(g2, (1.0 - m_beta2));
-            v                    = f128::add(v_scaled, g2_scaled);
+            const f64x2 v_scaled  = f64x2::mul_scalar(v, m_beta2);
+            const f64x2 g2_scaled = f64x2::mul_scalar(g2, (1.0 - m_beta2));
+            v                    = f64x2::add(v_scaled, g2_scaled);
 
-            const f128 m_hat = f128::mul_scalar(m, inv1mb1t);
-            const f128 v_hat = f128::mul_scalar(v, inv1mb2t);
+            const f64x2 m_hat = f64x2::mul_scalar(m, inv1mb1t);
+            const f64x2 v_hat = f64x2::mul_scalar(v, inv1mb2t);
 
             const f64 adam_upd_f = m_lr * m_hat.first() / (std::sqrt(v_hat.first()) + m_eps);
             const f64 adam_upd_s = m_lr * m_hat.second() / (std::sqrt(v_hat.second()) + m_eps);
@@ -169,7 +169,7 @@ public:
             const f64 total_upd_f = -(adam_upd_f + decay_upd_f);
             const f64 total_upd_s = -(adam_upd_s + decay_upd_s);
 
-            p = f128::add(p, f128::make(total_upd_f, total_upd_s));
+            p = f64x2::add(p, f64x2::make(total_upd_f, total_upd_s));
         }
     }
 
