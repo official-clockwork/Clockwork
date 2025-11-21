@@ -180,8 +180,6 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle pair, ValueHandle val)
         break;
     }
     m_pairs[out].values = res;
-    // Note: rhs is stored in rhs_idx, but it refers to m_values arena!
-    // The OpType tells us which arena to look at.
     m_tape.push_back({op, out, pair.index, val.index, 0.0});
     return PairHandle(out);
 }
@@ -189,14 +187,12 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle pair, ValueHandle val)
 ValueHandle Graph::record_phase(PairHandle input, f64 alpha) {
     u32  out = m_values.alloc({0.0, 0.0});
     f128 p   = m_pairs[input.index].values;
-    // Linear interpolation: alpha * first + (1-alpha) * second
+    
     f64 val             = alpha * p.first() + (1.0 - alpha) * p.second();
     m_values[out].value = val;
     m_tape.push_back({OpType::Phase, out, input.index, 0, alpha});
     return ValueHandle(out);
 }
-
-// ------------------ Backward ------------------
 
 void Graph::backward() {
     if (m_tape.empty()) {
@@ -398,7 +394,7 @@ void Graph::backward() {
         case OpType::Phase: {
             f64 grad  = m_values[node.output_idx].gradient;
             f64 alpha = node.scalar_data;
-            
+
             f128 grad_upd                   = f128::make(alpha * grad, (1.0 - alpha) * grad);
             m_pairs[node.lhs_idx].gradients = f128::add(m_pairs[node.lhs_idx].gradients, grad_upd);
             break;

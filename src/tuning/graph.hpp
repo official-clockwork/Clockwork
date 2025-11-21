@@ -59,10 +59,8 @@ public:
     // Handling phasing separately due to its unique nature, probably can be done better
     ValueHandle record_phase(PairHandle input, f64 alpha);
 
-    // ------------------ Backend Logic ------------------
     void backward();
 
-    // ------------------ Management ------------------
     void       cleanup();
     void       zero_grad();
     void       copy_parameter_values(const Parameters& source);
