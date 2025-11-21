@@ -73,7 +73,7 @@ struct PairHandle {
     }
 };
 
-// --- Operator Declarations ---
+// Operation decls
 ValueHandle operator-(ValueHandle a);
 ValueHandle operator+(ValueHandle a, ValueHandle b);
 ValueHandle operator-(ValueHandle a, ValueHandle b);

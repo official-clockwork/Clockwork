@@ -200,7 +200,6 @@ std::ostream& operator<<(std::ostream& os, const PairHandle& p) {
 }
 
 // Value Inplaces
-
 ValueHandle& operator+=(ValueHandle& a, ValueHandle b) {
     a = a + b;
     return a;
@@ -236,7 +235,6 @@ ValueHandle& operator/=(ValueHandle& a, f64 b) {
 }
 
 // Pair Inplaces
-
 PairHandle& operator+=(PairHandle& a, PairHandle b) {
     a = a + b;
     return a;

@@ -30,27 +30,27 @@ enum class OpType : u8 {
     DivScalarVal,  // scalar / x
     ValDivScalar,  // x / scalar
 
-    // --- Pair Ops ---
-    PairCreate,  // (val, val) -> pair
+    // Pair Ops
+    PairCreate, 
     PairAdd,
     PairSub,
     PairNeg,
 
-    // --- Pair/Scalar Ops ---
+    // Pair-Scalar Ops
     PairMulScalar,
     PairDivScalar,
     ScalarDivPair,
 
-    // --- Pair/Value Ops ---
+    // Pair-Value Ops
     PairMulValue,
-    ValueMulPair,  // Commutative wrapper usually, but distinct op code helps
+    ValueMulPair,
     PairDivValue,
     ValueDivPair,
 
-    // --- Phasing ---
+    // Phasing
     Phase,  // Pair -> Value via alpha
 
-    // --- Reduction ---
+    // Reduction (TODO: optimize this)
     Sum  // Sum of a vector of values
 };
 
