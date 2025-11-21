@@ -16,9 +16,6 @@
 namespace Clockwork {
 
 #ifndef EVAL_TUNING
-// ============================================================================
-//   NORMAL BUILD (NO TUNING)
-// ============================================================================
 using Score = i16;
 
 class PScore {
@@ -42,14 +39,14 @@ public:
                && endgame <= std::numeric_limits<i16>::max());
     }
 
-    inline Score mg() const {
+    [[nodiscard]] inline Score mg() const {
         u16 mg = u16(m_score);
         i16 v;
         std::memcpy(&v, &mg, sizeof(mg));
         return v;
     }
 
-    inline Score eg() const {
+    [[nodiscard]] inline Score eg() const {
         u16 eg = u16(u32(m_score + 0x8000) >> 16);
         i16 v;
         std::memcpy(&v, &eg, sizeof(eg));
@@ -90,7 +87,7 @@ public:
 
     // Phase function (non-tuning: returns int)
     template<i32 max>
-    inline Value phase(i32 alpha) const {
+    [[nodiscard]] inline Value phase(i32 alpha) const {
         assert(0 <= alpha && alpha <= max);
         return Value((mg() * alpha + eg() * (max - alpha)) / max);
     }
@@ -104,9 +101,6 @@ public:
 using PParam = PScore;
 
 #else
-// ============================================================================
-//   TUNING BUILD (NEW AUTOGRAD API)
-// ============================================================================
 
 using Score  = Autograd::ValueHandle;
 using PScore = Autograd::PairHandle;
@@ -114,10 +108,6 @@ using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
 
 #endif
 
-
-// ============================================================================
-//   Macro Definitions
-// ============================================================================
 
 #ifdef EVAL_TUNING
     // Tunable scalar pair (mg, eg)
