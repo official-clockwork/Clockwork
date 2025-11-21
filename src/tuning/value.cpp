@@ -16,7 +16,7 @@ ValueHandle ValueHandle::sum(const std::vector<ValueHandle>& inputs) {
     if (inputs.empty()) {
         return ValueHandle::create(0.0);
     }
-    // Simple linear accumulation on the tape
+    // Simple linear accumulation on the tape. I dropped the old optimized version for the arena rewrite, but its the top priority for future optimization.
     ValueHandle total = inputs[0];
     for (size_t i = 1; i < inputs.size(); ++i) {
         total = total + inputs[i];
@@ -66,7 +66,7 @@ void ValueHandle::set_value(f64 v) const {
     }
 }
 
-// ------------------ PairHandle ------------------
+// PairHandle implementations
 
 PairHandle PairHandle::create(f64 first, f64 second) {
     return Graph::get().create_pair(f128::make(first, second));
@@ -100,14 +100,13 @@ void PairHandle::zero_grad() const {
     Graph::get().get_pair_data(*this).gradients = f128::zero();
 }
 
-// Implementation of the helper called by the template in the header
+
+// Special phasing case
 ValueHandle PairHandle::phase_impl(f64 scaled_alpha) const {
     return Graph::get().record_phase(*this, scaled_alpha);
 }
 
-// ------------------ Operator Implementations ------------------
-
-// --- Value Unary/Binary ---
+// ValueHandle Operators
 ValueHandle operator-(ValueHandle a) {
     return Graph::get().record_op(OpType::Neg, a);
 }
@@ -124,7 +123,6 @@ ValueHandle operator/(ValueHandle a, ValueHandle b) {
     return Graph::get().record_op(OpType::Div, a, b);
 }
 
-// --- Value Scalar ---
 ValueHandle operator+(ValueHandle a, f64 b) {
     return Graph::get().record_op(OpType::AddScalar, a, b);
 }
@@ -151,7 +149,6 @@ ValueHandle operator/(f64 a, ValueHandle b) {
     return Graph::get().record_op(OpType::DivScalarVal, b, a);
 }
 
-// --- Comparison ---
 bool operator<(ValueHandle a, ValueHandle b) {
     return a.get_value() < b.get_value();
 }
@@ -159,7 +156,7 @@ bool operator>(ValueHandle a, ValueHandle b) {
     return a.get_value() > b.get_value();
 }
 
-// --- Pair Binary ---
+// PairHandle Operators
 PairHandle operator+(PairHandle a, PairHandle b) {
     return Graph::get().record_pair_op(OpType::PairAdd, a, b);
 }
@@ -170,7 +167,6 @@ PairHandle operator-(PairHandle a) {
     return Graph::get().record_pair_scalar(OpType::PairNeg, a, 0.0);
 }
 
-// --- Pair Scalar ---
 PairHandle operator*(PairHandle a, f64 scalar) {
     return Graph::get().record_pair_scalar(OpType::PairMulScalar, a, scalar);
 }
@@ -184,7 +180,6 @@ PairHandle operator/(f64 scalar, PairHandle a) {
     return Graph::get().record_pair_scalar(OpType::ScalarDivPair, a, scalar);
 }
 
-// --- Pair Value ---
 PairHandle operator*(PairHandle a, ValueHandle v) {
     return Graph::get().record_pair_value(OpType::PairMulValue, a, v);
 }
@@ -198,13 +193,13 @@ PairHandle operator/(ValueHandle v, PairHandle a) {
     return Graph::get().record_pair_value(OpType::ValueDivPair, a, v);
 }
 
+// Printing overloads for debugging
 std::ostream& operator<<(std::ostream& os, const PairHandle& p) {
-    os << "S(" << static_cast<i32>(p.first() + 0.5) << ", " << static_cast<i32>(p.second() + 0.5)
-       << ")";
+    os << "S(" << std::round(p.first()) << ", " << std::round(p.second()) << ")";
     return os;
 }
 
-// --- Inplace Operators (Syntactic Sugar) ---
+// Value Inplaces
 
 ValueHandle& operator+=(ValueHandle& a, ValueHandle b) {
     a = a + b;
@@ -239,6 +234,8 @@ ValueHandle& operator/=(ValueHandle& a, f64 b) {
     a = a / b;
     return a;
 }
+
+// Pair Inplaces
 
 PairHandle& operator+=(PairHandle& a, PairHandle b) {
     a = a + b;

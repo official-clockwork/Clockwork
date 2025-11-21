@@ -103,7 +103,7 @@ PairHandle    operator/(PairHandle a, ValueHandle v);
 PairHandle    operator/(ValueHandle v, PairHandle a);
 std::ostream& operator<<(std::ostream& os, const PairHandle& p);
 
-// Inplace
+// Value Inplaces
 ValueHandle& operator+=(ValueHandle& a, ValueHandle b);
 ValueHandle& operator-=(ValueHandle& a, ValueHandle b);
 ValueHandle& operator*=(ValueHandle& a, ValueHandle b);
@@ -113,6 +113,7 @@ ValueHandle& operator-=(ValueHandle& a, f64 b);
 ValueHandle& operator*=(ValueHandle& a, f64 b);
 ValueHandle& operator/=(ValueHandle& a, f64 b);
 
+// Pair Inplaces
 PairHandle& operator+=(PairHandle& a, PairHandle b);
 PairHandle& operator-=(PairHandle& a, PairHandle b);
 PairHandle& operator*=(PairHandle& a, f64 scalar);

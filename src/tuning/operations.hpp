@@ -62,7 +62,7 @@ struct Node {
     u32 lhs_idx;     // Index of first operand
     u32 rhs_idx;     // Index of second operand (if applicable)
 
-    // Auxiliary data for scalar ops, constants, or specific parameters
+    // Auxiliary data for scalar ops, constants, or specific parameters.
     f64 scalar_data;
 };
 

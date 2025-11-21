@@ -203,21 +203,18 @@ void Graph::backward() {
         return;
     }
 
-    // Seed gradient of last node
+    // Our backward model assumes the last operation produces a scalar loss value.
     const auto& last_node = m_tape.back();
-    // Assuming the last node produces a Value (the loss)
+
+    // Initialize gradient of final output to 1.0 to start backprop
     m_values[last_node.output_idx].gradient = 1.0;
 
-    // Reverse iterate
+    // Rev iterate
     for (auto it = m_tape.rbegin(); it != m_tape.rend(); ++it) {
         const Node& node = *it;
 
-        // Fetch gradients and values based on op type
-        // Note: References to vector elements are risky if alloc happened, but backward pass doesn't alloc.
-        // Using pointers or indices is safer.
-
         switch (node.type) {
-        // --- Value Binary ---
+        // Value Binary
         case OpType::Add: {
             f64 grad = m_values[node.output_idx].gradient;
             m_values[node.lhs_idx].gradient += grad;
@@ -255,9 +252,8 @@ void Graph::backward() {
             break;
         }
 
-        // --- Value Unary ---
+        // Value Unary
         case OpType::Exp: {
-            // d/dx e^x = e^x = y
             f64 grad = m_values[node.output_idx].gradient;
             f64 val  = m_values[node.output_idx].value;
             m_values[node.lhs_idx].gradient += val * grad;
@@ -312,7 +308,7 @@ void Graph::backward() {
             break;
         }
 
-        // --- Pair Binary ---
+        // Pair Binary
         case OpType::PairAdd: {
             f128 grad                       = m_pairs[node.output_idx].gradients;
             m_pairs[node.lhs_idx].gradients = f128::add(m_pairs[node.lhs_idx].gradients, grad);
@@ -326,7 +322,7 @@ void Graph::backward() {
             break;
         }
 
-        // --- Pair Scalar ---
+        // Pair Scalar
         case OpType::PairNeg: {
             f128 grad                       = m_pairs[node.output_idx].gradients;
             m_pairs[node.lhs_idx].gradients = f128::sub(m_pairs[node.lhs_idx].gradients, grad);
@@ -356,25 +352,21 @@ void Graph::backward() {
             break;
         }
 
-        // --- Pair Value ---
+        // Pair-Value
         case OpType::PairMulValue:
         case OpType::ValueMulPair: {
-            // out = p * v
             f128 grad_out = m_pairs[node.output_idx].gradients;
             f128 p        = m_pairs[node.lhs_idx].values;
             f64  v        = m_values[node.rhs_idx].value;
 
-            // d/dp = v
             f128 grad_p                     = f128::mul_scalar(grad_out, v);
             m_pairs[node.lhs_idx].gradients = f128::add(m_pairs[node.lhs_idx].gradients, grad_p);
 
-            // d/dv = p.first * grad.first + p.second * grad.second
             f128 contrib = f128::mul(p, grad_out);
             m_values[node.rhs_idx].gradient += contrib.first() + contrib.second();
             break;
         }
         case OpType::PairDivValue: {
-            // out = p / v
             f128 grad_out = m_pairs[node.output_idx].gradients;
             f128 p        = m_pairs[node.lhs_idx].values;
             f64  v        = m_values[node.rhs_idx].value;
@@ -382,35 +374,31 @@ void Graph::backward() {
             f128 grad_p                     = f128::div_scalar(grad_out, v);
             m_pairs[node.lhs_idx].gradients = f128::add(m_pairs[node.lhs_idx].gradients, grad_p);
 
-            // d/dv = -p/v^2 * grad
             f128 num       = f128::mul(p, grad_out);
             f64  sum_contr = num.first() + num.second();
             m_values[node.rhs_idx].gradient += -sum_contr / (v * v);
             break;
         }
         case OpType::ValueDivPair: {
-            // out = v / p
             f128 grad_out = m_pairs[node.output_idx].gradients;
             f128 p        = m_pairs[node.lhs_idx].values;
             f64  v        = m_values[node.rhs_idx].value;
 
-            // d/dp = -v/p^2
             f128 p_sq                       = f128::mul(p, p);
             f128 neg_v_sq                   = f128::neg(f128::scalar_div(v, p_sq));
             f128 grad_p                     = f128::mul(neg_v_sq, grad_out);
             m_pairs[node.lhs_idx].gradients = f128::add(m_pairs[node.lhs_idx].gradients, grad_p);
 
-            // d/dv = 1/p
             f128 v_contr = f128::div(grad_out, p);
             m_values[node.rhs_idx].gradient += v_contr.first() + v_contr.second();
             break;
         }
 
-        // --- Phase ---
+        // Special Case phase
         case OpType::Phase: {
             f64 grad  = m_values[node.output_idx].gradient;
             f64 alpha = node.scalar_data;
-            // d/d_first = alpha, d/d_second = 1-alpha
+            
             f128 grad_upd                   = f128::make(alpha * grad, (1.0 - alpha) * grad);
             m_pairs[node.lhs_idx].gradients = f128::add(m_pairs[node.lhs_idx].gradients, grad_upd);
             break;

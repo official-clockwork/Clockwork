@@ -39,11 +39,12 @@ private:
 public:
     static Graph& get();
 
-    // ------------------ Creation ------------------
+    // Creation
     ValueHandle create_value(f64 data, bool is_parameter = false);
     PairHandle  create_pair(f128 data, bool is_parameter = false);
 
-    // ------------------ Operation Recording ------------------
+    // Operation recording stuff
+
     // Value-Value Binary
     ValueHandle record_op(OpType op, ValueHandle lhs, ValueHandle rhs);
     // Value Unary / Scalar
@@ -55,7 +56,7 @@ public:
     // Pair-Value
     PairHandle record_pair_value(OpType op, PairHandle pair, ValueHandle val);
 
-    // Special Phase
+    // Handling phasing separately due to its unique nature, probably can be done better
     ValueHandle record_phase(PairHandle input, f64 alpha);
 
     // ------------------ Backend Logic ------------------
