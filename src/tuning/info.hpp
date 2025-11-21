@@ -13,7 +13,7 @@ struct ParameterCountInfo {
 };
 
 struct Parameters {
-    std::vector<f64>  parameters;
+    std::vector<f64>   parameters;
     std::vector<f64x2> pair_parameters;
 
     static Parameters zeros(ParameterCountInfo counts) {

@@ -142,7 +142,7 @@ public:
 
 private:
     usize m_index;
-    f64x2  m_default_value;
+    f64x2 m_default_value;
     bool  m_constant;
 };
 

@@ -58,11 +58,11 @@ struct PairHandle {
 
     f64x2 get_values() const;
     f64x2 get_gradients() const;
-    f64  first() const;
-    f64  second() const;
-    void set_values(const f64x2& v) const;
-    void set_values(f64 f, f64 s) const;
-    void zero_grad() const;
+    f64   first() const;
+    f64   second() const;
+    void  set_values(const f64x2& v) const;
+    void  set_values(f64 f, f64 s) const;
+    void  zero_grad() const;
 
     // Internal helper to avoid including Graph in header
     ValueHandle phase_impl(f64 scaled_alpha) const;

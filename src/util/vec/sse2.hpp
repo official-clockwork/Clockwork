@@ -115,7 +115,7 @@ struct f64x2 {
     static inline f64x2 neg(const f64x2& a) {
 #if F128_USE_SSE2
         __m128d zero = _mm_setzero_pd();
-        f64x2    r;
+        f64x2   r;
         r.v = _mm_sub_pd(zero, a.v);
         return r;
 #else
@@ -143,7 +143,7 @@ struct f64x2 {
     static inline f64x2 scalar_div(double s, const f64x2& a) {
 #if F128_USE_SSE2
         __m128d num = _mm_set1_pd(s);
-        f64x2    r;
+        f64x2   r;
         r.v = _mm_div_pd(num, a.v);
         return r;
 #else

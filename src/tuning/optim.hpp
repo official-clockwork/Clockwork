@@ -16,7 +16,7 @@ private:
     f64                m_lr;
     f64                m_momentum;
 
-    std::vector<f64>  m_value_velocity;
+    std::vector<f64>   m_value_velocity;
     std::vector<f64x2> m_pair_velocity;
 
 public:
@@ -58,8 +58,8 @@ public:
             const f64x2 lr_grad     = f64x2::mul_scalar(p_grad, m_lr);
             const f64x2 mom_v       = f64x2::mul_scalar(v, m_momentum);
             const f64x2 neg_lr_grad = f64x2::neg(lr_grad);
-            v                      = f64x2::add(mom_v, neg_lr_grad);
-            p_value                = f64x2::add(p_value, v);
+            v                       = f64x2::add(mom_v, neg_lr_grad);
+            p_value                 = f64x2::add(p_value, v);
         }
     }
 
@@ -82,8 +82,8 @@ private:
     f64                m_weight_decay;
     long long          m_t;
 
-    std::vector<f64>  m_m;
-    std::vector<f64>  m_v;
+    std::vector<f64>   m_m;
+    std::vector<f64>   m_v;
     std::vector<f64x2> m_pair_m;
     std::vector<f64x2> m_pair_v;
 
@@ -151,11 +151,11 @@ public:
 
             const f64x2 m_scaled = f64x2::mul_scalar(m, m_beta1);
             const f64x2 g_scaled = f64x2::mul_scalar(g, (1.0 - m_beta1));
-            m                   = f64x2::add(m_scaled, g_scaled);
+            m                    = f64x2::add(m_scaled, g_scaled);
 
             const f64x2 v_scaled  = f64x2::mul_scalar(v, m_beta2);
             const f64x2 g2_scaled = f64x2::mul_scalar(g2, (1.0 - m_beta2));
-            v                    = f64x2::add(v_scaled, g2_scaled);
+            v                     = f64x2::add(v_scaled, g2_scaled);
 
             const f64x2 m_hat = f64x2::mul_scalar(m, inv1mb1t);
             const f64x2 v_hat = f64x2::mul_scalar(v, inv1mb2t);
