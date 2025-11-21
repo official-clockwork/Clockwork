@@ -6,8 +6,8 @@
 
 namespace Clockwork::Autograd {
 
-// A simple contiguous storage for types T.
-// Returns indices (handles) instead of pointers.
+/// ARENA IMPLEMENTATION \\\
+// Simple vector-based arena for storing values and pairs. Surely can be done better. Kek.
 template<typename T>
 class Arena {
 private:
@@ -21,7 +21,8 @@ public:
         return idx;
     }
 
-    // Emplace version
+    // Emplace version we might want later for ops that return many values? 
+    // Might be seeing things.
     template<typename... Args>
     u32 emplace(Args&&... args) {
         u32 idx = static_cast<u32>(m_data.size());
@@ -44,23 +45,17 @@ public:
         return m_data.size();
     }
 
-    // Resets the arena size, effectively clearing it.
-    // Note: Does not free memory (capacity remains) to reduce allocations next cycle.
+    // Common std::vector W
     void clear() {
         m_data.clear();
     }
 
-    // Keeps the first `n` elements, effectively clearing the rest.
-    // Useful for keeping parameters which are at the start of the arena.
     void reset_to(usize n) {
         if (n < m_data.size()) {
             m_data.resize(n);
         }
     }
 
-    std::vector<T>& raw() {
-        return m_data;
-    }
 };
 
 }  // namespace Clockwork::Autograd

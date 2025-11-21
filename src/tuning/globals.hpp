@@ -154,33 +154,5 @@ inline bool Globals::is_pair_parameter_constant(usize i) const {
     return m_pair_parameters[i]->constant();
 }
 
-// --- Helper Operators for Placeholders ---
-// These allow Placeholders to be used directly in arithmetic expressions by implicit conversion to Handles.
-
-inline ValueHandle operator-(ValuePlaceholder a) {
-    return -static_cast<ValueHandle>(a);
-}
-inline ValueHandle operator+(ValuePlaceholder a, ValuePlaceholder b) {
-    return static_cast<ValueHandle>(a) + static_cast<ValueHandle>(b);
-}
-inline ValueHandle operator-(ValuePlaceholder a, ValuePlaceholder b) {
-    return static_cast<ValueHandle>(a) - static_cast<ValueHandle>(b);
-}
-inline ValueHandle operator*(ValuePlaceholder a, i32 b) {
-    return static_cast<ValueHandle>(a) * static_cast<f64>(b);
-}
-inline ValueHandle operator/(ValuePlaceholder a, i32 b) {
-    return static_cast<ValueHandle>(a) / static_cast<f64>(b);
-}
-
-inline PairHandle operator-(PairPlaceholder a) {
-    return -static_cast<PairHandle>(a);
-}
-inline PairHandle operator+(PairPlaceholder a, PairPlaceholder b) {
-    return static_cast<PairHandle>(a) + static_cast<PairHandle>(b);
-}
-inline PairHandle operator-(PairPlaceholder a, PairPlaceholder b) {
-    return static_cast<PairHandle>(a) - static_cast<PairHandle>(b);
-}
 
 }  // namespace Clockwork::Autograd

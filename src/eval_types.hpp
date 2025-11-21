@@ -109,8 +109,8 @@ using PParam = PScore;
 // ============================================================================
 
 using Score  = Autograd::ValueHandle;
-using PScore = Autograd::PairHandle;  // (mg, eg) handle
-using PParam = Autograd::PairHandle;  // tunable pair
+using PScore = Autograd::PairHandle;
+using PParam = Autograd::PairPlaceholder; // Handle for the TUNABLE parameter
 
 #endif
 
@@ -123,16 +123,20 @@ using PParam = Autograd::PairHandle;  // tunable pair
     // Tunable scalar pair (mg, eg)
     #define S(a, b) Autograd::PairPlaceholder::create_tunable((a), (b))
 
-    // Constant (fixed) scalar pair (mg, eg)
+    // Constant scalar pair (mg, eg)
     #define CS(a, b) Autograd::PairPlaceholder::create((a), (b))
 
-    // Zero pair
-    #define PSCORE_ZERO Autograd::PairPlaceholder::create(0, 0)
+    // Zero pair FOR PARAMETERS (e.g., in an array)
+    #define PPARAM_ZERO Autograd::PairPlaceholder::create(0, 0)
+
+    // Zero pair FOR INTERMEDIATES (e.g., scores)
+    #define PSCORE_ZERO Autograd::PairHandle::create(0, 0)
 
 #else
-    // Non-tuning build: use fixed, non-autograd PScore
+    // ... (non-tuning definitions) ...
     #define S(a, b) PScore((a), (b))
     #define CS(a, b) PScore((a), (b))
+    #define PPARAM_ZERO PScore(0, 0)
     #define PSCORE_ZERO PScore(0, 0)
 #endif
 

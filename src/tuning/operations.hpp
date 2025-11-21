@@ -5,19 +5,19 @@
 namespace Clockwork::Autograd {
 
 enum class OpType : u8 {
-    // --- Leaf / Special ---
+    // Leaf nodes
     None,
     Parameter,  // Created from a global parameter
     Input,      // Created manually (e.g. from data)
 
-    // --- Value Binary Ops ---
+    // Binary Ops
     Add,
     Sub,
     Mul,
     Div,
     Pow,
 
-    // --- Value Unary Ops ---
+    // Unary Ops
     Exp,
     Log,
     Sigmoid,
@@ -54,8 +54,7 @@ enum class OpType : u8 {
     Sum  // Sum of a vector of values
 };
 
-// A single node in the compute tape.
-// Designed to be compact and fit in cache lines.
+// A single node in the compute tape. Probably can be rewritten more compactly.
 struct Node {
     OpType type;
 
@@ -65,13 +64,6 @@ struct Node {
 
     // Auxiliary data for scalar ops, constants, or specific parameters
     f64 scalar_data;
-
-    // Helper to handle the "Reduction" case (Sum) where we have >2 inputs.
-    // In a pure tape, we might handle Sum by chaining Adds, or storing an index
-    // to a side-table of indices. For simplicity/speed in this specific codebase,
-    // we can implement Sum as a sequence of Adds or use a special range.
-    // For now, we will implement Sum as a chain of binary adds in the graph
-    // builder to keep the Node struct fixed-size and simple.
 };
 
 }  // namespace Clockwork::Autograd

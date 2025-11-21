@@ -39,7 +39,7 @@ int main() {
       "data/dfrcv1.txt", "data/dfrcv0.txt", "data/v2.2.txt", "data/v2.1.txt", "data/v3.txt",
     };
 
-    const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
+    const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency());
 
     std::cout << "Running on " << thread_count << " threads\n";
 
@@ -94,8 +94,13 @@ int main() {
 
     const ParameterCountInfo parameter_count = Globals::get().get_parameter_counts();
 
+    // This line loads the defaults from your S() macros
     Parameters current_parameter_values = Graph::get().get_all_parameter_values();
 
+    // Uncomment for zero tune: Overwrite them all with zeros.
+    current_parameter_values = Parameters::zeros(parameter_count);
+
+    // The optimizer will now start with all-zero parameters
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 
     const i32    epochs     = 1000;
@@ -206,7 +211,7 @@ int main() {
 
         // Dump current parameter values
         Graph::get().copy_parameter_values(current_parameter_values);
-        
+
         Graph::get().cleanup();
         Graph::get().zero_grad();
 
