@@ -97,7 +97,7 @@ int main() {
     // The optimizer will now start with all-zero parameters
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 
-    const i32    epochs     = 1000;
+    const i32    epochs     = 8;
     const f64    K          = 1.0 / 400;
     const size_t batch_size = 16 * 16384;
 
