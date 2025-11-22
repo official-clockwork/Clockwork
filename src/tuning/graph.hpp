@@ -38,9 +38,9 @@ public:
     // Operation recording
     ValueHandle record_op(OpType op, ValueHandle lhs, ValueHandle rhs);
     ValueHandle record_op(OpType op, ValueHandle input, f64 scalar = 0.0);
-    PairHandle record_pair_op(OpType op, PairHandle lhs, PairHandle rhs);
-    PairHandle record_pair_scalar(OpType op, PairHandle input, f64 scalar);
-    PairHandle record_pair_value(OpType op, PairHandle pair, ValueHandle val);
+    PairHandle  record_pair_op(OpType op, PairHandle lhs, PairHandle rhs);
+    PairHandle  record_pair_scalar(OpType op, PairHandle input, f64 scalar);
+    PairHandle  record_pair_value(OpType op, PairHandle pair, ValueHandle val);
 
     ValueHandle record_phase(PairHandle input, f64 alpha);
 

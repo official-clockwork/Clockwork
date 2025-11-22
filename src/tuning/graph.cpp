@@ -36,7 +36,7 @@ PairHandle Graph::create_pair(f64x2 data) {
 // Recording
 
 ValueHandle Graph::record_op(OpType op, ValueHandle lhs, ValueHandle rhs) {
-    u32 out = m_values.alloc_uninitialized();
+    u32 out = m_values.next_index();
     f64 l   = m_values.val(lhs.index);
     f64 r   = m_values.val(rhs.index);
     f64 res = 0.0;
@@ -60,13 +60,14 @@ ValueHandle Graph::record_op(OpType op, ValueHandle lhs, ValueHandle rhs) {
     default:
         break;
     }
-    m_values.val(out) = res;
+
+    m_values.alloc(res, 0.0);
     m_tape.push_back({op, out, lhs.index, rhs.index, 0.0});
     return ValueHandle(out);
 }
 
 ValueHandle Graph::record_op(OpType op, ValueHandle input, f64 scalar) {
-    u32 out = m_values.alloc_uninitialized();
+    u32 out = m_values.next_index();
     f64 l   = m_values.val(input.index);
     f64 res = 0.0;
 
@@ -107,13 +108,14 @@ ValueHandle Graph::record_op(OpType op, ValueHandle input, f64 scalar) {
     default:
         break;
     }
-    m_values.val(out) = res;
+
+    m_values.alloc(res, 0.0);
     m_tape.push_back({op, out, input.index, 0, scalar});
     return ValueHandle(out);
 }
 
 PairHandle Graph::record_pair_op(OpType op, PairHandle lhs, PairHandle rhs) {
-    u32   out = m_pairs.alloc_uninitialized();
+    u32   out = m_pairs.next_index();
     f64   l0  = m_pairs.p0_ref(lhs.index);
     f64   l1  = m_pairs.p1_ref(lhs.index);
     f64   r0  = m_pairs.p0_ref(rhs.index);
@@ -131,14 +133,13 @@ PairHandle Graph::record_pair_op(OpType op, PairHandle lhs, PairHandle rhs) {
         break;
     }
 
-    m_pairs.p0_mut(out) = res.first();
-    m_pairs.p1_mut(out) = res.second();
+    m_pairs.alloc(res, f64x2::zero());
     m_tape.push_back({op, out, lhs.index, rhs.index, 0.0});
     return PairHandle(out);
 }
 
 PairHandle Graph::record_pair_scalar(OpType op, PairHandle input, f64 scalar) {
-    u32   out = m_pairs.alloc_uninitialized();
+    u32   out = m_pairs.next_index();
     f64   l0  = m_pairs.p0_ref(input.index);
     f64   l1  = m_pairs.p1_ref(input.index);
     f64x2 res = f64x2::zero();
@@ -160,14 +161,13 @@ PairHandle Graph::record_pair_scalar(OpType op, PairHandle input, f64 scalar) {
         break;
     }
 
-    m_pairs.p0_mut(out) = res.first();
-    m_pairs.p1_mut(out) = res.second();
+    m_pairs.alloc(res, f64x2::zero());
     m_tape.push_back({op, out, input.index, 0, scalar});
     return PairHandle(out);
 }
 
 PairHandle Graph::record_pair_value(OpType op, PairHandle pair, ValueHandle val) {
-    u32   out = m_pairs.alloc_uninitialized();
+    u32   out = m_pairs.next_index();
     f64   p0  = m_pairs.p0_ref(pair.index);
     f64   p1  = m_pairs.p1_ref(pair.index);
     f64   v   = m_values.val(val.index);
@@ -187,19 +187,20 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle pair, ValueHandle val)
     default:
         break;
     }
-    m_pairs.p0_mut(out) = res.first();
-    m_pairs.p1_mut(out) = res.second();
+
+    m_pairs.alloc(res, f64x2::zero());
     m_tape.push_back({op, out, pair.index, val.index, 0.0});
     return PairHandle(out);
 }
 
 ValueHandle Graph::record_phase(PairHandle input, f64 alpha) {
-    u32 out = m_values.alloc_uninitialized();
+    u32 out = m_values.next_index();
     f64 p0  = m_pairs.p0_ref(input.index);
     f64 p1  = m_pairs.p1_ref(input.index);
 
-    f64 val           = alpha * p0 + (1.0 - alpha) * p1;
-    m_values.val(out) = val;
+    f64 val = alpha * p0 + (1.0 - alpha) * p1;
+
+    m_values.alloc(val, 0.0);
     m_tape.push_back({OpType::Phase, out, input.index, 0, alpha});
     return ValueHandle(out);
 }

@@ -30,6 +30,10 @@ public:
         return idx;
     }
 
+    inline u32 next_index() const {
+        return static_cast<u32>(values.size()); 
+    }
+
     // Mutating accessors
     inline f64& val(u32 i) {
         assert(i < values.size());
@@ -112,6 +116,10 @@ public:
         g0.push_back(0.0);
         g1.push_back(0.0);
         return idx;
+    }
+
+    inline u32 next_index() const {
+        return static_cast<u32>(p0.size());
     }
 
     // Mutating accessors
