@@ -1,5 +1,6 @@
 #include "tuning/graph.hpp"
 #include "tuning/globals.hpp"
+#include "util/types.hpp"
 #include <cmath>
 
 namespace Clockwork::Autograd {
@@ -215,9 +216,9 @@ void Graph::backward() {
     if (m_tape.empty()) {
         return;
     }
-    
 
     // Initialize gradient of last output to 1
+    // (This assumes the final output is always a ValueHandle)
     m_values.grad(m_tape.back().out()) = 1.0;
 
     f64*   vals       = m_values.values_data();
@@ -228,175 +229,191 @@ void Graph::backward() {
     for (auto it = m_tape.rbegin(); it != m_tape.rend(); ++it) {
         const Node& node = *it;
 
-        const u32 out_idx  = node.out();
-        const f64      grad_out = grads[out_idx];
+        const u32 out_idx = node.out();
 
         switch (node.type) {
         // Value-Binary
 
-        case OpType::Add:
+        case OpType::Add: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] += grad_out;
             grads[node.rhs()] += grad_out;
             break;
-
-        case OpType::Sub:
+        }
+        case OpType::Sub: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] += grad_out;
             grads[node.rhs()] -= grad_out;
             break;
-
+        }
         case OpType::Mul: {
-            f64 l = vals[node.lhs()];
-            f64 r = vals[node.rhs()];
+            const f64 grad_out = grads[out_idx];
+            f64       l        = vals[node.lhs()];
+            f64       r        = vals[node.rhs()];
             grads[node.lhs()] += r * grad_out;
             grads[node.rhs()] += l * grad_out;
             break;
         }
-
         case OpType::Div: {
-            f64 l = vals[node.lhs()];
-            f64 r = vals[node.rhs()];
+            const f64 grad_out = grads[out_idx];
+            f64       l        = vals[node.lhs()];
+            f64       r        = vals[node.rhs()];
             grads[node.lhs()] += grad_out / r;
             grads[node.rhs()] += -l * grad_out / (r * r);
             break;
         }
-
         case OpType::Pow: {
-            f64 base = vals[node.lhs()];
-            f64 exp  = vals[node.rhs()];
+            const f64 grad_out = grads[out_idx];
+            f64       base     = vals[node.lhs()];
+            f64       exp      = vals[node.rhs()];
             grads[node.lhs()] += exp * std::pow(base, exp - 1) * grad_out;
             grads[node.rhs()] += std::pow(base, exp) * std::log(base) * grad_out;
             break;
         }
 
         // Value-Scalar
-        case OpType::Exp:
+        case OpType::Exp: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] += vals[out_idx] * grad_out;
             break;
-
-        case OpType::Log:
+        }
+        case OpType::Log: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] += grad_out / vals[node.lhs()];
             break;
-
+        }
         case OpType::Sigmoid: {
-            f64 s = vals[out_idx];
+            const f64 grad_out = grads[out_idx];
+            f64       s        = vals[out_idx];
             grads[node.lhs()] += s * (1.0 - s) * grad_out;
             break;
         }
-
-        case OpType::Neg:
+        case OpType::Neg: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] -= grad_out;
             break;
-
+        }
         case OpType::PowConst: {
-            f64 l   = vals[node.lhs()];
-            f64 exp = node.scalar();
+            const f64 grad_out = grads[out_idx];
+            f64       l        = vals[node.lhs()];
+            f64       exp      = node.scalar();
             grads[node.lhs()] += exp * std::pow(l, exp - 1.0) * grad_out;
             break;
         }
-
         case OpType::AddScalar:
-        case OpType::SubScalarVal:
-        case OpType::ValSubScalar:
+        case OpType::ValSubScalar: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] += grad_out;
             break;
-
-        case OpType::MulScalar:
+        }
+        
+        case OpType::SubScalarVal: {
+            const f64 grad_out = grads[out_idx];
+            grads[node.lhs()] -= grad_out;
+            break;
+        }
+        case OpType::MulScalar: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] += node.scalar() * grad_out;
             break;
-
-        case OpType::ValDivScalar:
+        }
+        case OpType::ValDivScalar: {
+            const f64 grad_out = grads[out_idx];
             grads[node.lhs()] += grad_out / node.scalar();
             break;
-
+        }
         case OpType::DivScalarVal: {
-            f64 l = vals[node.lhs()];
+            const f64 grad_out = grads[out_idx];
+            f64       l        = vals[node.lhs()];
             grads[node.lhs()] += -node.scalar() * grad_out / (l * l);
             break;
         }
-
-        // Pair-Binary
-        case OpType::PairAdd: {
-            f64x2 grad_pair        = f64x2::make(grad_out, grad_out);  // same grad applied to both
-            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_pair);
-            pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_pair);
-            break;
-        }
-
-        case OpType::PairSub: {
-            f64x2 grad_pair        = f64x2::make(grad_out, grad_out);
-            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_pair);
-            pair_grads[node.rhs()] = f64x2::sub(pair_grads[node.rhs()], grad_pair);
-            break;
-        }
-
-        case OpType::PairNeg:
-            pair_grads[node.lhs()] =
-              f64x2::sub(pair_grads[node.lhs()], f64x2::make(grad_out, grad_out));
-            break;
-
-        // Pair-Scalar
-        case OpType::PairMulScalar: {
-            f64x2 scaled = f64x2::mul_scalar(f64x2::make(grad_out, grad_out), node.scalar());
-            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], scaled);
-            break;
-        }
-
-        case OpType::PairDivScalar: {
-            f64x2 scaled = f64x2::div_scalar(f64x2::make(grad_out, grad_out), node.scalar());
-            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], scaled);
-            break;
-        }
-
-        case OpType::ScalarDivPair: {
-            f64x2 val              = pair_vals[node.lhs()];
-            f64x2 grad             = f64x2::scalar_div(-node.scalar(), f64x2::mul(val, val));
-            f64x2 update           = f64x2::mul(grad, f64x2::make(grad_out, grad_out));
+        case OpType::Phase: {
+            const f64 grad_out = grads[out_idx];
+            f64x2 update = f64x2::make(node.scalar() * grad_out, (1.0 - node.scalar()) * grad_out);
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
             break;
         }
 
-        // Pair-Value
+        case OpType::PairAdd: {
+            const f64x2 grad_out   = pair_grads[out_idx];
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_out);
+            pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_out);
+            break;
+        }
+        case OpType::PairSub: {
+            const f64x2 grad_out   = pair_grads[out_idx];
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_out);
+            pair_grads[node.rhs()] = f64x2::sub(pair_grads[node.rhs()], grad_out);
+            break;
+        }
+        case OpType::PairNeg: {
+            const f64x2 grad_out   = pair_grads[out_idx];
+            pair_grads[node.lhs()] = f64x2::sub(pair_grads[node.lhs()], grad_out);
+            break;
+        }
+        case OpType::PairMulScalar: {
+            const f64x2 grad_out   = pair_grads[out_idx];
+            f64x2       scaled     = f64x2::mul_scalar(grad_out, node.scalar());
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], scaled);
+            break;
+        }
+        case OpType::PairDivScalar: {
+            const f64x2 grad_out   = pair_grads[out_idx];
+            f64x2       scaled     = f64x2::div_scalar(grad_out, node.scalar());
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], scaled);
+            break;
+        }
+        case OpType::ScalarDivPair: {
+            const f64x2 grad_out   = pair_grads[out_idx];
+            f64x2       val        = pair_vals[node.lhs()];
+            f64x2       grad       = f64x2::scalar_div(-node.scalar(), f64x2::mul(val, val));
+            f64x2       update     = f64x2::mul(grad, grad_out);
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
+            break;
+        }
         case OpType::PairMulValue:
         case OpType::ValueMulPair: {
-            f64x2 grad_pair = f64x2::mul_scalar(f64x2::make(grad_out, grad_out), vals[node.rhs()]);
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64         val_rhs  = vals[node.rhs()];
+            f64x2       val_lhs  = pair_vals[node.lhs()];
+
+            f64x2 grad_pair        = f64x2::mul_scalar(grad_out, val_rhs);
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_pair);
 
-            f64 contrib =
-              pair_vals[node.lhs()].first() * grad_out + pair_vals[node.lhs()].second() * grad_out;
+            f64 contrib = grad_out.first() * val_lhs.first() + grad_out.second() * val_lhs.second();
             grads[node.rhs()] += contrib;
             break;
         }
-
         case OpType::PairDivValue: {
-            f64x2 grad_pair = f64x2::div_scalar(f64x2::make(grad_out, grad_out), vals[node.rhs()]);
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64         val_rhs  = vals[node.rhs()];
+            f64x2       val_lhs  = pair_vals[node.lhs()];
+
+            f64x2 grad_pair        = f64x2::div_scalar(grad_out, val_rhs);
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_pair);
 
-            f64 num =
-              pair_vals[node.lhs()].first() * grad_out + pair_vals[node.lhs()].second() * grad_out;
-            grads[node.rhs()] += -num / (vals[node.rhs()] * vals[node.rhs()]);
+            f64 num = grad_out.first() * val_lhs.first() + grad_out.second() * val_lhs.second();
+            grads[node.rhs()] += -num / (val_rhs * val_rhs);
             break;
         }
-
         case OpType::ValueDivPair: {
-            f64x2 val              = pair_vals[node.lhs()];
-            f64x2 grad_pair        = f64x2::scalar_div(-vals[node.rhs()], f64x2::mul(val, val));
-            f64x2 update           = f64x2::mul(grad_pair, f64x2::make(grad_out, grad_out));
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64         val_rhs  = vals[node.rhs()];
+            f64x2       val_lhs  = pair_vals[node.lhs()];
+
+            f64x2 grad_pair        = f64x2::scalar_div(-val_rhs, f64x2::mul(val_lhs, val_lhs));
+            f64x2 update           = f64x2::mul(grad_pair, grad_out);
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
 
-            f64x2 recip = f64x2::scalar_div(1.0, val);
-            grads[node.rhs()] += grad_out * (recip.first() + recip.second());
-            break;
-        }
-
-        // Phase ops
-        case OpType::Phase: {
-            f64x2 update =
-              f64x2::make(node.scalar() * grad_out, (1.0 - node.scalar()) * grad_out);
-            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
+            f64x2 recip = f64x2::scalar_div(1.0, val_lhs);
+            grads[node.rhs()] +=
+              grad_out.first() * recip.first() + grad_out.second() * recip.second();
             break;
         }
 
         default:
+        unreachable();
             break;
         }
     }
