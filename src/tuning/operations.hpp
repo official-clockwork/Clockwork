@@ -62,7 +62,7 @@ enum class OpType : u8 {
 // [0..3]  : type (1), pad (1), lhs_offset (2)   -> 4 bytes
 // [4..7]  : output_idx                            -> 4 bytes
 // [8..15] : union { struct { u16 rhs_offset; u16 pad2; u32 pad3; } ; double scalar; } -> 8 bytes
-struct alignas(8) Node {
+struct alignas(16) Node {
     using u8  = uint8_t;
     using u16 = uint16_t;
     using u32 = uint32_t;
@@ -129,7 +129,7 @@ struct alignas(8) Node {
 };
 
 static_assert(sizeof(Node) == 16, "Node must be exactly 16 bytes");
-static_assert(alignof(Node) == alignof(double),
+static_assert(alignof(Node) == 16,
               "Node alignment must match double alignment (8 bytes)");
 static_assert(offsetof(Node, u) == 8, "Union must begin at offset 8 to keep double aligned.");
 
