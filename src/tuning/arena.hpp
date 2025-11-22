@@ -16,14 +16,14 @@ public:
         gradients.reserve(n);
     }
 
-    u32 alloc(f64 value, f64 grad = 0.0) {
+    inline u32 alloc(f64 value, f64 grad = 0.0) {
         u32 idx = static_cast<u32>(values.size());
         values.push_back(value);
         gradients.push_back(grad);
         return idx;
     }
 
-    u32 alloc_uninitialized() {
+    inline u32 alloc_uninitialized() {
         u32 idx = static_cast<u32>(values.size());
         values.push_back(0.0);
         gradients.push_back(0.0);
@@ -97,14 +97,14 @@ public:
         gradients.reserve(n);
     }
 
-    u32 alloc(f64x2 v, f64x2 g = f64x2::zero()) {
+    inline u32 alloc(f64x2 v, f64x2 g = f64x2::zero()) {
         u32 idx = static_cast<u32>(values.size());
         values.push_back(v);
         gradients.push_back(g);
         return idx;
     }
 
-    u32 alloc_uninitialized() {
+    inline u32 alloc_uninitialized() {
         u32 idx = static_cast<u32>(values.size());
         values.push_back(f64x2::zero());
         gradients.push_back(f64x2::zero());
