@@ -81,18 +81,6 @@ public:
     f64* gradients_data() {
         return m_values.gradients_data();
     }
-    f64* p0_data() {
-        return m_pairs.p0_data();
-    }
-    f64* p1_data() {
-        return m_pairs.p1_data();
-    }
-    f64* g0_data() {
-        return m_pairs.g0_data();
-    }
-    f64* g1_data() {
-        return m_pairs.g1_data();
-    }
 
     ValueHandle get_parameter(usize global_index) const {
         return ValueHandle(static_cast<u32>(global_index));
