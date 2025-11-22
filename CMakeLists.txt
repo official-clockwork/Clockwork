@@ -73,9 +73,13 @@ function(target_add_flags target)
     target_link_libraries(${target} PUBLIC git_hash lps)
 
     # LTO
+    message(STATUS "LTO is set to: ${lto}")
+    # LTO
     if (lto)
         set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
+
+    
 
 endfunction()
 

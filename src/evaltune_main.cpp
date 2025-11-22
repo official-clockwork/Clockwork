@@ -200,7 +200,8 @@ int main() {
 
         Graph::get().cleanup();
         Graph::get().zero_grad();
-
+#define PROFILE_RUN
+#ifndef PROFILE_RUN
         std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
         std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
         std::cout << "inline const PParam BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
@@ -327,7 +328,7 @@ int main() {
         printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
         printPsqtArray("KING_PSQT", KING_PSQT);
         std::cout << std::endl;
-
+#endif
         const auto end = time::Clock::now();
         std::cout << "// Epoch duration: " << time::cast<time::FloatSeconds>(end - start).count()
                   << "s\n";

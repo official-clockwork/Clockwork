@@ -25,11 +25,6 @@ Graph::Graph() {
     }
 }
 
-Graph& Graph::get() {
-    thread_local Graph instance;
-    return instance;
-}
-
 ValueHandle Graph::create_value(f64 data) {
     return ValueHandle(m_values.alloc(data, 0.0));
 }

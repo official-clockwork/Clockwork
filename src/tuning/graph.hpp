@@ -26,7 +26,10 @@ private:
     Graph();
 
 public:
-    static Graph& get();
+    inline static Graph& get() {
+        thread_local Graph instance;
+        return instance;
+    }
 
     // Creation
     ValueHandle create_value(f64 data);
