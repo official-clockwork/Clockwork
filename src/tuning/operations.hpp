@@ -1,6 +1,9 @@
 #pragma once
 
 #include "util/types.hpp"
+#include "value.hpp"
+#include <variant>
+#include <cassert>
 
 namespace Clockwork::Autograd {
 
@@ -54,16 +57,80 @@ enum class OpType : u8 {
     Sum  // Sum of a vector of values
 };
 
-// A single node in the compute tape. Probably can be rewritten more compactly.
-struct Node {
-    OpType type;  // This tells us which arenas to look at and how to interpret lhs/rhs
 
-    u32 output_idx;  // Index in the respective arena (Value or Pair)
-    u32 lhs_idx;     // Index of first operand
-    u32 rhs_idx;     // Index of second operand (if applicable)
+// Node layout (16 bytes):
+// [0..3]  : type (1), pad (1), lhs_offset (2)   -> 4 bytes
+// [4..7]  : output_idx                            -> 4 bytes
+// [8..15] : union { struct { u16 rhs_offset; u16 pad2; u32 pad3; } ; double scalar; } -> 8 bytes
+struct alignas(8) Node {
+    using u8  = uint8_t;
+    using u16 = uint16_t;
+    using u32 = uint32_t;
+    using f64 = double;
 
-    // Auxiliary data for scalar ops, constants, or specific parameters.
-    f64 scalar_data;
+    OpType type;  // u8
+    u8     pad;   // required to align lhs_offset
+    u16    lhs_offset;
+    u32    output_idx;
+
+    union U {
+        u16 rhs_offset;   // for unary/binary ops
+        f64 scalar_data;  // for scalar ops
+
+        constexpr U() :
+            rhs_offset(0) {
+        }
+        constexpr U(u16 rhs) :
+            rhs_offset(rhs) {
+        }
+        constexpr U(f64 scalar) :
+            scalar_data(scalar) {
+        }
+    } u;
+
+    static constexpr Node make_binary(OpType t, u32 output_idx, u32 lhs_idx, u32 rhs_idx) {
+        Node n{};
+        n.type = t;
+        n.pad  = 0;
+
+        // lhs & rhs indices are guaranteed to be <= out
+        n.lhs_offset   = static_cast<u16>(output_idx - lhs_idx);
+        n.output_idx   = output_idx;
+        n.u.rhs_offset = static_cast<u16>(output_idx - rhs_idx);
+
+        return n;
+    }
+
+    static constexpr Node make_scalar(OpType t, u32 output_idx, u32 lhs_idx, f64 scalar) {
+        Node n{};
+        n.type          = t;
+        n.pad           = 0;
+        n.lhs_offset    = static_cast<u16>(output_idx - lhs_idx);
+        n.output_idx    = output_idx;
+        n.u.scalar_data = scalar;
+        return n;
+    }
+
+    constexpr u32 lhs() const noexcept {
+        return output_idx - lhs_offset;
+    }
+
+    constexpr u32 rhs() const noexcept {
+        return output_idx - u.rhs_offset;
+    }
+
+    constexpr u32 out() const noexcept {
+        return output_idx;
+    }
+
+    constexpr f64 scalar() const noexcept {
+        return u.scalar_data;
+    }
 };
+
+static_assert(sizeof(Node) == 16, "Node must be exactly 16 bytes");
+static_assert(alignof(Node) == alignof(double),
+              "Node alignment must match double alignment (8 bytes)");
+static_assert(offsetof(Node, u) == 8, "Union must begin at offset 8 to keep double aligned.");
 
 }  // namespace Clockwork::Autograd
