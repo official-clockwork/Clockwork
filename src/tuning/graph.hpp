@@ -11,26 +11,15 @@
 
 namespace Clockwork::Autograd {
 
-struct ValueData {
-    f64 value;
-    f64 gradient;
-};
-
-struct PairData {
-    f64x2 values;
-    f64x2 gradients;
-};
-
 class Graph {
 private:
-    // Storage
-    Arena<ValueData> m_values;
-    Arena<PairData>  m_pairs;
+    ValueArena m_values;
+    PairArena  m_pairs;
 
     // Tape (Linear record of operations)
     std::vector<Node> m_tape;
 
-    // Counts of global parameters (they sit at the start of the arenas)
+    // Counts of global parameters
     usize m_global_param_count = 0;
     usize m_global_pair_count  = 0;
 
@@ -43,20 +32,13 @@ public:
     ValueHandle create_value(f64 data);
     PairHandle  create_pair(f64x2 data);
 
-    // Operation recording stuff
-
-    // Value-Value Binary
+    // Operation recording
     ValueHandle record_op(OpType op, ValueHandle lhs, ValueHandle rhs);
-    // Value Unary / Scalar
     ValueHandle record_op(OpType op, ValueHandle input, f64 scalar = 0.0);
-    // Pair-Pair Binary
     PairHandle record_pair_op(OpType op, PairHandle lhs, PairHandle rhs);
-    // Pair-Scalar
     PairHandle record_pair_scalar(OpType op, PairHandle input, f64 scalar);
-    // Pair-Value
     PairHandle record_pair_value(OpType op, PairHandle pair, ValueHandle val);
 
-    // Handling phasing separately due to its unique nature, probably can be done better
     ValueHandle record_phase(PairHandle input, f64 alpha);
 
     void backward();
@@ -67,19 +49,46 @@ public:
     Parameters get_all_parameter_values() const;
     Parameters get_all_parameter_gradients() const;
 
-    // Accessors for Handles
-    ValueData& get_value_data(ValueHandle h) {
-        return m_values[h.index];
+    void add_value_gradient(u32 idx, f64 delta);
+    void set_value(u32 idx, f64 v);
+    void zero_value_grad(u32 idx);
+
+    void set_pair_values(u32 idx, const f64x2& v);
+    void zero_pair_grad(u32 idx);
+
+    // Direct SoA accessors
+    f64 get_value(u32 idx) const {
+        return m_values.val(idx);
     }
-    const ValueData& get_value_data(ValueHandle h) const {
-        return m_values[h.index];
+    f64 get_gradient(u32 idx) const {
+        return m_values.grad(idx);
     }
 
-    PairData& get_pair_data(PairHandle h) {
-        return m_pairs[h.index];
+    f64x2 get_pair_values(u32 idx) const {
+        return f64x2::make(m_pairs.p0_ref(idx), m_pairs.p1_ref(idx));
     }
-    const PairData& get_pair_data(PairHandle h) const {
-        return m_pairs[h.index];
+    f64x2 get_pair_gradients(u32 idx) const {
+        return f64x2::make(m_pairs.g0_ref(idx), m_pairs.g1_ref(idx));
+    }
+
+    // Pointer accessors
+    f64* values_data() {
+        return m_values.values_data();
+    }
+    f64* gradients_data() {
+        return m_values.gradients_data();
+    }
+    f64* p0_data() {
+        return m_pairs.p0_data();
+    }
+    f64* p1_data() {
+        return m_pairs.p1_data();
+    }
+    f64* g0_data() {
+        return m_pairs.g0_data();
+    }
+    f64* g1_data() {
+        return m_pairs.g1_data();
     }
 
     ValueHandle get_parameter(usize global_index) const {

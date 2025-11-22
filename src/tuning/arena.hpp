@@ -1,4 +1,5 @@
 #pragma once
+#include "util/vec/sse2.hpp"
 
 #include "util/types.hpp"
 #include <cassert>
@@ -6,55 +7,199 @@
 
 namespace Clockwork::Autograd {
 
-/// ARENA IMPLEMENTATION \\\
-// Simple vector-based arena for storing values and pairs. Surely can be done better. Kek.
-template<typename T>
-class Arena {
-private:
-    std::vector<T> m_data;
-
+class ValueArena {
 public:
-    // Allocates a new slot and returns its index
-    u32 alloc(const T& initial_value) {
-        u32 idx = static_cast<u32>(m_data.size());
-        m_data.push_back(initial_value);
+    ValueArena() = default;
+
+    void reserve(usize n) {
+        values.reserve(n);
+        gradients.reserve(n);
+    }
+
+    u32 alloc(f64 value, f64 grad = 0.0) {
+        u32 idx = static_cast<u32>(values.size());
+        values.push_back(value);
+        gradients.push_back(grad);
         return idx;
     }
 
-    // Emplace version we might want later for ops that return many values?
-    // Might be seeing things.
-    template<typename... Args>
-    u32 emplace(Args&&... args) {
-        u32 idx = static_cast<u32>(m_data.size());
-        m_data.emplace_back(std::forward<Args>(args)...);
+    u32 alloc_uninitialized() {
+        u32 idx = static_cast<u32>(values.size());
+        values.push_back(0.0);
+        gradients.push_back(0.0);
         return idx;
     }
 
-    // Accessors
-    inline T& operator[](u32 index) {
-        assert(index < m_data.size());
-        return m_data[index];
+    // Mutating accessors
+    inline f64& val(u32 i) {
+        assert(i < values.size());
+        return values[i];
+    }
+    inline f64& grad(u32 i) {
+        assert(i < gradients.size());
+        return gradients[i];
     }
 
-    inline const T& operator[](u32 index) const {
-        assert(index < m_data.size());
-        return m_data[index];
+    // Const accessors
+    inline const f64& val(u32 i) const {
+        assert(i < values.size());
+        return values[i];
+    }
+    inline const f64& grad(u32 i) const {
+        assert(i < gradients.size());
+        return gradients[i];
     }
 
     inline usize size() const {
-        return m_data.size();
+        return values.size();
     }
 
-    // Common std::vector W
     void clear() {
-        m_data.clear();
+        values.clear();
+        gradients.clear();
     }
 
     void reset_to(usize n) {
-        if (n < m_data.size()) {
-            m_data.resize(n);
+        if (n < values.size()) {
+            values.resize(n);
+            gradients.resize(n);
         }
     }
+
+    inline f64* values_data() {
+        return values.data();
+    }
+    inline f64* gradients_data() {
+        return gradients.data();
+    }
+    inline const f64* values_data() const {
+        return values.data();
+    }
+    inline const f64* gradients_data() const {
+        return gradients.data();
+    }
+
+private:
+    std::vector<f64> values;
+    std::vector<f64> gradients;
+};
+
+
+class PairArena {
+public:
+    PairArena() = default;
+
+    void reserve(usize n) {
+        p0.reserve(n);
+        p1.reserve(n);
+        g0.reserve(n);
+        g1.reserve(n);
+    }
+
+    u32 alloc(f64x2 v, f64x2 g = f64x2::zero()) {
+        u32 idx = static_cast<u32>(p0.size());
+        p0.push_back(v.first());
+        p1.push_back(v.second());
+        g0.push_back(g.first());
+        g1.push_back(g.second());
+        return idx;
+    }
+
+    u32 alloc_uninitialized() {
+        u32 idx = static_cast<u32>(p0.size());
+        p0.push_back(0.0);
+        p1.push_back(0.0);
+        g0.push_back(0.0);
+        g1.push_back(0.0);
+        return idx;
+    }
+
+    // Mutating accessors
+    inline f64& p0_mut(u32 i) {
+        assert(i < p0.size());
+        return p0[i];
+    }
+    inline f64& p1_mut(u32 i) {
+        assert(i < p1.size());
+        return p1[i];
+    }
+    inline f64& g0_mut(u32 i) {
+        assert(i < g0.size());
+        return g0[i];
+    }
+    inline f64& g1_mut(u32 i) {
+        assert(i < g1.size());
+        return g1[i];
+    }
+
+    // Const accessors
+    inline const f64& p0_ref(u32 i) const {
+        assert(i < p0.size());
+        return p0[i];
+    }
+    inline const f64& p1_ref(u32 i) const {
+        assert(i < p1.size());
+        return p1[i];
+    }
+    inline const f64& g0_ref(u32 i) const {
+        assert(i < g0.size());
+        return g0[i];
+    }
+    inline const f64& g1_ref(u32 i) const {
+        assert(i < g1.size());
+        return g1[i];
+    }
+
+    inline usize size() const {
+        return p0.size();
+    }
+
+    void clear() {
+        p0.clear();
+        p1.clear();
+        g0.clear();
+        g1.clear();
+    }
+
+    void reset_to(usize n) {
+        if (n < p0.size()) {
+            p0.resize(n);
+            p1.resize(n);
+            g0.resize(n);
+            g1.resize(n);
+        }
+    }
+
+    inline f64* p0_data() {
+        return p0.data();
+    }
+    inline f64* p1_data() {
+        return p1.data();
+    }
+    inline f64* g0_data() {
+        return g0.data();
+    }
+    inline f64* g1_data() {
+        return g1.data();
+    }
+    inline const f64* p0_data() const {
+        return p0.data();
+    }
+    inline const f64* p1_data() const {
+        return p1.data();
+    }
+    inline const f64* g0_data() const {
+        return g0.data();
+    }
+    inline const f64* g1_data() const {
+        return g1.data();
+    }
+
+private:
+    std::vector<f64> p0;
+    std::vector<f64> p1;
+    std::vector<f64> g0;
+    std::vector<f64> g1;
 };
 
 }  // namespace Clockwork::Autograd

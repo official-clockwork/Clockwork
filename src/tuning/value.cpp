@@ -16,7 +16,6 @@ ValueHandle ValueHandle::sum(const std::vector<ValueHandle>& inputs) {
     if (inputs.empty()) {
         return ValueHandle::create(0.0);
     }
-    // Simple linear accumulation on the tape. I dropped the old optimized version for the arena rewrite, but its the top priority for future optimization.
     ValueHandle total = inputs[0];
     for (size_t i = 1; i < inputs.size(); ++i) {
         total = total + inputs[i];
@@ -42,27 +41,27 @@ ValueHandle ValueHandle::pow(f64 exponent) const {
 
 void ValueHandle::add_gradient(f64 rhs) const {
     if (is_valid()) {
-        Graph::get().get_value_data(*this).gradient += rhs;
+        Graph::get().add_value_gradient(index, rhs);
     }
 }
 
 f64 ValueHandle::get_value() const {
-    return is_valid() ? Graph::get().get_value_data(*this).value : 0.0;
+    return is_valid() ? Graph::get().get_value(index) : 0.0;
 }
 
 f64 ValueHandle::get_gradient() const {
-    return is_valid() ? Graph::get().get_value_data(*this).gradient : 0.0;
+    return is_valid() ? Graph::get().get_gradient(index) : 0.0;
 }
 
 void ValueHandle::zero_grad() const {
     if (is_valid()) {
-        Graph::get().get_value_data(*this).gradient = 0.0;
+        Graph::get().zero_value_grad(index);
     }
 }
 
 void ValueHandle::set_value(f64 v) const {
     if (is_valid()) {
-        Graph::get().get_value_data(*this).value = v;
+        Graph::get().set_value(index, v);
     }
 }
 
@@ -77,10 +76,10 @@ PairHandle PairHandle::create(const f64x2& values) {
 }
 
 f64x2 PairHandle::get_values() const {
-    return Graph::get().get_pair_data(*this).values;
+    return Graph::get().get_pair_values(index);
 }
 f64x2 PairHandle::get_gradients() const {
-    return Graph::get().get_pair_data(*this).gradients;
+    return Graph::get().get_pair_gradients(index);
 }
 f64 PairHandle::first() const {
     return get_values().first();
@@ -90,16 +89,15 @@ f64 PairHandle::second() const {
 }
 
 void PairHandle::set_values(const f64x2& v) const {
-    Graph::get().get_pair_data(*this).values = v;
+    Graph::get().set_pair_values(index, v);
 }
 void PairHandle::set_values(f64 f, f64 s) const {
     set_values(f64x2::make(f, s));
 }
 
 void PairHandle::zero_grad() const {
-    Graph::get().get_pair_data(*this).gradients = f64x2::zero();
+    Graph::get().zero_pair_grad(index);
 }
-
 
 // Special phasing case
 ValueHandle PairHandle::phase_impl(f64 scaled_alpha) const {
