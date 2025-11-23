@@ -38,9 +38,9 @@ PairHandle Graph::create_pair(f64x2 data) {
 
 ValueHandle Graph::record_op(OpType op, ValueHandle lhs, ValueHandle rhs) {
     ValueHandle out = m_values.next_handle();
-    f64   l   = m_values.val(lhs.index);
-    f64   r   = m_values.val(rhs.index);
-    f64   res = 0.0;
+    f64         l   = m_values.val(lhs.index);
+    f64         r   = m_values.val(rhs.index);
+    f64         res = 0.0;
 
     switch (op) {
     case OpType::Add:
@@ -71,8 +71,8 @@ ValueHandle Graph::record_op(OpType op, ValueHandle lhs, ValueHandle rhs) {
 
 ValueHandle Graph::record_op(OpType op, ValueHandle lhs, f64 scalar) {
     ValueHandle out = m_values.next_handle();
-    f64   l   = m_values.val(lhs.index);
-    f64   res = 0.0;
+    f64         l   = m_values.val(lhs.index);
+    f64         res = 0.0;
 
     switch (op) {
     case OpType::Exp:
@@ -121,9 +121,9 @@ ValueHandle Graph::record_op(OpType op, ValueHandle lhs, f64 scalar) {
 
 PairHandle Graph::record_pair_op(OpType op, PairHandle lhs, PairHandle rhs) {
     PairHandle out = m_pairs.next_handle();
-    f64x2    l   = m_pairs.val(lhs.index);
-    f64x2    r   = m_pairs.val(rhs.index);
-    f64x2    res = f64x2::zero();
+    f64x2      l   = m_pairs.val(lhs.index);
+    f64x2      r   = m_pairs.val(rhs.index);
+    f64x2      res = f64x2::zero();
 
     switch (op) {
     case OpType::PairAdd:
@@ -145,8 +145,8 @@ PairHandle Graph::record_pair_op(OpType op, PairHandle lhs, PairHandle rhs) {
 
 PairHandle Graph::record_pair_scalar(OpType op, PairHandle lhs, f64 scalar) {
     PairHandle out = m_pairs.next_handle();
-    f64x2    l   = m_pairs.val(lhs.index);
-    f64x2    res = f64x2::zero();
+    f64x2      l   = m_pairs.val(lhs.index);
+    f64x2      res = f64x2::zero();
 
     switch (op) {
     case OpType::PairNeg:
@@ -174,9 +174,9 @@ PairHandle Graph::record_pair_scalar(OpType op, PairHandle lhs, f64 scalar) {
 
 PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, ValueHandle rhs) {
     PairHandle out      = m_pairs.next_handle();
-    f64x2    pair_val = m_pairs.val(lhs.index);
-    f64   v        = m_values.val(rhs.index);
-    f64x2    res      = f64x2::zero();
+    f64x2      pair_val = m_pairs.val(lhs.index);
+    f64        v        = m_values.val(rhs.index);
+    f64x2      res      = f64x2::zero();
 
     switch (op) {
     case OpType::PairMulValue:
@@ -202,8 +202,8 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, ValueHandle rhs) 
 
 ValueHandle Graph::record_phase(PairHandle lhs, f64 alpha) {
     ValueHandle out      = m_values.next_handle();
-    f64x2    pair_val = m_pairs.val(lhs.index);
-    f64   val      = alpha * pair_val.first() + (1.0 - alpha) * pair_val.second();
+    f64x2       pair_val = m_pairs.val(lhs.index);
+    f64         val      = alpha * pair_val.first() + (1.0 - alpha) * pair_val.second();
 
     m_values.alloc(val, 0.0);
 
@@ -232,7 +232,7 @@ void Graph::backward() {
         const u32 out_idx = node.out();
 
         switch (node.type) {
-        // Value-Binary
+            // Value-Binary
 
         case OpType::Add: {
             const f64 grad_out = grads[out_idx];
@@ -306,7 +306,7 @@ void Graph::backward() {
             grads[node.lhs()] += grad_out;
             break;
         }
-        
+
         case OpType::SubScalarVal: {
             const f64 grad_out = grads[out_idx];
             grads[node.lhs()] -= grad_out;
@@ -413,7 +413,7 @@ void Graph::backward() {
         }
 
         default:
-        unreachable();
+            unreachable();
             break;
         }
     }

@@ -96,8 +96,11 @@ int main() {
 
     // The optimizer will now start with all-zero parameters
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
-
-    const i32    epochs     = 8;
+#ifdef PROFILE_RUN
+    const i32 epochs = 8;
+#else
+    const i32 epochs = 1000;
+#endif
     const f64    K          = 1.0 / 400;
     const size_t batch_size = 16 * 16384;
 
@@ -200,7 +203,6 @@ int main() {
 
         Graph::get().cleanup();
         Graph::get().zero_grad();
-#define PROFILE_RUN
 #ifndef PROFILE_RUN
         std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
         std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;

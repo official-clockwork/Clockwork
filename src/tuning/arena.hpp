@@ -1,7 +1,6 @@
 #pragma once
 #include "util/vec/sse2.hpp"
 #include "value.hpp"
-#include "value.hpp"
 
 #include "util/types.hpp"
 #include <cassert>
@@ -33,7 +32,7 @@ public:
     }
 
     inline u32 next_index() const {
-        return static_cast<u32>(values.size()); 
+        return static_cast<u32>(values.size());
     }
 
     inline ValueHandle next_handle() const {
