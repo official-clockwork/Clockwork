@@ -85,6 +85,8 @@ set(srcs
         src/bench.hpp
         src/board.cpp
         src/board.hpp
+        src/cuckoo.cpp
+        src/cuckoo.hpp
         src/common.hpp
         src/dbg_tools.cpp
         src/dbg_tools.hpp
