@@ -1,9 +1,8 @@
-#include "cuckoo.hpp"
 #include "bitboard.hpp"
+#include "cuckoo.hpp"
 #include "rays.hpp"
 #include "zobrist.hpp"
 #include <algorithm>
-#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -13,7 +12,6 @@ std::array<HashKey, Cuckoo::TABLE_SIZE> Cuckoo::keys{};
 std::array<Move, Cuckoo::TABLE_SIZE>    Cuckoo::moves{};
 
 // helper function to check if a piece of given type can attack from sq0 to sq1
-// sort of hate this, in viri i do this differently.
 static bool can_attack(PieceType ptype, Square sq0, Square sq1) {
     if (sq0 == sq1) {
         return false;
@@ -51,9 +49,6 @@ static bool can_attack(PieceType ptype, Square sq0, Square sq1) {
 }
 
 void Cuckoo::init() {
-    // std::cout << "Initializing cuckoo hash tables..." << std::endl;
-
-    // keep a tally of the table entries to sanity-check the initialization process.
     usize count = 0;
 
     std::vector<HashKey> temp_keys(TABLE_SIZE, 0);
@@ -98,13 +93,10 @@ void Cuckoo::init() {
         }
     }
 
-    // std::cout << "Inserted " << count << " entries into cuckoo hash table." << std::endl;
-
     assert(count == 3668);
 
     (void)count;
 
-    // woo C++ evil initialisation
     std::ranges::copy(temp_keys, keys.begin());
     std::ranges::copy(temp_moves, moves.begin());
 }
