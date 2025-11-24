@@ -1,5 +1,5 @@
-#include "bitboard.hpp"
 #include "cuckoo.hpp"
+#include "bitboard.hpp"
 #include "rays.hpp"
 #include "zobrist.hpp"
 #include <algorithm>
