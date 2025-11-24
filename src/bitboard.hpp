@@ -191,6 +191,9 @@ public:
     friend constexpr Bitboard operator|(Bitboard a, Bitboard b) {
         return Bitboard{a.m_raw | b.m_raw};
     }
+    friend constexpr Bitboard operator^(Bitboard a, Bitboard b) {
+        return Bitboard{a.m_raw ^ b.m_raw};
+    }
 
     friend constexpr Bitboard operator*(Bitboard a, Bitboard b) {
         return Bitboard{a.m_raw * b.m_raw};
@@ -208,6 +211,9 @@ public:
     }
     friend constexpr Bitboard& operator|=(Bitboard& a, Bitboard b) {
         return a = a | b;
+    }
+    friend constexpr Bitboard& operator^=(Bitboard& a, Bitboard b) {
+        return a = a ^ b;
     }
 
 private:

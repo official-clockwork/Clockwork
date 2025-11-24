@@ -1,3 +1,4 @@
+#include "cuckoo.hpp"
 #include "uci.hpp"
 #include "zobrist.hpp"
 
@@ -7,6 +8,7 @@ int main(int argc, char* argv[]) {
 
     // Initialize all necessary tables (TODO: we may need to move this to a dedicated file)
     Zobrist::init_zobrist_keys();
+    Cuckoo::init();
 
     UCI::UCIHandler uci;
 
