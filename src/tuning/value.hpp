@@ -532,8 +532,7 @@ public:
            << ", grad_first=" << p->grad_first() << ", grad_second=" << p->grad_second() << ")";
 #else
         os << (p->m_constant ? "CS" : "S");
-        os << "(" << std::round(p->first()) << ","
-           << std::round(p->second()) << ")";
+        os << "(" << std::round(p->first()) << "," << std::round(p->second()) << ")";
 #endif
         return os;
     }
