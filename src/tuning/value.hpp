@@ -532,8 +532,7 @@ public:
            << ", grad_first=" << p->grad_first() << ", grad_second=" << p->grad_second() << ")";
 #else
         os << (p->m_constant ? "CS" : "S");
-        os << "(" << static_cast<i32>(p->first() + 0.5) << ", "
-           << static_cast<i32>(p->second() + 0.5) << ")";
+        os << "(" << std::round(p->first()) << "," << std::round(p->second()) << ")";
 #endif
         return os;
     }
