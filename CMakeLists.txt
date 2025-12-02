@@ -90,6 +90,8 @@ set(srcs
     src/board.cpp
     src/board.hpp
     src/common.hpp
+    src/cuckoo.cpp
+    src/cuckoo.hpp
     src/dbg_tools.cpp
     src/dbg_tools.hpp
     src/eval_constants.hpp
