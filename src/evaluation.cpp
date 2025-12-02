@@ -188,7 +188,9 @@ PScore evaluate_pieces(const Position& pos) {
                   static_cast<usize>(8),
                   (own_pawns & Bitboard::squares_of_color(sq.color()))
                     .popcount())  // Weird non standard positions which can have more than 8 pawns
-        ] * (1 + (blocked_pawns & Bitboard::central_files()).ipopcount());
+        ]
+              * (!pos.is_square_attacked_by(sq, color, PieceType::Pawn)
+                 + (blocked_pawns & Bitboard::central_files()).ipopcount());
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];

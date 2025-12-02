@@ -129,7 +129,6 @@ set(srcs
     src/tuning/graph.cpp
     src/tuning/graph.hpp
     src/tuning/info.hpp
-
     src/tuning/loss.hpp
     src/tuning/operations.hpp
     src/tuning/optim.hpp

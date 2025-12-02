@@ -1,3 +1,4 @@
+
 #include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
@@ -407,6 +408,13 @@ Value Worker::search(
         if (pos.is_insufficient_material()) {
             return get_draw_score();
         }
+        // Upcoming repetition detection
+        if (alpha < 0 && repetition_info.has_game_cycle(pos, static_cast<usize>(ply))) {
+            alpha = 0;
+            if (alpha >= beta) {
+                return alpha;
+            }
+        }
     }
 
     // Return eval if we exceed the max ply.
@@ -615,7 +623,8 @@ Value Worker::search(
                 extension = 1;
 
                 // Double Extension
-                if (!PV_NODE && singular_value <= singular_beta - 40) {
+                int double_margin = 40 - (move_history / 512 * quiet);
+                if (!PV_NODE && singular_value <= singular_beta - double_margin) {
                     extension = 2;
                 }
 
@@ -871,6 +880,14 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     // 50 mr check
     if (pos.get_50mr_counter() >= 100) {
         return get_draw_score();
+    }
+
+    // Upcoming repetition detection
+    if (alpha < 0 && repetition_info.has_game_cycle(pos, static_cast<usize>(ply))) {
+        alpha = 0;
+        if (alpha >= beta) {
+            return alpha;
+        }
     }
 
     // Return eval if we exceed the max ply.
