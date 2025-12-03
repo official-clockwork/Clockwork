@@ -101,7 +101,7 @@ public:
         gradients.push_back(g);
         return idx;
     }
-    
+
     inline u32 next_index() const {
         return static_cast<u32>(values.size());
     }
