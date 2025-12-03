@@ -14,9 +14,9 @@
 #endif
 
 namespace Clockwork {
+using Score = i16;
 
 #ifndef EVAL_TUNING
-using Score = i16;
 
 class PScore {
 private:
