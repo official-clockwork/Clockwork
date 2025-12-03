@@ -2,12 +2,15 @@
 #include "eval_types.hpp"
 #include "evaluation.hpp"
 #include "position.hpp"
+
 #include "tuning/graph.hpp"
 #include "tuning/loss.hpp"
 #include "tuning/optim.hpp"
 #include "tuning/value.hpp"
+
 #include "util/pretty.hpp"
 #include "util/types.hpp"
+
 #include <algorithm>
 #include <barrier>
 #include <fstream>
@@ -22,195 +25,185 @@
 #include <tuple>
 
 using namespace Clockwork;
+using namespace Clockwork::Autograd;
 
 int main() {
 
-    // Load fens from multiple files.
     std::vector<Position> positions;
     std::vector<f64>      results;
 
-    // List of files to load
     const std::vector<std::string> fenFiles = {
-      "data/dfrc-1m.txt", "data/dfrcv0.txt", "data/v2.2.txt", "data/v2.1.txt", "data/v3/v3.txt",
+      "data/dfrcv1.txt", "data/dfrcv0.txt", "data/v2.2.txt", "data/v2.1.txt", "data/v3.txt",
     };
 
-    // Number of threads to use, default to half available
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 
-    std::cout << "Running on " << thread_count << " threads" << std::endl;
+    std::cout << "Running on " << thread_count << " threads\n";
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
         if (!fenFile) {
-            std::cerr << "Error opening " << filename << std::endl;
+            std::cerr << "Error opening " << filename << "\n";
             return 1;
         }
 
         std::string line;
         while (std::getline(fenFile, line)) {
             size_t pos = line.find(';');
-            if (pos != std::string::npos) {
-                std::string fen    = line.substr(0, pos);
-                auto        parsed = Position::parse(fen);
-                if (parsed) {
-                    positions.push_back(*parsed);
-                } else {
-                    std::cerr << "Failed to parse FEN in file " << filename << ": " << fen
-                              << std::endl;
-                    continue;
-                }
+            if (pos == std::string::npos) {
+                std::cerr << "Bad line in " << filename << ": " << line << "\n";
+                continue;
+            }
 
-                std::string result = line.substr(pos + 1);
-                result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
+            std::string fen    = line.substr(0, pos);
+            auto        parsed = Position::parse(fen);
 
-                if (result == "w") {
-                    results.push_back(1.0);
-                } else if (result == "d") {
-                    results.push_back(0.5);
-                } else if (result == "b") {
-                    results.push_back(0.0);
-                } else {
-                    std::cerr << "Invalid result in file " << filename << " line: " << line
-                              << " (result is '" << result << "')" << std::endl;
-                }
+            if (!parsed) {
+                std::cerr << "Failed to parse FEN in " << filename << ": " << fen << "\n";
+                continue;
+            }
+
+            positions.push_back(*parsed);
+
+            std::string result = line.substr(pos + 1);
+            result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
+
+            if (result == "w") {
+                results.push_back(1.0);
+            } else if (result == "d") {
+                results.push_back(0.5);
+            } else if (result == "b") {
+                results.push_back(0.0);
             } else {
-                std::cerr << "Invalid line format in " << filename << ": " << line << std::endl;
+                std::cerr << "Invalid result in " << filename << ": " << line << "\n";
             }
         }
-
-        fenFile.close();
     }
 
-    // Print the number of positions loaded
-    std::cout << "Loaded " << positions.size() << " FENs from " << fenFiles.size() << " files."
-              << std::endl;
-
-    if (positions.size() == 0) {
-        std::cerr << "No positions loaded!" << std::endl;
+    std::cout << "Loaded " << positions.size() << " FENs.\n";
+    if (positions.empty()) {
         return 1;
     }
 
-    using namespace Clockwork::Autograd;
+    // Setup tuning
+    const ParameterCountInfo parameter_count = Globals::get().get_parameter_counts();
 
-    const ParameterCountInfo parameter_count          = Globals::get().get_parameter_counts();
-    Parameters               current_parameter_values = Graph::get().get_all_parameter_values();
+    // This line loads the defaults from your S() macros
+    Parameters current_parameter_values = Graph::get().get_all_parameter_values();
 
+    // Uncomment for zero tune: Overwrite them all with zeros.
+    current_parameter_values = Parameters::zeros(parameter_count);
+
+    // The optimizer will now start with all-zero parameters
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
-
-    const i32    epochs     = 1000;
+#ifdef PROFILE_RUN
+    const i32 epochs = 8;
+#else
+    const i32 epochs = 1000;
+#endif
     const f64    K          = 1.0 / 400;
-    const size_t batch_size = 16 * 16384;  // Set batch size here
+    const size_t batch_size = 16 * 16384;
 
-    std::mt19937 rng(std::random_device{}());  // Random number generator for shuffling
-
-    const size_t        total_batches = (positions.size() + batch_size - 1) / batch_size;
+    std::mt19937        rng(std::random_device{}());
     std::vector<size_t> indices(positions.size());
+    // Initialize indices 1..N
+    std::iota(indices.begin(), indices.end(), 0);
+    const size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
+    // Shared gradient accumulator
     Parameters batch_gradients = Parameters::zeros(parameter_count);
 
-    std::mutex   mutex;
+    std::mutex mutex;
+
     std::barrier epoch_barrier{thread_count + 1};
     std::barrier batch_barrier{thread_count + 1, [&]() noexcept {
-                                   std::lock_guard guard{mutex};
+                                   // Single-thread optimizer update
                                    optim.step(current_parameter_values, batch_gradients);
                                    batch_gradients = Parameters::zeros(parameter_count);
                                }};
 
-    for (u32 thread_idx = 0; thread_idx < thread_count; thread_idx++) {
-        std::thread([&, thread_idx] {
-            Graph::get().cleanup();
-
-            std::vector<ValuePtr> subbatch_outputs;
-            std::vector<f64>      subbatch_targets;
-
-            for (i32 epoch = 0; epoch < epochs; epoch++) {
+    // Spawn worker threads
+    for (u32 t = 0; t < thread_count; ++t) {
+        std::thread([&, t]() {
+            // Each thread uses its own Graph arena
+            for (int epoch = 0; epoch < epochs; ++epoch) {
 
                 epoch_barrier.arrive_and_wait();
 
                 for (size_t batch_start = 0; batch_start < positions.size();
                      batch_start += batch_size) {
+                    size_t batch_end       = std::min(batch_start + batch_size, positions.size());
+                    size_t this_batch_size = batch_end - batch_start;
 
-                    size_t batch_end = std::min(batch_start + batch_size, positions.size());
-                    size_t current_batch_size = batch_end - batch_start;
-                    size_t subbatch_size = (current_batch_size + thread_count - 1) / thread_count;
+                    size_t sub_size = (this_batch_size + thread_count - 1) / thread_count;
 
-                    size_t subbatch_start = batch_start + subbatch_size * thread_idx;
-                    size_t subbatch_end   = std::min(subbatch_start + subbatch_size, batch_end);
-                    size_t current_subbatch_size = subbatch_end - subbatch_start;
-
-                    subbatch_outputs.clear();
-                    subbatch_targets.clear();
-                    subbatch_outputs.reserve(current_subbatch_size);
-                    subbatch_targets.reserve(current_subbatch_size);
+                    size_t sub_start = batch_start + sub_size * t;
+                    size_t sub_end   = std::min(sub_start + sub_size, batch_end);
 
                     Graph::get().copy_parameter_values(current_parameter_values);
 
-                    uint32_t i = 0;
-                    for (size_t j = subbatch_start; j < subbatch_end; ++j) {
-                        size_t   idx    = indices[j];
-                        f64      y      = results[idx];
-                        Position pos    = positions[idx];
-                        auto     result = (evaluate_white_pov(pos) * K)->sigmoid();
-                        subbatch_outputs.push_back(result);
-                        subbatch_targets.push_back(y);
-                        if (++i == 1024) {
-                            i = 0;
-                            auto subbatch_loss =
-                              mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
-                              * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
-                            Graph::get().backward();
-                            Graph::get().clear_backwardables();
-                            subbatch_outputs.clear();
-                            subbatch_targets.clear();
-                        }
+                    std::vector<ValueHandle> outputs;
+                    std::vector<f64>         targets;
+                    outputs.reserve(sub_end - sub_start);
+                    targets.reserve(sub_end - sub_start);
+
+                    // Forward
+                    for (size_t j = sub_start; j < sub_end; ++j) {
+                        size_t idx = indices[j];
+
+                        auto        y = results[idx];
+                        ValueHandle v = (evaluate_white_pov(positions[idx]) * K).sigmoid();
+                        outputs.push_back(v);
+                        targets.push_back(y);
                     }
 
-                    auto subbatch_loss =
-                      mse<f64, Reduction::Sum>(subbatch_outputs, subbatch_targets)
-                      * Autograd::Value::create(1.0 / static_cast<f64>(current_batch_size));
+                    // Backward
+                    ValueHandle loss = mse<f64, Reduction::Sum>(outputs, targets)
+                                     * ValueHandle::create(1.0 / double(this_batch_size));
+
                     Graph::get().backward();
 
-                    Parameters subbatch_gradients = Graph::get().get_all_parameter_gradients();
+                    Parameters grads = Graph::get().get_all_parameter_gradients();
 
+                    // Accumulate
                     {
-                        std::lock_guard guard{mutex};
-                        batch_gradients.accumulate(subbatch_gradients);
+                        std::lock_guard guard(mutex);
+                        batch_gradients.accumulate(grads);
                     }
-                    batch_barrier.arrive_and_wait();
 
                     Graph::get().cleanup();
+                    Graph::get().zero_grad();
+
+                    batch_barrier.arrive_and_wait();
                 }
             }
         }).detach();
     }
 
-    for (i32 epoch = 0; epoch < epochs; epoch++) {
-        // Print epoch header
-        std::cout << "Epoch " << (epoch + 1) << "/" << epochs << std::endl;
+    // Epoch loop
+    for (int epoch = 0; epoch < epochs; ++epoch) {
 
-        const auto epoch_start_time = time::Clock::now();
+        std::cout << "Epoch " << epoch + 1 << "/" << epochs << "\n";
 
-        std::iota(indices.begin(), indices.end(), 0);
+        const auto start = time::Clock::now();
+
         std::shuffle(indices.begin(), indices.end(), rng);
 
         epoch_barrier.arrive_and_wait();
 
-        for (size_t batch_idx = 0, batch_start = 0; batch_start < positions.size();
-             batch_start += batch_size, ++batch_idx) {
-
+        for (size_t bi = 0, bstart = 0; bstart < positions.size(); bstart += batch_size, ++bi) {
             batch_barrier.arrive_and_wait();
-
-            // Print batch progress bar
-            print_progress(batch_idx + 1, total_batches);
+            print_progress(bi + 1, total_batches);
         }
 
-        const auto epoch_end_time = time::Clock::now();
+        std::cout << "\n";
 
-        std::cout << std::endl;  // Finish progress bar line
-
-        // Print current values
+        // Dump current parameter values
         Graph::get().copy_parameter_values(current_parameter_values);
 
+        Graph::get().cleanup();
+        Graph::get().zero_grad();
+#ifndef PROFILE_RUN
         std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
         std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
         std::cout << "inline const PParam BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
@@ -336,10 +329,11 @@ int main() {
         printPsqtArray("ROOK_PSQT", ROOK_PSQT);
         printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
         printPsqtArray("KING_PSQT", KING_PSQT);
-
-        std::cout << "// Epoch duration: "
-                  << time::cast<time::FloatSeconds>(epoch_end_time - epoch_start_time).count()
-                  << "s" << std::endl;
+        std::cout << std::endl;
+#endif
+        const auto end = time::Clock::now();
+        std::cout << "// Epoch duration: " << time::cast<time::FloatSeconds>(end - start).count()
+                  << "s\n";
 
         if (epoch > 5) {
             optim.set_lr(optim.get_lr() * 0.91);
