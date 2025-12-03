@@ -6,13 +6,13 @@
 
 #if defined(__SSE2__)
     #include <immintrin.h>
-    #define F128_USE_SSE2 1
+    #define F64X2_USE_SSE2 1
 #else
-    #define F128_USE_SSE2 0
+    #define F64X2_USE_SSE2 0
 #endif
 
 struct f64x2 {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
     __m128d v = _mm_setzero_pd();
 #else
     double lo = 0.0;
@@ -21,7 +21,7 @@ struct f64x2 {
 
     // ---- Constructors ----
     static inline f64x2 make(double a, double b) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_set_pd(b, a);
         return r;
@@ -31,7 +31,7 @@ struct f64x2 {
     }
 
     static inline f64x2 broadcast(double x) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_set1_pd(x);
         return r;
@@ -41,7 +41,7 @@ struct f64x2 {
     }
 
     static inline f64x2 zero() {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_setzero_pd();
         return r;
@@ -52,7 +52,7 @@ struct f64x2 {
 
     // ---- Extract ----
     inline double first() const {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         alignas(16) double buf[2];
         _mm_store_pd(buf, v);
         return buf[0];
@@ -62,7 +62,7 @@ struct f64x2 {
     }
 
     inline double second() const {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         alignas(16) double buf[2];
         _mm_store_pd(buf, v);
         return buf[1];
@@ -73,7 +73,7 @@ struct f64x2 {
 
     // ---- Arithmetic ----
     static inline f64x2 add(const f64x2& a, const f64x2& b) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_add_pd(a.v, b.v);
         return r;
@@ -83,7 +83,7 @@ struct f64x2 {
     }
 
     static inline f64x2 sub(const f64x2& a, const f64x2& b) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_sub_pd(a.v, b.v);
         return r;
@@ -93,7 +93,7 @@ struct f64x2 {
     }
 
     static inline f64x2 mul(const f64x2& a, const f64x2& b) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_mul_pd(a.v, b.v);
         return r;
@@ -103,7 +103,7 @@ struct f64x2 {
     }
 
     static inline f64x2 div(const f64x2& a, const f64x2& b) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_div_pd(a.v, b.v);
         return r;
@@ -113,7 +113,7 @@ struct f64x2 {
     }
 
     static inline f64x2 neg(const f64x2& a) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         __m128d zero = _mm_setzero_pd();
         f64x2   r;
         r.v = _mm_sub_pd(zero, a.v);
@@ -141,7 +141,7 @@ struct f64x2 {
     }
 
     static inline f64x2 scalar_div(double s, const f64x2& a) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         __m128d num = _mm_set1_pd(s);
         f64x2   r;
         r.v = _mm_div_pd(num, a.v);
@@ -153,7 +153,7 @@ struct f64x2 {
 
     // ---- Math functions ----
     static inline f64x2 sqrt(const f64x2& a) {
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_sqrt_pd(a.v);
         return r;
@@ -165,7 +165,7 @@ struct f64x2 {
     // ---- FMA-style (useful for gradient updates) ----
     static inline f64x2 madd(const f64x2& a, const f64x2& b, const f64x2& c) {
         // a + b*c
-#if F128_USE_SSE2
+#if F64X2_USE_SSE2
         f64x2 r;
         r.v = _mm_add_pd(a.v, _mm_mul_pd(b.v, c.v));
         return r;
