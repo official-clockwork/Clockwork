@@ -629,7 +629,9 @@ Value Worker::search(
                 }
 
                 // Triple Extension
-                if (!PV_NODE && quiet && singular_value <= singular_beta - 120) {
+                int triple_margin = 120 - (move_history / 512 * quiet);
+                
+                if (!PV_NODE && quiet && singular_value <= singular_beta - triple_margin) {
                     extension = 3;
                 }
             }
