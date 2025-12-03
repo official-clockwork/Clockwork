@@ -21,9 +21,8 @@ using Score = i16;
 class PScore {
 private:
     i32 m_score;
-
     explicit constexpr PScore(i32 score) :
-        m_score(score) {
+        m_score{score} {
     }
 
 public:
@@ -32,69 +31,78 @@ public:
     }
 
     constexpr PScore(Score midgame, Score endgame) :
-        m_score(static_cast<i32>((u32(endgame) << 16) + u16(midgame))) {
+        m_score{static_cast<i32>(static_cast<u32>(endgame) << 16) + midgame} {
         assert(std::numeric_limits<i16>::min() <= midgame
-               && midgame <= std::numeric_limits<i16>::max());
+               && std::numeric_limits<i16>::max() >= midgame);
         assert(std::numeric_limits<i16>::min() <= endgame
-               && endgame <= std::numeric_limits<i16>::max());
+               && std::numeric_limits<i16>::max() >= endgame);
     }
 
-    [[nodiscard]] inline Score mg() const {
-        u16 mg = u16(m_score);
-        i16 v;
+    [[nodiscard]] inline auto mg() const {
+        const auto mg = static_cast<u16>(m_score);
+
+        i16 v{};
         std::memcpy(&v, &mg, sizeof(mg));
-        return v;
+
+        return static_cast<Score>(v);
     }
 
-    [[nodiscard]] inline Score eg() const {
-        u16 eg = u16(u32(m_score + 0x8000) >> 16);
-        i16 v;
+    [[nodiscard]] inline auto eg() const {
+        const auto eg = static_cast<u16>(static_cast<u32>(m_score + 0x8000) >> 16);
+
+        i16 v{};
         std::memcpy(&v, &eg, sizeof(eg));
-        return v;
+
+        return static_cast<Score>(v);
     }
 
-    // Operators identical to original version
-    constexpr PScore operator+(const PScore& o) const {
-        return PScore(m_score + o.m_score);
+    [[nodiscard]] constexpr auto operator+(const PScore& other) const {
+        return PScore{m_score + other.m_score};
     }
-    constexpr PScore operator-(const PScore& o) const {
-        return PScore(m_score - o.m_score);
-    }
-    constexpr PScore operator*(i32 v) const {
-        return PScore(m_score * v);
-    }
-    constexpr PScore& operator+=(const PScore& o) {
-        m_score += o.m_score;
+
+    constexpr auto operator+=(const PScore& other) -> auto& {
+        m_score += other.m_score;
         return *this;
     }
-    constexpr PScore& operator-=(const PScore& o) {
-        m_score -= o.m_score;
+
+    [[nodiscard]] constexpr auto operator-(const PScore& other) const {
+        return PScore{m_score - other.m_score};
+    }
+
+    constexpr auto operator-=(const PScore& other) -> auto& {
+        m_score -= other.m_score;
         return *this;
     }
-    constexpr PScore& operator*=(i32 v) {
+
+    [[nodiscard]] constexpr auto operator*(i32 v) const {
+        return PScore{m_score * v};
+    }
+
+    constexpr auto operator*=(i32 v) -> auto& {
         m_score *= v;
         return *this;
     }
-    constexpr PScore operator-() const {
-        return PScore(-m_score);
+
+    [[nodiscard]] constexpr auto operator-() const {
+        return PScore{-m_score};
     }
 
-    constexpr bool operator==(const PScore&) const = default;
+    [[nodiscard]] constexpr bool operator==(const PScore& other) const = default;
 
-    constexpr const PScore* operator->() const {
+    [[nodiscard]] constexpr const PScore* operator->() const {
         return this;
     }
 
-    // Phase function (non-tuning: returns int)
+    // Phasing between two scores
     template<i32 max>
-    [[nodiscard]] inline Value phase(i32 alpha) const {
+    Value phase(i32 alpha) const {
         assert(0 <= alpha && alpha <= max);
-        return Value((mg() * alpha + eg() * (max - alpha)) / max);
+        return static_cast<Value>((mg() * alpha + eg() * (max - alpha)) / max);
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const PScore& s) {
-        os << "(" << s.mg() << "\t" << s.eg() << ")";
-        return os;
+    friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {
+        stream << "(" << score.mg() << "\t" << score.eg() << ")";
+        return stream;
     }
 };
 
