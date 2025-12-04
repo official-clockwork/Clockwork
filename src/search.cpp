@@ -1,4 +1,3 @@
-
 #include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
@@ -29,7 +28,9 @@ static Value mated_in(i32 ply) {
 }
 
 static constexpr i32 stat_bonus(Depth bonus_depth) {
-    return std::min(1896, 4 * bonus_depth * bonus_depth + 120 * bonus_depth - 120);
+    return std::min(tuned::stat_bonus_max, tuned::stat_bonus_quad * bonus_depth * bonus_depth
+                                             + tuned::stat_bonus_lin * bonus_depth
+                                             - tuned::stat_bonus_sub);
 }
 
 std::ostream& operator<<(std::ostream& os, const PV& pv) {
@@ -256,7 +257,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Call search
         m_seldepth  = 0;
         Value alpha = -VALUE_INF, beta = VALUE_INF;
-        Value delta = 50;
+        Value delta = tuned::asp_window_delta;
         if (search_depth >= 5) {
             alpha = last_search_score - delta;
             beta  = last_search_score + delta;
@@ -504,8 +505,8 @@ Value Worker::search(
     }
 
     // Razoring
-    if (!PV_NODE && !excluded && !is_in_check && depth <= 7
-        && ss->static_eval + 707 * depth < alpha) {
+    if (!PV_NODE && !excluded && !is_in_check && depth <= tuned::razor_depth
+        && ss->static_eval + tuned::razor_margin * depth < alpha) {
         const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
@@ -521,7 +522,8 @@ Value Worker::search(
     // node will also fail high (score >= beta) and prune the remaining moves,
     // returning the cutoff score immediately. This saves time by not searching
     // moves in positions that are likely to be cutoffs anyway.
-    if (!PV_NODE && !is_in_check && depth >= 5 && !excluded && !is_mate_score(beta)) {
+    if (!PV_NODE && !is_in_check && depth >= tuned::probcut_min_depth && !excluded
+        && !is_mate_score(beta)) {
         const Value probcut_beta  = beta + tuned::probcut_margin;
         const Depth probcut_depth = std::clamp<Depth>(depth - 4, 1, depth - 1);
 
@@ -584,34 +586,38 @@ Value Worker::search(
 
         if (!ROOT_NODE && !is_being_mated_score(best_value)) {
             // Late Move Pruning (LMP)
-            if (moves_played >= (3 + depth * depth) / (2 - improving)) {
+            if (moves_played >= (tuned::lmp_depth_mult + depth * depth) / (2 - improving)) {
                 break;
             }
 
             // Forward Futility Pruning (FFP)
-            Value futility = ss->static_eval + 500 + 100 * depth + move_history / 32;
-            if (quiet && !is_in_check && depth <= 8 && futility <= alpha) {
+            Value futility = ss->static_eval + tuned::ffp_margin_base
+                           + tuned::ffp_margin_mult * depth + move_history / tuned::ffp_hist_div;
+            if (quiet && !is_in_check && depth <= tuned::ffp_depth && futility <= alpha) {
                 moves.skip_quiets();
                 continue;
             }
 
             // Quiet History Pruning
-            if (depth <= 4 && !is_in_check && quiet && move_history < depth * -2048) {
+            if (depth <= tuned::qhp_depth && !is_in_check && quiet
+                && move_history < depth * tuned::qhp_threshold) {
                 break;
             }
 
-            Value see_threshold = quiet ? -67 * depth : -22 * depth * depth;
+            Value see_threshold =
+              quiet ? tuned::see_pvs_quiet * depth : tuned::see_pvs_noisy_quad * depth * depth;
             // SEE PVS Pruning
-            if (!SEE::see(pos, m, see_threshold - move_history * 20 / 1024)) {
+            if (!SEE::see(pos, m, see_threshold - move_history * tuned::see_pvs_hist_mult / 1024)) {
                 continue;
             }
         }
 
         // Singular extensions
         int extension = 0;
-        if (!excluded && tt_data && m == tt_data->move && depth >= 6 && tt_data->depth >= depth - 3
+        if (!excluded && tt_data && m == tt_data->move && depth >= tuned::sing_min_depth
+            && tt_data->depth >= depth - tuned::sing_depth_margin
             && tt_data->bound() != Bound::Upper) {
-            Value singular_beta  = tt_data->score - depth * 5;
+            Value singular_beta  = tt_data->score - depth * tuned::sing_beta_margin;
             int   singular_depth = depth / 2;
 
             ss->excluded_move    = m;
@@ -623,13 +629,15 @@ Value Worker::search(
                 extension = 1;
 
                 // Double Extension
-                int double_margin = 40 - (move_history / 512 * quiet);
+                int double_margin =
+                  tuned::sing_double_margin - (move_history / tuned::sing_hist_div * quiet);
                 if (!PV_NODE && singular_value <= singular_beta - double_margin) {
                     extension = 2;
                 }
 
                 // Triple Extension
-                if (!PV_NODE && quiet && singular_value <= singular_beta - 120) {
+                if (!PV_NODE && quiet
+                    && singular_value <= singular_beta - tuned::sing_triple_margin) {
                     extension = 3;
                 }
             }
@@ -691,52 +699,58 @@ Value Worker::search(
             i32 reduction;
 
             if (quiet) {
-                reduction =
-                  static_cast<i32>(788 + 208 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+                reduction = static_cast<i32>(tuned::lmr_quiet_base
+                                             + tuned::lmr_quiet_div * log2i(depth)
+                                                 * log2i(moves_played) / (1024 * 1024));
             } else {
-                reduction =
-                  static_cast<i32>(256 + 197 * log2i(depth) * log2i(moves_played) / (1024 * 1024));
+                reduction = static_cast<i32>(tuned::lmr_noisy_base
+                                             + tuned::lmr_noisy_div * log2i(depth)
+                                                 * log2i(moves_played) / (1024 * 1024));
             }
 
-            reduction -= 1024 * PV_NODE;
+            reduction -= tuned::lmr_pv_node_red * PV_NODE;
 
-            reduction += alpha_raises * 512;
+            reduction += alpha_raises * tuned::lmr_alpha_raise_red;
 
-            reduction += (512 * !improving);
+            reduction += (tuned::lmr_not_improving_red * !improving);
 
-            reduction -= 1024 * pos_after.is_in_check();
+            reduction -= tuned::lmr_in_check_red * pos_after.is_in_check();
 
             if (cutnode) {
-                reduction += 1024;
+                reduction += tuned::lmr_cutnode_red;
                 // If there is no available tt move, increase reduction
                 if (!tt_data || tt_data->move == Move::none()) {
-                    reduction += 1024;
+                    reduction += tuned::lmr_no_tt_red;
                 }
             }
 
             if (ttpv) {
-                reduction -= 1024;
+                reduction -= tuned::lmr_ttpv_red;
             }
 
             if (ttpv && tt_data && tt_data->score <= alpha) {
-                reduction += 1024;
+                reduction += tuned::lmr_tt_capture_red;
             }
 
             if (tt_data && tt_data->move.is_capture() && !m.is_capture()) {
-                reduction += 1024;
+                reduction += tuned::lmr_tt_capture_red;
             }
 
             if ((ss + 1)->fail_high_count > 3) {
-                reduction += 1024;
+                reduction += tuned::lmr_fail_high_red;
             }
 
             if (quiet) {
-                reduction += (1024 - move_history / 8);
-                reduction += (ss->static_eval + 500 + 100 * depth <= alpha && !is_in_check) * 1024;
+                reduction += (tuned::lmr_quiet_hist_base - move_history / tuned::lmr_hist_div);
+                reduction +=
+                  (ss->static_eval + tuned::lmr_fut_red_base + tuned::lmr_fut_red_mult * depth
+                     <= alpha
+                   && !is_in_check)
+                  * tuned::lmr_fut_red;
             }
 
             if (!quiet) {
-                reduction = std::min(reduction, 3072);
+                reduction = std::min(reduction, tuned::lmr_max_red);
             }
 
             reduction /= 1024;
