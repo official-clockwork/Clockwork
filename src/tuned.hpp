@@ -82,7 +82,7 @@ namespace Clockwork::tuned {
     TUNE(lmr_hist_div, 8, 4, 16, 2, 0.002)                        \
     TUNE(lmr_fut_red_base, 500, 250, 1000, 38, 0.002)             \
     TUNE(lmr_fut_red_mult, 100, 50, 200, 8, 0.002)                \
-    TUNE(lmr_fut_red, 1024, 512, 2048, 77, 0.002)                \
+    TUNE(lmr_fut_red, 1024, 512, 2048, 77, 0.002)                 \
     TUNE(lmr_max_red, 3072, 1536, 6144, 231, 0.002)               \
                                                                   \
     /* End of Tunables */
