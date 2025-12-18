@@ -225,7 +225,7 @@ PScore evaluate_outposts(const Position& pos) {
     Bitboard opp_pawns             = pos.bitboard_for(opp, PieceType::Pawn);
     Bitboard opp_pawn_span         = pawn_spans<opp>(opp_pawns);
     Bitboard opp_pawn_span_attacks = static_pawn_attacks<opp>(
-      opp_pawns);  // Note, this does NOT consider pins! Might need to test this more thoroughly.
+      opp_pawn_span);  // Note, this does NOT consider pins! Might need to test this more thoroughly.
     Bitboard pawn_defended_squares = pos.attacked_by(color, PieceType::Pawn);
     Bitboard viable_outposts =
       viable_outposts_ranks & pawn_defended_squares & ~opp_pawn_span_attacks;
@@ -304,9 +304,9 @@ PScore evaluate_space(const Position& pos) {
     Bitboard        openfiles  = ~(ourfiles | theirfiles);
     Bitboard        half_open_files = (~ourfiles) & theirfiles;
 
-    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
+    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).popcount();
     eval +=
-      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
+      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).popcount();
 
     return eval;
 }
