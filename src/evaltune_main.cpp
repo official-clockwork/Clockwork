@@ -335,8 +335,8 @@ int main() {
         std::cout << "// Epoch duration: " << time::cast<time::FloatSeconds>(end - start).count()
                   << "s\n";
 
-        if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.91);
+        if (epoch % 41 == 40) {
+            optim.set_lr(optim.get_lr() * 0.75);
         }
     }
 
