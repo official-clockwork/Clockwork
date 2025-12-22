@@ -98,7 +98,7 @@ PScore evaluate_pawns(const Position& pos) {
     Square   their_king = pos.king_sq(them);
     PScore   eval       = PSCORE_ZERO;
 
-    eval += DOUBLED_PAWN_VAL * static_cast<i32>((pawns & pawns.shift(Direction::North)).popcount());
+    eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).ipopcount();
 
     for (Square sq : pawns) {
         Square   push     = sq.push<color>();
@@ -233,10 +233,10 @@ PScore evaluate_outposts(const Position& pos) {
     PScore eval = PSCORE_ZERO;
     eval +=
       OUTPOST_KNIGHT_VAL
-      * static_cast<i32>((pos.bitboard_for(color, PieceType::Knight) & viable_outposts).popcount());
+      * (pos.bitboard_for(color, PieceType::Knight) & viable_outposts).ipopcount();
     eval +=
       OUTPOST_BISHOP_VAL
-      * static_cast<i32>((pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).popcount());
+      * (pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).ipopcount();
     return eval;
 }
 
@@ -304,9 +304,9 @@ PScore evaluate_space(const Position& pos) {
     Bitboard        openfiles  = ~(ourfiles | theirfiles);
     Bitboard        half_open_files = (~ourfiles) & theirfiles;
 
-    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).popcount();
+    eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
     eval +=
-      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).popcount();
+      ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
 
     return eval;
 }
