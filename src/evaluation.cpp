@@ -98,7 +98,7 @@ PScore evaluate_pawns(const Position& pos) {
     Square   their_king = pos.king_sq(them);
     PScore   eval       = PSCORE_ZERO;
 
-    eval += DOUBLED_PAWN_VAL * static_cast<i32>((pawns & pawns.shift(Direction::North)).popcount());
+    eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).ipopcount();
 
     for (Square sq : pawns) {
         Square   push     = sq.push<color>();
@@ -225,18 +225,16 @@ PScore evaluate_outposts(const Position& pos) {
     Bitboard opp_pawns             = pos.bitboard_for(opp, PieceType::Pawn);
     Bitboard opp_pawn_span         = pawn_spans<opp>(opp_pawns);
     Bitboard opp_pawn_span_attacks = static_pawn_attacks<opp>(
-      opp_pawns);  // Note, this does NOT consider pins! Might need to test this more thoroughly.
+      opp_pawn_span);  // Note, this does NOT consider pins! Might need to test this more thoroughly.
     Bitboard pawn_defended_squares = pos.attacked_by(color, PieceType::Pawn);
     Bitboard viable_outposts =
       viable_outposts_ranks & pawn_defended_squares & ~opp_pawn_span_attacks;
     // Check for minor pieces on outposts
     PScore eval = PSCORE_ZERO;
-    eval +=
-      OUTPOST_KNIGHT_VAL
-      * static_cast<i32>((pos.bitboard_for(color, PieceType::Knight) & viable_outposts).popcount());
-    eval +=
-      OUTPOST_BISHOP_VAL
-      * static_cast<i32>((pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).popcount());
+    eval += OUTPOST_KNIGHT_VAL
+          * (pos.bitboard_for(color, PieceType::Knight) & viable_outposts).ipopcount();
+    eval += OUTPOST_BISHOP_VAL
+          * (pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).ipopcount();
     return eval;
 }
 
