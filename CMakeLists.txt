@@ -73,72 +73,79 @@ function(target_add_flags target)
     target_link_libraries(${target} PUBLIC git_hash lps)
 
     # LTO
+    message(STATUS "LTO is set to: ${lto}")
+    # LTO
     if (lto)
         set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
+
+    
 
 endfunction()
 
 # Sorted list of source files
 set(srcs
-        src/bench.cpp
-        src/bench.hpp
-        src/board.cpp
-        src/board.hpp
-        src/cuckoo.cpp
-        src/cuckoo.hpp
-        src/common.hpp
-        src/dbg_tools.cpp
-        src/dbg_tools.hpp
-        src/eval_constants.hpp
-        src/eval_types.hpp
-        src/evaluation.cpp
-        src/evaluation.hpp
-        src/geometry.cpp
-        src/geometry.hpp
-        src/history.cpp
-        src/history.hpp
-        src/move.cpp
-        src/move.hpp
-        src/movegen.cpp
-        src/movegen.hpp
-        src/movepick.cpp
-        src/movepick.hpp
-        src/perft.cpp
-        src/perft.hpp
-        src/position.cpp
-        src/position.hpp
-        src/psqt_state.hpp
-        src/repetition_info.cpp
-        src/repetition_info.hpp
-        src/search.cpp
-        src/search.hpp
-        src/speedtest.cpp
-        src/speedtest.hpp
-        src/square.hpp
-        src/tm.cpp
-        src/tm.hpp
-        src/tt.cpp
-        src/tt.hpp
-        src/tuned.cpp
-        src/tuned.hpp
-        src/tuning/globals.hpp
-        src/tuning/graph.cpp
-        src/tuning/graph.hpp
-        src/tuning/loss.hpp
-        src/tuning/optim.hpp
-        src/tuning/value.cpp
-        src/tuning/value.hpp
-        src/uci.cpp
-        src/uci.hpp
-        src/util/bit.hpp
-        src/util/parse.hpp
-        src/util/pretty.hpp
-        src/util/static_vector.hpp
-        src/util/types.hpp
-        src/util/vec/sse2.hpp
-        src/zobrist.cpp
-        src/zobrist.hpp
+    src/bench.cpp
+    src/bench.hpp
+    src/board.cpp
+    src/board.hpp
+    src/common.hpp
+    src/cuckoo.cpp
+    src/cuckoo.hpp
+    src/dbg_tools.cpp
+    src/dbg_tools.hpp
+    src/eval_constants.hpp
+    src/eval_types.hpp
+    src/evaluation.cpp
+    src/evaluation.hpp
+    src/geometry.cpp
+    src/geometry.hpp
+    src/history.cpp
+    src/history.hpp
+    src/move.cpp
+    src/move.hpp
+    src/movegen.cpp
+    src/movegen.hpp
+    src/movepick.cpp
+    src/movepick.hpp
+    src/perft.cpp
+    src/perft.hpp
+    src/position.cpp
+    src/position.hpp
+    src/psqt_state.hpp
+    src/repetition_info.cpp
+    src/repetition_info.hpp
+    src/search.cpp
+    src/search.hpp
+    src/speedtest.cpp
+    src/speedtest.hpp
+    src/square.hpp
+    src/tm.cpp
+    src/tm.hpp
+    src/tt.cpp
+    src/tt.hpp
+    src/tuned.cpp
+    src/tuned.hpp
+    src/tuning/arena.hpp
+    src/tuning/globals.hpp
+    src/tuning/graph.cpp
+    src/tuning/graph.hpp
+    src/tuning/info.hpp
+    src/tuning/loss.hpp
+    src/tuning/operations.hpp
+    src/tuning/optim.hpp
+    src/tuning/value.cpp
+    src/tuning/value.hpp
+    src/uci.cpp
+    src/uci.hpp
+    src/util/bit.hpp
+    src/util/parse.hpp
+    src/util/pretty.hpp
+    src/util/static_vector.hpp
+    src/util/types.hpp
+    src/util/vec/sse2.hpp
+    src/zobrist.cpp
+    src/zobrist.hpp
 )
 
 if(CLOCKWORK_ENABLE_EVALTUNE)

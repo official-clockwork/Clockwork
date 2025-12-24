@@ -14,9 +14,10 @@
 #endif
 
 namespace Clockwork {
-#ifndef EVAL_TUNING
 
+#ifndef EVAL_TUNING
 using Score = i16;
+
 class PScore {
 private:
     i32 m_score;
@@ -109,20 +110,32 @@ using PParam = PScore;
 
 #else
 
-using Score  = Autograd::ValuePtr;
-using PScore = Autograd::PairPtr;
-using PParam = Autograd::PairPlaceholder;
+using Score  = Autograd::ValueHandle;
+using PScore = Autograd::PairHandle;
+using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
 
 #endif
 
+
 #ifdef EVAL_TUNING
-    #define S(a, b) Autograd::PairPlaceholder::create_tunable((a), (b))  // Defines a tunable pscore
+    // Tunable scalar pair (mg, eg)
+    #define S(a, b) Autograd::PairPlaceholder::create_tunable((a), (b))
+
+    // Constant scalar pair (mg, eg)
     #define CS(a, b) Autograd::PairPlaceholder::create((a), (b))
-    #define PSCORE_ZERO Autograd::Pair::create(0, 0)
+
+    // Zero pair FOR PARAMETERS (e.g., in an array)
+    #define PPARAM_ZERO Autograd::PairPlaceholder::create(0, 0)
+
+    // Zero pair FOR INTERMEDIATES (e.g., scores)
+    #define PSCORE_ZERO Autograd::PairHandle::create(0, 0)
+
 #else
-    #define S(a, b) PScore((a), (b))  // Defines a constant pscore when not tuning
-    #define CS(a, b) S((a), (b))
-    #define PSCORE_ZERO CS(0, 0)
+    // ... (non-tuning definitions) ...
+    #define S(a, b) PScore((a), (b))
+    #define CS(a, b) PScore((a), (b))
+    #define PPARAM_ZERO PScore(0, 0)
+    #define PSCORE_ZERO PScore(0, 0)
 #endif
 
 }  // namespace Clockwork
