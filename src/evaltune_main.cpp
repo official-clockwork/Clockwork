@@ -276,6 +276,9 @@ int main() {
         print_table("ROOK_KING_RING", ROOK_KING_RING);
         print_table("QUEEN_KING_RING", QUEEN_KING_RING);
         std::cout << std::endl;
+        print_table("PT_INNER_RING_ATTACKS", PT_INNER_RING_ATTACKS);
+        print_table("PT_OUTER_RING_ATTACKS", PT_OUTER_RING_ATTACKS);
+        std::cout << std::endl;
 
         std::cout << "inline const PParam PAWN_THREAT_KNIGHT = " << PAWN_THREAT_KNIGHT << ";"
                   << std::endl;
@@ -336,7 +339,7 @@ int main() {
                   << "s\n";
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.91);
+            optim.set_lr(optim.get_lr() * 0.99);
         }
     }
 
