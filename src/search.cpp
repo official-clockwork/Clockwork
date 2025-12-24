@@ -642,7 +642,6 @@ Value Worker::search(
                     && singular_value <= singular_beta - tuned::sing_triple_margin) {
                     extension = 3;
                 }
-                
             }
 
             // Multicut
