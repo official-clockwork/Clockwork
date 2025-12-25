@@ -95,15 +95,15 @@ namespace Clockwork::tuned {
     TUNE(lmr_max_red, 3072, 1536, 6144, 231, 0.002)               \
                                                                   \
     /* TIME MANAGEMENT */                                         \
-    TUNE(time_hard_limit, 256, 128, 512, 19, 0.002)               \
-    TUNE(time_soft_limit, 51, 25, 100, 3, 0.002)                  \
-    TUNE(time_soft_increment, 512, 256, 1024, 38, 0.002)          \
-    TUNE(nodetm_min_factor, 512, 256, 1024, 38, 0.002)            \
-    TUNE(nodetm_avg_factor, 2048, 1024, 4096, 153, 0.002)         \
-    TUNE(nodetm_frac_factor, 1895, 948, 3792, 142, 0.002)         \
-    TUNE(d1plexity_base, 788, 394, 1576, 59, 0.002)               \
-    TUNE(d1plexity_max_complexity, 200, 100, 400, 15, 0.002)      \
-    TUNE(d1plexity_divisor, 386, 193, 772, 29, 0.002)             \
+    NO_TUNE(time_hard_limit, 256, 128, 512, 19, 0.002)            \
+    NO_TUNE(time_soft_limit, 51, 25, 100, 3, 0.002)               \
+    NO_TUNE(time_soft_increment, 512, 256, 1024, 38, 0.002)       \
+    NO_TUNE(nodetm_min_factor, 512, 256, 1024, 38, 0.002)         \
+    NO_TUNE(nodetm_avg_factor, 2048, 1024, 4096, 153, 0.002)      \
+    NO_TUNE(nodetm_frac_factor, 1895, 948, 3792, 142, 0.002)      \
+    NO_TUNE(d1plexity_base, 788, 394, 1576, 59, 0.002)            \
+    NO_TUNE(d1plexity_max_complexity, 200, 100, 400, 15, 0.002)   \
+    NO_TUNE(d1plexity_divisor, 386, 193, 772, 29, 0.002)          \
                                                                   \
     /* End of Tunables */
 
