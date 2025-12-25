@@ -472,9 +472,10 @@ Value Worker::search(
     }
 
     if (!PV_NODE && !is_in_check && !pos.is_kp_endgame() && depth >= tuned::nmp_depth && !excluded
-        && tt_adjusted_eval >= beta + 30 && !is_being_mated_score(beta) && !m_in_nmp_verification) {
-        int R =
-          tuned::nmp_base_r + depth / 4 + std::min(3, (tt_adjusted_eval - beta) / 400) + improving;
+        && tt_adjusted_eval >= beta + tuned::nmp_beta_margin && !is_being_mated_score(beta)
+        && !m_in_nmp_verification) {
+        int R = tuned::nmp_base_r + depth / 4
+              + std::min(3, (tt_adjusted_eval - beta) / tuned::nmp_beta_diff) + improving;
         Position pos_after = pos.null_move();
 
         repetition_info.push(pos_after.get_hash_key(), true);
@@ -629,16 +630,16 @@ Value Worker::search(
                 extension = 1;
 
                 // Double Extension
-                int double_margin =
-                  tuned::sing_double_margin - (move_history / tuned::sing_hist_div * quiet);
+                Value double_margin =
+                  tuned::dext_margin - (move_history / tuned::dext_hist_div * quiet);
                 if (!PV_NODE && singular_value <= singular_beta - double_margin) {
                     extension = 2;
                 }
 
                 // Triple Extension
-                int triple_margin = tuned::sing_triple_margin - (move_history / 512 * quiet);
-                if (!PV_NODE && quiet
-                    && singular_value <= singular_beta - tuned::sing_triple_margin) {
+                Value triple_margin =
+                  tuned::triext_margin - (move_history / tuned::triext_hist_div * quiet);
+                if (!PV_NODE && quiet && singular_value <= singular_beta - triple_margin) {
                     extension = 3;
                 }
             }

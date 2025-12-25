@@ -19,6 +19,8 @@ namespace Clockwork::tuned {
     NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)                       \
     NO_TUNE(nmp_base_r, 3, 1, 10, .5, 0.002)                      \
     NO_TUNE(nmp_verif_min_depth, 14, 1, 40, .5, 0.002)            \
+    TUNE(nmp_beta_margin, 30, 10, 60, 3, 0.002)                   \
+    TUNE(nmp_beta_diff, 400, 200, 800, 38, 0.002)                 \
                                                                   \
     /* ProbCut Values */                                          \
     TUNE(probcut_margin, 300, 100, 500, 10, 0.002)                \
@@ -60,9 +62,10 @@ namespace Clockwork::tuned {
     NO_TUNE(sing_min_depth, 6, 1, 20, 0.5, 0.002)                 \
     NO_TUNE(sing_depth_margin, 3, 1, 20, 0.5, 0.002)              \
     TUNE(sing_beta_margin, 5, 2, 10, 1, 0.002)                    \
-    TUNE(sing_double_margin, 40, 20, 80, 3, 0.002)                \
-    TUNE(sing_hist_div, 512, 256, 1024, 39, 0.002)                \
-    TUNE(sing_triple_margin, 120, 60, 240, 9, 0.002)              \
+    TUNE(dext_margin, 40, 20, 80, 3, 0.002)                       \
+    TUNE(dext_hist_div, 512, 256, 1024, 39, 0.002)                \
+    TUNE(triext_margin, 120, 60, 240, 9, 0.002)                   \
+    TUNE(triext_hist_div, 512, 256, 1024, 39, 0.002)              \
                                                                   \
     /* LMR */                                                     \
     TUNE(lmr_quiet_base, 788, 394, 1576, 59, 0.002)               \
@@ -84,6 +87,17 @@ namespace Clockwork::tuned {
     TUNE(lmr_fut_red_mult, 100, 50, 200, 8, 0.002)                \
     TUNE(lmr_fut_red, 1024, 512, 2048, 77, 0.002)                 \
     TUNE(lmr_max_red, 3072, 1536, 6144, 231, 0.002)               \
+                                                                  \
+    /* TIME MANAGEMENT */                                         \
+    TUNE(time_hard_limit, 256, 128, 512, 19, 0.002)               \
+    TUNE(time_soft_limit, 51, 25, 100, 3, 0.002)                  \
+    TUNE(time_soft_increment, 512, 256, 1024, 38, 0.002)          \
+    TUNE(nodetm_min_factor, 512, 256, 1024, 38, 0.002)            \
+    TUNE(nodetm_avg_factor, 2048, 1024, 4096, 153, 0.002)          \
+    TUNE(nodetm_frac_factor, 1895, 948, 3792, 142, 0.002)         \
+    TUNE(d1plexity_base, 788, 394, 1576, 59, 0.002)               \
+    TUNE(d1plexity_max_complexity, 200, 100, 400, 15, 0.002)      \
+    TUNE(d1plexity_divisor, 386, 193, 772, 29, 0.002)            \
                                                                   \
     /* End of Tunables */
 
