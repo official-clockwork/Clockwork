@@ -1,7 +1,7 @@
 #include "tm.hpp"
+#include "tuned.hpp"
 #include "uci.hpp"
 #include "util/types.hpp"
-#include "tuned.hpp"
 #include <iostream>
 
 namespace Clockwork::TM {
