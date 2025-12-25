@@ -70,10 +70,10 @@ std::array<Bitboard, 64> king_ring_table = []() {
     return king_ring_table;
 }();
 
-std::array<Bitboard,64> extended_ring_table = []() {
-    std::array<Bitboard,64> extended_ring_table{};
+std::array<Bitboard, 64> extended_ring_table = []() {
+    std::array<Bitboard, 64> extended_ring_table{};
     for (u8 sq_idx = 0; sq_idx < 64; sq_idx++) {
-        Bitboard sq_bb       = king_ring_table[sq_idx];
+        Bitboard sq_bb         = king_ring_table[sq_idx];
         Bitboard extended_ring = sq_bb;
         extended_ring |= sq_bb.shift(Direction::North);
         extended_ring |= sq_bb.shift(Direction::South);
@@ -280,21 +280,23 @@ PScore evaluate_potential_checkers(const Position& pos) {
 
 template<Color color>
 PScore evaluate_king_safety(const Position& pos) {
-    constexpr Color opp  = ~color;
+    constexpr Color opp = ~color;
 
     // Iterate over the opponent's attack bbs
     PScore eval = PSCORE_ZERO;
 
-    Bitboard king_ring = king_ring_table[pos.king_sq(color).raw];
+    Bitboard king_ring     = king_ring_table[pos.king_sq(color).raw];
     Bitboard extended_ring = extended_ring_table[pos.king_sq(color).raw];
 
-    for (PieceType pt : {PieceType::Pawn, PieceType::Knight, PieceType::Bishop,
-                         PieceType::Rook, PieceType::Queen}) {
+    for (PieceType pt : {PieceType::Pawn, PieceType::Knight, PieceType::Bishop, PieceType::Rook,
+                         PieceType::Queen}) {
         Bitboard attacked = pos.attacked_by(opp, pt);
-        Bitboard inner = attacked & king_ring;
-        Bitboard outer = attacked & extended_ring & ~king_ring;
-        eval += PT_INNER_RING_ATTACKS[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)] * inner.ipopcount();
-        eval += PT_OUTER_RING_ATTACKS[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)] * outer.ipopcount();
+        Bitboard inner    = attacked & king_ring;
+        Bitboard outer    = attacked & extended_ring & ~king_ring;
+        eval += PT_INNER_RING_ATTACKS[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)]
+              * inner.ipopcount();
+        eval += PT_OUTER_RING_ATTACKS[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)]
+              * outer.ipopcount();
     }
     return eval;
 }
