@@ -4,7 +4,7 @@
 #include <string_view>
 
 #ifndef CLOCKWORK_IS_TUNING
-    #define CLOCKWORK_IS_TUNING 0
+    #define CLOCKWORK_IS_TUNING 1
 #endif
 
 namespace Clockwork::tuned {
@@ -36,6 +36,12 @@ namespace Clockwork::tuned {
     TUNE(stat_bonus_quad, 4, 2, 8, .5, 0.002)                     \
     TUNE(stat_bonus_lin, 120, 60, 240, 9, 0.002)                  \
     TUNE(stat_bonus_sub, 120, 60, 240, 9, 0.002)                  \
+                                                                  \
+    /* Stat Malus */                                              \
+    TUNE(stat_malus_max, 1896, 948, 3792, 142, 0.002)             \
+    TUNE(stat_malus_quad, 4, 2, 8, .5, 0.002)                     \
+    TUNE(stat_malus_lin, 120, 60, 240, 9, 0.002)                  \
+    TUNE(stat_malus_sub, 120, 60, 240, 9, 0.002)                  \
                                                                   \
     /* Search Params */                                           \
     TUNE(asp_window_delta, 50, 25, 100, 4, 0.002)                 \
