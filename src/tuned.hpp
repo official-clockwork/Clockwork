@@ -4,7 +4,7 @@
 #include <string_view>
 
 #ifndef CLOCKWORK_IS_TUNING
-    #define CLOCKWORK_IS_TUNING 1
+    #define CLOCKWORK_IS_TUNING 0
 #endif
 
 namespace Clockwork::tuned {
