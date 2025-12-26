@@ -66,6 +66,11 @@ function(target_add_flags target)
         -fsanitize=address,undefined
         >)
 
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_link_options(${target} PUBLIC
+            -Wl,-z,stack-size=2097152)
+    endif()
+
     # Include directories
     target_include_directories(${target} PUBLIC src)
 
