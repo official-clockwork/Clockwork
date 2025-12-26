@@ -27,10 +27,16 @@ static Value mated_in(i32 ply) {
     return -VALUE_MATED + ply;
 }
 
-static constexpr i32 stat_bonus(Depth bonus_depth) {
+static i32 stat_bonus(Depth bonus_depth) {
     return std::min(tuned::stat_bonus_max, tuned::stat_bonus_quad * bonus_depth * bonus_depth
                                              + tuned::stat_bonus_lin * bonus_depth
                                              - tuned::stat_bonus_sub);
+}
+
+static i32 stat_malus(Depth malus_depth) {
+    return std::min(tuned::stat_malus_max, tuned::stat_malus_quad * malus_depth * malus_depth
+                                             + tuned::stat_malus_lin * malus_depth
+                                             - tuned::stat_malus_sub);
 }
 
 std::ostream& operator<<(std::ostream& os, const PV& pv) {
@@ -765,7 +771,7 @@ Value Worker::search(
                                                 ply + 1, !cutnode);
                 if (quiet && (value <= alpha || value >= beta)) {
                     m_td.history.update_cont_hist(pos, m, ply, ss,
-                                                  value <= alpha ? -stat_bonus(new_depth)
+                                                  value <= alpha ? -stat_malus(new_depth)
                                                                  : stat_bonus(new_depth));
                 }
             }
@@ -822,18 +828,19 @@ Value Worker::search(
     if (best_value >= beta) {
         i32       bonus_depth = depth + (best_value >= beta + 100);
         const i32 bonus       = stat_bonus(bonus_depth);
+        const i32 malus       = stat_malus(bonus_depth);
         if (quiet_move(best_move)) {
             ss->killer = best_move;
 
             m_td.history.update_quiet_stats(pos, best_move, ply, ss, bonus);
             for (Move quiet : quiets_played) {
-                m_td.history.update_quiet_stats(pos, quiet, ply, ss, -bonus);
+                m_td.history.update_quiet_stats(pos, quiet, ply, ss, -malus);
             }
         } else {
             m_td.history.update_noisy_stats(pos, best_move, bonus);
         }
         for (Move noisy : noisies_played) {
-            m_td.history.update_noisy_stats(pos, noisy, -bonus);
+            m_td.history.update_noisy_stats(pos, noisy, -malus);
         }
     }
 
