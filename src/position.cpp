@@ -175,22 +175,44 @@ void Position::incrementally_move_piece(
     dst_slider_ids = dst_raymask.mask(geometry::flip_rays(dst_slider_ids));  // flip rays
     dst_slider_ids |= dst_raymask.mask(u8x64::splat(0x20));  // pack information for efficiency
 
+#if LPS_AVX512
+    u8x64 src_inv_perm = geometry::superpiece_inverse_rays_avx512(from);
+    u8x64 dst_inv_perm = geometry::superpiece_inverse_rays_avx512(to);
+#else
     u8x64 src_inv_perm = geometry::superpiece_inverse_rays_avx2(from);
     u8x64 dst_inv_perm = geometry::superpiece_inverse_rays_avx2(to);
+#endif
 
     // Transform into board layout
     src_slider_ids = src_inv_perm.swizzle(src_slider_ids);
     dst_slider_ids = dst_inv_perm.swizzle(dst_slider_ids);
 
     // Recover color information
-    u8x64 src_col = src_slider_ids.test(u8x64::splat(0x10)).to_vector();
-    u8x64 dst_col = dst_slider_ids.test(u8x64::splat(0x10)).to_vector();
+    m8x64 src_col = src_slider_ids.test(u8x64::splat(0x10));
+    m8x64 dst_col = dst_slider_ids.test(u8x64::splat(0x10));
     // Recover ray mask information
     m8x64 ret = dst_slider_ids.test(u8x64::splat(0x20));
 
     src_slider_ids &= u8x64::splat(0x0F);
     dst_slider_ids &= u8x64::splat(0x0F);
 
+#if LPS_AVX512
+    u16x64 src_slider_ids2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(src_slider_ids.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(src_slider_ids.raw, 1))});
+    u16x64 dst_slider_ids2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(dst_slider_ids.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(dst_slider_ids.raw, 1))});
+
+    u16x64 src_at = m16x64{src_slider_ids.nonzeros().raw}.mask(u16x64::splat(1) << src_slider_ids2);
+    u16x64 dst_at = m16x64{dst_slider_ids.nonzeros().raw}.mask(u16x64::splat(1) << dst_slider_ids2);
+
+    m16x64 src_color{src_col.raw};
+    m16x64 dst_color{dst_col.raw};
+
+    m_attack_table[0].raw ^= (~src_color).mask(src_at) ^ (~dst_color).mask(dst_at);
+    m_attack_table[1].raw ^= src_color.mask(src_at) ^ dst_color.mask(dst_at);
+#else
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
     static const u8x16 BITS_LO{{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
@@ -202,10 +224,10 @@ void Position::incrementally_move_piece(
     u8x64              dst_at_lo = dst_slider_ids.swizzle(BITS_LO);
     u8x64              dst_at_hi = dst_slider_ids.swizzle(BITS_HI);
 
-    u8x64 src_color0 = src_col.zip_low_128lanes(src_col);
-    u8x64 src_color1 = src_col.zip_high_128lanes(src_col);
-    u8x64 dst_color0 = dst_col.zip_low_128lanes(dst_col);
-    u8x64 dst_color1 = dst_col.zip_high_128lanes(dst_col);
+    u8x64 src_color0 = src_col.to_vector().zip_low_128lanes(src_col.to_vector());
+    u8x64 src_color1 = src_col.to_vector().zip_high_128lanes(src_col.to_vector());
+    u8x64 dst_color0 = dst_col.to_vector().zip_low_128lanes(dst_col.to_vector());
+    u8x64 dst_color1 = dst_col.to_vector().zip_high_128lanes(dst_col.to_vector());
 
     u16x64 src_color = std::bit_cast<u16x64>(std::array<u8x64, 2>{src_color0, src_color1});
     u16x64 dst_color = std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_color0, dst_color1});
@@ -220,6 +242,7 @@ void Position::incrementally_move_piece(
 
     m_attack_table[0].raw ^= src_at.andnot(src_color) ^ dst_at.andnot(dst_color);
     m_attack_table[1].raw ^= (src_at & src_color) ^ (dst_at & dst_color);
+#endif
 
     add_attacks(color, p.id(), to, p.ptype(), ret);
 }
@@ -242,18 +265,34 @@ m8x64 Position::toggle_rays(Square sq) {
     slider_ids = raymask.mask(geometry::flip_rays(slider_ids));  // flip rays
     slider_ids |= raymask.mask(u8x64::splat(0x20));              // pack information for efficiency
 
+#if LPS_AVX512
+    u8x64 inv_perm = geometry::superpiece_inverse_rays_avx512(sq);
+#else
     u8x64 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
+#endif
 
     // Transform into board layout
     slider_ids = inv_perm.swizzle(slider_ids);
 
     // Recover color information
-    u8x64 col = slider_ids.test(u8x64::splat(0x10)).to_vector();
+    m8x64 col = slider_ids.test(u8x64::splat(0x10));
     // Recover ray mask information
     m8x64 ret = slider_ids.test(u8x64::splat(0x20));
 
     slider_ids &= u8x64::splat(0x0F);
 
+#if LPS_AVX512
+    u16x64 slider_ids2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(slider_ids.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(slider_ids.raw, 1))});
+
+    u16x64 at = m16x64{slider_ids.nonzeros().raw}.mask(u16x64::splat(1) << slider_ids2);
+
+    m16x64 color{col.raw};
+
+    m_attack_table[0].raw ^= (~color).mask(at);
+    m_attack_table[1].raw ^= color.mask(at);
+#else
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
     static const u8x16 BITS_LO{{0x00, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,  //
@@ -263,8 +302,8 @@ m8x64 Position::toggle_rays(Square sq) {
     u8x64              at_lo = slider_ids.swizzle(BITS_LO);
     u8x64              at_hi = slider_ids.swizzle(BITS_HI);
 
-    u8x64  color0 = col.zip_low_128lanes(col);
-    u8x64  color1 = col.zip_high_128lanes(col);
+    u8x64  color0 = col.to_vector().zip_low_128lanes(col.to_vector());
+    u8x64  color1 = col.to_vector().zip_high_128lanes(col.to_vector());
     u16x64 color  = std::bit_cast<u16x64>(std::array<u8x64, 2>{color0, color1});
 
     u8x64  at0 = at_lo.zip_low_128lanes(at_hi);
@@ -273,6 +312,7 @@ m8x64 Position::toggle_rays(Square sq) {
 
     m_attack_table[0].raw ^= at.andnot(color);
     m_attack_table[1].raw ^= at & color;
+#endif
 
     return ret;
 }
@@ -293,7 +333,11 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
         u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
         m8x64 raymask                = geometry::superpiece_attacks(ray_places, ray_valid);
 
-        u8x64 inv_perm  = geometry::superpiece_inverse_rays_avx2(sq);
+#if LPS_AVX512
+        u8x64 inv_perm = geometry::superpiece_inverse_rays_avx512(sq);
+#else
+        u8x64 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
+#endif
         m8x64 boardmask = inv_perm.swizzle(raymask);
 
         add_attacks(color, id, sq, ptype, boardmask);
@@ -303,14 +347,22 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
 }
 
 void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask) {
-    u8x64 moves = (mask & geometry::piece_moves_avx2(color, ptype, sq)).to_vector();
+    u16x64 bit = u16x64::splat(id.to_piece_mask().value());
 
-    u8x64  m0 = moves.zip_low_128lanes(moves);
-    u8x64  m1 = moves.zip_high_128lanes(moves);
+#if LPS_AVX512
+    m8x64 moves = mask & geometry::piece_moves_avx512(color, ptype, sq);
+
+    m_attack_table[color].raw |= m16x64{moves.raw}.mask(bit);
+#else
+    m8x64 moves     = mask & geometry::piece_moves_avx2(color, ptype, sq);
+    u8x64 moves_vec = moves.to_vector();
+
+    u8x64  m0 = moves_vec.zip_low_128lanes(moves_vec);
+    u8x64  m1 = moves_vec.zip_high_128lanes(moves_vec);
     u16x64 m  = std::bit_cast<u16x64>(std::array<u8x64, 2>{m0, m1});
 
-    u16x64 bit = u16x64::splat(id.to_piece_mask().value());
     m_attack_table[color].raw |= m & bit;
+#endif
 }
 
 template<bool UPDATE_PSQT>
@@ -523,13 +575,14 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
 
 // Does this ray have a pinner?
 #if LPS_AVX512
-    m8x64 no_pinner_mask{
-      std::bit_cast<vm8x64>(std::bit_cast<u64x8>(pinner.to_vector()).zeros().to_vector())
-        .to_bits()};
+    const m8x16 has_attacker_vecmask = u8x16{_mm_set1_epi64x(pinner.raw)}.nonzeros();
+    const m8x64 pinned               = m8x64{static_cast<u64>(
+      _mm_cvtsi128_si64(has_attacker_vecmask.mask(u8x16{_mm_set1_epi64x(maybe_pinned.raw)}).raw))};
 #else
     m8x64 no_pinner_mask = std::bit_cast<m8x64>(std::bit_cast<m64x8>(pinner).to_vector().zeros());
+    m8x64 pinned         = maybe_pinned.andnot(no_pinner_mask);
 #endif
-    m8x64 pinned = maybe_pinned.andnot(no_pinner_mask);
+
 
     u8x64 nonmasked_pinned_ids =
       geometry::lane_broadcast(pinned.mask(ray_places & u8x64::splat(0xF)));

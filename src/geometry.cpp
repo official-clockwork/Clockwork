@@ -3,22 +3,31 @@
 
 namespace Clockwork::geometry {
 
-// clang-format off
 // Offset arrangement is AVX2-specific (due to punpck-ordering).
 constexpr std::array<u8, 64> AVX2_OFFSETS{{
-    0210, 0211, 0212, 0213, 0214, 0215, 0216, 0217,
-    0310, 0311, 0312, 0313, 0314, 0315, 0316, 0317,
-    0230, 0231, 0232, 0233, 0234, 0235, 0236, 0237,
-    0330, 0331, 0332, 0333, 0334, 0335, 0336, 0337,
-    0250, 0251, 0252, 0253, 0254, 0255, 0256, 0257,
-    0350, 0351, 0352, 0353, 0354, 0355, 0356, 0357,
-    0270, 0271, 0272, 0273, 0274, 0275, 0276, 0277,
-    0370, 0371, 0372, 0373, 0374, 0375, 0376, 0377,
+  0210, 0211, 0212, 0213, 0214, 0215, 0216, 0217,  //
+  0310, 0311, 0312, 0313, 0314, 0315, 0316, 0317,  //
+  0230, 0231, 0232, 0233, 0234, 0235, 0236, 0237,  //
+  0330, 0331, 0332, 0333, 0334, 0335, 0336, 0337,  //
+  0250, 0251, 0252, 0253, 0254, 0255, 0256, 0257,  //
+  0350, 0351, 0352, 0353, 0354, 0355, 0356, 0357,  //
+  0270, 0271, 0272, 0273, 0274, 0275, 0276, 0277,  //
+  0370, 0371, 0372, 0373, 0374, 0375, 0376, 0377,  //
 }};
-// clang-format on
 
+constexpr std::array<u8, 64> AVX512_OFFSETS{{
+  0210, 0211, 0212, 0213, 0214, 0215, 0216, 0217,  //
+  0230, 0231, 0232, 0233, 0234, 0235, 0236, 0237,  //
+  0250, 0251, 0252, 0253, 0254, 0255, 0256, 0257,  //
+  0270, 0271, 0272, 0273, 0274, 0275, 0276, 0277,  //
+  0310, 0311, 0312, 0313, 0314, 0315, 0316, 0317,  //
+  0330, 0331, 0332, 0333, 0334, 0335, 0336, 0337,  //
+  0350, 0351, 0352, 0353, 0354, 0355, 0356, 0357,  //
+  0370, 0371, 0372, 0373, 0374, 0375, 0376, 0377,  //
+}};
 
-const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
+template<std::array<u8, 64> OFFSETS, u8 RAY_OFFSET>
+consteval std::array<u8x64, 64> calc_superpiece_inverse_rays_table() {
     // clang-format off
     constexpr u8 NONE = 0x80;
     constexpr std::array<u8, 256> BASE{{
@@ -46,15 +55,25 @@ const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE = []() {
         u8                 esq = internal::expand_sq(Square{sq});
         std::array<u8, 64> b;
         for (usize i = 0; i < 64; i++) {
-            u8 value = BASE[AVX2_OFFSETS[i] - esq];
+            u8 value = BASE[OFFSETS[i] - esq];
+            value    = value != NONE ? (value + RAY_OFFSET) % 64 : NONE;
             b[i]     = value;
         }
         table[sq] = u8x64{b};
     }
     return table;
-}();
+}
 
-const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE = []() {
+
+const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX2_TABLE =
+  calc_superpiece_inverse_rays_table<AVX2_OFFSETS, 0>();
+const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX512_TABLE =
+  calc_superpiece_inverse_rays_table<AVX512_OFFSETS, 0>();
+const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_FLIPPED_AVX512_TABLE =
+  calc_superpiece_inverse_rays_table<AVX512_OFFSETS, 32>();
+
+template<std::array<u8, 64> OFFSETS>
+consteval std::array<u8x64, 64> calc_piece_moves_table() {
     // clang-format off
     constexpr u8 K = 1 << static_cast<i32>(PieceType::King);
     constexpr u8 Q = 1 << static_cast<i32>(PieceType::Queen);
@@ -92,11 +111,14 @@ const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE = []() {
         u8                 esq = internal::expand_sq(Square{sq});
         std::array<u8, 64> b;
         for (usize i = 0; i < 64; i++) {
-            b[i] = BASE[AVX2_OFFSETS[i] - esq];
+            b[i] = BASE[OFFSETS[i] - esq];
         }
         table[sq] = u8x64{b};
     }
     return table;
-}();
+}
+
+const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE   = calc_piece_moves_table<AVX2_OFFSETS>();
+const std::array<u8x64, 64> PIECE_MOVES_AVX512_TABLE = calc_piece_moves_table<AVX512_OFFSETS>();
 
 }  // namespace Clockwork::geometry

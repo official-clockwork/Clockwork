@@ -443,10 +443,21 @@ bool MoveGen::is_hside_castling_legal(Bitboard empty, Bitboard danger) const {
 }
 
 void MoveGen::write(MoveList& moves, Square dest, PieceMask piecemask, MoveFlags mf) {
+#if LPS_AVX512
+    moves.unsafe_append([&](Move* data) {
+        u16x16 vec =
+          u16x16::splat(Move{Square{0}, dest, mf}.raw)
+          | u16x16{_mm256_cvtepu8_epi16(m_position.piece_list_sq(m_active_color).to_vector().raw)};
+        vec = m16x16{piecemask.value()}.compress(vec);
+        std::memcpy(data, &vec, sizeof(vec));
+        return piecemask.popcount();
+    });
+#else
     for (PieceId id : piecemask) {
         Square src = m_position.piece_list_sq(m_active_color)[id];
         moves.push_back(Move{src, dest, mf});
     }
+#endif
 }
 
 void MoveGen::write(MoveList&                        moves,
@@ -460,10 +471,32 @@ void MoveGen::write(MoveList&                        moves,
 }
 
 void MoveGen::write_pawn(MoveList& moves, Bitboard src_bb, i32 shift, MoveFlags mf) {
+#if LPS_AVX512
+    u16x32 base = []() consteval {
+        std::array<Move, 32> base;
+        for (usize i = 0; i < 32; i++) {
+            Square src{static_cast<u8>(i)};
+            Square dest{static_cast<u8>(i)};
+            base[i] = Move{src, dest, static_cast<MoveFlags>(0)};
+        }
+        return std::bit_cast<u16x32>(base);
+    }();
+    for (int i : {0, 32}) {
+        moves.unsafe_append([&](Move* data) {
+            m16x32 mask{static_cast<u32>(src_bb.value() >> i)};
+            u16x32 vec =
+              u16x32::splat(static_cast<u16>(i + ((i + shift) << 6) + static_cast<u16>(mf))) + base;
+            vec = mask.compress(vec);
+            std::memcpy(data, &vec, sizeof(vec));
+            return static_cast<usize>(std::popcount(mask.raw));
+        });
+    }
+#else
     for (Square src : src_bb) {
         Square dest{static_cast<u8>(src.raw + shift)};
         moves.push_back(Move{src, dest, mf});
     }
+#endif
 }
 
 bool MoveGen::is_ep_clearance_pinned(PieceMask ep_attackers_mask) const {
