@@ -28,7 +28,7 @@ namespace Clockwork::tuned {
     NO_TUNE(probcut_min_depth, 5, 1, 20, 0.5, 0.002)              \
                                                                   \
     /* SEE Values */                                              \
-    TUNE(quiesce_see_threshold, 18, -1000, 100, 20, 0.002)         \
+    TUNE(quiesce_see_threshold, 18, -1000, 100, 20, 0.002)        \
     TUNE(movepicker_see_capthist_divisor, 54, 16, 192, 10, 0.002) \
                                                                   \
     /* Stat Bonus */                                              \
@@ -51,7 +51,7 @@ namespace Clockwork::tuned {
                                                                   \
     /* Futility Pruning */                                        \
     TUNE(ffp_margin_base, 437, 250, 1000, 38, 0.002)              \
-    TUNE(ffp_margin_mult, 89, 50, 200, 8, 0.002)                 \
+    TUNE(ffp_margin_mult, 89, 50, 200, 8, 0.002)                  \
     TUNE(ffp_hist_div, 25, 16, 64, 3, 0.002)                      \
     NO_TUNE(ffp_depth, 8, 1, 20, 0.5, 0.002)                      \
                                                                   \
@@ -83,15 +83,15 @@ namespace Clockwork::tuned {
     TUNE(lmr_not_improving_red, 520, 256, 1024, 38, 0.002)        \
     TUNE(lmr_in_check_red, 1021, 512, 2048, 77, 0.002)            \
     TUNE(lmr_cutnode_red, 1087, 512, 2048, 77, 0.002)             \
-    TUNE(lmr_no_tt_red, 997, 512, 2048, 77, 0.002)               \
+    TUNE(lmr_no_tt_red, 997, 512, 2048, 77, 0.002)                \
     TUNE(lmr_ttpv_red, 1097, 512, 2048, 77, 0.002)                \
-    TUNE(lmr_tt_capture_red, 968, 512, 2048, 77, 0.002)          \
-    TUNE(lmr_fail_high_red, 980, 512, 2048, 77, 0.002)           \
-    TUNE(lmr_quiet_hist_base, 940, 512, 2048, 77, 0.002)         \
-    TUNE(lmr_hist_div, 12, 4, 16, 2, 0.002)                        \
+    TUNE(lmr_tt_capture_red, 968, 512, 2048, 77, 0.002)           \
+    TUNE(lmr_fail_high_red, 980, 512, 2048, 77, 0.002)            \
+    TUNE(lmr_quiet_hist_base, 940, 512, 2048, 77, 0.002)          \
+    TUNE(lmr_hist_div, 12, 4, 16, 2, 0.002)                       \
     TUNE(lmr_fut_red_base, 562, 250, 1000, 38, 0.002)             \
-    TUNE(lmr_fut_red_mult, 99, 50, 200, 8, 0.002)                \
-    TUNE(lmr_fut_red, 864, 512, 2048, 77, 0.002)                 \
+    TUNE(lmr_fut_red_mult, 99, 50, 200, 8, 0.002)                 \
+    TUNE(lmr_fut_red, 864, 512, 2048, 77, 0.002)                  \
     TUNE(lmr_max_red, 2985, 1536, 6144, 231, 0.002)               \
                                                                   \
     /* TIME MANAGEMENT */                                         \
