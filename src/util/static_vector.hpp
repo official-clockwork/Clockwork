@@ -92,6 +92,12 @@ public:
         return res;
     }
 
+    template<typename F>
+    void unsafe_append(F&& f) {
+        usize sz = f(end());
+        m_len += sz;
+    }
+
     void append(const StaticVector& other) {
         assert(m_len + other.m_len <= cap);
         std::uninitialized_copy(other.begin(), other.end(), end());

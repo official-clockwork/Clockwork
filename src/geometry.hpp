@@ -124,6 +124,18 @@ forceinline u8x64 superpiece_inverse_rays_avx2(Square sq) {
     return SUPERPIECE_INVERSE_RAYS_AVX2_TABLE[sq.raw];
 }
 
+extern const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_AVX512_TABLE;
+
+forceinline u8x64 superpiece_inverse_rays_avx512(Square sq) {
+    return SUPERPIECE_INVERSE_RAYS_AVX512_TABLE[sq.raw];
+}
+
+extern const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_FLIPPED_AVX512_TABLE;
+
+forceinline u8x64 superpiece_inverse_rays_flipped_avx512(Square sq) {
+    return SUPERPIECE_INVERSE_RAYS_FLIPPED_AVX512_TABLE[sq.raw];
+}
+
 extern const std::array<u8x64, 64> PIECE_MOVES_AVX2_TABLE;
 
 forceinline m8x64 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
@@ -131,6 +143,16 @@ forceinline m8x64 piece_moves_avx2(bool color, PieceType ptype, Square sq) {
     i32   index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
     u8x64 bit   = u8x64::splat(static_cast<u8>(1 << index));
     u8x64 table = PIECE_MOVES_AVX2_TABLE[sq.raw];
+    return table.test(bit);
+}
+
+extern const std::array<u8x64, 64> PIECE_MOVES_AVX512_TABLE;
+
+forceinline m8x64 piece_moves_avx512(bool color, PieceType ptype, Square sq) {
+    assert(ptype != PieceType::None);
+    i32   index = ptype == PieceType::Pawn ? color : static_cast<i32>(ptype);
+    u8x64 bit   = u8x64::splat(static_cast<u8>(1 << index));
+    u8x64 table = PIECE_MOVES_AVX512_TABLE[sq.raw];
     return table.test(bit);
 }
 
@@ -172,7 +194,19 @@ forceinline u8x64 slider_broadcast(u8x64 x) {
 }
 
 forceinline u8x64 lane_broadcast(u8x64 x) {
-#if LPS_AVX2
+#if LPS_AVX512
+    u8x64 EXPAND_IDX{{
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
+      0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08,  //
+      0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,  //
+      0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,  //
+      0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,  //
+      0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28,  //
+      0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,  //
+      0x38, 0x38, 0x38, 0x38, 0x38, 0x38, 0x38, 0x38,  //
+    }};
+    return EXPAND_IDX.swizzle(u8x64{_mm512_sad_epu8(x.raw, _mm512_setzero_si512())});
+#elif LPS_AVX2
     u8x64 y;
     y.raw[0].raw = _mm256_sad_epu8(x.raw[0].raw, _mm256_setzero_si256());
     y.raw[1].raw = _mm256_sad_epu8(x.raw[1].raw, _mm256_setzero_si256());
