@@ -2,6 +2,7 @@
 #include "immintrin.h"
 #include "see.hpp"
 #include "tuned.hpp"
+#include "util/random.hpp"
 #include <emmintrin.h>
 #include <immintrin.h>
 
@@ -170,6 +171,19 @@ std::pair<Move, i32> MovePicker::pick_next(MoveList& moves) {
     std::swap(m_scores[m_current_index], m_scores[best_idx]);
     std::swap(moves[m_current_index], moves[best_idx]);
     return {moves[m_current_index], m_scores[m_current_index++]};
+}
+
+Move RandomMovePicker::next() {
+    if (m_noisy.empty() && m_quiet.empty()) {
+        return Move::none();  // No moves available
+    }
+    // Get a random index in the range [0, quiets.size() + noisies.size()) - 1]
+    usize idx = Clockwork::Random::rand_64() % (m_noisy.size() + m_quiet.size());
+    if (idx < m_noisy.size()) {
+        return m_noisy[idx];
+    } else {
+        return m_quiet[idx - m_noisy.size()];
+    }
 }
 
 i32 MovePicker::score_move(Move move) const {

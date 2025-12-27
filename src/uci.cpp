@@ -2,6 +2,7 @@
 #include "bench.hpp"
 #include "evaluation.hpp"
 #include "move.hpp"
+#include "movepick.hpp"
 #include "perft.hpp"
 #include "position.hpp"
 #include "search.hpp"
@@ -334,61 +335,93 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
         }
     }
 
-    // Require book file
-    if (book == "None") {
-        std::cout << "Please specify a book file using 'book <filename>'." << std::endl;
-        return;
-    }
-
     // Set RNG state
     if (!seed_provided) {
         std::cout << "Seed not provided. Defaulting to 0." << std::endl;
     }
     Clockwork::Random::seed({seed, seed, seed | 1, seed ^ 0xDEADBEEFDEADBEEFULL});
 
-    // Open the book file
-    std::ifstream file(book);
-    if (!file) {
-        std::cout << "Could not open file: " << book << std::endl;
-        return;
-    }
-
-    // Load all lines
     std::vector<std::string> lines;
     std::string              line;
-    while (std::getline(file, line)) {
-        if (!line.empty()) {
-            lines.push_back(line);
+    if (book != "None") {
+        std::cout << "Using book file: " << book << std::endl;
+
+        // Open the book file
+        std::ifstream file(book);
+        if (!file) {
+            std::cout << "Could not open file: " << book << std::endl;
+            return;
         }
-    }
 
-    // Safety checks
-    if (lines.empty()) {
-        std::cout << "Book file is empty." << std::endl;
-        return;
-    }
-
-    if (N > static_cast<int>(lines.size())) {
-        std::cout << "Requested " << N << " positions, but only " << lines.size() << " available."
-                  << std::endl;
-        return;
-    }
-
-    // Pick N unique random indices
-    std::unordered_set<size_t> selected_indices;
-    while (selected_indices.size() < static_cast<size_t>(N)) {
-        uint64_t rand_val = Clockwork::Random::rand_64();
-        selected_indices.insert(rand_val % lines.size());
-    }
-
-    // Output the selected FENs
-    for (size_t idx : selected_indices) {
-        auto pos = Position::parse(lines[idx]);
-        if (!pos) {
-            std::cout << "Invalid FEN in book: " << lines[idx] << std::endl;
-            exit(-1);
+        // Load all lines
+        while (std::getline(file, line)) {
+            if (!line.empty()) {
+                lines.push_back(line);
+            }
         }
-        std::cout << "info string genfens " << *pos << std::endl;
+
+        if (lines.empty()) {
+            std::cout << "Book file is empty." << std::endl;
+            return;
+        }
+        file.close();
+    } else {
+        // Add startpositions to lines
+        lines.push_back("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    }
+
+    // Line generation is as follows:
+    // 1) Pick a random line from the book (or startposition if no book)
+    // 2) Play random legal moves (see passing noisy or quiet moves)
+    // Launch a 16k softnodes verification search to make sure the position doesn't lose immediately
+    // 3) If the position is legal, print it
+    i32 generated = 0;
+
+    while (generated < N) {
+reset:
+        // Pick a random line from the book
+        const std::string& selected_line = lines[Clockwork::Random::rand_64() % lines.size()];
+
+        // Set up position
+        Position pos = *Position::parse(selected_line);
+
+        int moves = 0;
+        // Make 4 random moves out of book
+        while (moves < 4) {
+            RandomMovePicker picker(pos);
+            Move             m = picker.next();
+            if (m == Move::none()) {
+                // No moves available, skip
+                goto reset;
+            }
+            pos = pos.move(m);
+            moves++;
+        }
+
+        // Mock search limits for datagen verification
+        Search::SearchSettings settings = {
+          .stm = pos.active_color(), .hard_nodes = 1048576, .soft_nodes = 16384, .silent = true};
+
+        searcher.initialize(1);  // Initialize with 1 thread always for datagen
+
+        RepetitionInfo rep_info;
+        rep_info.reset();
+        rep_info.push(pos.get_hash_key(), false);
+
+        searcher.set_position(pos, rep_info);
+        searcher.launch_search(settings);
+
+        // Wait for the search to finish and get the score
+        Value score = searcher.wait_for_score();
+
+        if (std::abs(score) > 450) {
+            // Position is mate or losing, skip
+            goto reset;
+        }
+
+        // If we reach here, the position is legal
+        std::cout << "info string genfens " << pos << std::endl;
+        generated++;
     }
 }
 

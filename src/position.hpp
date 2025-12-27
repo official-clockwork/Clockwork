@@ -231,6 +231,10 @@ public:
         return true;
     }
 
+    [[nodiscard]] u16 get_ply() const {
+        return m_ply;
+    }
+
     [[nodiscard]] bool is_insufficient_material() const {
         auto wpcnt = piece_count(Color::White);
         auto bpcnt = piece_count(Color::Black);
@@ -268,8 +272,6 @@ public:
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 
     [[nodiscard]] u16 get_50mr_counter() const;
-
-    [[nodiscard]] u16 get_ply() const;
 
     [[nodiscard]] bool is_reversible(Move move);
 
