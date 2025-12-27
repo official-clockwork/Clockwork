@@ -305,9 +305,10 @@ void UCIHandler::handle_perft(std::istringstream& is) {
 }
 
 void UCIHandler::handle_genfens(std::istringstream& is) {
-    int         N             = 0;
+    i32         N             = 0;
     uint64_t    seed          = 0;
     bool        seed_provided = false;
+    i32         rand_count = 4;
     std::string book          = "None";
     std::string token;
 
@@ -329,7 +330,13 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
                 std::cout << "Missing book filename after 'book'." << std::endl;
                 return;
             }
-        } else {
+        } else if (token == "randmoves") {
+            if (!(is >> rand_count) || rand_count < 0) {
+                std::cout << "Invalid randmoves value." << std::endl;
+                return;
+            }
+        } 
+        else {
             std::cout << "Invalid genfens argument: " << token << std::endl;
             return;
         }
@@ -385,9 +392,9 @@ reset:
         // Set up position
         Position pos = *Position::parse(selected_line);
 
-        int moves = 0;
+        i32 moves = 0;
         // Make 4 random moves out of book
-        while (moves < 4) {
+        while (moves < rand_count) {
             RandomMovePicker picker(pos);
             Move             m = picker.next();
             if (m == Move::none()) {
