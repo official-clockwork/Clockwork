@@ -47,3 +47,6 @@ books/*
 
 # Spsa output for script usage
 spsa_out*.txt
+
+# Venv folder for python scripts
+venv/

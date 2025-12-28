@@ -308,7 +308,7 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
     i32         N             = 0;
     uint64_t    seed          = 0;
     bool        seed_provided = false;
-    i32         rand_count = 4;
+    i32         rand_count    = 4;
     std::string book          = "None";
     std::string token;
 
@@ -335,8 +335,7 @@ void UCIHandler::handle_genfens(std::istringstream& is) {
                 std::cout << "Invalid randmoves value." << std::endl;
                 return;
             }
-        } 
-        else {
+        } else {
             std::cout << "Invalid genfens argument: " << token << std::endl;
             return;
         }
