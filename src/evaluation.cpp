@@ -192,7 +192,7 @@ PScore evaluate_pieces(const Position& pos) {
                                          ? Bitboard::rank_mask(1) | Bitboard::rank_mask(2)
                                          : Bitboard::rank_mask(5) | Bitboard::rank_mask(6);
     Bitboard           own_early_pawns = own_pawns & early_ranks;
-    Bitboard bb = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
+    Bitboard bb  = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard bb2 = bb;
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
