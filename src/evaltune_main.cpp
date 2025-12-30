@@ -32,9 +32,9 @@ int main() {
     std::vector<Position> positions;
     std::vector<f64>      results;
 
-    const std::vector<std::string> fenFiles = {
-      "data/dfrcv1.txt", "data/dfrcv0.txt", "data/v2.2.txt", "data/v2.1.txt", "data/v3.txt",
-    };
+    const std::vector<std::string> fenFiles = {"data/dfrcv1.txt", "data/dfrcv0.txt",
+                                               "data/v3.txt",     "v4_5knpm.txt",
+                                               "v4_8knpm.txt",    "v4_16knpm.txt"};
 
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 

@@ -1083,8 +1083,4 @@ u16 Position::get_50mr_counter() const {
     return m_50mr;
 }
 
-u16 Position::get_ply() const {
-    return m_ply;
-}
-
 }  // namespace Clockwork

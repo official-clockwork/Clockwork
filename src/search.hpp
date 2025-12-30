@@ -28,6 +28,7 @@ struct SearchSettings {
     u64   hard_nodes = 0;
     u64   soft_nodes = 0;
     bool  silent     = false;
+    bool  datagen    = false;
 };
 
 // Forward declare for Searcher
@@ -80,6 +81,7 @@ struct SearchLimits {
 struct ThreadData {
     History                history;
     std::vector<PsqtState> psqt_states;
+    Value                  root_score;
 
     PsqtState& push_psqt_state() {
         psqt_states.push_back(psqt_states.back());
@@ -109,12 +111,13 @@ public:
 
     Searcher();
     ~Searcher();
-    void set_position(const Position& root_position, const RepetitionInfo& repetition_info);
-    void launch_search(SearchSettings settings);
-    void stop_searching();
-    void wait();
-    void initialize(size_t thread_count);
-    void exit();
+    void  set_position(const Position& root_position, const RepetitionInfo& repetition_info);
+    void  launch_search(SearchSettings settings);
+    void  stop_searching();
+    void  wait();
+    Value wait_for_score();
+    void  initialize(size_t thread_count);
+    void  exit();
 
     u64  node_count();
     void reset();
@@ -151,6 +154,10 @@ public:
     }
     [[nodiscard]] u64 search_nodes() const {
         return m_search_nodes.load(std::memory_order_relaxed);
+    }
+
+    [[nodiscard]] const ThreadData& get_thread_data() const {
+        return m_td;
     }
 
     [[nodiscard]] Value get_draw_score() const {
