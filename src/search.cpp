@@ -19,6 +19,7 @@
 #include <iostream>
 #include <limits>
 #include <mutex>
+#include "util/large_pages.hpp"
 #include <numeric>
 
 namespace Clockwork {
@@ -118,9 +119,9 @@ void Searcher::initialize(size_t thread_count) {
     started_barrier = std::make_unique<std::barrier<>>(1 + thread_count);
 
     if (thread_count > 0) {
-        m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
+        m_workers.push_back(make_unique_huge_page<Worker>(*this, ThreadType::MAIN));
         for (size_t i = 1; i < thread_count; i++) {
-            m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::SECONDARY));
+            m_workers.push_back(make_unique_huge_page<Worker>(*this, ThreadType::SECONDARY));
         }
     }
 }

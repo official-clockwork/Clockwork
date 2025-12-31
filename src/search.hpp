@@ -126,7 +126,7 @@ public:
     }
 
 private:
-    std::vector<std::unique_ptr<Worker>> m_workers;
+    std::vector<unique_ptr_huge_page<Worker>> m_workers;
 };
 
 class alignas(128) Worker {
