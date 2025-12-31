@@ -465,7 +465,7 @@ Value Worker::search(
     if (!is_in_check) {
         correction      = m_td.history.get_correction(pos);
         raw_eval        = tt_data && !is_mate_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
-        ss->static_eval = raw_eval + correction;
+        ss->static_eval = adj_shuffle(pos, raw_eval) + correction;
         improving = (ss - 2)->static_eval != -VALUE_INF && ss->static_eval > (ss - 2)->static_eval;
 
         if (!tt_data) {
@@ -951,7 +951,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     if (!is_in_check) {
         correction  = m_td.history.get_correction(pos);
         raw_eval    = tt_data && !is_mate_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
-        static_eval = raw_eval + correction;
+        static_eval = adj_shuffle(pos, raw_eval) + correction;
 
         if (!tt_data) {
             m_searcher.tt.store(pos, ply, raw_eval, Move::none(), -VALUE_INF, 0, ttpv, Bound::None);
@@ -1043,6 +1043,40 @@ Value Worker::evaluate(const Position& pos) {
 #else
     return -VALUE_INF;  // Not implemented in tune mode
 #endif
+}
+
+Value Worker::adj_shuffle(const Position& pos, Value value) {
+    // During datagen, use raw evals only.
+    // source: chef.
+    if (m_searcher.settings.datagen) {
+        return value;
+    }
+
+    // Scale down the value estimate when there's not much
+    // material left - this will incentivize keeping material
+    // on the board if we have winning chances, and trading
+    // material off if the position is worse for us.
+    i32 material = 0;
+    for (Color c : {Color::White, Color::Black}) {
+        // todo: warning about implementation-defined cast from isize → i32.
+        material += pos.ipiece_count(c, PieceType::Knight) * SEE::value(PieceType::Knight);
+        material += pos.ipiece_count(c, PieceType::Bishop) * SEE::value(PieceType::Bishop);
+        material += pos.ipiece_count(c, PieceType::Rook) * SEE::value(PieceType::Rook);
+        material += pos.ipiece_count(c, PieceType::Queen) * SEE::value(PieceType::Queen);
+    }
+    material /= 32;
+
+    constexpr i32 material_scale_base = 900;
+    i32           mat_mul             = material_scale_base + material;
+    value                             = (value * mat_mul) / 1024;
+
+    // Scale down the value when the fifty-move counter is high.
+    // This goes some way toward making the engine realise when it's not
+    // making progress in a position.
+    i32 clock = pos.get_50mr_counter();
+    value     = value * (200 - clock) / 200;
+
+    return value;
 }
 }  // namespace Search
 }  // namespace Clockwork
