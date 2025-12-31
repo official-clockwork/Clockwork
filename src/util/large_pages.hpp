@@ -22,23 +22,69 @@ using unique_ptr_huge_page =
 template<typename T>
 T* allocate_huge_page(std::size_t size) {
     constexpr static auto huge_page_size = 2 * 1024 * 1024;  // 2MB pages
-    size = ((size + huge_page_size - 1) / huge_page_size) * huge_page_size;
 
 #ifdef __linux__
+    size    = ((size + huge_page_size - 1) / huge_page_size) * huge_page_size;
     T* data = static_cast<T*>(std::aligned_alloc(huge_page_size, size));
     if (data) {
         madvise(data, size, MADV_HUGEPAGE);
     }
     return data;
 #elif defined(_WIN32)
-    // On Windows, use standard allocation with 2MB alignment hint
-    // VirtualAlloc with MEM_LARGE_PAGES requires privileges and uses larger pages (typically 2MB+)
-    // For consistent 2MB behavior, we use standard allocation
-    T* data =
-      static_cast<T*>(VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    HANDLE           hToken;
+    TOKEN_PRIVILEGES tp;
+    LUID             luid;
+
+    // Get the current process token
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+        return static_cast<T*>(
+          VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    }
+
+    // Get the LUID for the SeLockMemoryPrivilege
+    if (!LookupPrivilegeValue(nullptr, SE_LOCK_MEMORY_NAME, &luid)) {
+        CloseHandle(hToken);
+        return static_cast<T*>(
+          VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    }
+
+    // Enable the SeLockMemoryPrivilege
+    tp.PrivilegeCount           = 1;
+    tp.Privileges[0].Luid       = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, nullptr)) {
+        CloseHandle(hToken);
+        return static_cast<T*>(
+          VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    }
+
+    // Even if AdjustTokenPrivileges returns success, must check GetLastError for ERROR_NOT_ALL_ASSIGNED
+    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
+        CloseHandle(hToken);
+        return static_cast<T*>(
+          VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    }
+
+    // Get the large page minimum size (typically 2MB on x64 Windows)
+    SIZE_T largePageMinimum = GetLargePageMinimum();
+    SIZE_T roundedSize      = ((size + largePageMinimum - 1) / largePageMinimum) * largePageMinimum;
+
+    // Allocate with MEM_LARGE_PAGES
+    T* data = static_cast<T*>(VirtualAlloc(
+      nullptr, roundedSize, MEM_COMMIT | MEM_RESERVE | MEM_LARGE_PAGES, PAGE_READWRITE));
+
+    if (!data) {
+        CloseHandle(hToken);
+        return static_cast<T*>(
+          VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+    }
+
+    CloseHandle(hToken);
     return data;
 #else
     // Fallback for other platforms
+    size    = ((size + huge_page_size - 1) / huge_page_size) * huge_page_size;
     T* data = static_cast<T*>(std::aligned_alloc(huge_page_size, size));
     return data;
 #endif
