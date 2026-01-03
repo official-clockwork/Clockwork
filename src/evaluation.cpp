@@ -192,7 +192,8 @@ PScore evaluate_pieces(const Position& pos) {
                                          ? Bitboard::rank_mask(1) | Bitboard::rank_mask(2)
                                          : Bitboard::rank_mask(5) | Bitboard::rank_mask(6);
     Bitboard           own_early_pawns = own_pawns & early_ranks;
-    Bitboard bb = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
+    Bitboard bb  = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
+    Bitboard bb2 = bb;
     Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
         eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
@@ -210,12 +211,16 @@ PScore evaluate_pieces(const Position& pos) {
               * (!pos.is_square_attacked_by(sq, color, PieceType::Pawn)
                  + (blocked_pawns & Bitboard::central_files()).ipopcount());
     }
+    bb2 |= pos.attacked_by(opp, PieceType::Knight) | pos.attacked_by(opp, PieceType::Bishop);
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb2)];
         eval += ROOK_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
+    bb2 |= pos.attacked_by(opp, PieceType::Rook);
     for (PieceId id : pos.get_piece_mask(color, PieceType::Queen)) {
         eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb2)];
         eval += QUEEN_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
     eval += KING_MOBILITY[pos.mobility_of(color, PieceId::king(), ~bb)];
