@@ -1,9 +1,9 @@
 #pragma once
 
 #include "position.hpp"
+#include "util/large_pages.hpp"
 #include <array>
 #include <atomic>
-#include "util/large_pages.hpp"
 #include <bit>
 
 namespace Clockwork {
@@ -108,8 +108,8 @@ public:
 
 private:
     unique_ptr_huge_page<TTClusterMemory[]> m_clusters;
-    size_t           m_size;
-    u8               m_age;
+    size_t                                  m_size;
+    u8                                      m_age;
 };
 
 }  // namespace Clockwork

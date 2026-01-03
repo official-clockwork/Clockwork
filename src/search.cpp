@@ -10,6 +10,7 @@
 #include "tm.hpp"
 #include "tuned.hpp"
 #include "uci.hpp"
+#include "util/large_pages.hpp"
 #include "util/log2.hpp"
 #include "util/types.hpp"
 #include <algorithm>
@@ -19,7 +20,6 @@
 #include <iostream>
 #include <limits>
 #include <mutex>
-#include "util/large_pages.hpp"
 #include <numeric>
 
 namespace Clockwork {
