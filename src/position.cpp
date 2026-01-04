@@ -573,16 +573,9 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     // Pinners are second-closest pieces that are enemy sliders of the correct type.
     m8x64 pinner = maybe_pinner1 & maybe_pinner2;
 
-// Does this ray have a pinner?
-#if LPS_AVX512
-    const m8x16 has_attacker_vecmask = u8x16{_mm_set1_epi64x(pinner.raw)}.nonzeros();
-    const m8x64 pinned               = m8x64{static_cast<u64>(
-      _mm_cvtsi128_si64(has_attacker_vecmask.mask(u8x16{_mm_set1_epi64x(maybe_pinned.raw)}).raw))};
-#else
-    m8x64 no_pinner_mask = std::bit_cast<m8x64>(std::bit_cast<m64x8>(pinner).to_vector().zeros());
-    m8x64 pinned         = maybe_pinned.andnot(no_pinner_mask);
-#endif
-
+    // Does this ray have a pinner?
+    const m8x64 has_pinner = geometry::ray_fill(pinner);
+    const m8x64 pinned     = maybe_pinned & has_pinner;
 
     u8x64 nonmasked_pinned_ids =
       geometry::lane_broadcast(pinned.mask(ray_places & u8x64::splat(0xF)));

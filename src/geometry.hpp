@@ -54,6 +54,16 @@ forceinline u64 closest(u64 occupied) {
     return x & occupied;
 }
 
+forceinline m8x64 ray_fill(m8x64 x) {
+#if LPS_AVX512
+    u64 y = (x.raw + 0x7E7E7E7E7E7E7E7E) & 0x8080808080808080;
+    return m8x64{(y - (y >> 7)) << 1};
+#else
+    u64x8 y = std::bit_cast<u64x8>(x) + u64x8::splat(0x7FFFFFFFFFFFFFFE);
+    return std::bit_cast<m8x64>(u64x8::zero() - y.shr<63>());
+#endif
+}
+
 forceinline m8x64 attackers_from_rays(u8x64 ray_places) {
     constexpr u8 K  = 1 << 0;
     constexpr u8 WP = 1 << 1;
