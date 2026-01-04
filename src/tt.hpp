@@ -1,6 +1,7 @@
 #pragma once
 
 #include "position.hpp"
+#include "util/large_pages.hpp"
 #include <array>
 #include <atomic>
 #include <bit>
@@ -90,7 +91,6 @@ public:
     static constexpr u8 AGE_MASK = 0x1F;
 
     TT(size_t mb = DEFAULT_SIZE_MB);
-    ~TT();
 
     std::optional<TTData> probe(const Position& position, i32 ply) const;
     void                  store(const Position& position,
@@ -107,9 +107,9 @@ public:
     i32                   hashfull() const;
 
 private:
-    TTClusterMemory* m_clusters;
-    size_t           m_size;
-    u8               m_age;
+    unique_ptr_huge_page<TTClusterMemory[]> m_clusters;
+    size_t                                  m_size;
+    u8                                      m_age;
 };
 
 }  // namespace Clockwork
