@@ -1,7 +1,7 @@
 #pragma once
 
 #include "position.hpp"
-#include "util/large_pages.hpp"
+#include "util/mem.hpp"
 #include <array>
 #include <atomic>
 #include <bit>
@@ -105,6 +105,8 @@ public:
     void                  clear();
     void                  increment_age();
     i32                   hashfull() const;
+    TTClusterMemory*      addr_key(const u64 key) const;
+
 
 private:
     unique_ptr_huge_page<TTClusterMemory[]> m_clusters;

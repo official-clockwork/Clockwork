@@ -85,6 +85,11 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     return {};
 }
 
+TTClusterMemory* TT::addr_key(const u64 key) const {
+    size_t idx = mulhi64(key, m_size);
+    return &this->m_clusters[idx];
+}
+
 void TT::store(const Position& pos,
                i32             ply,
                Value           eval,

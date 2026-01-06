@@ -10,8 +10,8 @@
 #include "tm.hpp"
 #include "tuned.hpp"
 #include "uci.hpp"
-#include "util/large_pages.hpp"
 #include "util/log2.hpp"
+#include "util/mem.hpp"
 #include "util/types.hpp"
 #include <algorithm>
 #include <array>
