@@ -263,6 +263,9 @@ public:
 
     template<bool UPDATE_PSQT>
     [[nodiscard]] Position move(Move m, PsqtState* psqt_state, const TT* tt = nullptr) const;
+    [[nodiscard]] Position move(Move m, PsqtState& psqt_state, const TT* tt = nullptr) const {
+        return move<true>(m, &psqt_state, tt);
+    }
     [[nodiscard]] Position move(Move m, PsqtState& psqt_state) const {
         return move<true>(m, &psqt_state);
     }
