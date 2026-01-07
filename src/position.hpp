@@ -13,7 +13,7 @@
 
 namespace Clockwork {
 
-    class TT;
+class TT;
 
 struct PsqtState;
 struct PsqtUpdates;
