@@ -13,6 +13,8 @@
     #include <windows.h>
 #endif
 
+// Large page allocation utilities
+
 template<typename T>
 using unique_ptr_huge_page =
   std::conditional_t<std::is_array_v<T>,
@@ -154,3 +156,9 @@ unique_ptr_huge_page<T> make_unique_for_overwrite_huge_page(std::size_t n) {
 template<class T, class... Args>
     requires std::is_bounded_array_v<T>
 void make_unique_for_overwrite_huge_page(Args&&...) = delete;
+
+
+// Prefetching utilities
+inline void prefetch(const void* ptr) {
+    __builtin_prefetch(ptr);
+}
