@@ -63,10 +63,6 @@ TT::TT(size_t mb) :
     resize(mb);
 }
 
-TT::~TT() {
-    aligned_free(m_clusters);
-}
-
 std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     size_t     idx     = mulhi64(pos.get_hash_key(), m_size);
     const auto cluster = this->m_clusters[idx].load();
@@ -87,6 +83,11 @@ std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
     }
 
     return {};
+}
+
+TTClusterMemory* TT::addr_key(const u64 key) const {
+    size_t idx = mulhi64(key, m_size);
+    return &this->m_clusters[idx];
 }
 
 void TT::store(const Position& pos,
@@ -161,13 +162,12 @@ void TT::store(const Position& pos,
 }
 
 void TT::resize(size_t mb) {
-    aligned_free(m_clusters);
 
     size_t bytes   = mb * 1024 * 1024;
     size_t entries = bytes / sizeof(TTClusterMemory);
 
     m_size     = entries;
-    m_clusters = static_cast<TTClusterMemory*>(aligned_alloc(TT_ALIGNMENT, bytes));
+    m_clusters = make_unique_for_overwrite_huge_page<TTClusterMemory[]>(m_size);
     clear();
 }
 

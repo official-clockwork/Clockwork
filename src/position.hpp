@@ -3,6 +3,7 @@
 #include "board.hpp"
 #include "move.hpp"
 #include "square.hpp"
+#include "tt.hpp"
 #include "util/types.hpp"
 #include <array>
 #include <bit>
@@ -11,6 +12,8 @@
 #include <tuple>
 
 namespace Clockwork {
+
+class TT;
 
 struct PsqtState;
 struct PsqtUpdates;
@@ -259,15 +262,18 @@ public:
     }
 
     template<bool UPDATE_PSQT>
-    [[nodiscard]] Position move(Move m, PsqtState* psqt_state) const;
-    [[nodiscard]] Position null_move() const;
-
-    [[nodiscard]] Position move(Move m) const {
-        return move<false>(m, nullptr);
+    [[nodiscard]] Position move(Move m, PsqtState* psqt_state, const TT* tt = nullptr) const;
+    [[nodiscard]] Position move(Move m, PsqtState& psqt_state, const TT* tt = nullptr) const {
+        return move<true>(m, &psqt_state, tt);
     }
     [[nodiscard]] Position move(Move m, PsqtState& psqt_state) const {
         return move<true>(m, &psqt_state);
     }
+    [[nodiscard]] Position move(Move m) const {
+        return move<false>(m, nullptr);
+    }
+
+    [[nodiscard]] Position null_move() const;
 
     [[nodiscard]] std::tuple<Wordboard, Bitboard> calc_pin_mask() const;
 

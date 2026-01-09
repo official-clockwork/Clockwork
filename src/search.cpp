@@ -11,6 +11,7 @@
 #include "tuned.hpp"
 #include "uci.hpp"
 #include "util/log2.hpp"
+#include "util/mem.hpp"
 #include "util/types.hpp"
 #include <algorithm>
 #include <array>
@@ -118,9 +119,9 @@ void Searcher::initialize(size_t thread_count) {
     started_barrier = std::make_unique<std::barrier<>>(1 + thread_count);
 
     if (thread_count > 0) {
-        m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::MAIN));
+        m_workers.push_back(make_unique_huge_page<Worker>(*this, ThreadType::MAIN));
         for (size_t i = 1; i < thread_count; i++) {
-            m_workers.push_back(std::make_unique<Worker>(*this, ThreadType::SECONDARY));
+            m_workers.push_back(make_unique_huge_page<Worker>(*this, ThreadType::SECONDARY));
         }
     }
 }
@@ -554,7 +555,7 @@ Value Worker::search(
             for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
 
                 ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
-                Position pos_after  = pos.move(m, m_td.push_psqt_state());
+                Position pos_after  = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
                 repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
                 Value probcut_value =
@@ -707,7 +708,7 @@ Value Worker::search(
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
 
-        Position pos_after = pos.move(m, m_td.push_psqt_state());
+        Position pos_after = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
         moves_played++;
 
         // Put hash into repetition table. TODO: encapsulate this and any other future adjustment to do "on move" into a proper function
@@ -987,7 +988,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
-        Position pos_after  = pos.move(m, m_td.push_psqt_state());
+        Position pos_after  = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
         moves_searched++;
 
         // If we've found a legal move, then we can begin skipping quiet moves.
