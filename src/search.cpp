@@ -1053,27 +1053,7 @@ Value Worker::adj_shuffle(const Position& pos, Value value) {
         return value;
     }
 
-    // Scale down the value estimate when there's not much
-    // material left - this will incentivize keeping material
-    // on the board if we have winning chances, and trading
-    // material off if the position is worse for us.
-    i32 material = 0;
-    for (Color c : {Color::White, Color::Black}) {
-        // todo: warning about implementation-defined cast from isize → i32.
-        material += pos.ipiece_count(c, PieceType::Knight) * SEE::value(PieceType::Knight);
-        material += pos.ipiece_count(c, PieceType::Bishop) * SEE::value(PieceType::Bishop);
-        material += pos.ipiece_count(c, PieceType::Rook) * SEE::value(PieceType::Rook);
-        material += pos.ipiece_count(c, PieceType::Queen) * SEE::value(PieceType::Queen);
-    }
-    material /= 32;
-
-    constexpr i32 material_scale_base = 900;
-    i32           mat_mul             = material_scale_base + material;
-    value                             = (value * mat_mul) / 1024;
-
     // Scale down the value when the fifty-move counter is high.
-    // This goes some way toward making the engine realise when it's not
-    // making progress in a position.
     i32 clock = pos.get_50mr_counter();
     value     = value * (200 - clock) / 200;
 
