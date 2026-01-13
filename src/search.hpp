@@ -193,6 +193,7 @@ private:
     template<bool IS_MAIN>
     Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
     Value evaluate(const Position& pos);
+    Value adj_shuffle(const Position& pos, Value value);
     bool  check_tm_hard_limit();
 };
 
