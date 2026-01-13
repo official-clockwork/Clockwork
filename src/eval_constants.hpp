@@ -162,6 +162,12 @@ inline const std::array<PParam, 64> KING_PSQT = {
     S(-189, -17),   S(-18, -21),    S(-107, 11),    S(-110, -4),    S(0, 0),        S(0, 0),        S(0, 0),        S(0, 0),        //
 };
 
-// Epoch duration: 4.78127s
-// clang-format on
+inline const std::array<std::array<PParam, 7>, 4> KING_SHELTER = {{
+    { S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0) },
+    { S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0) },
+    { S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0) },
+    { S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0), S(0,0) },
+}};
+// Epoch duration: 8.68854s
+  // clang-format on
 }  // namespace Clockwork

@@ -385,6 +385,22 @@ int main() {
         printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
         printPsqtArray("KING_PSQT", KING_PSQT);
         std::cout << std::endl;
+
+        auto print2DArray = [](const std::string& name, const auto& arr) {
+            std::cout << "inline const std::array<std::array<PParam, " << arr[0].size() << ">, "
+                      << arr.size() << "> " << name << " = {" << std::endl;
+            for (const auto& subarr : arr) {
+                std::cout << "  {";
+                for (const auto& val : subarr) {
+                    std::cout << " " << val << ",";
+                }
+                std::cout << " }," << std::endl;
+            }
+            std::cout << "};" << std::endl;
+        };
+
+        print2DArray("KING_SHELTER", KING_SHELTER);
+
 #endif
         const auto end = time::Clock::now();
         std::cout << "// Epoch duration: " << time::cast<time::FloatSeconds>(end - start).count()
