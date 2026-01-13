@@ -31,7 +31,7 @@ int main() {
 
     // Todo: make these CLI-specifiable
     const size_t batch_size       = 16 * 16384;
-    const size_t micro_batch_size = 1024;
+    const size_t micro_batch_size = 160;
 
     std::vector<Position> positions;
     std::vector<f64>      results;
