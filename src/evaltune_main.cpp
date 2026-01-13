@@ -29,6 +29,10 @@ using namespace Clockwork::Autograd;
 
 int main() {
 
+    // Todo: make these CLI-specifiable
+    const size_t batch_size       = 16 * 16384;
+    const size_t micro_batch_size = 1024;
+
     std::vector<Position> positions;
     std::vector<f64>      results;
 
@@ -71,8 +75,8 @@ int main() {
     results.reserve(total_positions_estimate);
 
     // Huge pages optimization for dynamic arrays
-    enable_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
-    enable_huge_pages(results.data(), results.capacity() * sizeof(f64));
+    advise_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
+    advise_huge_pages(results.data(), results.capacity() * sizeof(f64));
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -135,26 +139,22 @@ int main() {
 #else
     const i32 epochs = 1000;
 #endif
-    const f64    K          = 1.0 / 400;
-    const size_t batch_size = 16 * 16384;
+    const f64 K = 1.0 / 400;
 
     std::mt19937        rng(std::random_device{}());
     std::vector<size_t> indices(positions.size());
     // Initialize indices 1..N
     std::iota(indices.begin(), indices.end(), 0);
-    enable_huge_pages(indices.data(), indices.size() * sizeof(size_t));
+    advise_huge_pages(indices.data(), indices.size() * sizeof(size_t));
 
     const size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
     // Per-thread gradient buffers for lock-free accumulation
     std::vector<Parameters> thread_grads(thread_count, Parameters::zeros(parameter_count));
 
-    // small enough to keep tape manageable, large enough for efficiency
-    const size_t micro_batch_size = 1024;
-
     for (auto& tg : thread_grads) {
-        enable_huge_pages(tg.parameters.data(), tg.parameters.size() * sizeof(f64));
-        enable_huge_pages(tg.pair_parameters.data(), tg.pair_parameters.size() * sizeof(f64x2));
+        advise_huge_pages(tg.parameters.data(), tg.parameters.size() * sizeof(f64));
+        advise_huge_pages(tg.pair_parameters.data(), tg.pair_parameters.size() * sizeof(f64x2));
     }
 
     std::barrier epoch_barrier{thread_count + 1};

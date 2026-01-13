@@ -427,10 +427,10 @@ void Graph::cleanup() {
 
 void Graph::zero_grad() {
     for (usize i = 0; i < m_global_param_count; ++i) {
-        m_values.grad(i) = 0.0;
+        m_values.grad(static_cast<u32>(i)) = 0.0;
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        m_pairs.grad(i) = f64x2::zero();
+        m_pairs.grad(static_cast<u32>(i)) = f64x2::zero();
     }
 }
 
@@ -441,10 +441,10 @@ void Graph::copy_parameter_values(const Parameters& source) {
         std::terminate();
     }
     for (usize i = 0; i < m_global_param_count; ++i) {
-        m_values.val(i) = source.parameters[i];
+        m_values.val(static_cast<u32>(i)) = source.parameters[i];
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        m_pairs.val(i) = source.pair_parameters[i];
+        m_pairs.val(static_cast<u32>(i)) = source.pair_parameters[i];
     }
 }
 
@@ -453,10 +453,10 @@ Parameters Graph::get_all_parameter_values() const {
     p.parameters.reserve(m_global_param_count);
     p.pair_parameters.reserve(m_global_pair_count);
     for (usize i = 0; i < m_global_param_count; ++i) {
-        p.parameters.push_back(m_values.val(i));
+        p.parameters.push_back(m_values.val(static_cast<u32>(i)));
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        p.pair_parameters.push_back(m_pairs.val(i));
+        p.pair_parameters.push_back(m_pairs.val(static_cast<u32>(i)));
     }
     return p;
 }
@@ -466,10 +466,10 @@ Parameters Graph::get_all_parameter_gradients() const {
     p.parameters.reserve(m_global_param_count);
     p.pair_parameters.reserve(m_global_pair_count);
     for (usize i = 0; i < m_global_param_count; ++i) {
-        p.parameters.push_back(m_values.grad(i));
+        p.parameters.push_back(m_values.grad(static_cast<u32>(i)));
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        p.pair_parameters.push_back(m_pairs.grad(i));
+        p.pair_parameters.push_back(m_pairs.grad(static_cast<u32>(i)));
     }
     return p;
 }

@@ -72,8 +72,22 @@ void special_member_funs() {
         auto copy = vec;
         REQUIRE(ctr == 6);
         REQUIRE(copy == vec);
-        copy = copy;             // NOLINT
-        copy = std::move(copy);  // NOLINT
+// Intentionally testing self-assign/move behavior - suppress warnings
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wself-assign-overloaded"
+    #pragma clang diagnostic ignored "-Wself-move"
+#elif defined(__GNUC__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wself-move"
+#endif
+        copy = copy;
+        copy = std::move(copy);
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#elif defined(__GNUC__)
+    #pragma GCC diagnostic pop
+#endif
         REQUIRE(ctr == 6);
         REQUIRE(copy.end() - copy.begin() == 3);
         auto copy2 = std::move(copy);
