@@ -8,6 +8,7 @@
 #include "tuning/optim.hpp"
 #include "tuning/value.hpp"
 
+#include "util/mem.hpp"
 #include "util/pretty.hpp"
 #include "util/types.hpp"
 
@@ -17,7 +18,6 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -28,6 +28,10 @@ using namespace Clockwork;
 using namespace Clockwork::Autograd;
 
 int main() {
+
+    // Todo: make these CLI-specifiable
+    const size_t batch_size       = 16 * 16384;
+    const size_t micro_batch_size = 160;
 
     std::vector<Position> positions;
     std::vector<f64>      results;
@@ -40,6 +44,39 @@ int main() {
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 
     std::cout << "Running on " << thread_count << " threads\n";
+
+    // Pre-pass: Count total lines to reserve memory
+    size_t total_positions_estimate = 0;
+    auto   count_lines              = [](const std::string& filename) -> size_t {
+        std::ifstream f(filename, std::ios::binary);
+        if (!f) {
+            return 0;
+        }
+        constexpr size_t  buffer_size = 128 * 1024;
+        std::vector<char> buffer(buffer_size);
+        size_t            lines = 0;
+        while (f.read(buffer.data(), buffer_size) || f.gcount() > 0) {
+            lines +=
+              static_cast<size_t>(std::count(buffer.data(), buffer.data() + f.gcount(), '\n'));
+            if (!f) {
+                break;
+            }
+        }
+        return lines;
+    };
+
+    std::cout << "Counting positions..." << std::endl;
+    for (const auto& filename : fenFiles) {
+        total_positions_estimate += count_lines(filename);
+    }
+    std::cout << "Estimated positions: " << total_positions_estimate << "\n";
+
+    positions.reserve(total_positions_estimate);
+    results.reserve(total_positions_estimate);
+
+    // Huge pages optimization for dynamic arrays
+    advise_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
+    advise_huge_pages(results.data(), results.capacity() * sizeof(f64));
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -102,31 +139,43 @@ int main() {
 #else
     const i32 epochs = 1000;
 #endif
-    const f64    K          = 1.0 / 400;
-    const size_t batch_size = 16 * 16384;
+    const f64 K = 1.0 / 400;
 
     std::mt19937        rng(std::random_device{}());
     std::vector<size_t> indices(positions.size());
     // Initialize indices 1..N
     std::iota(indices.begin(), indices.end(), 0);
+    advise_huge_pages(indices.data(), indices.size() * sizeof(size_t));
+
     const size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
-    // Shared gradient accumulator
-    Parameters batch_gradients = Parameters::zeros(parameter_count);
+    // Per-thread gradient buffers for lock-free accumulation
+    std::vector<Parameters> thread_grads(thread_count, Parameters::zeros(parameter_count));
 
-    std::mutex mutex;
+    for (auto& tg : thread_grads) {
+        advise_huge_pages(tg.parameters.data(), tg.parameters.size() * sizeof(f64));
+        advise_huge_pages(tg.pair_parameters.data(), tg.pair_parameters.size() * sizeof(f64x2));
+    }
 
     std::barrier epoch_barrier{thread_count + 1};
     std::barrier batch_barrier{thread_count + 1, [&]() noexcept {
-                                   // Single-thread optimizer update
-                                   optim.step(current_parameter_values, batch_gradients);
-                                   batch_gradients = Parameters::zeros(parameter_count);
+                                   // Reduce all thread gradients into thread_grads[0]
+                                   for (u32 i = 1; i < thread_count; ++i) {
+                                       thread_grads[0].accumulate(thread_grads[i]);
+                                   }
+                                   // Apply optimizer
+                                   optim.step(current_parameter_values, thread_grads[0]);
                                }};
 
     // Spawn worker threads
     for (u32 t = 0; t < thread_count; ++t) {
         std::thread([&, t]() {
-            // Each thread uses its own Graph arena
+            // Pre-allocated buffers (reused across micro-batches)
+            std::vector<ValueHandle> outputs;
+            std::vector<f64>         targets;
+            outputs.reserve(micro_batch_size);
+            targets.reserve(micro_batch_size);
+
             for (int epoch = 0; epoch < epochs; ++epoch) {
 
                 epoch_barrier.arrive_and_wait();
@@ -136,44 +185,46 @@ int main() {
                     size_t batch_end       = std::min(batch_start + batch_size, positions.size());
                     size_t this_batch_size = batch_end - batch_start;
 
-                    size_t sub_size = (this_batch_size + thread_count - 1) / thread_count;
-
+                    size_t sub_size  = (this_batch_size + thread_count - 1) / thread_count;
                     size_t sub_start = batch_start + sub_size * t;
                     size_t sub_end   = std::min(sub_start + sub_size, batch_end);
 
+                    // Clear thread-local gradients for this batch
+                    auto& my_grads = thread_grads[t];
+                    std::fill(my_grads.parameters.begin(), my_grads.parameters.end(), 0.0);
+                    for (auto& p : my_grads.pair_parameters) {
+                        p = f64x2::zero();
+                    }
+
                     Graph::get().copy_parameter_values(current_parameter_values);
 
-                    std::vector<ValueHandle> outputs;
-                    std::vector<f64>         targets;
-                    outputs.reserve(sub_end - sub_start);
-                    targets.reserve(sub_end - sub_start);
+                    // Process micro-batches to keep tape small
+                    for (size_t mb_start = sub_start; mb_start < sub_end;
+                         mb_start += micro_batch_size) {
+                        size_t mb_end = std::min(mb_start + micro_batch_size, sub_end);
 
-                    // Forward
-                    for (size_t j = sub_start; j < sub_end; ++j) {
-                        size_t idx = indices[j];
+                        outputs.clear();
+                        targets.clear();
 
-                        auto        y = results[idx];
-                        ValueHandle v = (evaluate_white_pov(positions[idx]) * K).sigmoid();
-                        outputs.push_back(v);
-                        targets.push_back(y);
+                        // Forward pass for this micro-batch
+                        for (size_t j = mb_start; j < mb_end; ++j) {
+                            size_t idx = indices[j];
+                            outputs.push_back((evaluate_white_pov(positions[idx]) * K).sigmoid());
+                            targets.push_back(results[idx]);
+                        }
+
+                        // Backward pass
+                        ValueHandle loss = mse<f64, Reduction::Sum>(outputs, targets)
+                                         * ValueHandle::create(1.0 / double(this_batch_size));
+
+                        Graph::get().backward();
+
+                        // Accumulate to thread-local buffer (no lock needed)
+                        my_grads.accumulate(Graph::get().get_all_parameter_gradients());
+
+                        Graph::get().cleanup();
+                        Graph::get().zero_grad();
                     }
-
-                    // Backward
-                    ValueHandle loss = mse<f64, Reduction::Sum>(outputs, targets)
-                                     * ValueHandle::create(1.0 / double(this_batch_size));
-
-                    Graph::get().backward();
-
-                    Parameters grads = Graph::get().get_all_parameter_gradients();
-
-                    // Accumulate
-                    {
-                        std::lock_guard guard(mutex);
-                        batch_gradients.accumulate(grads);
-                    }
-
-                    Graph::get().cleanup();
-                    Graph::get().zero_grad();
 
                     batch_barrier.arrive_and_wait();
                 }
