@@ -388,15 +388,15 @@ int main() {
 
         auto print2DArray = [](const std::string& name, const auto& arr) {
             std::cout << "inline const std::array<std::array<PParam, " << arr[0].size() << ">, "
-                      << arr.size() << "> " << name << " = {" << std::endl;
+                      << arr.size() << "> " << name << " = {{" << std::endl;
             for (const auto& subarr : arr) {
-                std::cout << "  {";
+                std::cout << "  {{";
                 for (const auto& val : subarr) {
                     std::cout << " " << val << ",";
                 }
-                std::cout << " }," << std::endl;
+                std::cout << " }}," << std::endl;
             }
-            std::cout << "};" << std::endl;
+            std::cout << "}};" << std::endl;
         };
 
         print2DArray("KING_SHELTER", KING_SHELTER);
