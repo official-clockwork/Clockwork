@@ -111,7 +111,7 @@ PScore king_shelter(const Position& pos) {
     Square king_square = pos.king_sq(color);
 
     Bitboard b = ~Bitboard::forward_ranks(opp, king_square); // Squares ahead or on king's rank
-    Bitboard our_pawns = pos.bitboard_for(color, PieceType::Pawn) & b;
+    Bitboard their_pawns = pos.bitboard_for(opp, PieceType::Pawn) & b;
 
     PScore score = PSCORE_ZERO;
 
@@ -121,11 +121,11 @@ PScore king_shelter(const Position& pos) {
         i32 file = shelter_center + offset;
         Bitboard file_bb = Bitboard::file_mask(file);
 
-        b = our_pawns & file_bb;
-        i32 our_rank = b.any() ? b.frontmost_square(opp).relative_rank(color) : 0;
+        b = their_pawns & file_bb;
+        i32 their_rank = b.any() ? b.frontmost_square(opp).relative_rank(color) : 0;
 
         i32 edge_idx = std::min(file, 7 - file);
-        score += KING_SHELTER[static_cast<usize>(edge_idx)][static_cast<usize>(our_rank)];
+        score += SHELTER_STORM[static_cast<usize>(edge_idx)][static_cast<usize>(their_rank)];
     }
 
     return score;

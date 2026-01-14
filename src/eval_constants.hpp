@@ -162,7 +162,7 @@ inline const std::array<PParam, 64> KING_PSQT = {
     S(-150, -11),   S(-8, -8),      S(-98, 3),      S(-100, -26),   S(0, 0),        S(0, 0),        S(0, 0),        S(0, 0),        //
 };
 
-inline const std::array<std::array<PParam, 7>, 4> KING_SHELTER = {{
+inline const std::array<std::array<PParam, 7>, 4> SHELTER_STORM = {{
   {{ S(-67, 30), S(-2, -28), S(50, -41), S(27, -30), S(30, -33), S(50, -40), S(-8, -18), }},
   {{ S(-51, 25), S(31, -6), S(57, -47), S(19, -31), S(20, -27), S(55, -42), S(33, 2), }},
   {{ S(-20, 25), S(6, 19), S(28, -38), S(16, -86), S(22, -84), S(35, -35), S(3, 23), }},

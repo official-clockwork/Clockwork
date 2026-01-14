@@ -399,7 +399,7 @@ int main() {
             std::cout << "}};" << std::endl;
         };
 
-        print2DArray("KING_SHELTER", KING_SHELTER);
+        print2DArray("SHELTER_STORM", SHELTER_STORM);
 
 #endif
         const auto end = time::Clock::now();
