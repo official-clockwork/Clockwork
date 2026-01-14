@@ -112,7 +112,7 @@ public:
     }
 
     [[nodiscard]] Square frontmost_square(Color color) const {
-        return color == Color::White ? lsb() : msb();
+        return color == Color::White ? msb() : lsb();
     }
 
     [[nodiscard]] static Bitboard forward_ranks(Color c, Square sq){
