@@ -105,6 +105,46 @@ std::array<std::array<Bitboard, 64>, 2> passed_pawn_spans = []() {
 }();
 
 template<Color color>
+PScore king_shelter(const Position& pos) {
+    constexpr Color opp = ~color;
+
+    Square king_square = pos.king_sq(color);
+
+    Bitboard b = ~Bitboard::forward_ranks(opp, king_square);  // Squares ahead or on king's rank
+    Bitboard our_pawns =
+      pos.bitboard_for(color, PieceType::Pawn) & b & ~pos.attacked_by(opp, PieceType::Pawn);
+    Bitboard their_pawns = pos.bitboard_for(opp, PieceType::Pawn) & b;
+
+    PScore score = PSCORE_ZERO;
+
+    i32 shelter_center = std::clamp(king_square.file(), 1, 6);
+
+    for (i32 offset = -1; offset <= 1; offset++) {
+        i32      file    = shelter_center + offset;
+        Bitboard file_bb = Bitboard::file_mask(file);
+
+        // Our pawns
+        b            = our_pawns & file_bb;
+        i32 our_rank = b.any() ? b.frontmost_square(opp).relative_rank(color) : 0;
+
+        // Opponent pawns
+        b              = their_pawns & file_bb;
+        i32 their_rank = b.any() ? b.frontmost_square(opp).relative_rank(color) : 0;
+
+        i32 edge_idx = std::min(file, 7 - file);
+
+        score += KING_SHELTER[static_cast<usize>(edge_idx)][static_cast<usize>(our_rank)];
+        if (our_rank && (our_rank == their_rank - 1)) {
+            score += BLOCKED_SHELTER_STORM[static_cast<usize>(their_rank)];
+        } else {
+            score += SHELTER_STORM[static_cast<usize>(edge_idx)][static_cast<usize>(their_rank)];
+        }
+    }
+
+    return score;
+}
+
+template<Color color>
 PScore evaluate_pawns(const Position& pos) {
     constexpr i32   RANK_2 = 1;
     constexpr i32   RANK_3 = 2;
@@ -303,6 +343,9 @@ PScore evaluate_king_safety(const Position& pos) {
         eval += PT_OUTER_RING_ATTACKS[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)]
               * outer.ipopcount();
     }
+
+    eval += king_shelter<color>(pos);
+
     return eval;
 }
 

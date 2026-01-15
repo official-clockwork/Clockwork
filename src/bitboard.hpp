@@ -78,6 +78,10 @@ public:
         return Square{static_cast<u8>(std::countr_zero(m_raw))};
     }
 
+    [[nodiscard]] bool any() const {
+        return static_cast<bool>(m_raw);
+    }
+
     // Rank closest to player
     [[nodiscard]] u8 front_rank(Color color) const {
         i32 color_shift = color == Color::White ? 0 : 56;
@@ -105,6 +109,15 @@ public:
         case Direction::NorthWest:
             return Bitboard{(m_raw & ~FILE_A) << 7};
         }
+    }
+
+    [[nodiscard]] Square frontmost_square(Color color) const {
+        return color == Color::White ? msb() : lsb();
+    }
+
+    [[nodiscard]] static Bitboard forward_ranks(Color c, Square sq) {
+        return c == Color::White ? ~rank_mask(0) << (8 * sq.relative_rank(c))
+                                 : ~rank_mask(7) >> (8 * sq.relative_rank(c));
     }
 
     [[nodiscard]] Bitboard shift_relative(Color perspective, Direction dir) const {
@@ -214,6 +227,24 @@ public:
     }
     friend constexpr Bitboard& operator^=(Bitboard& a, Bitboard b) {
         return a = a ^ b;
+    }
+    friend constexpr Bitboard& operator>>=(Bitboard& a, i32 shift) {
+        return a = a >> shift;
+    }
+    friend constexpr Bitboard& operator<<=(Bitboard& a, i32 shift) {
+        return a = a << shift;
+    }
+
+    // ostream support for debugging
+    friend std::ostream& operator<<(std::ostream& os, const Bitboard& bb) {
+        for (i32 rank = 7; rank >= 0; rank--) {
+            for (i32 file = 0; file < 8; file++) {
+                Square sq = Square::from_file_and_rank(file, rank);
+                os << (bb.is_set(sq) ? '1' : '.') << ' ';
+            }
+            os << std::endl;
+        }
+        return os;
     }
 
 private:
