@@ -115,9 +115,9 @@ public:
         return color == Color::White ? msb() : lsb();
     }
 
-    [[nodiscard]] static Bitboard forward_ranks(Color c, Square sq){
+    [[nodiscard]] static Bitboard forward_ranks(Color c, Square sq) {
         return c == Color::White ? ~rank_mask(0) << (8 * sq.relative_rank(c))
-                                : ~rank_mask(7) >> (8 * sq.relative_rank(c));
+                                 : ~rank_mask(7) >> (8 * sq.relative_rank(c));
     }
 
     [[nodiscard]] Bitboard shift_relative(Color perspective, Direction dir) const {
