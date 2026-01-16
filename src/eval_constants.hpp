@@ -27,6 +27,8 @@ inline const PParam PAWN_PUSH_THREAT_BISHOP = S(56, -24);
 inline const PParam PAWN_PUSH_THREAT_ROOK   = S(37, 35);
 inline const PParam PAWN_PUSH_THREAT_QUEEN  = S(68, -49);
 
+inline const PParam ROOK_LINEUP = S(0,0);
+
 inline const std::array<PParam, 6> PAWN_PHALANX = {
     S(20, 11), S(55, 35), S(71, 69), S(170, 158), S(478, 229), S(654, 680),
 };

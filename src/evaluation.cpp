@@ -256,6 +256,14 @@ PScore evaluate_pieces(const Position& pos) {
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb2)];
         eval += ROOK_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
+        // Rook lineups
+        Bitboard rook_file = Bitboard::file_mask(
+          pos.piece_list_sq(color)[id].file());
+        eval += ROOK_LINEUP
+              * (rook_file
+                 & (pos.bitboard_for(~color, PieceType::Queen)
+                    | pos.bitboard_for(color, PieceType::Queen)))
+                  .ipopcount();
     }
     bb2 |= pos.attacked_by(opp, PieceType::Rook);
     for (PieceId id : pos.get_piece_mask(color, PieceType::Queen)) {
@@ -394,6 +402,7 @@ PScore evaluate_space(const Position& pos) {
     eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
     eval +=
       ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
+
 
     return eval;
 }
