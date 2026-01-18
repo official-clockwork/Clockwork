@@ -8,7 +8,7 @@
 
 [![Clockwork](https://github.com/official-clockwork/Clockwork/actions/workflows/clockwork.yml/badge.svg)](https://github.com/official-clockwork/Clockwork/actions/workflows/clockwork.yml)
 [![License](https://img.shields.io/badge/license-AGPL_3.0-blue)](LICENSE)
-[![OpenBench](https://img.shields.io/badge/OpenBench-view-orange)](http://clockworkopenbench.pythonanywhere.com)
+[![OpenBench](https://img.shields.io/badge/OpenBench-view-orange)](https://ob.cwchess.org)
 [![Discord](https://img.shields.io/badge/chat-Discord-7289DA)](https://discord.gg/7ffYSCae2f)
 </div>
 
@@ -43,7 +43,7 @@ Several modern HCE projects (incl. Sirius, Weiss, Stash, and Perseus) have come 
 - **Modern C++ (C++20)** with strict styling guidelines and automatic formatting, enforced through our Continuous Integrations pipeline.
 
 - **OpenBench integration**
-  - Full testing and data-generation pipeline: [Clockwork OpenBench](http://clockworkopenbench.pythonanywhere.com).
+  - Full testing and data-generation pipeline: [Clockwork OpenBench](https://ob.cwchess.org).
 
 ---
 
@@ -133,7 +133,7 @@ Here’s how you can get started in just a few steps:
 
 1.  **Register an account** on our OpenBench website:
 
-      * **https://clockworkopenbench.pythonanywhere.com**
+      * **https://ob.cwchess.org**
 
 2.  **Request account enable** on our official Discord server:
 
@@ -221,7 +221,7 @@ So:
 taskset -c 0,2,4,6,8,10,12,14 python3 client.py \
   -U "YOUR_USERNAME" \
   -P "YOUR_PASSWORD" \
-  -S "https://clockworkopenbench.pythonanywhere.com" \
+  -S "https://ob.cwchess.org" \
   -T <THREADS> \
   -N <SOCKETS>
 ```
@@ -233,7 +233,7 @@ If your username is `hce_chess_fan`, your password is `road_to_3600`, and you wa
 taskset -c 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30 python3 client.py \
   -U "hce_chess_fan" \
   -P "road_to_3600" \
-  -S "https://clockworkopenbench.pythonanywhere.com" \
+  -S "https://ob.cwchess.org" \
   -T 16 \
   -N 2
 ```
@@ -246,7 +246,7 @@ if you don't want to waste time manually selecting cores, you can use this comma
 taskset -c $(lscpu -e | awk '!/CPU/ && !seen[$4]++ {printf "%s,", $1}' | sed 's/,$//') \
   python3 client.py \
   -U "YOUR_USERNAME" -P "YOUR_PASSWORD" \
-  -S "https://clockworkopenbench.pythonanywhere.com" \
+  -S "https://ob.cwchess.org" \
   -T <THREADS> \
   -N <SOCKETS>
 ```
