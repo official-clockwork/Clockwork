@@ -257,8 +257,7 @@ PScore evaluate_pieces(const Position& pos) {
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb2)];
         eval += ROOK_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
         // Rook lineups
-        Bitboard rook_file = Bitboard::file_mask(
-          pos.piece_list_sq(color)[id].file());
+        Bitboard rook_file = Bitboard::file_mask(pos.piece_list_sq(color)[id].file());
         eval += ROOK_LINEUP
               * (rook_file
                  & (pos.bitboard_for(~color, PieceType::Queen)
