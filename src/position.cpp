@@ -225,13 +225,13 @@ void Position::incrementally_move_piece(
     u8x64              dst_at_lo = dst_slider_ids.swizzle(BITS_LO);
     u8x64              dst_at_hi = dst_slider_ids.swizzle(BITS_HI);
 
-    u8x64 src_color0 = src_col.to_vector().zip_low_128lanes(src_col.to_vector());
-    u8x64 src_color1 = src_col.to_vector().zip_high_128lanes(src_col.to_vector());
-    u8x64 dst_color0 = dst_col.to_vector().zip_low_128lanes(dst_col.to_vector());
-    u8x64 dst_color1 = dst_col.to_vector().zip_high_128lanes(dst_col.to_vector());
+    i8x64 src_color0 = src_col.to_vector().zip_low_128lanes(src_col.to_vector());
+    i8x64 src_color1 = src_col.to_vector().zip_high_128lanes(src_col.to_vector());
+    i8x64 dst_color0 = dst_col.to_vector().zip_low_128lanes(dst_col.to_vector());
+    i8x64 dst_color1 = dst_col.to_vector().zip_high_128lanes(dst_col.to_vector());
 
-    u16x64 src_color = std::bit_cast<u16x64>(std::array<u8x64, 2>{src_color0, src_color1});
-    u16x64 dst_color = std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_color0, dst_color1});
+    u16x64 src_color = std::bit_cast<u16x64>(std::array<i8x64, 2>{src_color0, src_color1});
+    u16x64 dst_color = std::bit_cast<u16x64>(std::array<i8x64, 2>{dst_color0, dst_color1});
 
     u8x64 src_at0 = src_at_lo.zip_low_128lanes(src_at_hi);
     u8x64 src_at1 = src_at_lo.zip_high_128lanes(src_at_hi);
@@ -303,9 +303,9 @@ m8x64 Position::toggle_rays(Square sq) {
     u8x64              at_lo = slider_ids.swizzle(BITS_LO);
     u8x64              at_hi = slider_ids.swizzle(BITS_HI);
 
-    u8x64  color0 = col.to_vector().zip_low_128lanes(col.to_vector());
-    u8x64  color1 = col.to_vector().zip_high_128lanes(col.to_vector());
-    u16x64 color  = std::bit_cast<u16x64>(std::array<u8x64, 2>{color0, color1});
+    i8x64  color0 = col.to_vector().zip_low_128lanes(col.to_vector());
+    i8x64  color1 = col.to_vector().zip_high_128lanes(col.to_vector());
+    u16x64 color  = std::bit_cast<u16x64>(std::array<i8x64, 2>{color0, color1});
 
     u8x64  at0 = at_lo.zip_low_128lanes(at_hi);
     u8x64  at1 = at_lo.zip_high_128lanes(at_hi);
@@ -356,11 +356,11 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m
     m_attack_table[color].raw |= m16x64{moves.raw}.mask(bit);
 #else
     m8x64 moves     = mask & geometry::piece_moves_avx2(color, ptype, sq);
-    u8x64 moves_vec = moves.to_vector();
+    i8x64 moves_vec = moves.to_vector();
 
-    u8x64  m0 = moves_vec.zip_low_128lanes(moves_vec);
-    u8x64  m1 = moves_vec.zip_high_128lanes(moves_vec);
-    u16x64 m  = std::bit_cast<u16x64>(std::array<u8x64, 2>{m0, m1});
+    i8x64  m0 = moves_vec.zip_low_128lanes(moves_vec);
+    i8x64  m1 = moves_vec.zip_high_128lanes(moves_vec);
+    u16x64 m  = std::bit_cast<u16x64>(std::array<i8x64, 2>{m0, m1});
 
     m_attack_table[color].raw |= m & bit;
 #endif
@@ -572,8 +572,9 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     m8x64 maybe_pinner1 = enemy & geometry::slider_mask(ray_places);
 
     // Find second-closest pieces along each ray
-    m8x64 not_closest   = occupied.andnot(closest);
-    m8x64 pin_raymask   = geometry::superpiece_attacks(not_closest.to_vector(), ray_valid);
+    m8x64 not_closest = occupied.andnot(closest);
+    m8x64 pin_raymask =
+      geometry::superpiece_attacks(not_closest.to_vector().convert<u8>(), ray_valid);
     m8x64 maybe_pinner2 = not_closest & pin_raymask;
 
     // Pinners are second-closest pieces that are enemy sliders of the correct type.
