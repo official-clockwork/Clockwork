@@ -200,6 +200,53 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, ValueHandle rhs) 
     return out;
 }
 
+PairHandle Graph::record_pair_unary(OpType op, PairHandle input) {
+    PairHandle out    = m_pairs.next_handle();
+    f64x2      in_val = m_pairs.val(input.index);
+    f64x2      res    = f64x2::zero();
+
+    switch (op) {
+    case OpType::PairSigmoid: {
+        // Apply sigmoid to each component: 1 / (1 + exp(-x))
+        f64 mg     = in_val.first();
+        f64 eg     = in_val.second();
+        f64 sig_mg = 1.0 / (1.0 + std::exp(-mg));
+        f64 sig_eg = 1.0 / (1.0 + std::exp(-eg));
+        res        = f64x2::make(sig_mg, sig_eg);
+        break;
+    }
+    default:
+        break;
+    }
+
+    m_pairs.alloc(res, f64x2::zero());
+
+    m_tape.push_back(Node::make_scalar(op, out.index, input.index, 0.0));
+
+    return out;
+}
+
+PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, PairHandle rhs) {
+    PairHandle out      = m_pairs.next_handle();
+    f64x2      l        = m_pairs.val(lhs.index);
+    f64x2      r        = m_pairs.val(rhs.index);
+    f64x2      res      = f64x2::zero();
+
+    switch (op) {
+    case OpType::PairMulPair:
+        res = f64x2::mul(l, r);
+        break;
+    default:
+        break;
+    }
+
+    m_pairs.alloc(res, f64x2::zero());
+
+    m_tape.push_back(Node::make_binary(op, out.index, lhs.index, rhs.index));
+
+    return out;
+}
+
 ValueHandle Graph::record_phase(PairHandle lhs, f64 alpha) {
     ValueHandle out      = m_values.next_handle();
     f64x2       pair_val = m_pairs.val(lhs.index);
@@ -335,6 +382,25 @@ void Graph::backward() {
             break;
         }
 
+        case OpType::PairSigmoid: { 
+            const f64x2 grad_out = pair_grads[out_idx];
+
+            // sigmoid output values already computed in forward pass
+            f64x2 sigmoid_out = pair_vals[out_idx];
+
+            f64 sig_mg = sigmoid_out.first();
+            f64 sig_eg = sigmoid_out.second();
+
+            f64 grad_mg = sig_mg * (1.0 - sig_mg);
+            f64 grad_eg = sig_eg * (1.0 - sig_eg);
+
+            f64x2 local_grad = f64x2::make(grad_mg, grad_eg);
+            f64x2 update     = f64x2::mul(local_grad, grad_out);
+
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
+            break;
+        }
+
         case OpType::PairAdd: {
             const f64x2 grad_out   = pair_grads[out_idx];
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_out);
@@ -409,6 +475,17 @@ void Graph::backward() {
             f64x2 recip = f64x2::scalar_div(1.0, val_lhs);
             grads[node.rhs()] +=
               grad_out.first() * recip.first() + grad_out.second() * recip.second();
+            break;
+        }
+        case OpType::PairMulPair: {
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64x2       l        = pair_vals[node.lhs()];
+            f64x2       r        = pair_vals[node.rhs()];
+
+            f64x2 grad_lhs        = f64x2::mul(grad_out, r);
+            f64x2 grad_rhs        = f64x2::mul(grad_out, l);
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_lhs);
+            pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_rhs);
             break;
         }
 

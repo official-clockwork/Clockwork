@@ -405,6 +405,14 @@ int main() {
         print_table("BLOCKED_SHELTER_STORM", BLOCKED_SHELTER_STORM);
         print_2d_array("SHELTER_STORM", SHELTER_STORM);
 
+        auto print_sigmoid = [](const std::string& name, const auto& sigmoid, const i32 templ) {
+            std::cout << "inline TunableSigmoid<" << templ << "> " << name << "(\n" 
+                << "\t" << sigmoid.a() << ", " << sigmoid.c() << "\n" <<
+            ")\n";
+
+        };
+        print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
+
 #endif
         const auto end = time::Clock::now();
         std::cout << "// Epoch duration: " << time::cast<time::FloatSeconds>(end - start).count()

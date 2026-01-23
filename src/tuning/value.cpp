@@ -103,6 +103,10 @@ void PairHandle::zero_grad() const {
 ValueHandle PairHandle::phase_impl(f64 scaled_alpha) const {
     return Graph::get().record_phase(*this, scaled_alpha);
 }
+// Sigmoid operation
+PairHandle PairHandle::sigmoid() const {
+    return Graph::get().record_pair_unary(OpType::PairSigmoid, *this);
+}
 
 // ValueHandle Operators
 ValueHandle operator-(ValueHandle a) {
@@ -170,6 +174,9 @@ PairHandle operator*(PairHandle a, f64 scalar) {
 }
 PairHandle operator*(f64 scalar, PairHandle a) {
     return a * scalar;
+}
+PairHandle operator*(PairHandle a, PairHandle b) {
+    return Graph::get().record_pair_value(OpType::PairMulPair, a, b);
 }
 PairHandle operator/(PairHandle a, f64 scalar) {
     return Graph::get().record_pair_scalar(OpType::PairDivScalar, a, scalar);
