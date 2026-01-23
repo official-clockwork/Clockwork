@@ -5,6 +5,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <cmath>
 
 #ifdef EVAL_TUNING
     #include "tuning/globals.hpp"
@@ -138,14 +139,14 @@ using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
 #endif
 
 
-// TunableSigmoid: a * sigmoid(x / b + c)
+// TunableSigmoid: a * sigmoid((x + c) / b)
 // a and c are tunable pairs (mg, eg), b is a constant scale parameter
 // For inference: uses a lookup table with linear interpolation in the 95% range
 // 95% range is approximately [-b*ln(39), b*ln(39)] = [-3.664b, 3.664b]
 
 template<i32 B_SCALE = 1000>
-class TunableSigmoid {
 #ifdef EVAL_TUNING
+class TunableSigmoid {
 private:
     PParam m_a;  // Scaling parameter
     PParam m_c;  // Offset parameter
@@ -153,10 +154,9 @@ private:
     static constexpr f64 B = static_cast<f64>(B_SCALE);
 
 public:
-    TunableSigmoid(f64 a_mg, f64 a_eg, f64 c_mg, f64 c_eg) :
-        m_a(S(a_mg, a_eg)),
-        m_c(S(c_mg, c_eg)) {
-            std::cout << "init with " << a_mg << a_eg << c_mg << c_eg << std::endl;
+    TunableSigmoid(PParam a, PParam c)
+        m_a(a),
+        m_c(c) {
             std::cout << m_a;
             std::cout << m_c;
     }
@@ -177,69 +177,70 @@ public:
     PParam c() const {
         return m_c;
     }
-
-#else  // Inference mode
+};
+#else
+class TunableSigmoid {
 private:
-    // Lookup table parameters
     static constexpr i32 TABLE_SIZE = 256;
+    static constexpr i32 FP_SHIFT   = 16;
+    static constexpr i32 FP_ONE     = 1 << FP_SHIFT;
     static constexpr f64 B          = static_cast<f64>(B_SCALE);
-    static constexpr f64 LN_39      = 3.6635616461296463;  // ln(39)
-    static constexpr f64 RANGE_MIN  = -B * LN_39;
-    static constexpr f64 RANGE_MAX  = B * LN_39;
-    static constexpr f64 RANGE_SPAN = RANGE_MAX - RANGE_MIN;
+    static constexpr f64 LN_39      = 3.6635616461296463;
 
-    std::array<i16, TABLE_SIZE> m_table_mg;
-    std::array<i16, TABLE_SIZE> m_table_eg;
+    struct Table {
+        i32                         range_min;
+        i32                         range_max;
+        i32                         range_span;
+        i32                         scale_fp;
+        std::array<i16, TABLE_SIZE> values;
+    };
+
+    Table m_mg;
+    Table m_eg;
 
 public:
-    TunableSigmoid(f64 a_mg, f64 a_eg, f64 c_mg, f64 c_eg) {
-        // Build lookup tables for the function: a * sigmoid(x / b + c)
-        for (i32 i = 0; i < TABLE_SIZE; ++i) {
-            f64 t = static_cast<f64>(i) / (TABLE_SIZE - 1);
-            f64 x = RANGE_MIN + t * RANGE_SPAN;
-
-            // Compute sigmoid for both components
-            f64 input_mg = x / B + c_mg;
-            f64 input_eg = x / B + c_eg;
-
-            f64 sig_mg = 1.0 / (1.0 + std::exp(-input_mg));
-            f64 sig_eg = 1.0 / (1.0 + std::exp(-input_eg));
-
-            m_table_mg[i] = static_cast<i16>(a_mg * sig_mg);
-            m_table_eg[i] = static_cast<i16>(a_eg * sig_eg);
-        }
+    TunableSigmoid(PParam a, PParam c) {
+        build_table(m_mg, a.mg(), c.mg());
+        build_table(m_eg, a.eg(), c.eg());
     }
 
     PScore operator()(PScore x) const {
-        // Extract MG and EG components
-        i16 x_mg = x.mg();
-        i16 x_eg = x.eg();
-
-        // Lookup and interpolate for each component
-        i16 result_mg = lookup_component(x_mg, m_table_mg);
-        i16 result_eg = lookup_component(x_eg, m_table_eg);
-
-        return PScore(result_mg, result_eg);
+        return PScore(lookup(x.mg(), m_mg), lookup(x.eg(), m_eg));
     }
 
 private:
-    i16 lookup_component(i16 x_val, const std::array<i16, TABLE_SIZE>& table) const {
-        f64 x = static_cast<f64>(x_val);
+    static void build_table(Table& tbl, i32 a, i32 c) {
+        const f64 bound = B * LN_39;
+        tbl.range_min   = static_cast<i32>(-bound) - c;
+        tbl.range_max   = static_cast<i32>(bound) - c;
+        tbl.range_span  = tbl.range_max - tbl.range_min;
 
-        // Map x to [0, 1] range
-        f64 t = (x - RANGE_MIN) / RANGE_SPAN;
-        t     = std::clamp(t, 0.0, 1.0);
+        tbl.scale_fp =
+          static_cast<i32>((static_cast<i64>(TABLE_SIZE - 1) << FP_SHIFT) / tbl.range_span);
 
-        // Get fractional table index
-        f64 idx_f = t * (TABLE_SIZE - 1);
-        i32 idx0  = static_cast<i32>(idx_f);
-        i32 idx1  = std::min(idx0 + 1, TABLE_SIZE - 1);
+        for (i32 i = 0; i < TABLE_SIZE; ++i) {
+            const f64 t   = static_cast<f64>(i) / (TABLE_SIZE - 1);
+            const f64 x   = tbl.range_min + t * tbl.range_span;
+            const f64 z   = (x + c) / B;
+            const f64 sig = 1.0 / (1.0 + std::exp(-z));
 
-        // Linear interpolation
-        f64 frac = idx_f - idx0;
-        return static_cast<i16>(table[idx0] + frac * (table[idx1] - table[idx0]));
+            tbl.values[i] = static_cast<i16>(std::lround(a * sig));
+        }
     }
-#endif
+
+    static i16 lookup(i16 x_val, const Table& tbl) {
+        const i32 x      = std::clamp(static_cast<i32>(x_val), tbl.range_min, tbl.range_max);
+        const i64 idx_fp = static_cast<i64>(x - tbl.range_min) * tbl.scale_fp;
+
+        const i32 idx  = static_cast<i32>(idx_fp >> FP_SHIFT);
+        const i32 frac = static_cast<i32>(idx_fp & (FP_ONE - 1));
+
+        const i32 v0 = tbl.values[idx];
+        const i32 v1 = tbl.values[std::min(idx + 1, TABLE_SIZE - 1)];
+
+        return static_cast<i16>(v0 + ((v1 - v0) * frac >> FP_SHIFT));
+    }
 };
+#endif
 
 }  // namespace Clockwork
