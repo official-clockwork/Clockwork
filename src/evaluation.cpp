@@ -431,8 +431,8 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore eval = psqt_state.score();  // Used for linear components
 
     // Pieces - get king safety scores directly
-    auto [white_piece_score, white_king_safety] = evaluate_pieces<Color::White>(pos);
-    auto [black_piece_score, black_king_safety] = evaluate_pieces<Color::Black>(pos);
+    auto [white_piece_score, white_king_attack] = evaluate_pieces<Color::White>(pos);
+    auto [black_piece_score, black_king_attack] = evaluate_pieces<Color::Black>(pos);
     eval += white_piece_score - black_piece_score;
 
     // Other linear components
@@ -446,12 +446,12 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
 
     // Nonlinear king safety components
-    PScore white_king_safety_total = white_king_safety + evaluate_king_safety<Color::White>(pos);
-    PScore black_king_safety_total = black_king_safety + evaluate_king_safety<Color::Black>(pos);
+    PScore white_king_attack_total = white_king_attack + evaluate_king_safety<Color::Black>(pos);
+    PScore black_king_attack_total = black_king_attack + evaluate_king_safety<Color::White>(pos);
     
     // Nonlinear adjustment
-    eval += king_safety_activation<Color::White>(pos, white_king_safety_total)
-          - king_safety_activation<Color::Black>(pos, black_king_safety_total);
+    eval += king_safety_activation<Color::White>(pos, white_king_attack_total)
+          - king_safety_activation<Color::Black>(pos, black_king_attack_total);
 
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
     return static_cast<Score>(eval.phase<24>(static_cast<i32>(phase)));

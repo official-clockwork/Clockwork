@@ -163,7 +163,7 @@ public:
 
     PScore operator()(PScore x) const {
         auto scaled  = x / B;
-        auto shifted = scaled + m_c;
+        auto shifted = scaled + (m_c / B);
         auto sig = shifted.sigmoid();
         return m_a * sig;
     }
