@@ -181,7 +181,7 @@ inline const std::array<std::array<PParam, 7>, 4> SHELTER_STORM = {{
 }};
 
 // Tunable Sigmoid Functions for king safety
-inline TunableSigmoid<32> KING_SAFETY_ACTIVATION(
+inline const TunableSigmoid<32> KING_SAFETY_ACTIVATION(
     0,0,0,0
 );
 

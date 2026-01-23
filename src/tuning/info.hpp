@@ -4,6 +4,7 @@
 #include "util/vec/sse2.hpp"
 #include <cassert>
 #include <vector>
+#include <random>
 
 namespace Clockwork::Autograd {
 
@@ -20,6 +21,32 @@ struct Parameters {
         Parameters result;
         result.parameters.resize(counts.parameter_count, 0.0);
         result.pair_parameters.resize(counts.pair_parameter_count, f64x2::zero());
+        return result;
+    }
+
+    static Parameters ones(ParameterCountInfo counts) {
+        Parameters result;
+        result.parameters.resize(counts.parameter_count, 1.0);
+        result.pair_parameters.resize(counts.pair_parameter_count, f64x2::make(1.0, 1.0));
+        return result;
+    }
+
+    static Parameters rand_init(ParameterCountInfo counts, f64 mean = 0.0, f64 variance = 0.1) {
+        std::mt19937_64                     rng{474747};
+        std::uniform_real_distribution<f64> distr(mean, variance);
+
+        Parameters result;
+
+        result.parameters.resize(counts.parameter_count);
+        std::generate(result.parameters.begin(), result.parameters.end(), [&] {
+            return distr(rng);
+        });
+
+        result.pair_parameters.resize(counts.pair_parameter_count);
+        std::generate(result.pair_parameters.begin(), result.pair_parameters.end(), [&] {
+            return f64x2::make(distr(rng), distr(rng));
+        });
+
         return result;
     }
 

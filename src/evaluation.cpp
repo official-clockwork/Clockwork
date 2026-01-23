@@ -428,7 +428,6 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
                        + pos.piece_count(Color::Black, PieceType::Queen));
 
     phase = std::min<usize>(phase, 24);
-
     PScore eval = psqt_state.score();  // Used for linear components
 
     // Pieces - get king safety scores directly

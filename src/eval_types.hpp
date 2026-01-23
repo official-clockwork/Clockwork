@@ -156,6 +156,9 @@ public:
     TunableSigmoid(f64 a_mg, f64 a_eg, f64 c_mg, f64 c_eg) :
         m_a(S(a_mg, a_eg)),
         m_c(S(c_mg, c_eg)) {
+            std::cout << "init with " << a_mg << a_eg << c_mg << c_eg << std::endl;
+            std::cout << m_a;
+            std::cout << m_c;
     }
 
     PScore operator()(PScore x) const {
