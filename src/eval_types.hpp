@@ -197,9 +197,9 @@ private:
     Table m_eg;
 
 public:
-    TunableSigmoid(PParam a, PParam c) {
-        build_table(m_mg, a.mg(), c.mg());
-        build_table(m_eg, a.eg(), c.eg());
+    TunableSigmoid(i32 a_mg, i32 a_eg, i32 c_mg, i32 c_eg) {
+        build_table(m_mg, a_mg, c_mg);
+        build_table(m_eg, a_eg, c_eg);
     }
 
     PScore operator()(PScore x) const {

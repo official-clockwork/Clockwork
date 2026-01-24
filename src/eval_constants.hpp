@@ -182,8 +182,5 @@ inline const std::array<std::array<PParam, 7>, 4> SHELTER_STORM = {{
 inline TunableSigmoid<32> KING_SAFETY_ACTIVATION(
         874, 1999, -104, 40
 );
-// Epoch duration: 5.80449s
-
-// Epoch duration: 5.20419s
 // clang-format on
 }  // namespace Clockwork
