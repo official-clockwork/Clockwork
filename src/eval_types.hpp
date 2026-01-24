@@ -154,7 +154,7 @@ private:
     static constexpr f64 B = static_cast<f64>(B_SCALE);
 
 public:
-    TunableSigmoid(PParam a, PParam c)
+    TunableSigmoid(PParam a, PParam c) :
         m_a(a),
         m_c(c) {
             std::cout << m_a;
