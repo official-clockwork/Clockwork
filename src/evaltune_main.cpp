@@ -409,8 +409,8 @@ int main() {
             PairHandle a_h = static_cast<PairHandle>(sigmoid.a());
             PairHandle c_h = static_cast<PairHandle>(sigmoid.c());
             std::cout << "inline TunableSigmoid<" << templ << "> " << name << "(\n"
-                      << "\t" << a_h.first() << "\t, " << a_h.second() << "\t, " << c_h.first()
-                      << "\t, " << c_h.second() << "\n"
+                      << "\t" << std::lround(a_h.first()) << ", " << std::lround(a_h.second()) << ", " << std::lround(c_h.first())
+                      << ", " << std::lround(c_h.second()) << "\n"
                       << ")\n";
         };
         print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
