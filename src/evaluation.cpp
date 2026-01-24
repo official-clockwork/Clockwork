@@ -223,10 +223,10 @@ PScore evaluate_pawn_push_threats(const Position& pos) {
 
 template<Color color>
 std::pair<PScore, PScore> evaluate_pieces(const Position& pos) {
-    constexpr Color opp       = ~color;
-    PScore          eval      = PSCORE_ZERO;
-    PScore king_safety_score  = PSCORE_ZERO;
-    Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
+    constexpr Color opp               = ~color;
+    PScore          eval              = PSCORE_ZERO;
+    PScore          king_safety_score = PSCORE_ZERO;
+    Bitboard        own_pawns         = pos.bitboard_for(color, PieceType::Pawn);
     Bitboard        blocked_pawns =
       own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
     constexpr Bitboard early_ranks     = color == Color::White
@@ -408,9 +408,9 @@ PScore evaluate_space(const Position& pos) {
 }
 
 template<Color color>
-PScore king_safety_activation(const Position& pos, PScore &king_safety_score) {
+PScore king_safety_activation(const Position& pos, PScore& king_safety_score) {
     // Apply sigmoid activation to king safety score
-    PScore activated  = KING_SAFETY_ACTIVATION(king_safety_score);
+    PScore activated = KING_SAFETY_ACTIVATION(king_safety_score);
     return activated;
 }
 
@@ -427,7 +427,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
                     * (pos.piece_count(Color::White, PieceType::Queen)
                        + pos.piece_count(Color::Black, PieceType::Queen));
 
-    phase = std::min<usize>(phase, 24);
+    phase       = std::min<usize>(phase, 24);
     PScore eval = psqt_state.score();  // Used for linear components
 
     // Pieces - get king safety scores directly
@@ -448,7 +448,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     // Nonlinear king safety components
     PScore white_king_attack_total = white_king_attack + evaluate_king_safety<Color::Black>(pos);
     PScore black_king_attack_total = black_king_attack + evaluate_king_safety<Color::White>(pos);
-    
+
     // Nonlinear adjustment
     eval += king_safety_activation<Color::White>(pos, white_king_attack_total)
           - king_safety_activation<Color::Black>(pos, black_king_attack_total);

@@ -227,10 +227,10 @@ PairHandle Graph::record_pair_unary(OpType op, PairHandle input) {
 }
 
 PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, PairHandle rhs) {
-    PairHandle out      = m_pairs.next_handle();
-    f64x2      l        = m_pairs.val(lhs.index);
-    f64x2      r        = m_pairs.val(rhs.index);
-    f64x2      res      = f64x2::zero();
+    PairHandle out = m_pairs.next_handle();
+    f64x2      l   = m_pairs.val(lhs.index);
+    f64x2      r   = m_pairs.val(rhs.index);
+    f64x2      res = f64x2::zero();
 
     switch (op) {
     case OpType::PairMulPair:
@@ -382,7 +382,7 @@ void Graph::backward() {
             break;
         }
 
-        case OpType::PairSigmoid: { 
+        case OpType::PairSigmoid: {
             const f64x2 grad_out = pair_grads[out_idx];
 
             // sigmoid output values already computed in forward pass
@@ -482,8 +482,8 @@ void Graph::backward() {
             f64x2       l        = pair_vals[node.lhs()];
             f64x2       r        = pair_vals[node.rhs()];
 
-            f64x2 grad_lhs        = f64x2::mul(grad_out, r);
-            f64x2 grad_rhs        = f64x2::mul(grad_out, l);
+            f64x2 grad_lhs         = f64x2::mul(grad_out, r);
+            f64x2 grad_rhs         = f64x2::mul(grad_out, l);
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_lhs);
             pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_rhs);
             break;

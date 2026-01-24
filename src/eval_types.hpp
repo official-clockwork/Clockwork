@@ -2,10 +2,10 @@
 
 #include "util/types.hpp"
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <limits>
-#include <cmath>
 
 #ifdef EVAL_TUNING
     #include "tuning/globals.hpp"
@@ -154,17 +154,15 @@ private:
     static constexpr f64 B = static_cast<f64>(B_SCALE);
 
 public:
-    TunableSigmoid(PParam a, PParam c) :
-        m_a(a),
-        m_c(c) {
-            std::cout << m_a;
-            std::cout << m_c;
+    TunableSigmoid(i32 a0, i32 a1, i32 c0, i32 c1) :
+        m_a(S(a0, a1)),
+        m_c(S(c0, c1)) {
     }
 
     PScore operator()(PScore x) const {
         auto scaled  = x / B;
         auto shifted = scaled + (m_c / B);
-        auto sig = shifted.sigmoid();
+        auto sig     = shifted.sigmoid();
         return m_a * sig;
     }
 

@@ -3,8 +3,8 @@
 #include "util/types.hpp"
 #include "util/vec/sse2.hpp"
 #include <cassert>
-#include <vector>
 #include <random>
+#include <vector>
 
 namespace Clockwork::Autograd {
 

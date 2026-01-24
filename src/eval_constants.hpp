@@ -180,7 +180,7 @@ inline const std::array<std::array<PParam, 7>, 4> SHELTER_STORM = {{
   {{ S(-57, -35), S(-70, -32), S(-71, -34), S(-61, -32), S(-59, -32), S(-70, -34), S(-72, -32), }},
 }};
 inline TunableSigmoid<32> KING_SAFETY_ACTIVATION(
-        S(874, 1999), S(-104, 40)
+        874, 1999, -104, 40
 );
 // Epoch duration: 5.80449s
 

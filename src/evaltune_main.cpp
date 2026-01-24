@@ -406,10 +406,12 @@ int main() {
         print_2d_array("SHELTER_STORM", SHELTER_STORM);
 
         auto print_sigmoid = [](const std::string& name, const auto& sigmoid, const i32 templ) {
-            std::cout << "inline TunableSigmoid<" << templ << "> " << name << "(\n" 
-                << "\t" << sigmoid.a() << ", " << sigmoid.c() << "\n" <<
-            ")\n";
-
+            PairHandle a_h = static_cast<PairHandle>(sigmoid.a());
+            PairHandle c_h = static_cast<PairHandle>(sigmoid.c());
+            std::cout << "inline TunableSigmoid<" << templ << "> " << name << "(\n"
+                      << "\t" << a_h.first() << "\t, " << a_h.second() << "\t, " << c_h.first()
+                      << "\t, " << c_h.second() << "\n"
+                      << ")\n";
         };
         print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
 
