@@ -71,6 +71,8 @@ struct PairHandle {
     ValueHandle phase(f64 alpha) const {
         return phase_impl(alpha / max);
     }
+
+    PairHandle sigmoid() const;
 };
 
 // Operation decls
@@ -99,6 +101,7 @@ PairHandle    operator/(PairHandle a, f64 scalar);
 PairHandle    operator/(f64 scalar, PairHandle a);
 PairHandle    operator*(PairHandle a, ValueHandle v);
 PairHandle    operator*(ValueHandle v, PairHandle a);
+PairHandle    operator*(PairHandle a, PairHandle b);
 PairHandle    operator/(PairHandle a, ValueHandle v);
 PairHandle    operator/(ValueHandle v, PairHandle a);
 std::ostream& operator<<(std::ostream& os, const PairHandle& p);

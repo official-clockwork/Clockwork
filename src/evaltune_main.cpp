@@ -131,7 +131,7 @@ int main() {
     Parameters current_parameter_values = Graph::get().get_all_parameter_values();
 
     // Uncomment for zero tune: Overwrite them all with zeros.
-    current_parameter_values = Parameters::zeros(parameter_count);
+    current_parameter_values = Parameters::rand_init(parameter_count);
 
     // The optimizer will now start with all-zero parameters
     AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
@@ -404,6 +404,17 @@ int main() {
         print_2d_array("KING_SHELTER", KING_SHELTER);
         print_table("BLOCKED_SHELTER_STORM", BLOCKED_SHELTER_STORM);
         print_2d_array("SHELTER_STORM", SHELTER_STORM);
+
+        auto print_sigmoid = [](const std::string& name, const auto& sigmoid, const i32 templ) {
+            PairHandle a_h = static_cast<PairHandle>(sigmoid.a());
+            PairHandle c_h = static_cast<PairHandle>(sigmoid.c());
+            std::cout << "inline TunableSigmoid<" << templ << "> " << name << "(\n"
+                      << "\t" << std::lround(a_h.first()) << ", " << std::lround(a_h.second())
+                      << ", " << std::lround(c_h.first()) << ", " << std::lround(c_h.second())
+                      << "\n"
+                      << ")\n";
+        };
+        print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
 
 #endif
         const auto end = time::Clock::now();
