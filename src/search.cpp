@@ -780,13 +780,18 @@ Value Worker::search(
             Depth reduced_depth = std::clamp<Depth>(new_depth - reduction, 1, new_depth);
             value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, reduced_depth,
                                             ply + 1, true);
-            if (value > alpha && reduced_depth < new_depth) {
-                value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha, new_depth,
-                                                ply + 1, !cutnode);
-                if (quiet && (value <= alpha || value >= beta)) {
-                    m_td.history.update_cont_hist(pos, m, ply, ss,
-                                                  value <= alpha ? -stat_malus(new_depth)
-                                                                 : stat_bonus(new_depth));
+            if (value > alpha) {
+                const bool do_deeper = reduced_depth < new_depth && value > best_value + 94;
+                new_depth += do_deeper;
+
+                if (reduced_depth < new_depth) {
+                    value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha,
+                                                    new_depth, ply + 1, !cutnode);
+                    if (quiet && (value <= alpha || value >= beta)) {
+                        m_td.history.update_cont_hist(pos, m, ply, ss,
+                                                      value <= alpha ? -stat_malus(new_depth)
+                                                                     : stat_bonus(new_depth));
+                    }
                 }
             }
         } else if (!PV_NODE || moves_played > 1) {
