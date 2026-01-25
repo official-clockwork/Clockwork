@@ -2,9 +2,12 @@
 
 EXCLUDE_DIRS=(
     "./build"
+    "./build-release"
+    "./build-evaltune"
     "./.git"
     "./.vscode"
     "./.idea"
+    "./vendor"
 )
 
 FILE_PATTERNS=(
