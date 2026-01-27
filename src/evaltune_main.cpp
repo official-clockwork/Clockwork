@@ -324,11 +324,6 @@ int main() {
         print_table("KING_MOBILITY", KING_MOBILITY);
         std::cout << std::endl;
 
-        print_table("KNIGHT_KING_RING", KNIGHT_KING_RING);
-        print_table("BISHOP_KING_RING", BISHOP_KING_RING);
-        print_table("ROOK_KING_RING", ROOK_KING_RING);
-        print_table("QUEEN_KING_RING", QUEEN_KING_RING);
-        std::cout << std::endl;
         print_table("PT_INNER_RING_ATTACKS", PT_INNER_RING_ATTACKS);
         print_table("PT_OUTER_RING_ATTACKS", PT_OUTER_RING_ATTACKS);
         std::cout << std::endl;

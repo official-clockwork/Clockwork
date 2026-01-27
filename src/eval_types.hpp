@@ -179,7 +179,7 @@ public:
 #else
 class TunableSigmoid {
 private:
-    static constexpr i32 TABLE_SIZE = 256;
+    static constexpr usize TABLE_SIZE = 256;
     static constexpr i32 FP_SHIFT   = 16;
     static constexpr i32 FP_ONE     = 1 << FP_SHIFT;
     static constexpr f64 B          = static_cast<f64>(B_SCALE);
@@ -216,7 +216,7 @@ private:
         tbl.scale_fp =
           static_cast<i32>((static_cast<i64>(TABLE_SIZE - 1) << FP_SHIFT) / tbl.range_span);
 
-        for (i32 i = 0; i < TABLE_SIZE; ++i) {
+        for (usize i = 0; i < TABLE_SIZE; ++i) {
             const f64 t   = static_cast<f64>(i) / (TABLE_SIZE - 1);
             const f64 x   = tbl.range_min + t * tbl.range_span;
             const f64 z   = (x + c) / B;
@@ -230,7 +230,7 @@ private:
         const i32 x      = std::clamp(static_cast<i32>(x_val), tbl.range_min, tbl.range_max);
         const i64 idx_fp = static_cast<i64>(x - tbl.range_min) * tbl.scale_fp;
 
-        const i32 idx  = static_cast<i32>(idx_fp >> FP_SHIFT);
+        const usize idx  = static_cast<usize>(idx_fp >> FP_SHIFT);
         const i32 frac = static_cast<i32>(idx_fp & (FP_ONE - 1));
 
         const i32 v0 = tbl.values[idx];
