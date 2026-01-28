@@ -223,9 +223,9 @@ PScore evaluate_pawn_push_threats(const Position& pos) {
 
 template<Color color>
 PScore evaluate_pieces(const Position& pos) {
-    constexpr Color opp               = ~color;
-    PScore          eval              = PSCORE_ZERO;
-    Bitboard        own_pawns         = pos.bitboard_for(color, PieceType::Pawn);
+    constexpr Color opp       = ~color;
+    PScore          eval      = PSCORE_ZERO;
+    Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
     Bitboard        blocked_pawns =
       own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
     constexpr Bitboard early_ranks     = color == Color::White

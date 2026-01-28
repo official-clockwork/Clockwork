@@ -180,10 +180,10 @@ public:
 class TunableSigmoid {
 private:
     static constexpr usize TABLE_SIZE = 256;
-    static constexpr i32 FP_SHIFT   = 16;
-    static constexpr i32 FP_ONE     = 1 << FP_SHIFT;
-    static constexpr f64 B          = static_cast<f64>(B_SCALE);
-    static constexpr f64 LN_39      = 3.6635616461296463;
+    static constexpr i32   FP_SHIFT   = 16;
+    static constexpr i32   FP_ONE     = 1 << FP_SHIFT;
+    static constexpr f64   B          = static_cast<f64>(B_SCALE);
+    static constexpr f64   LN_39      = 3.6635616461296463;
 
     struct Table {
         i32                         range_min;
@@ -231,7 +231,7 @@ private:
         const i64 idx_fp = static_cast<i64>(x - tbl.range_min) * tbl.scale_fp;
 
         const usize idx  = static_cast<usize>(idx_fp >> FP_SHIFT);
-        const i32 frac = static_cast<i32>(idx_fp & (FP_ONE - 1));
+        const i32   frac = static_cast<i32>(idx_fp & (FP_ONE - 1));
 
         const i32 v0 = tbl.values[idx];
         const i32 v1 = tbl.values[std::min(idx + 1, TABLE_SIZE - 1)];
