@@ -17,6 +17,7 @@ inline const PParam ROOK_OPEN_VAL     = S(107, -23);
 inline const PParam ROOK_SEMIOPEN_VAL = S(44, 16);
 
 inline const PParam DOUBLED_PAWN_VAL = S(-27, -74);
+inline const PParam ISOLATED_PAWN_VAL = S(0,0);
 
 inline const PParam POTENTIAL_CHECKER_VAL = S(-59, -7);
 inline const PParam OUTPOST_KNIGHT_VAL    = S(44, 45);

@@ -29,6 +29,10 @@ public:
         m_raw(raw) {
     }
 
+    constexpr explicit operator bool() {
+        return static_cast<bool>(m_raw);
+    }
+    
     static constexpr Bitboard from_square(Square sq) {
         return Bitboard{static_cast<u64>(1) << sq.raw};
     }
