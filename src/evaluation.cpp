@@ -150,13 +150,19 @@ PScore evaluate_pawns(const Position& pos) {
     constexpr i32   RANK_3 = 2;
     constexpr Color them   = color == Color::White ? Color::Black : Color::White;
 
-    Bitboard pawns      = pos.board().bitboard_for(color, PieceType::Pawn);
-    Bitboard opp_pawns  = pos.board().bitboard_for(~color, PieceType::Pawn);
-    Square   our_king   = pos.king_sq(color);
-    Square   their_king = pos.king_sq(them);
-    PScore   eval       = PSCORE_ZERO;
+    Square our_king   = pos.king_sq(color);
+    Square their_king = pos.king_sq(them);
+    PScore eval       = PSCORE_ZERO;
 
-    eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).ipopcount();
+    Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
+    Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
+
+    Bitboard pawn_files = Bitboard::fill_verticals(pawns);
+    Bitboard doubled    = pawns & pawns.shift(Direction::North);
+    Bitboard isolated =
+      pawns & ~(pawn_files.shift(Direction::East) | pawn_files.shift(Direction::West));
+    eval += DOUBLED_PAWN_VAL * doubled.ipopcount();
+    eval += ISOLATED_PAWN_VAL * isolated.ipopcount();
 
     for (Square sq : pawns) {
         Square   push     = sq.push<color>();
@@ -180,6 +186,7 @@ PScore evaluate_pawns(const Position& pos) {
             eval += ENEMY_KING_PASSED_PAWN_DISTANCE[static_cast<usize>(their_king_dist)];
         }
     }
+
 
     Bitboard phalanx = pawns & pawns.shift(Direction::East);
     for (Square sq : phalanx) {
