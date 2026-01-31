@@ -37,7 +37,6 @@ int main() {
     std::vector<f64>      results;
 
     const std::vector<std::string> fenFiles = {
-      "data/dfrcv1.txt",     "data/dfrcv0.txt",     "data/v3.txt",
       "data/v4_5knpm.txt",   "data/v4_8knpm.txt",   "data/v4_16knpm.txt",
       "data/v4.1_5knpm.txt", "data/v4.1_8knpm.txt", "data/combined.txt",
     };
