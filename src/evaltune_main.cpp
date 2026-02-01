@@ -133,7 +133,7 @@ int main() {
     current_parameter_values = Parameters::rand_init(parameter_count);
 
     // The optimizer will now start with all-zero parameters
-    AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
+    AdamW optim(parameter_count, 1, 0.9, 0.999, 1e-8, 0.0);
 #ifdef PROFILE_RUN
     const i32 epochs = 8;
 #else
@@ -411,6 +411,12 @@ int main() {
                       << ");\n";
         };
         print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
+
+        std::cout << std::endl;
+
+        std::cout << "inline VParam WINNABLE_PAWNS = " << WINNABLE_PAWNS << ";\n";
+        std::cout << "inline VParam WINNABLE_BIAS = " << WINNABLE_BIAS << ";\n";
+        std::cout << std::endl;
 
 #endif
         const auto end = time::Clock::now();

@@ -204,6 +204,11 @@ std::ostream& operator<<(std::ostream& os, const PairHandle& p) {
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const ValueHandle& v) {
+    os << "V(" << std::round(v.get_value()) << ")";
+    return os;
+}
+
 // Value Inplaces
 ValueHandle& operator+=(ValueHandle& a, ValueHandle b) {
     a = a + b;
@@ -263,6 +268,11 @@ PairHandle& operator/=(PairHandle& a, f64 scalar) {
 PairHandle& operator/=(PairHandle& a, ValueHandle v) {
     a = a / v;
     return a;
+}
+
+
+PairHandle PairHandle::relu_add(ValueHandle value) const {
+    return Graph::get().record_pair_value(OpType::ReluAdd, *this, value);
 }
 
 }  // namespace Clockwork::Autograd

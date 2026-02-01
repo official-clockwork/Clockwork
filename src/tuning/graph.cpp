@@ -189,6 +189,11 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, ValueHandle rhs) 
     case OpType::ValueDivPair:
         res = f64x2::scalar_div(v, pair_val);
         break;
+    case OpType::ReluAdd: {
+        f64 add_res = pair_val.second() + v;
+        res         = f64x2::make(pair_val.first(), std::max(0.0, add_res));
+        break;
+    }
     default:
         break;
     }
@@ -488,6 +493,23 @@ void Graph::backward() {
             pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_rhs);
             break;
         }
+        case OpType::ReluAdd: {
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64x2       lhs_val  = pair_vals[node.lhs()];
+            f64         rhs_val  = vals[node.rhs()];
+
+            f64 mask = (lhs_val.second() + rhs_val > 0.0) ? 1.0 : 0.0;
+
+            f64x2 grad_lhs = f64x2::make(grad_out.first(),         // y0 = x0
+                                         grad_out.second() * mask  // y1 = relu(x1 + v)
+            );
+
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_lhs);
+
+            grads[node.rhs()] += grad_out.second() * mask;
+            break;
+        }
+
 
         default:
             unreachable();

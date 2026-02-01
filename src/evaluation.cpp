@@ -415,6 +415,14 @@ PScore king_safety_activation(const Position& pos, PScore& king_safety_score) {
     return activated;
 }
 
+PScore apply_winnable(const Position& pos, PScore& score) {
+    i32 pawn_count = (pos.bitboard_for(Color::White, PieceType::Pawn) | pos.bitboard_for(Color::Black, PieceType::Pawn)).ipopcount();
+    Score winnable = WINNABLE_PAWNS * pawn_count
+                    + WINNABLE_BIAS;
+    
+    return score.relu_add(winnable);
+}
+
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     const Color us    = pos.active_color();
     usize       phase = pos.piece_count(Color::White, PieceType::Knight)
@@ -450,6 +458,10 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
           - king_safety_activation<Color::Black>(pos, black_king_attack_total);
 
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
+
+    // Winnable
+    eval = apply_winnable(pos, eval);
+
     return static_cast<Score>(eval.phase<24>(static_cast<i32>(phase)));
 };
 

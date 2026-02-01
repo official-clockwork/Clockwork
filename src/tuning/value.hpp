@@ -73,6 +73,8 @@ struct PairHandle {
     }
 
     PairHandle sigmoid() const;
+
+    PairHandle relu_add(ValueHandle value) const;
 };
 
 // Operation decls
@@ -105,6 +107,7 @@ PairHandle    operator*(PairHandle a, PairHandle b);
 PairHandle    operator/(PairHandle a, ValueHandle v);
 PairHandle    operator/(ValueHandle v, PairHandle a);
 std::ostream& operator<<(std::ostream& os, const PairHandle& p);
+std::ostream& operator<<(std::ostream& os, const ValueHandle& v);
 
 // Value Inplaces
 ValueHandle& operator+=(ValueHandle& a, ValueHandle b);
