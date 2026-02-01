@@ -189,9 +189,15 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, ValueHandle rhs) 
     case OpType::ValueDivPair:
         res = f64x2::scalar_div(v, pair_val);
         break;
-    case OpType::ReluAdd: {
+    case OpType::PairAddClampedSecond: {
         f64 add_res = pair_val.second() + v;
-        res         = f64x2::make(pair_val.first(), std::max(0.0, add_res));
+        if (pair_val.second() > 0) {
+            res = f64x2::make(pair_val.first(), std::max(0.0, add_res));
+        } else if (pair_val.second() < 0) {
+            res = f64x2::make(pair_val.first(), std::min(0.0, add_res));
+        } else {
+            res = pair_val;
+        }
         break;
     }
     default:
@@ -493,20 +499,30 @@ void Graph::backward() {
             pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_rhs);
             break;
         }
-        case OpType::ReluAdd: {
+        case OpType::PairAddClampedSecond: {
             const f64x2 grad_out = pair_grads[out_idx];
-            f64x2       lhs_val  = pair_vals[node.lhs()];
-            f64         rhs_val  = vals[node.rhs()];
+            f64x2       val_lhs  = pair_vals[node.lhs()];
+            f64         val_rhs  = vals[node.rhs()];
 
-            f64 mask = (lhs_val.second() + rhs_val > 0.0) ? 1.0 : 0.0;
+            f64x2 grad_pair = f64x2::make(grad_out.first(), 0.0);
 
-            f64x2 grad_lhs = f64x2::make(grad_out.first(),         // y0 = x0
-                                         grad_out.second() * mask  // y1 = relu(x1 + v)
-            );
+            f64 add_res = val_lhs.second() + val_rhs;
 
-            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_lhs);
+            if (val_lhs.second() > 0) {
+                if (add_res > 0.0) {
+                    grad_pair = f64x2::make(grad_out.first(), grad_out.second());
+                    grads[node.rhs()] += grad_out.second();
+                }
+            } else if (val_lhs.second() < 0) {
+                if (add_res < 0.0) {
+                    grad_pair = f64x2::make(grad_out.first(), grad_out.second());
+                    grads[node.rhs()] += grad_out.second();
+                }
+            } else {
+                grad_pair = grad_out;
+            }
 
-            grads[node.rhs()] += grad_out.second() * mask;
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_pair);
             break;
         }
 

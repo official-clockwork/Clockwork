@@ -271,8 +271,8 @@ PairHandle& operator/=(PairHandle& a, ValueHandle v) {
 }
 
 
-PairHandle PairHandle::relu_add(ValueHandle value) const {
-    return Graph::get().record_pair_value(OpType::ReluAdd, *this, value);
+PairHandle PairHandle::complexity_add(ValueHandle value) const {
+    return Graph::get().record_pair_value(OpType::PairAddClampedSecond, *this, value);
 }
 
 }  // namespace Clockwork::Autograd

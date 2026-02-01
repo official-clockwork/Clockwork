@@ -101,8 +101,8 @@ public:
         return static_cast<Value>((mg() * alpha + eg() * (max - alpha)) / max);
     }
 
-    // relu_add
-    PScore relu_add(Score val) {
+    // complexity_add
+    PScore complexity_add(Score val) {
         return PScore{mg(), static_cast<Score>(std::max(0, eg() + val))};
     }
 

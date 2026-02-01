@@ -416,12 +416,14 @@ PScore king_safety_activation(const Position& pos, PScore& king_safety_score) {
 }
 
 PScore apply_winnable(const Position& pos, PScore& score) {
+    const Color color = pos.active_color();
+
     i32 pawn_count = (pos.bitboard_for(Color::White, PieceType::Pawn)
                       | pos.bitboard_for(Color::Black, PieceType::Pawn))
                        .ipopcount();
     Score winnable = WINNABLE_PAWNS * pawn_count + WINNABLE_BIAS;
 
-    return score.relu_add(winnable);
+    return score.complexity_add(color == Color::White ? winnable : -winnable);
 }
 
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {

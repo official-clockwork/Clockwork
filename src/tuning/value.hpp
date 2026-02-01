@@ -74,7 +74,7 @@ struct PairHandle {
 
     PairHandle sigmoid() const;
 
-    PairHandle relu_add(ValueHandle value) const;
+    PairHandle complexity_add(ValueHandle value) const;
 };
 
 // Operation decls
