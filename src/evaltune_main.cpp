@@ -274,6 +274,8 @@ int main() {
         std::cout << std::endl;
         std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
                   << std::endl;
+        std::cout << "inline const PParam ISOLATED_PAWN_VAL = " << ISOLATED_PAWN_VAL << ";"
+                  << std::endl;
         std::cout << std::endl;
 
         std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
@@ -324,11 +326,6 @@ int main() {
         print_table("KING_MOBILITY", KING_MOBILITY);
         std::cout << std::endl;
 
-        print_table("KNIGHT_KING_RING", KNIGHT_KING_RING);
-        print_table("BISHOP_KING_RING", BISHOP_KING_RING);
-        print_table("ROOK_KING_RING", ROOK_KING_RING);
-        print_table("QUEEN_KING_RING", QUEEN_KING_RING);
-        std::cout << std::endl;
         print_table("PT_INNER_RING_ATTACKS", PT_INNER_RING_ATTACKS);
         print_table("PT_OUTER_RING_ATTACKS", PT_OUTER_RING_ATTACKS);
         std::cout << std::endl;
@@ -412,7 +409,7 @@ int main() {
                       << "\t" << std::lround(a_h.first()) << ", " << std::lround(a_h.second())
                       << ", " << std::lround(c_h.first()) << ", " << std::lround(c_h.second())
                       << "\n"
-                      << ")\n";
+                      << ");\n";
         };
         print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
 

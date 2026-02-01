@@ -150,13 +150,19 @@ PScore evaluate_pawns(const Position& pos) {
     constexpr i32   RANK_3 = 2;
     constexpr Color them   = color == Color::White ? Color::Black : Color::White;
 
-    Bitboard pawns      = pos.board().bitboard_for(color, PieceType::Pawn);
-    Bitboard opp_pawns  = pos.board().bitboard_for(~color, PieceType::Pawn);
-    Square   our_king   = pos.king_sq(color);
-    Square   their_king = pos.king_sq(them);
-    PScore   eval       = PSCORE_ZERO;
+    Square our_king   = pos.king_sq(color);
+    Square their_king = pos.king_sq(them);
+    PScore eval       = PSCORE_ZERO;
 
-    eval += DOUBLED_PAWN_VAL * (pawns & pawns.shift(Direction::North)).ipopcount();
+    Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
+    Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
+
+    Bitboard pawn_files = Bitboard::fill_verticals(pawns);
+    Bitboard doubled    = pawns & pawns.shift(Direction::North);
+    Bitboard isolated =
+      pawns & ~(pawn_files.shift(Direction::East) | pawn_files.shift(Direction::West));
+    eval += DOUBLED_PAWN_VAL * doubled.ipopcount();
+    eval += ISOLATED_PAWN_VAL * isolated.ipopcount();
 
     for (Square sq : pawns) {
         Square   push     = sq.push<color>();
@@ -180,6 +186,7 @@ PScore evaluate_pawns(const Position& pos) {
             eval += ENEMY_KING_PASSED_PAWN_DISTANCE[static_cast<usize>(their_king_dist)];
         }
     }
+
 
     Bitboard phalanx = pawns & pawns.shift(Direction::East);
     for (Square sq : phalanx) {
@@ -222,11 +229,10 @@ PScore evaluate_pawn_push_threats(const Position& pos) {
 }
 
 template<Color color>
-std::pair<PScore, PScore> evaluate_pieces(const Position& pos) {
-    constexpr Color opp               = ~color;
-    PScore          eval              = PSCORE_ZERO;
-    PScore          king_safety_score = PSCORE_ZERO;
-    Bitboard        own_pawns         = pos.bitboard_for(color, PieceType::Pawn);
+PScore evaluate_pieces(const Position& pos) {
+    constexpr Color opp       = ~color;
+    PScore          eval      = PSCORE_ZERO;
+    Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
     Bitboard        blocked_pawns =
       own_pawns & pos.board().get_occupied_bitboard().shift_relative(color, Direction::South);
     constexpr Bitboard early_ranks     = color == Color::White
@@ -235,14 +241,11 @@ std::pair<PScore, PScore> evaluate_pieces(const Position& pos) {
     Bitboard           own_early_pawns = own_pawns & early_ranks;
     Bitboard bb  = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
     Bitboard bb2 = bb;
-    Bitboard opp_king_ring = king_ring_table[pos.king_sq(opp).raw];
     for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
         eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
-        king_safety_score += KNIGHT_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
     for (PieceId id : pos.get_piece_mask(color, PieceType::Bishop)) {
         eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
-        king_safety_score += BISHOP_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
         Square sq = pos.piece_list_sq(color)[id];
         eval += BISHOP_PAWNS[std::min(
                   static_cast<usize>(8),
@@ -256,7 +259,6 @@ std::pair<PScore, PScore> evaluate_pieces(const Position& pos) {
     for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
         eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb2)];
-        king_safety_score += ROOK_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
         // Rook lineups
         Bitboard rook_file = Bitboard::file_mask(pos.piece_list_sq(color)[id].file());
         eval += ROOK_LINEUP
@@ -269,7 +271,6 @@ std::pair<PScore, PScore> evaluate_pieces(const Position& pos) {
     for (PieceId id : pos.get_piece_mask(color, PieceType::Queen)) {
         eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb)];
         eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb2)];
-        king_safety_score += QUEEN_KING_RING[pos.mobility_of(color, id, opp_king_ring)];
     }
     eval += KING_MOBILITY[pos.mobility_of(color, PieceId::king(), ~bb)];
 
@@ -277,7 +278,7 @@ std::pair<PScore, PScore> evaluate_pieces(const Position& pos) {
         eval += BISHOP_PAIR_VAL;
     }
 
-    return {eval, king_safety_score};
+    return eval;
 }
 
 template<Color color>
@@ -430,12 +431,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     phase       = std::min<usize>(phase, 24);
     PScore eval = psqt_state.score();  // Used for linear components
 
-    // Pieces - get king safety scores directly
-    auto [white_piece_score, white_king_attack] = evaluate_pieces<Color::White>(pos);
-    auto [black_piece_score, black_king_attack] = evaluate_pieces<Color::Black>(pos);
-    eval += white_piece_score - black_piece_score;
-
-    // Other linear components
+    eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
     eval +=
       evaluate_pawn_push_threats<Color::White>(pos) - evaluate_pawn_push_threats<Color::Black>(pos);
@@ -446,8 +442,8 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
 
     // Nonlinear king safety components
-    PScore white_king_attack_total = white_king_attack + evaluate_king_safety<Color::Black>(pos);
-    PScore black_king_attack_total = black_king_attack + evaluate_king_safety<Color::White>(pos);
+    PScore white_king_attack_total = evaluate_king_safety<Color::Black>(pos);
+    PScore black_king_attack_total = evaluate_king_safety<Color::White>(pos);
 
     // Nonlinear adjustment
     eval += king_safety_activation<Color::White>(pos, white_king_attack_total)
