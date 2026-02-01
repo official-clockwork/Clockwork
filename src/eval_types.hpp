@@ -102,8 +102,8 @@ public:
     }
 
     // relu_add
-    PScore relu_add(Score val){
-        return PScore{mg(), static_cast<Score>(std::max(0, eg()+val))};
+    PScore relu_add(Score val) {
+        return PScore{mg(), static_cast<Score>(std::max(0, eg() + val))};
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {
@@ -118,7 +118,7 @@ using VParam = Score;
 
 using Score  = Autograd::ValueHandle;
 using PScore = Autograd::PairHandle;
-using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
+using PParam = Autograd::PairPlaceholder;   // Handle for the TUNABLE parameter
 using VParam = Autograd::ValuePlaceholder;  // Handle for the TUNABLE parameter
 
 #endif
