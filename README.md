@@ -98,8 +98,8 @@ Clockwork welcomes contributions from anyone interested in advancing HCE technol
 
 ## Data
 
-  - Filtered datasets are available on our **Discord server** (`#data` channel).
-  - For unfiltered datasets (too large for Discord), contact a maintainer directly. You can also find the filtering script under the `scripts` folder.
+  - Filtered datasets are available on the [Clockwork Data Downloads](https://data.cwchess.org) webpage. Data is released under the [Open Database License](https://opendatacommons.org/licenses/odbl/).
+  - For unfiltered datasets contact a maintainer directly. You can also find the filtering script under the `scripts` folder.
 
 -----
 
