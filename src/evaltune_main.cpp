@@ -133,7 +133,7 @@ int main() {
     current_parameter_values = Parameters::rand_init(parameter_count);
 
     // The optimizer will now start with all-zero parameters
-    AdamW optim(parameter_count, 1, 0.9, 0.999, 1e-8, 0.0);
+    AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
 #ifdef PROFILE_RUN
     const i32 epochs = 8;
 #else
@@ -424,7 +424,7 @@ int main() {
                   << "s\n";
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.99274);
+            optim.set_lr(optim.get_lr() * 0.99);
         }
     }
 
