@@ -59,7 +59,9 @@ struct PairHandle {
     f64x2 get_values() const;
     f64x2 get_gradients() const;
     f64   first() const;
+    f64   mg() const;
     f64   second() const;
+    f64   eg() const;
     void  set_values(const f64x2& v) const;
     void  set_values(f64 f, f64 s) const;
     void  zero_grad() const;

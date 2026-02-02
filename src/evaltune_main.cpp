@@ -424,7 +424,7 @@ int main() {
                   << "s\n";
 
         if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.99);
+            optim.set_lr(optim.get_lr() * 0.99274);
         }
     }
 

@@ -87,6 +87,12 @@ f64 PairHandle::first() const {
 f64 PairHandle::second() const {
     return get_values().second();
 }
+f64 PairHandle::mg() const {
+    return get_values().first();
+}
+f64 PairHandle::eg() const {
+    return get_values().second();
+}
 
 void PairHandle::set_values(const f64x2& v) const {
     Graph::get().set_pair_values(index, v);

@@ -103,7 +103,9 @@ public:
 
     // complexity_add
     PScore complexity_add(Score val) {
-        return PScore{mg(), static_cast<Score>(std::max(0, eg() + val))};
+        i32 m = (eg() > 0) - (eg() < 0);
+        return PScore{
+          mg(), static_cast<Score>(eg() + std::max(val, static_cast<Score>(-std::abs(eg()))) * m)};
     }
 
     friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {
