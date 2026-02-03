@@ -189,6 +189,17 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, ValueHandle rhs) 
     case OpType::ValueDivPair:
         res = f64x2::scalar_div(v, pair_val);
         break;
+    case OpType::PairAddClampedSecond: {
+        f64 add_res = pair_val.second() + v;
+        if (pair_val.second() > 0) {
+            res = f64x2::make(pair_val.first(), std::max(0.0, add_res));
+        } else if (pair_val.second() < 0) {
+            res = f64x2::make(pair_val.first(), std::min(0.0, add_res));
+        } else {
+            res = pair_val;
+        }
+        break;
+    }
     default:
         break;
     }
@@ -488,6 +499,43 @@ void Graph::backward() {
             pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_rhs);
             break;
         }
+        case OpType::PairAddClampedSecond: {
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64x2       val_lhs  = pair_vals[node.lhs()];
+            f64         val_rhs  = vals[node.rhs()];
+
+            // First component always passes through
+            f64x2 grad_pair = f64x2::make(grad_out.first(), 0.0);
+            f64   grad_rhs  = 0.0;
+
+            // For the second component
+            if (val_lhs.second() > 0) {
+                // Forward: res.second = max(0.0, val_lhs.second() + val_rhs)
+                f64 add_res = val_lhs.second() + val_rhs;
+                if (add_res > 0.0) {
+                    // Gradient flows through both inputs
+                    grad_pair = f64x2::make(grad_out.first(), grad_out.second());
+                    grad_rhs  = grad_out.second();
+                }
+            } else if (val_lhs.second() < 0) {
+                // Forward: res.second = min(0.0, val_lhs.second() + val_rhs)
+                f64 add_res = val_lhs.second() + val_rhs;
+                if (add_res < 0.0) {
+                    // Gradient flows through both inputs
+                    grad_pair = f64x2::make(grad_out.first(), grad_out.second());
+                    grad_rhs  = grad_out.second();
+                }
+            } else {
+                // val_lhs.second() == 0: output = input (no addition)
+                grad_pair = grad_out;
+                grad_rhs  = 0.0;
+            }
+
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_pair);
+            grads[node.rhs()] += grad_rhs;
+            break;
+        }
+
 
         default:
             unreachable();

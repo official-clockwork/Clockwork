@@ -101,6 +101,19 @@ public:
         return static_cast<Value>((mg() * alpha + eg() * (max - alpha)) / max);
     }
 
+    // complexity_add
+    PScore complexity_add(Score val) {
+        const Score e = eg();
+        if (e == 0) {
+            return *this;
+        }
+
+        const Score sum = e + val;
+        return PScore{
+          mg(), static_cast<Score>((e > 0) ? std::max(sum, Score{0}) : std::min(sum, Score{0}))};
+    }
+
+
     friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {
         stream << "(" << score.mg() << "\t" << score.eg() << ")";
         return stream;
@@ -108,11 +121,13 @@ public:
 };
 
 using PParam = PScore;
+using VParam = Score;
 #else
 
 using Score  = Autograd::ValueHandle;
 using PScore = Autograd::PairHandle;
-using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
+using PParam = Autograd::PairPlaceholder;   // Handle for the TUNABLE parameter
+using VParam = Autograd::ValuePlaceholder;  // Handle for the TUNABLE parameter
 
 #endif
 
@@ -124,6 +139,12 @@ using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
     // Constant scalar pair (mg, eg)
     #define CS(a, b) Autograd::PairPlaceholder::create((a), (b))
 
+    // Tunable scalar
+    #define V(a) Autograd::ValuePlaceholder::create_tunable((a))
+
+    // Constant scalar
+    #define CV(a) Autograd::ValuePlaceholder::create((a))
+
     // Zero pair FOR PARAMETERS (e.g., in an array)
     #define PPARAM_ZERO Autograd::PairPlaceholder::create(0, 0)
 
@@ -134,6 +155,9 @@ using PParam = Autograd::PairPlaceholder;  // Handle for the TUNABLE parameter
 // ... (non-tuning definitions) ...
     #define S(a, b) PScore((a), (b))
     #define CS(a, b) PScore((a), (b))
+
+    #define V(a) Value((a))
+    #define CV(a) Value((a))
     #define PPARAM_ZERO PScore(0, 0)
     #define PSCORE_ZERO PScore(0, 0)
 #endif

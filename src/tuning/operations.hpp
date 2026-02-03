@@ -50,6 +50,7 @@ enum class OpType : u32 {
     ValueMulPair,
     PairDivValue,
     ValueDivPair,
+    PairAddClampedSecond,  // For complexity
 
     // Pair-Pair Ops
     PairMulPair,
