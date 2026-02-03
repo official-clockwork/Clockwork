@@ -102,18 +102,16 @@ public:
     }
 
     // complexity_add
-PScore complexity_add(Score val) {
-    const Score e = eg();
-    if (e == 0)
-        return *this;
+    PScore complexity_add(Score val) {
+        const Score e = eg();
+        if (e == 0) {
+            return *this;
+        }
 
-    const Score sum = e + val;
-    return PScore{
-        mg(),
-        static_cast<Score>((e > 0) ? std::max(sum, Score{0})
-                                   : std::min(sum, Score{0}))
-    };
-}
+        const Score sum = e + val;
+        return PScore{
+          mg(), static_cast<Score>((e > 0) ? std::max(sum, Score{0}) : std::min(sum, Score{0}))};
+    }
 
 
     friend std::ostream& operator<<(std::ostream& stream, const PScore& score) {
