@@ -87,6 +87,12 @@ f64 PairHandle::first() const {
 f64 PairHandle::second() const {
     return get_values().second();
 }
+f64 PairHandle::mg() const {
+    return get_values().first();
+}
+f64 PairHandle::eg() const {
+    return get_values().second();
+}
 
 void PairHandle::set_values(const f64x2& v) const {
     Graph::get().set_pair_values(index, v);
@@ -204,6 +210,11 @@ std::ostream& operator<<(std::ostream& os, const PairHandle& p) {
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const ValueHandle& v) {
+    os << "V(" << std::round(v.get_value()) << ")";
+    return os;
+}
+
 // Value Inplaces
 ValueHandle& operator+=(ValueHandle& a, ValueHandle b) {
     a = a + b;
@@ -263,6 +274,11 @@ PairHandle& operator/=(PairHandle& a, f64 scalar) {
 PairHandle& operator/=(PairHandle& a, ValueHandle v) {
     a = a / v;
     return a;
+}
+
+
+PairHandle PairHandle::complexity_add(ValueHandle value) const {
+    return Graph::get().record_pair_value(OpType::PairAddClampedSecond, *this, value);
 }
 
 }  // namespace Clockwork::Autograd

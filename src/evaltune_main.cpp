@@ -37,9 +37,8 @@ int main() {
     std::vector<f64>      results;
 
     const std::vector<std::string> fenFiles = {
-      "data/dfrcv1.txt",     "data/dfrcv0.txt",     "data/v3.txt",
       "data/v4_5knpm.txt",   "data/v4_8knpm.txt",   "data/v4_16knpm.txt",
-      "data/v4.1_5knpm.txt", "data/v4.1_8knpm.txt", "data/combined.txt",
+      "data/v4.1_5knpm.txt", "data/v4.1_8knpm.txt", "data/dfrcv2.txt",
     };
 
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
@@ -412,6 +411,12 @@ int main() {
                       << ");\n";
         };
         print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
+
+        std::cout << std::endl;
+
+        std::cout << "inline VParam WINNABLE_PAWNS = " << WINNABLE_PAWNS << ";\n";
+        std::cout << "inline VParam WINNABLE_BIAS = " << WINNABLE_BIAS << ";\n";
+        std::cout << std::endl;
 
 #endif
         const auto end = time::Clock::now();
