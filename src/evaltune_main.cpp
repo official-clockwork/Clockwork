@@ -415,6 +415,8 @@ int main() {
         std::cout << std::endl;
 
         std::cout << "inline VParam WINNABLE_PAWNS = " << WINNABLE_PAWNS << ";\n";
+        std::cout << "inline VParam WINNABLE_SYM = " << WINNABLE_SYM << ";\n";
+        std::cout << "inline VParam WINNABLE_ASYM = " << WINNABLE_ASYM << ";\n";
         std::cout << "inline VParam WINNABLE_BIAS = " << WINNABLE_BIAS << ";\n";
         std::cout << std::endl;
 
