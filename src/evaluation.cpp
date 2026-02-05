@@ -417,10 +417,20 @@ PScore king_safety_activation(const Position& pos, PScore& king_safety_score) {
 
 PScore apply_winnable(const Position& pos, PScore& score) {
 
-    i32 pawn_count = (pos.bitboard_for(Color::White, PieceType::Pawn)
-                      | pos.bitboard_for(Color::Black, PieceType::Pawn))
-                       .ipopcount();
-    Score winnable = WINNABLE_PAWNS * pawn_count + WINNABLE_BIAS;
+    Bitboard white_pawns = pos.bitboard_for(Color::White, PieceType::Pawn);
+    Bitboard black_pawns = pos.bitboard_for(Color::Black, PieceType::Pawn);
+
+    i32 pawn_count = (white_pawns | black_pawns).ipopcount();
+
+    Bitboard white_files = Bitboard::fill_verticals(white_pawns);
+    Bitboard black_files = Bitboard::fill_verticals(black_pawns);
+
+    i32 sym_files  = (white_files & black_files).ipopcount() / 8;
+    i32 asym_files = (white_files ^ black_files).ipopcount() / 8;
+
+    Score symmetry = WINNABLE_SYM * sym_files + WINNABLE_ASYM * asym_files;
+
+    Score winnable = WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_BIAS;
 
     if (score.eg() < 0) {
         winnable = -winnable;
