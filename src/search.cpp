@@ -782,7 +782,10 @@ Value Worker::search(
                                             ply + 1, true);
             if (value > alpha) {
                 const bool do_deeper = reduced_depth < new_depth && value > best_value + 94;
+                const bool do_shallower =
+                  !do_deeper && new_depth > 1 && value < best_value + new_depth;
                 new_depth += do_deeper;
+                new_depth -= do_shallower;
 
                 if (reduced_depth < new_depth) {
                     value = -search<IS_MAIN, false>(pos_after, ss + 1, -alpha - 1, -alpha,
