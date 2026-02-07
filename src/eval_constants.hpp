@@ -174,6 +174,7 @@ inline TunableSigmoid<32> KING_SAFETY_ACTIVATION(
 inline VParam WINNABLE_PAWNS = V(-15);
 inline VParam WINNABLE_SYM = V(135);
 inline VParam WINNABLE_ASYM = V(123);
+inline VParam WINNABLE_PAWN_ENDGAME = V(169);
 inline VParam WINNABLE_BIAS = V(-642);
 
 // Epoch duration: 7.52381s
