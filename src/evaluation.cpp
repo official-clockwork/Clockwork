@@ -229,7 +229,7 @@ PScore evaluate_pawn_push_threats(const Position& pos) {
 }
 
 template<Color color>
-PScore evaluate_pieces(const Position& pos, bool pawn_endgame) {
+PScore evaluate_pieces(const Position& pos) {
     constexpr Color opp       = ~color;
     PScore          eval      = PSCORE_ZERO;
     Bitboard        own_pawns = pos.bitboard_for(color, PieceType::Pawn);
@@ -239,44 +239,41 @@ PScore evaluate_pieces(const Position& pos, bool pawn_endgame) {
                                          ? Bitboard::rank_mask(1) | Bitboard::rank_mask(2)
                                          : Bitboard::rank_mask(5) | Bitboard::rank_mask(6);
     Bitboard           own_early_pawns = own_pawns & early_ranks;
-    Bitboard bb = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
-    if (!pawn_endgame) {
-        Bitboard bb2 = bb;
-        for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
-            eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
-        }
-        for (PieceId id : pos.get_piece_mask(color, PieceType::Bishop)) {
-            eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
-            Square sq = pos.piece_list_sq(color)[id];
-            eval +=
-              BISHOP_PAWNS[std::min(
-                static_cast<usize>(8),
-                (own_pawns & Bitboard::squares_of_color(sq.color()))
-                  .popcount())  // Weird non standard positions which can have more than 8 pawns
-            ]
+    Bitboard bb  = (blocked_pawns | own_early_pawns) | pos.attacked_by(opp, PieceType::Pawn);
+    Bitboard bb2 = bb;
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Knight)) {
+        eval += KNIGHT_MOBILITY[pos.mobility_of(color, id, ~bb)];
+    }
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Bishop)) {
+        eval += BISHOP_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        Square sq = pos.piece_list_sq(color)[id];
+        eval += BISHOP_PAWNS[std::min(
+                  static_cast<usize>(8),
+                  (own_pawns & Bitboard::squares_of_color(sq.color()))
+                    .popcount())  // Weird non standard positions which can have more than 8 pawns
+        ]
               * (!pos.is_square_attacked_by(sq, color, PieceType::Pawn)
                  + (blocked_pawns & Bitboard::central_files()).ipopcount());
-        }
-        bb2 |= pos.attacked_by(opp, PieceType::Knight) | pos.attacked_by(opp, PieceType::Bishop);
-        for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
-            eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
-            eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb2)];
-            // Rook lineups
-            Bitboard rook_file = Bitboard::file_mask(pos.piece_list_sq(color)[id].file());
-            eval += ROOK_LINEUP
-                  * (rook_file
-                     & (pos.bitboard_for(~color, PieceType::Queen)
-                        | pos.bitboard_for(color, PieceType::Queen)))
-                      .ipopcount();
-        }
-        bb2 |= pos.attacked_by(opp, PieceType::Rook);
-        for (PieceId id : pos.get_piece_mask(color, PieceType::Queen)) {
-            eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb)];
-            eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb2)];
-        }
-        if (pos.piece_count(color, PieceType::Bishop) >= 2) {
-            eval += BISHOP_PAIR_VAL;
-        }
+    }
+    bb2 |= pos.attacked_by(opp, PieceType::Knight) | pos.attacked_by(opp, PieceType::Bishop);
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Rook)) {
+        eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += ROOK_MOBILITY[pos.mobility_of(color, id, ~bb2)];
+        // Rook lineups
+        Bitboard rook_file = Bitboard::file_mask(pos.piece_list_sq(color)[id].file());
+        eval += ROOK_LINEUP
+              * (rook_file
+                 & (pos.bitboard_for(~color, PieceType::Queen)
+                    | pos.bitboard_for(color, PieceType::Queen)))
+                  .ipopcount();
+    }
+    bb2 |= pos.attacked_by(opp, PieceType::Rook);
+    for (PieceId id : pos.get_piece_mask(color, PieceType::Queen)) {
+        eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb)];
+        eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb2)];
+    }
+    if (pos.piece_count(color, PieceType::Bishop) >= 2) {
+        eval += BISHOP_PAIR_VAL;
     }
     eval += KING_MOBILITY[pos.mobility_of(color, PieceId::king(), ~bb)];
 
@@ -418,7 +415,9 @@ PScore king_safety_activation(const Position& pos, PScore& king_safety_score) {
     return activated;
 }
 
-PScore apply_winnable(const Position& pos, PScore& score, bool is_pawn_endgame) {
+PScore apply_winnable(const Position& pos, PScore& score, u32 phase) {
+
+    bool pawn_endgame = phase == 0;
 
     Bitboard white_pawns = pos.bitboard_for(Color::White, PieceType::Pawn);
     Bitboard black_pawns = pos.bitboard_for(Color::Black, PieceType::Pawn);
@@ -433,7 +432,8 @@ PScore apply_winnable(const Position& pos, PScore& score, bool is_pawn_endgame) 
 
     Score symmetry = WINNABLE_SYM * sym_files + WINNABLE_ASYM * asym_files;
 
-    Score winnable = WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_BIAS;
+    Score winnable =
+      WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_PAWN_ENDGAME * pawn_endgame + WINNABLE_BIAS;
 
     if (score.eg() < 0) {
         winnable = -winnable;
@@ -455,31 +455,26 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
                     * (pos.piece_count(Color::White, PieceType::Queen)
                        + pos.piece_count(Color::Black, PieceType::Queen));
 
-    // TODO: replace this with endgame routing
-    bool pawn_endgame = phase == 0;
+    phase = std::min<usize>(phase, 24);
 
     PScore eval = psqt_state.score();  // Used for linear components
 
     // pawn eval
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
 
+    // pieces & space
+    eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
+    eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
+    eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
+
+    // Threats
+    eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
+    eval +=
+      evaluate_pawn_push_threats<Color::White>(pos) - evaluate_pawn_push_threats<Color::Black>(pos);
+
+    // King safety
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
-          
-    eval += evaluate_pieces<Color::White>(pos, pawn_endgame)
-          - evaluate_pieces<Color::Black>(pos, pawn_endgame);
-
-    if (!pawn_endgame) {
-
-        phase = std::min<usize>(phase, 24);
-
-
-        eval += evaluate_pawn_push_threats<Color::White>(pos)
-              - evaluate_pawn_push_threats<Color::Black>(pos);
-        eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
-        eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
-        eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
-    }
 
     // Nonlinear king safety components
     PScore white_king_attack_total = evaluate_king_safety<Color::Black>(pos);
@@ -492,7 +487,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
 
     // Winnable
-    eval = apply_winnable(pos, eval, pawn_endgame);
+    eval = apply_winnable(pos, eval, phase);
 
     return static_cast<Score>(eval.phase<24>(static_cast<i32>(phase)));
 };
