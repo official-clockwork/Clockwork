@@ -390,7 +390,7 @@ Value Worker::search(
     }
 
     if (depth <= 0) {
-        return quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
+        return quiesce<IS_MAIN, PV_NODE>(pos, ss, alpha, beta, ply);
     }
 
     const bool ROOT_NODE = ply == 0;
@@ -528,7 +528,7 @@ Value Worker::search(
     // Razoring
     if (!PV_NODE && !excluded && !is_in_check && depth <= tuned::razor_depth
         && ss->static_eval + tuned::razor_margin * depth < alpha) {
-        const Value razor_score = quiesce<IS_MAIN>(pos, ss, alpha, beta, ply);
+        const Value razor_score = quiesce<IS_MAIN, PV_NODE>(pos, ss, alpha, beta, ply);
         if (razor_score <= alpha) {
             return razor_score;
         }
@@ -558,8 +558,8 @@ Value Worker::search(
                 Position pos_after  = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
                 repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
-                Value probcut_value =
-                  -quiesce<IS_MAIN>(pos_after, ss + 1, -probcut_beta, -probcut_beta + 1, ply + 1);
+                Value probcut_value = -quiesce<IS_MAIN, false>(pos_after, ss + 1, -probcut_beta,
+                                                               -probcut_beta + 1, ply + 1);
 
                 if (probcut_value >= probcut_beta) {
                     probcut_value =
@@ -901,7 +901,7 @@ Value Worker::search(
     return best_value;
 }
 
-template<bool IS_MAIN>
+template<bool IS_MAIN, bool PV_NODE>
 Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply) {
     ss->pv.clear();
 
@@ -942,18 +942,15 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
     // TT Probing
     auto tt_data = m_searcher.tt.probe(pos, ply);
-    if (tt_data
+    if (!PV_NODE && tt_data
         && (tt_data->bound() == Bound::Exact
             || (tt_data->bound() == Bound::Lower && tt_data->score >= beta)
             || (tt_data->bound() == Bound::Upper && tt_data->score <= alpha))) {
         return tt_data->score;
     }
 
-    bool is_in_check = pos.is_in_check();
-    bool ttpv =
-      tt_data
-        ? tt_data->ttpv()
-        : false;  // TODO: if we ever get to needing ttpv patches in quiescence, we might want to add PV_NODE handling in here also
+    bool  is_in_check = pos.is_in_check();
+    bool  ttpv        = PV_NODE || (tt_data && tt_data->ttpv());
     Value correction  = 0;
     Value raw_eval    = -VALUE_INF;
     Value static_eval = -VALUE_INF;
@@ -1006,7 +1003,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
         // Get search value
-        Value value = -quiesce<IS_MAIN>(pos_after, ss + 1, -beta, -alpha, ply + 1);
+        Value value = -quiesce<IS_MAIN, PV_NODE>(pos_after, ss + 1, -beta, -alpha, ply + 1);
 
         // TODO: encapsulate this and any other future adjustment to do "on going back" into a proper function
         repetition_info.pop();
