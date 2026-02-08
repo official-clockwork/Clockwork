@@ -558,8 +558,8 @@ Value Worker::search(
                 Position pos_after  = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
                 repetition_info.push(pos_after.get_hash_key(), pos_after.is_reversible(m));
 
-                Value probcut_value =
-                  -quiesce<IS_MAIN, false>(pos_after, ss + 1, -probcut_beta, -probcut_beta + 1, ply + 1);
+                Value probcut_value = -quiesce<IS_MAIN, false>(pos_after, ss + 1, -probcut_beta,
+                                                               -probcut_beta + 1, ply + 1);
 
                 if (probcut_value >= probcut_beta) {
                     probcut_value =
@@ -949,8 +949,8 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         return tt_data->score;
     }
 
-    bool is_in_check = pos.is_in_check();
-    bool ttpv = PV_NODE || (tt_data && tt_data->ttpv());
+    bool  is_in_check = pos.is_in_check();
+    bool  ttpv        = PV_NODE || (tt_data && tt_data->ttpv());
     Value correction  = 0;
     Value raw_eval    = -VALUE_INF;
     Value static_eval = -VALUE_INF;
