@@ -272,11 +272,11 @@ PScore evaluate_pieces(const Position& pos) {
         eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb)];
         eval += QUEEN_MOBILITY[pos.mobility_of(color, id, ~bb2)];
     }
-    eval += KING_MOBILITY[pos.mobility_of(color, PieceId::king(), ~bb)];
-
     if (pos.piece_count(color, PieceType::Bishop) >= 2) {
         eval += BISHOP_PAIR_VAL;
     }
+    eval += KING_MOBILITY[pos.mobility_of(color, PieceId::king(), ~bb)];
+
 
     return eval;
 }
@@ -415,7 +415,9 @@ PScore king_safety_activation(const Position& pos, PScore& king_safety_score) {
     return activated;
 }
 
-PScore apply_winnable(const Position& pos, PScore& score) {
+PScore apply_winnable(const Position& pos, PScore& score, u32 phase) {
+
+    bool pawn_endgame = phase == 0;
 
     Bitboard white_pawns = pos.bitboard_for(Color::White, PieceType::Pawn);
     Bitboard black_pawns = pos.bitboard_for(Color::Black, PieceType::Pawn);
@@ -430,7 +432,8 @@ PScore apply_winnable(const Position& pos, PScore& score) {
 
     Score symmetry = WINNABLE_SYM * sym_files + WINNABLE_ASYM * asym_files;
 
-    Score winnable = WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_BIAS;
+    Score winnable =
+      WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_PAWN_ENDGAME * pawn_endgame + WINNABLE_BIAS;
 
     if (score.eg() < 0) {
         winnable = -winnable;
@@ -452,18 +455,26 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
                     * (pos.piece_count(Color::White, PieceType::Queen)
                        + pos.piece_count(Color::Black, PieceType::Queen));
 
-    phase       = std::min<usize>(phase, 24);
+    phase = std::min<usize>(phase, 24);
+
     PScore eval = psqt_state.score();  // Used for linear components
 
-    eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
+    // pawn eval
     eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
+
+    // pieces & space
+    eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
+    eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
+    eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
+
+    // Threats
+    eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
     eval +=
       evaluate_pawn_push_threats<Color::White>(pos) - evaluate_pawn_push_threats<Color::Black>(pos);
+
+    // King safety
     eval += evaluate_potential_checkers<Color::White>(pos)
           - evaluate_potential_checkers<Color::Black>(pos);
-    eval += evaluate_threats<Color::White>(pos) - evaluate_threats<Color::Black>(pos);
-    eval += evaluate_space<Color::White>(pos) - evaluate_space<Color::Black>(pos);
-    eval += evaluate_outposts<Color::White>(pos) - evaluate_outposts<Color::Black>(pos);
 
     // Nonlinear king safety components
     PScore white_king_attack_total = evaluate_king_safety<Color::Black>(pos);
@@ -476,7 +487,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
 
     // Winnable
-    eval = apply_winnable(pos, eval);
+    eval = apply_winnable(pos, eval, phase);
 
     return static_cast<Score>(eval.phase<24>(static_cast<i32>(phase)));
 };
