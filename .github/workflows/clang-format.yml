@@ -19,9 +19,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-20
 
-      - name: Verify Formatting
-        uses: jidicula/clang-format-action@v4.15.0
-        with:
-          clang-format-version: '20'
-          check-path: ${{ matrix.path }}
+      - name: Check code formatting
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          Get-ChildItem -Recurse | `
+            where -Property Name -match '^.*\.((((c|C)(c|pp|xx|\+\+)?$)|((h|H)h?(pp|xx|\+\+)?$))|(ino|pde|proto|cu))$' | `
+            % { clang-format --style=file --dry-run --Werror $_.FullName }
