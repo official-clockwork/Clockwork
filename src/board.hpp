@@ -251,10 +251,10 @@ struct Wordboard {
         return Bitboard{raw.test(pm).to_bits()};
     }
 
-        [[nodiscard]] usize count_matching_mask(PieceMask piece_mask) const {
-            u16x64 PM = u16x64::splat(piece_mask.value());
-            return (raw & PM).nonzeros_count();
-        }
+    [[nodiscard]] usize count_matching_mask(PieceMask piece_mask) const {
+        u16x64 pm = u16x64::splat(piece_mask.value());
+        return (raw & pm).nonzeros_count();
+    }
 
     [[nodiscard]] PieceMask read(Square sq) const {
         PieceMask value;
