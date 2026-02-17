@@ -25,5 +25,5 @@ jobs:
 
       - name: Check code formatting
         run: |
-          find tests -name '*.cpp' -o -name '*.h' | \
+          find tests -name '*.cpp' -o -name '*.hpp' | \
           xargs clang-format-20 --dry-run --Werror
