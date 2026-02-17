@@ -11,17 +11,19 @@ jobs:
     strategy:
       matrix:
         path:
-          - 'src'
-          - 'tests'
+          - src
+          - tests
 
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-20
 
-      - name: Verify Formatting
-        uses: jidicula/clang-format-action@v4.15.0
-        with:
-          clang-format-version: '20'
-          check-path: ${{ matrix.path }}
+      - name: Verify formatting (${{ matrix.path }})
+        run: |
+          find ${{ matrix.path }} \( -name '*.cpp' -o -name '*.hpp' \) -print0 | \
+          xargs -0 clang-format-20 --dry-run --Werror
