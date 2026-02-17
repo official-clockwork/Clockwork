@@ -11,8 +11,8 @@ jobs:
     strategy:
       matrix:
         path:
-          - 'src'
-          - 'tests'
+          - src
+          - tests
 
     steps:
       - name: Checkout Repo
@@ -23,7 +23,7 @@ jobs:
       - name: Install clang-format
         run: sudo apt-get update && sudo apt-get install -y clang-format-20
 
-      - name: Check code formatting
+      - name: Check code formatting (${{ matrix.path }})
         run: |
-          find tests -name '*.cpp' -o -name '*.hpp' | \
-          xargs clang-format-20 --dry-run --Werror
+          find ${{ matrix.path }} \( -name '*.cpp' -o -name '*.hpp' \) -print0 | \
+          xargs -0 clang-format-20 --dry-run --Werror
