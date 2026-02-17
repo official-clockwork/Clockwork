@@ -24,9 +24,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y clang-format-20
 
       - name: Check code formatting
-        shell: pwsh
         run: |
-          $PSNativeCommandUseErrorActionPreference = $true
-          Get-ChildItem -Recurse | `
-            where -Property Name -match '^.*\.((((c|C)(c|pp|xx|\+\+)?$)|((h|H)h?(pp|xx|\+\+)?$))|(ino|pde|proto|cu))$' | `
-            % { clang-format --style=file --dry-run --Werror $_.FullName }
+          find tests -name '*.cpp' -o -name '*.h' | \
+          xargs clang-format-20 --dry-run --Werror
