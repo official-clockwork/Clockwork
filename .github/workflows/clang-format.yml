@@ -23,7 +23,7 @@ jobs:
       - name: Install clang-format
         run: sudo apt-get update && sudo apt-get install -y clang-format-20
 
-      - name: Check code formatting (${{ matrix.path }})
+      - name: Verify formatting (${{ matrix.path }})
         run: |
           find ${{ matrix.path }} \( -name '*.cpp' -o -name '*.hpp' \) -print0 | \
           xargs -0 clang-format-20 --dry-run --Werror
