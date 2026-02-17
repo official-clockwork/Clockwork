@@ -399,11 +399,17 @@ PScore evaluate_space(const Position& pos) {
     Bitboard        theirfiles = Bitboard::fill_verticals(pos.bitboard_for(them, PieceType::Pawn));
     Bitboard        openfiles  = ~(ourfiles | theirfiles);
     Bitboard        half_open_files = (~ourfiles) & theirfiles;
+    Bitboard ourminors = pos.bitboard_for(color, PieceType::Knight) | pos.bitboard_for(color, PieceType::Bishop);
 
     eval += ROOK_OPEN_VAL * (openfiles & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
     eval +=
       ROOK_SEMIOPEN_VAL * (half_open_files & pos.bitboard_for(color, PieceType::Rook)).ipopcount();
 
+    eval +=
+      MINOR_BEHIND_PAWN
+      * (ourminors.shift_relative(color, Direction::North) & (pos.bitboard_for(them, PieceType::Pawn)
+         | pos.bitboard_for(color, PieceType::Pawn)))
+          .ipopcount();
 
     return eval;
 }
