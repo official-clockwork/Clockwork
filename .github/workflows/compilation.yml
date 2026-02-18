@@ -20,9 +20,11 @@ jobs:
           - znver4
         compiler:
           - g++
-          - clang++
+          - clang++-21
         exclude:
-          - os: macos-latest
+          - os:
+              runner: macos-latest
+              name: macos
             arch: znver4
         include:
           - { os: { runner: ubuntu-latest }, arch: x86-64-v3, compiler: g++-12 }
@@ -33,6 +35,20 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install Clang 21 (Linux)
+        if: runner.os == 'Linux' && matrix.compiler == 'clang++-21'
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main" | sudo tee /etc/apt/sources.list.d/llvm-21.list
+          sudo apt-get update
+          sudo apt-get install -y clang-21
+
+      - name: Install Clang 21 (macOS)
+        if: runner.os == 'macOS' && matrix.compiler == 'clang++-21'
+        run: |
+          brew install llvm@21
+          echo "$(brew --prefix llvm@21)/bin" >> $GITHUB_PATH
 
       - name: Obtain Reference Bench
         run: |
@@ -94,10 +110,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: x86-64-v3, sys: mingw64, compiler: g++     }
-          - { arch: x86-64-v3, sys: ucrt64,  compiler: g++     }
-          - { arch: znver4, sys: ucrt64,  compiler: g++     }
-          - { arch: x86-64-v3, sys: clang64, compiler: clang++ }
+          - { arch: x86-64-v3, sys: mingw64, compiler: g++        }
+          - { arch: x86-64-v3, sys: ucrt64,  compiler: g++        }
+          - { arch: znver4,    sys: ucrt64,  compiler: g++        }
+          - { arch: x86-64-v3, sys: clang64, compiler: clang++    }
     runs-on: windows-latest
     defaults:
       run:
@@ -115,6 +131,10 @@ jobs:
           msystem: ${{ matrix.sys }}
           install: make cmake coreutils git
           pacboy: toolchain:p
+
+      - name: Upgrade Clang to latest (Windows/clang64)
+        if: matrix.compiler == 'clang++'
+        run: pacman -Syu --noconfirm mingw-w64-clang-x86_64-clang
 
       - name: Obtain Reference Bench
         run: |
