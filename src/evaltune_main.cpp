@@ -36,10 +36,9 @@ int main() {
     std::vector<Position> positions;
     std::vector<f64>      results;
 
-    const std::vector<std::string> fenFiles = {
-      "data/v4_5knpm.txt",   "data/v4_8knpm.txt",   "data/v4_16knpm.txt",
-      "data/v4.1_5knpm.txt", "data/v4.1_8knpm.txt", "data/dfrcv2.txt",
-    };
+    const std::vector<std::string> fenFiles = {"data/neov4/neodfrcv2_16knpm.txt",
+                                               "data/neov4/neov4.1_16knpm.txt",
+                                               "data/neov4/neov4_16knpm.txt"};
 
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
 
@@ -270,6 +269,9 @@ int main() {
                   << std::endl;
         std::cout << "inline const PParam ROOK_SEMIOPEN_VAL = " << ROOK_SEMIOPEN_VAL << ";"
                   << std::endl;
+        std::cout << "inline const PParam MINOR_BEHIND_PAWN = " << MINOR_BEHIND_PAWN << ";"
+                  << std::endl;
+
         std::cout << std::endl;
         std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
                   << std::endl;
