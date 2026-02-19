@@ -415,13 +415,13 @@ PScore evaluate_space(const Position& pos) {
 }
 
 template<Color color>
-PScore king_safety_activation(const Position& pos, PScore& king_safety_score) {
+PScore king_safety_activation(PScore& king_safety_score) {
     // Apply sigmoid activation to king safety score
     PScore activated = KING_SAFETY_ACTIVATION(king_safety_score);
     return activated;
 }
 
-PScore apply_winnable(const Position& pos, PScore& score, u32 phase) {
+PScore apply_winnable(const Position& pos, PScore& score, usize phase) {
 
     bool pawn_endgame = phase == 0;
 
@@ -436,13 +436,13 @@ PScore apply_winnable(const Position& pos, PScore& score, u32 phase) {
     i32 sym_files  = (white_files & black_files).ipopcount() / 8;
     i32 asym_files = (white_files ^ black_files).ipopcount() / 8;
 
-    Score symmetry = WINNABLE_SYM * sym_files + WINNABLE_ASYM * asym_files;
+    Score symmetry = static_cast<Score>(WINNABLE_SYM * sym_files + WINNABLE_ASYM * asym_files);
 
     Score winnable =
-      WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_PAWN_ENDGAME * pawn_endgame + WINNABLE_BIAS;
+      static_cast<Score>(WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_PAWN_ENDGAME * pawn_endgame + WINNABLE_BIAS);
 
     if (score.eg() < 0) {
-        winnable = -winnable;
+        winnable = static_cast<Score>(-winnable);
     }
 
     return score.complexity_add(winnable);
@@ -487,8 +487,8 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore black_king_attack_total = evaluate_king_safety<Color::White>(pos);
 
     // Nonlinear adjustment
-    eval += king_safety_activation<Color::White>(pos, white_king_attack_total)
-          - king_safety_activation<Color::Black>(pos, black_king_attack_total);
+    eval += king_safety_activation<Color::White>(white_king_attack_total)
+          - king_safety_activation<Color::Black>(black_king_attack_total);
 
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
 

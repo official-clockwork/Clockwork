@@ -9,12 +9,34 @@
 #include <bit>
 #include <cassert>
 #include <tuple>
+#include <tuned.hpp>
 
 namespace Clockwork::SEE {
 
 inline Value value(PieceType ptype) {
-    constexpr std::array<Value, 7> TABLE{{0, 100, 300, 300, 500, 900, 10000}};
+#ifndef CLOCKWORK_IS_TUNING
+    constexpr std::array<Value, 7> TABLE{{0, tuned::see_pawn_val, tuned::see_knight_val,
+                                          tuned::see_bishop_val, tuned::see_rook_val,
+                                          tuned::see_queen_val, 10000}};
     return TABLE[static_cast<usize>(ptype)];
+#else
+    switch (ptype){
+        case PieceType::Pawn:
+            return tuned::see_pawn_val;
+        case PieceType::Knight:
+            return tuned::see_knight_val;
+        case PieceType::Bishop:
+            return tuned::see_bishop_val;
+        case PieceType::Rook:
+            return tuned::see_rook_val;
+        case PieceType::Queen:
+            return tuned::see_queen_val;
+        case PieceType::King:
+            return 10000;
+        default:
+            unreachable();
+    }
+#endif
 }
 
 inline Value gain(const Position& pos, Move move) {
