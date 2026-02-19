@@ -14,7 +14,7 @@
 namespace Clockwork::SEE {
 
 inline Value value(PieceType ptype) {
-#ifndef CLOCKWORK_IS_TUNING
+#if (CLOCKWORK_IS_TUNING == 0)
     constexpr std::array<Value, 7> TABLE{{0, tuned::see_pawn_val, tuned::see_knight_val,
                                           tuned::see_bishop_val, tuned::see_rook_val,
                                           tuned::see_queen_val, 10000}};
