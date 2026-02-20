@@ -3,7 +3,7 @@
 #include "util/types.hpp"
 #include <string_view>
 
-// #define CLOCKWORK_IS_TUNING
+#define CLOCKWORK_IS_TUNING 1
 
 #ifndef CLOCKWORK_IS_TUNING
     #define CLOCKWORK_IS_TUNING 0
@@ -32,7 +32,7 @@ namespace Clockwork::tuned {
     NO_TUNE(probcut_min_depth, 5, 1, 20, 0.5, 0.002)              \
                                                                   \
     /* SEE Values */                                              \
-    TUNE(quiesce_see_threshold, 18, -1000, 100, 20, 0.002)        \
+    TUNE(quiesce_see_threshold, 18, -1000, 200, 20, 0.002)        \
     TUNE(movepicker_see_capthist_divisor, 54, 16, 192, 10, 0.002) \
     TUNE(see_pawn_val, 100, 50, 200, 8, 0.002)                    \
     TUNE(see_knight_val, 300, 150, 600, 23, 0.002)                \

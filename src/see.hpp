@@ -21,6 +21,8 @@ inline Value value(PieceType ptype) {
     return TABLE[static_cast<usize>(ptype)];
 #else
     switch (ptype){
+        case PieceType::None:
+            return 0;
         case PieceType::Pawn:
             return tuned::see_pawn_val;
         case PieceType::Knight:
