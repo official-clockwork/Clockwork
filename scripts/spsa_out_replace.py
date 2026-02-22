@@ -1,7 +1,7 @@
 import re
 
 # Change config as needed
-VALUES_FILE = "spsa_out_140k_stc.txt"
+VALUES_FILE = "spsa_out.txt"
 HEADER_FILE = "src/tuned.hpp"
 OUTPUT_FILE = "src/tuned.hpp"
 
