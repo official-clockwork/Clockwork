@@ -64,8 +64,8 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
     }
     updates.adds.push_back({pcolor, ptype, to});
 
-    m8x64 m = toggle_rays(to);
-    add_attacks(color, p.id(), to, p.ptype(), m);
+    auto [mask, xray_mask] = toggle_rays(to);
+    add_attacks(color, p.id(), to, p.ptype(), mask, xray_mask);
 }
 
 void Position::incrementally_mutate_piece(
@@ -162,19 +162,43 @@ void Position::incrementally_move_piece(
 
     u8x64 dst_ray_places = dst_ray_coords.swizzle(m_board.to_vector());
 
-    m8x64 src_all_sliders     = geometry::slider_mask(src_ray_places);
-    m8x64 dst_all_sliders     = geometry::slider_mask(dst_ray_places);
-    m8x64 src_raymask         = geometry::superpiece_attacks(src_ray_places, src_ray_valid);
-    m8x64 dst_raymask         = geometry::superpiece_attacks(dst_ray_places, dst_ray_valid);
-    u8x64 src_visible_sliders = (src_raymask & src_all_sliders).mask(src_ray_places);
-    u8x64 dst_visible_sliders = (dst_raymask & dst_all_sliders).mask(dst_ray_places);
+    m8x64 src_all_sliders = geometry::slider_mask(src_ray_places);
+    m8x64 dst_all_sliders = geometry::slider_mask(dst_ray_places);
+    m8x64 src_pri_raymask = geometry::superpiece_attacks(src_ray_places, src_ray_valid);
+    m8x64 dst_pri_raymask = geometry::superpiece_attacks(dst_ray_places, dst_ray_valid);
+    m8x64 src_sec_raymask =
+      geometry::superpiece_attacks((~src_pri_raymask).mask(src_ray_places), src_ray_valid);
+    m8x64 dst_sec_raymask =
+      geometry::superpiece_attacks((~dst_pri_raymask).mask(dst_ray_places), dst_ray_valid);
+    u8x64 src_pri_sliders = (src_pri_raymask & src_all_sliders).mask(src_ray_places);
+    u8x64 dst_pri_sliders = (dst_pri_raymask & dst_all_sliders).mask(dst_ray_places);
+    u8x64 src_sec_sliders =
+      (src_sec_raymask.andnot(src_pri_raymask) & src_all_sliders).mask(src_ray_places);
+    u8x64 dst_sec_sliders =
+      (dst_sec_raymask.andnot(dst_pri_raymask) & dst_all_sliders).mask(dst_ray_places);
 
-    u8x64 src_slider_ids = geometry::slider_broadcast(src_visible_sliders & u8x64::splat(0x1F));
-    u8x64 dst_slider_ids = geometry::slider_broadcast(dst_visible_sliders & u8x64::splat(0x1F));
+    u8x64 src_pri_slider_ids = geometry::slider_broadcast(src_pri_sliders & u8x64::splat(0x1F));
+    u8x64 dst_pri_slider_ids = geometry::slider_broadcast(dst_pri_sliders & u8x64::splat(0x1F));
+    u8x64 src_sec_slider_ids = geometry::slider_broadcast(src_sec_sliders & u8x64::splat(0x1F));
+    u8x64 dst_sec_slider_ids = geometry::slider_broadcast(dst_sec_sliders & u8x64::splat(0x1F));
 
-    src_slider_ids = src_raymask.mask(geometry::flip_rays(src_slider_ids));  // flip rays
-    dst_slider_ids = dst_raymask.mask(geometry::flip_rays(dst_slider_ids));  // flip rays
-    dst_slider_ids |= dst_raymask.mask(u8x64::splat(0x20));  // pack information for efficiency
+    src_pri_slider_ids =
+      src_sec_raymask.mask(geometry::flip_rays(src_pri_slider_ids));  // flip rays
+    src_pri_slider_ids |= src_pri_raymask.mask(u8x64::splat(0x20));  // pack primary ray information
+
+    dst_pri_slider_ids =
+      dst_sec_raymask.mask(geometry::flip_rays(dst_pri_slider_ids));  // flip rays
+    dst_pri_slider_ids |= dst_pri_raymask.mask(u8x64::splat(0x20));  // pack primary ray information
+
+    src_sec_slider_ids =
+      src_pri_raymask.mask(geometry::flip_rays(src_sec_slider_ids));  // flip rays
+    dst_sec_slider_ids =
+      dst_pri_raymask.mask(geometry::flip_rays(dst_sec_slider_ids));  // flip rays
+
+    src_sec_slider_ids |= src_sec_raymask.andnot(src_pri_raymask)
+                            .mask(u8x64::splat(0x20));  // pack secondary ray information
+    dst_sec_slider_ids |= dst_sec_raymask.andnot(dst_pri_raymask)
+                            .mask(u8x64::splat(0x20));  // pack secondary ray information
 
 #if LPS_AVX512
     u8x64 src_inv_perm = geometry::superpiece_inverse_rays_avx512(from);
@@ -185,34 +209,78 @@ void Position::incrementally_move_piece(
 #endif
 
     // Transform into board layout
-    src_slider_ids = src_inv_perm.swizzle(src_slider_ids);
-    dst_slider_ids = dst_inv_perm.swizzle(dst_slider_ids);
+    src_pri_slider_ids = src_inv_perm.swizzle(src_pri_slider_ids);
+    dst_pri_slider_ids = dst_inv_perm.swizzle(dst_pri_slider_ids);
+    src_sec_slider_ids = src_inv_perm.swizzle(src_sec_slider_ids);
+    dst_sec_slider_ids = dst_inv_perm.swizzle(dst_sec_slider_ids);
 
     // Recover color information
-    m8x64 src_col = src_slider_ids.test(u8x64::splat(0x10));
-    m8x64 dst_col = dst_slider_ids.test(u8x64::splat(0x10));
-    // Recover ray mask information
-    m8x64 ret = dst_slider_ids.test(u8x64::splat(0x20));
+    m8x64 src_pri_col = src_pri_slider_ids.test(u8x64::splat(0x10));
+    m8x64 dst_pri_col = dst_pri_slider_ids.test(u8x64::splat(0x10));
+    m8x64 src_sec_col = src_sec_slider_ids.test(u8x64::splat(0x10));
+    m8x64 dst_sec_col = dst_sec_slider_ids.test(u8x64::splat(0x10));
 
-    src_slider_ids &= u8x64::splat(0x0F);
-    dst_slider_ids &= u8x64::splat(0x0F);
+    // Recover ray mask information
+    m8x64 src_pri_board_mask = src_pri_slider_ids.test(u8x64::splat(0x20));
+    m8x64 dst_pri_board_mask = dst_pri_slider_ids.test(u8x64::splat(0x20));
+    m8x64 dst_sec_board_mask = dst_sec_slider_ids.test(u8x64::splat(0x20));
+
+    u8x64 src_slider_attacks = src_pri_board_mask.mask(src_pri_slider_ids & u8x64::splat(0x0F));
+    u8x64 dst_slider_attacks = dst_pri_board_mask.mask(dst_pri_slider_ids & u8x64::splat(0x0F));
+
+    u8x64 src_pri_xray = src_pri_slider_ids & u8x64::splat(0x0F);
+    u8x64 dst_pri_xray = dst_pri_slider_ids & u8x64::splat(0x0F);
+    u8x64 src_sec_xray = src_sec_slider_ids & u8x64::splat(0x0F);
+    u8x64 dst_sec_xray = dst_sec_slider_ids & u8x64::splat(0x0F);
 
 #if LPS_AVX512
-    u16x64 src_slider_ids2 = std::bit_cast<u16x64>(
-      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(src_slider_ids.raw)),
-                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(src_slider_ids.raw, 1))});
-    u16x64 dst_slider_ids2 = std::bit_cast<u16x64>(
-      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(dst_slider_ids.raw)),
-                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(dst_slider_ids.raw, 1))});
+    u16x64 src_slider_attacks2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(src_slider_attacks.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(src_slider_attacks.raw, 1))});
+    u16x64 dst_slider_attacks2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(dst_slider_attacks.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(dst_slider_attacks.raw, 1))});
 
-    u16x64 src_at = m16x64{src_slider_ids.nonzeros().raw}.mask(u16x64::splat(1) << src_slider_ids2);
-    u16x64 dst_at = m16x64{dst_slider_ids.nonzeros().raw}.mask(u16x64::splat(1) << dst_slider_ids2);
+    u16x64 src_pri_xray2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(src_pri_xray.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(src_pri_xray.raw, 1))});
+    u16x64 dst_pri_xray2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(dst_pri_xray.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(dst_pri_xray.raw, 1))});
 
-    m16x64 src_color{src_col.raw};
-    m16x64 dst_color{dst_col.raw};
+    u16x64 src_sec_xray2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(src_sec_xray.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(src_sec_xray.raw, 1))});
+    u16x64 dst_sec_xray2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(dst_sec_xray.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(dst_sec_xray.raw, 1))});
 
-    m_attack_table[0].raw ^= (~src_color).mask(src_at) ^ (~dst_color).mask(dst_at);
-    m_attack_table[1].raw ^= src_color.mask(src_at) ^ dst_color.mask(dst_at);
+    u16x64 src_at =
+      m16x64{src_slider_attacks.nonzeros().raw}.mask(u16x64::splat(1) << src_slider_attacks2);
+    u16x64 dst_at =
+      m16x64{dst_slider_attacks.nonzeros().raw}.mask(u16x64::splat(1) << dst_slider_attacks2);
+
+    u16x64 src_pri_xrt =
+      m16x64{src_pri_xray.nonzeros().raw}.mask(u16x64::splat(1) << src_pri_xray2);
+    u16x64 dst_pri_xrt =
+      m16x64{dst_pri_xray.nonzeros().raw}.mask(u16x64::splat(1) << dst_pri_xray2);
+    u16x64 src_sec_xrt =
+      m16x64{src_sec_xray.nonzeros().raw}.mask(u16x64::splat(1) << src_sec_xray2);
+    u16x64 dst_sec_xrt =
+      m16x64{dst_sec_xray.nonzeros().raw}.mask(u16x64::splat(1) << dst_sec_xray2);
+
+    m16x64 src_pri_color{src_pri_col.raw};
+    m16x64 dst_pri_color{dst_pri_col.raw};
+    m16x64 src_sec_color{src_sec_col.raw};
+    m16x64 dst_sec_color{dst_sec_col.raw};
+
+    m_attack_table[0].raw ^= (~src_pri_color).mask(src_at) ^ (~dst_pri_color).mask(dst_at);
+    m_attack_table[1].raw ^= src_pri_color.mask(src_at) ^ dst_pri_color.mask(dst_at);
+
+    m_xray_table[0].raw ^= (~src_pri_color).mask(src_pri_xrt) ^ (~src_sec_color).mask(src_sec_xrt)
+                         ^ (~dst_pri_color).mask(dst_pri_xrt) ^ (~dst_sec_color).mask(dst_sec_xrt);
+    m_xray_table[1].raw ^= src_pri_color.mask(src_pri_xrt) ^ src_sec_color.mask(src_sec_xrt)
+                         ^ dst_pri_color.mask(dst_pri_xrt) ^ dst_sec_color.mask(dst_sec_xrt);
 #else
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
@@ -220,51 +288,92 @@ void Position::incrementally_move_piece(
                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
     static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    u8x64              src_at_lo = src_slider_ids.swizzle(BITS_LO);
-    u8x64              src_at_hi = src_slider_ids.swizzle(BITS_HI);
-    u8x64              dst_at_lo = dst_slider_ids.swizzle(BITS_LO);
-    u8x64              dst_at_hi = dst_slider_ids.swizzle(BITS_HI);
+    u8x64              src_at_lo      = src_slider_attacks.swizzle(BITS_LO);
+    u8x64              src_at_hi      = src_slider_attacks.swizzle(BITS_HI);
+    u8x64              dst_at_lo      = dst_slider_attacks.swizzle(BITS_LO);
+    u8x64              dst_at_hi      = dst_slider_attacks.swizzle(BITS_HI);
+    u8x64              src_pri_xrt_lo = src_pri_xray.swizzle(BITS_LO);
+    u8x64              src_pri_xrt_hi = src_pri_xray.swizzle(BITS_HI);
+    u8x64              dst_pri_xrt_lo = dst_pri_xray.swizzle(BITS_LO);
+    u8x64              dst_pri_xrt_hi = dst_pri_xray.swizzle(BITS_HI);
+    u8x64              src_sec_xrt_lo = src_sec_xray.swizzle(BITS_LO);
+    u8x64              src_sec_xrt_hi = src_sec_xray.swizzle(BITS_HI);
+    u8x64              dst_sec_xrt_lo = dst_sec_xray.swizzle(BITS_LO);
+    u8x64              dst_sec_xrt_hi = dst_sec_xray.swizzle(BITS_HI);
 
-    i8x64 src_color0 = src_col.to_vector().zip_low_128lanes(src_col.to_vector());
-    i8x64 src_color1 = src_col.to_vector().zip_high_128lanes(src_col.to_vector());
-    i8x64 dst_color0 = dst_col.to_vector().zip_low_128lanes(dst_col.to_vector());
-    i8x64 dst_color1 = dst_col.to_vector().zip_high_128lanes(dst_col.to_vector());
+    i8x64 src_pri_color0 = src_pri_col.to_vector().zip_low_128lanes(src_pri_col.to_vector());
+    i8x64 src_pri_color1 = src_pri_col.to_vector().zip_high_128lanes(src_pri_col.to_vector());
+    i8x64 dst_pri_color0 = dst_pri_col.to_vector().zip_low_128lanes(dst_pri_col.to_vector());
+    i8x64 dst_pri_color1 = dst_pri_col.to_vector().zip_high_128lanes(dst_pri_col.to_vector());
+    i8x64 src_sec_color0 = src_sec_col.to_vector().zip_low_128lanes(src_sec_col.to_vector());
+    i8x64 src_sec_color1 = src_sec_col.to_vector().zip_high_128lanes(src_sec_col.to_vector());
+    i8x64 dst_sec_color0 = dst_sec_col.to_vector().zip_low_128lanes(dst_sec_col.to_vector());
+    i8x64 dst_sec_color1 = dst_sec_col.to_vector().zip_high_128lanes(dst_sec_col.to_vector());
 
-    u16x64 src_color = std::bit_cast<u16x64>(std::array<i8x64, 2>{src_color0, src_color1});
-    u16x64 dst_color = std::bit_cast<u16x64>(std::array<i8x64, 2>{dst_color0, dst_color1});
+    u16x64 src_pri_color =
+      std::bit_cast<u16x64>(std::array<i8x64, 2>{src_pri_color0, src_pri_color1});
+    u16x64 dst_pri_color =
+      std::bit_cast<u16x64>(std::array<i8x64, 2>{dst_pri_color0, dst_pri_color1});
+    u16x64 src_sec_color =
+      std::bit_cast<u16x64>(std::array<i8x64, 2>{src_sec_color0, src_sec_color1});
+    u16x64 dst_sec_color =
+      std::bit_cast<u16x64>(std::array<i8x64, 2>{dst_sec_color0, dst_sec_color1});
 
-    u8x64 src_at0 = src_at_lo.zip_low_128lanes(src_at_hi);
-    u8x64 src_at1 = src_at_lo.zip_high_128lanes(src_at_hi);
-    u8x64 dst_at0 = dst_at_lo.zip_low_128lanes(dst_at_hi);
-    u8x64 dst_at1 = dst_at_lo.zip_high_128lanes(dst_at_hi);
+    u16x64 src_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{
+      src_at_lo.zip_low_128lanes(src_at_hi), src_at_lo.zip_high_128lanes(src_at_hi)});
+    u16x64 dst_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{
+      dst_at_lo.zip_low_128lanes(dst_at_hi), dst_at_lo.zip_high_128lanes(dst_at_hi)});
 
-    u16x64 src_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{src_at0, src_at1});
-    u16x64 dst_at = std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_at0, dst_at1});
+    u16x64 src_pri_xrt =
+      std::bit_cast<u16x64>(std::array<u8x64, 2>{src_pri_xrt_lo.zip_low_128lanes(src_pri_xrt_hi),
+                                                 src_pri_xrt_lo.zip_high_128lanes(src_pri_xrt_hi)});
+    u16x64 dst_pri_xrt =
+      std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_pri_xrt_lo.zip_low_128lanes(dst_pri_xrt_hi),
+                                                 dst_pri_xrt_lo.zip_high_128lanes(dst_pri_xrt_hi)});
+    u16x64 src_sec_xrt =
+      std::bit_cast<u16x64>(std::array<u8x64, 2>{src_sec_xrt_lo.zip_low_128lanes(src_sec_xrt_hi),
+                                                 src_sec_xrt_lo.zip_high_128lanes(src_sec_xrt_hi)});
+    u16x64 dst_sec_xrt =
+      std::bit_cast<u16x64>(std::array<u8x64, 2>{dst_sec_xrt_lo.zip_low_128lanes(dst_sec_xrt_hi),
+                                                 dst_sec_xrt_lo.zip_high_128lanes(dst_sec_xrt_hi)});
 
-    m_attack_table[0].raw ^= src_at.andnot(src_color) ^ dst_at.andnot(dst_color);
-    m_attack_table[1].raw ^= (src_at & src_color) ^ (dst_at & dst_color);
+    m_attack_table[0].raw ^= src_at.andnot(src_pri_color) ^ dst_at.andnot(dst_pri_color);
+    m_attack_table[1].raw ^= (src_at & src_pri_color) ^ (dst_at & dst_pri_color);
+
+    m_xray_table[0].raw ^= src_pri_xrt.andnot(src_pri_color) ^ src_sec_xrt.andnot(src_sec_color)
+                         ^ dst_pri_xrt.andnot(dst_pri_color) ^ dst_sec_xrt.andnot(dst_sec_color);
+    m_xray_table[1].raw ^= (src_pri_xrt & src_pri_color) ^ (src_sec_xrt & src_sec_color)
+                         ^ (dst_pri_xrt & dst_pri_color) ^ (dst_sec_xrt & dst_sec_color);
 #endif
 
-    add_attacks(color, p.id(), to, p.ptype(), ret);
+    add_attacks(color, p.id(), to, p.ptype(), dst_pri_board_mask, dst_sec_board_mask);
 }
 
 void Position::remove_attacks(bool color, PieceId id) {
     u16x64 mask = u16x64::splat(static_cast<u16>(~id.to_piece_mask().value()));
     m_attack_table[color].raw &= mask;
+    m_xray_table[color].raw &= mask;
 }
 
-m8x64 Position::toggle_rays(Square sq) {
+std::pair<m8x64, m8x64> Position::toggle_rays(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
     u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
 
-    m8x64 all_sliders     = geometry::slider_mask(ray_places);
-    m8x64 raymask         = geometry::superpiece_attacks(ray_places, ray_valid);
-    u8x64 visible_sliders = (raymask & all_sliders).mask(ray_places);
+    m8x64 all_sliders = geometry::slider_mask(ray_places);
+    m8x64 pri_raymask = geometry::superpiece_attacks(ray_places, ray_valid);
+    m8x64 sec_raymask = geometry::superpiece_attacks((~pri_raymask).mask(ray_places), ray_valid);
+    u8x64 pri_sliders = (pri_raymask & all_sliders).mask(ray_places);
+    u8x64 sec_sliders = (sec_raymask.andnot(pri_raymask) & all_sliders).mask(ray_places);
 
-    u8x64 slider_ids = geometry::slider_broadcast(visible_sliders & u8x64::splat(0x1F));
+    u8x64 pri_slider_ids = geometry::slider_broadcast(pri_sliders & u8x64::splat(0x1F));
+    u8x64 sec_slider_ids = geometry::slider_broadcast(sec_sliders & u8x64::splat(0x1F));
 
-    slider_ids = raymask.mask(geometry::flip_rays(slider_ids));  // flip rays
-    slider_ids |= raymask.mask(u8x64::splat(0x20));              // pack information for efficiency
+    pri_slider_ids = sec_raymask.mask(geometry::flip_rays(pri_slider_ids));  // flip rays
+    pri_slider_ids |= pri_raymask.mask(u8x64::splat(0x20));  // pack primary ray information
+
+    sec_slider_ids = pri_raymask.mask(geometry::flip_rays(sec_slider_ids));  // flip rays
+    sec_slider_ids |=
+      sec_raymask.andnot(pri_raymask).mask(u8x64::splat(0x20));  // pack secondary ray information
 
 #if LPS_AVX512
     u8x64 inv_perm = geometry::superpiece_inverse_rays_avx512(sq);
@@ -273,26 +382,43 @@ m8x64 Position::toggle_rays(Square sq) {
 #endif
 
     // Transform into board layout
-    slider_ids = inv_perm.swizzle(slider_ids);
+    pri_slider_ids = inv_perm.swizzle(pri_slider_ids);
+    sec_slider_ids = inv_perm.swizzle(sec_slider_ids);
 
     // Recover color information
-    m8x64 col = slider_ids.test(u8x64::splat(0x10));
-    // Recover ray mask information
-    m8x64 ret = slider_ids.test(u8x64::splat(0x20));
+    m8x64 pri_col = pri_slider_ids.test(u8x64::splat(0x10));
+    m8x64 sec_col = sec_slider_ids.test(u8x64::splat(0x10));
+    // Recover primary ray mask information
+    m8x64 pri_board_mask = pri_slider_ids.test(u8x64::splat(0x20));
+    m8x64 sec_board_mask = sec_slider_ids.test(u8x64::splat(0x20));
 
-    slider_ids &= u8x64::splat(0x0F);
+    u8x64 slider_attacks = pri_board_mask.mask(pri_slider_ids & u8x64::splat(0x0F));
+
+    u8x64 pri_xray = pri_slider_ids & u8x64::splat(0x0F);
+    u8x64 sec_xray = sec_slider_ids & u8x64::splat(0x0F);
 
 #if LPS_AVX512
-    u16x64 slider_ids2 = std::bit_cast<u16x64>(
-      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(slider_ids.raw)),
-                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(slider_ids.raw, 1))});
+    u16x64 slider_attacks2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(slider_attacks.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(slider_attacks.raw, 1))});
+    u16x64 pri_xray2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(pri_xray.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(pri_xray.raw, 1))});
+    u16x64 sec_xray2 = std::bit_cast<u16x64>(
+      std::array{_mm512_cvtepu8_epi16(_mm512_castsi512_si256(sec_xray.raw)),
+                 _mm512_cvtepu8_epi16(_mm512_extracti64x4_epi64(sec_xray.raw, 1))});
 
-    u16x64 at = m16x64{slider_ids.nonzeros().raw}.mask(u16x64::splat(1) << slider_ids2);
+    u16x64 at = m16x64{slider_attacks.nonzeros().raw}.mask(u16x64::splat(1) << slider_attacks2);
+    u16x64 pri_xrt = m16x64{pri_xray.nonzeros().raw}.mask(u16x64::splat(1) << pri_xray2);
+    u16x64 sec_xrt = m16x64{sec_xray.nonzeros().raw}.mask(u16x64::splat(1) << sec_xray2);
 
-    m16x64 color{col.raw};
+    m16x64 pri_color{pri_col.raw};
+    m16x64 sec_color{sec_col.raw};
 
-    m_attack_table[0].raw ^= (~color).mask(at);
-    m_attack_table[1].raw ^= color.mask(at);
+    m_attack_table[0].raw ^= (~pri_color).mask(at);
+    m_attack_table[1].raw ^= pri_color.mask(at);
+    m_xray_table[0].raw ^= (~pri_color).mask(pri_xrt) ^ (~sec_color).mask(sec_xrt);
+    m_xray_table[1].raw ^= pri_color.mask(pri_xrt) ^ sec_color.mask(sec_xrt);
 #else
     // AVX2 doesn't have a variable word shift, so were're doing it this way.
     // Index zero is invalid here (the king is never a slider), so 0 converts to 0.
@@ -300,22 +426,34 @@ m8x64 Position::toggle_rays(Square sq) {
                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
     static const u8x16 BITS_HI{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  //
                                 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}};
-    u8x64              at_lo = slider_ids.swizzle(BITS_LO);
-    u8x64              at_hi = slider_ids.swizzle(BITS_HI);
+    u8x64              at_lo      = slider_attacks.swizzle(BITS_LO);
+    u8x64              at_hi      = slider_attacks.swizzle(BITS_HI);
+    u8x64              pri_xrt_lo = pri_xray.swizzle(BITS_LO);
+    u8x64              pri_xrt_hi = pri_xray.swizzle(BITS_HI);
+    u8x64              sec_xrt_lo = sec_xray.swizzle(BITS_LO);
+    u8x64              sec_xrt_hi = sec_xray.swizzle(BITS_HI);
 
-    i8x64  color0 = col.to_vector().zip_low_128lanes(col.to_vector());
-    i8x64  color1 = col.to_vector().zip_high_128lanes(col.to_vector());
-    u16x64 color  = std::bit_cast<u16x64>(std::array<i8x64, 2>{color0, color1});
+    i8x64  pri_color0 = pri_col.to_vector().zip_low_128lanes(pri_col.to_vector());
+    i8x64  pri_color1 = pri_col.to_vector().zip_high_128lanes(pri_col.to_vector());
+    u16x64 pri_color  = std::bit_cast<u16x64>(std::array<i8x64, 2>{pri_color0, pri_color1});
+    i8x64  sec_color0 = sec_col.to_vector().zip_low_128lanes(sec_col.to_vector());
+    i8x64  sec_color1 = sec_col.to_vector().zip_high_128lanes(sec_col.to_vector());
+    u16x64 sec_color  = std::bit_cast<u16x64>(std::array<i8x64, 2>{sec_color0, sec_color1});
 
-    u8x64  at0 = at_lo.zip_low_128lanes(at_hi);
-    u8x64  at1 = at_lo.zip_high_128lanes(at_hi);
-    u16x64 at  = std::bit_cast<u16x64>(std::array<u8x64, 2>{at0, at1});
+    u16x64 at = std::bit_cast<u16x64>(
+      std::array<u8x64, 2>{at_lo.zip_low_128lanes(at_hi), at_lo.zip_high_128lanes(at_hi)});
+    u16x64 pri_xrt = std::bit_cast<u16x64>(std::array<u8x64, 2>{
+      pri_xrt_lo.zip_low_128lanes(pri_xrt_hi), pri_xrt_lo.zip_high_128lanes(pri_xrt_hi)});
+    u16x64 sec_xrt = std::bit_cast<u16x64>(std::array<u8x64, 2>{
+      sec_xrt_lo.zip_low_128lanes(sec_xrt_hi), sec_xrt_lo.zip_high_128lanes(sec_xrt_hi)});
 
-    m_attack_table[0].raw ^= at.andnot(color);
-    m_attack_table[1].raw ^= at & color;
+    m_attack_table[0].raw ^= at.andnot(pri_color);
+    m_attack_table[1].raw ^= at & pri_color;
+    m_xray_table[0].raw ^= pri_xrt.andnot(pri_color) ^ sec_xrt.andnot(sec_color);
+    m_xray_table[1].raw ^= (pri_xrt & pri_color) ^ (sec_xrt & sec_color);
 #endif
 
-    return ret;
+    return {pri_board_mask, sec_board_mask};
 }
 
 void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
@@ -325,44 +463,56 @@ void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype) {
     case PieceType::Pawn:
     case PieceType::Knight:
     case PieceType::King:
-        add_attacks(color, id, sq, ptype, m8x64::splat(true));
+        add_attacks(color, id, sq, ptype, m8x64::splat(true), m8x64::splat(false));
         return;
     case PieceType::Bishop:
     case PieceType::Rook:
     case PieceType::Queen: {
         auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
         u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
-        m8x64 raymask                = geometry::superpiece_attacks(ray_places, ray_valid);
+        m8x64 pri_raymask            = geometry::superpiece_attacks(ray_places, ray_valid);
+        m8x64 sec_raymask =
+          geometry::superpiece_attacks((~pri_raymask).mask(ray_places), ray_valid);
 
 #if LPS_AVX512
         u8x64 inv_perm = geometry::superpiece_inverse_rays_avx512(sq);
 #else
         u8x64 inv_perm = geometry::superpiece_inverse_rays_avx2(sq);
 #endif
-        m8x64 boardmask = inv_perm.swizzle(raymask);
+        m8x64 pri_boardmask = inv_perm.swizzle(pri_raymask);
+        m8x64 sec_boardmask = inv_perm.swizzle(sec_raymask.andnot(pri_raymask));
 
-        add_attacks(color, id, sq, ptype, boardmask);
+        add_attacks(color, id, sq, ptype, pri_boardmask, sec_boardmask);
         return;
     }
     }
 }
 
-void Position::add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask) {
+void Position::add_attacks(
+  bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask, m8x64 xray_mask) {
     u16x64 bit = u16x64::splat(id.to_piece_mask().value());
 
 #if LPS_AVX512
     m8x64 moves = mask & geometry::piece_moves_avx512(color, ptype, sq);
+    m8x64 xrays = xray_mask & geometry::piece_moves_avx512(color, ptype, sq);
 
     m_attack_table[color].raw |= m16x64{moves.raw}.mask(bit);
+    m_xray_table[color].raw |= m16x64{xrays.raw}.mask(bit);
 #else
     m8x64 moves     = mask & geometry::piece_moves_avx2(color, ptype, sq);
+    m8x64 xrays     = xray_mask & geometry::piece_moves_avx2(color, ptype, sq);
     i8x64 moves_vec = moves.to_vector();
+    i8x64 xrays_vec = xrays.to_vector();
 
     i8x64  m0 = moves_vec.zip_low_128lanes(moves_vec);
     i8x64  m1 = moves_vec.zip_high_128lanes(moves_vec);
     u16x64 m  = std::bit_cast<u16x64>(std::array<i8x64, 2>{m0, m1});
+    i8x64  x0 = xrays_vec.zip_low_128lanes(xrays_vec);
+    i8x64  x1 = xrays_vec.zip_high_128lanes(xrays_vec);
+    u16x64 x  = std::bit_cast<u16x64>(std::array<i8x64, 2>{x0, x1});
 
     m_attack_table[color].raw |= m & bit;
+    m_xray_table[color].raw |= x & bit;
 #endif
 }
 
@@ -615,38 +765,62 @@ std::tuple<Wordboard, Bitboard> Position::calc_pin_mask() const {
     return {Wordboard{at}, Bitboard{pinned_bb}};
 }
 
-const std::array<Wordboard, 2> Position::calc_attacks_slow() {
-    std::array<std::array<PieceMask, 64>, 2> result{};
+std::pair<std::array<Wordboard, 2>, std::array<Wordboard, 2>> Position::calc_attacks_slow() {
+    std::array<std::array<PieceMask, 64>, 2> result_att{};
+    std::array<std::array<PieceMask, 64>, 2> result_xray{};
     for (usize i = 0; i < 64; i++) {
         Square sq{static_cast<u8>(i)};
-        auto [white, black] = calc_attacks_slow(sq);
-        result[0][i]        = white;
-        result[1][i]        = black;
+        auto [attacks, xrays] = calc_attacks_slow(sq);
+        result_att[0][i]      = attacks[0];
+        result_att[1][i]      = attacks[1];
+        result_xray[0][i]     = xrays[0];
+        result_xray[1][i]     = xrays[1];
     }
-    return std::bit_cast<std::array<Wordboard, 2>>(result);
+    return {std::bit_cast<std::array<Wordboard, 2>>(result_att),
+            std::bit_cast<std::array<Wordboard, 2>>(result_xray)};
 }
 
-const std::array<PieceMask, 2> Position::calc_attacks_slow(Square sq) {
+std::pair<std::array<PieceMask, 2>, std::array<PieceMask, 2>>
+Position::calc_attacks_slow(Square sq) {
     auto [ray_coords, ray_valid] = geometry::superpiece_rays(sq);
     u8x64 ray_places             = ray_coords.swizzle(m_board.to_vector());
 
-    m8x64 color             = ray_places.test(u8x64::splat(0x10));
-    m8x64 visible           = geometry::superpiece_attacks(ray_places, ray_valid);
+    m8x64 color       = ray_places.test(u8x64::splat(0x10));
+    m8x64 visible     = geometry::superpiece_attacks(ray_places, ray_valid);
+    m8x64 sec_visible = geometry::superpiece_attacks((~visible).mask(ray_places), ray_valid);
+
     m8x64 attackers         = geometry::attackers_from_rays(ray_places);
     m8x64 visible_attackers = visible & attackers;
-    m8x64 white_attackers   = ~color & visible_attackers;
-    m8x64 black_attackers   = color & visible_attackers;
+    m8x64 sec_visible_attackers =
+      sec_visible.andnot(visible) & attackers & geometry::slider_mask(ray_places);
+
+    m8x64 white_attackers = ~color & visible_attackers;
+    m8x64 black_attackers = color & visible_attackers;
+    m8x64 white_xrays     = ~color & sec_visible_attackers;
+    m8x64 black_xrays     = color & sec_visible_attackers;
 
     usize white_attackers_count = white_attackers.popcount();
     usize black_attackers_count = black_attackers.popcount();
     u8x16 white_attackers_coord = white_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
     u8x16 black_attackers_coord = black_attackers.compress(ray_coords).extract_aligned<u8x16, 0>();
-    return {
-      PieceMask{geometry::find_set(white_attackers_coord, white_attackers_count,
-                                   m_piece_list_sq[0].to_vector())},
-      PieceMask{geometry::find_set(black_attackers_coord, black_attackers_count,
-                                   m_piece_list_sq[1].to_vector())},
-    };
+
+    usize white_xrays_count = white_xrays.popcount();
+    usize black_xrays_count = black_xrays.popcount();
+    u8x16 white_xrays_coord = white_xrays.compress(ray_coords).extract_aligned<u8x16, 0>();
+    u8x16 black_xrays_coord = black_xrays.compress(ray_coords).extract_aligned<u8x16, 0>();
+
+    return {std::array<PieceMask, 2>{
+              PieceMask{geometry::find_set(white_attackers_coord, white_attackers_count,
+                                           m_piece_list_sq[0].to_vector())},
+              PieceMask{geometry::find_set(black_attackers_coord, black_attackers_count,
+                                           m_piece_list_sq[1].to_vector())},
+            },
+            std::array<PieceMask, 2>{
+              PieceMask{geometry::find_set(white_xrays_coord, white_xrays_count,
+                                           m_piece_list_sq[0].to_vector())},
+              PieceMask{geometry::find_set(black_xrays_coord, black_xrays_count,
+                                           m_piece_list_sq[1].to_vector())},
+            }};
 }
 
 Wordboard Position::create_attack_table_superpiece_mask(Square                   sq,
@@ -916,7 +1090,9 @@ std::optional<Position> Position::parse(std::string_view board,
         return std::nullopt;
     }
 
-    result.m_attack_table = result.calc_attacks_slow();
+    auto [attacks, xrays] = result.calc_attacks_slow();
+    result.m_attack_table = attacks;
+    result.m_xray_table   = xrays;
     result.m_hash_key     = result.calc_hash_key_slow();
     result.m_pawn_key     = result.calc_pawn_key_slow();
     result.m_non_pawn_key = result.calc_non_pawn_key_slow();

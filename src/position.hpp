@@ -105,6 +105,9 @@ public:
     [[nodiscard]] const Wordboard& attack_table(Color color) const {
         return m_attack_table[static_cast<usize>(color)];
     }
+    [[nodiscard]] const Wordboard& xray_table(Color color) const {
+        return m_xray_table[static_cast<usize>(color)];
+    }
     [[nodiscard]] const PieceList<PieceType>& piece_list(Color color) const {
         return m_piece_list[static_cast<usize>(color)];
     }
@@ -281,8 +284,8 @@ public:
 
     [[nodiscard]] bool is_reversible(Move move);
 
-    const std::array<Wordboard, 2> calc_attacks_slow();
-    const std::array<PieceMask, 2> calc_attacks_slow(Square sq);
+    std::pair<std::array<Wordboard, 2>, std::array<Wordboard, 2>> calc_attacks_slow();
+    std::pair<std::array<PieceMask, 2>, std::array<PieceMask, 2>> calc_attacks_slow(Square sq);
 
     [[nodiscard]] HashKey                calc_hash_key_slow() const;
     [[nodiscard]] HashKey                calc_pawn_key_slow() const;
@@ -303,6 +306,7 @@ public:
 
 private:
     std::array<Wordboard, 2>            m_attack_table{};
+    std::array<Wordboard, 2>            m_xray_table{};
     std::array<PieceList<Square>, 2>    m_piece_list_sq{};
     std::array<PieceList<PieceType>, 2> m_piece_list{};
     Byteboard                           m_board{};
@@ -325,10 +329,11 @@ private:
     void
     incrementally_move_piece(bool color, Square from, Square to, Place p, PsqtUpdates& updates);
 
-    void  remove_attacks(bool color, PieceId id);
-    m8x64 toggle_rays(Square sq);
-    void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
-    void  add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask);
+    void                    remove_attacks(bool color, PieceId id);
+    std::pair<m8x64, m8x64> toggle_rays(Square sq);
+    void                    add_attacks(bool color, PieceId id, Square sq, PieceType ptype);
+    void
+    add_attacks(bool color, PieceId id, Square sq, PieceType ptype, m8x64 mask, m8x64 xray_mask);
 };
 
 }  // namespace Clockwork
