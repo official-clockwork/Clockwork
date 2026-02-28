@@ -20,99 +20,99 @@ namespace Clockwork::tuned {
     /* NMP Values */                                              \
     NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)                       \
     NO_TUNE(nmp_base_r, 192, 64, 384, 16, 0.002)                  \
-    TUNE(nmp_depth_r, 17, 8, 32, 1, 0.002)                       \
+    TUNE(nmp_depth_r, 16, 8, 32, 1, 0.002)                       \
     NO_TUNE(nmp_verif_min_depth, 14, 1, 40, .5, 0.002)            \
-    TUNE(nmp_beta_margin, 32, 10, 60, 3, 0.002)                   \
-    TUNE(nmp_beta_diff, 392, 200, 800, 38, 0.002)                 \
-    TUNE(nmp_improving_r, 63, 32, 128, 5, 0.002)                  \
+    TUNE(nmp_beta_margin, 33, 10, 60, 3, 0.002)                   \
+    TUNE(nmp_beta_diff, 388, 200, 800, 38, 0.002)                 \
+    TUNE(nmp_improving_r, 61, 32, 128, 5, 0.002)                  \
                                                                   \
     /* ProbCut Values */                                          \
-    TUNE(probcut_margin, 332, 166, 664, 25, 0.002)                \
-    TUNE(probcut_see, 111, 54, 200, 10, 0.002)                     \
+    TUNE(probcut_margin, 334, 166, 664, 25, 0.002)                \
+    TUNE(probcut_see, 108, 54, 200, 10, 0.002)                     \
     NO_TUNE(probcut_min_depth, 5, 1, 20, 0.5, 0.002)              \
                                                                   \
     /* SEE Values */                                              \
-    TUNE(quiesce_see_threshold, 25, -1000, 200, 20, 0.002)        \
-    TUNE(movepicker_see_capthist_divisor, 61, 16, 192, 10, 0.002) \
-    TUNE(see_pawn_val, 104, 50, 200, 8, 0.002)                    \
+    TUNE(quiesce_see_threshold, 24, -1000, 200, 20, 0.002)        \
+    TUNE(movepicker_see_capthist_divisor, 59, 16, 192, 10, 0.002) \
+    TUNE(see_pawn_val, 101, 50, 200, 8, 0.002)                    \
     TUNE(see_knight_val, 324, 150, 600, 23, 0.002)                \
-    TUNE(see_bishop_val, 268, 150, 600, 23, 0.002)                \
+    TUNE(see_bishop_val, 278, 150, 600, 23, 0.002)                \
     TUNE(see_rook_val, 562, 250, 1000, 38, 0.002)                 \
-    TUNE(see_queen_val, 1005, 450, 1800, 68, 0.002)                \
+    TUNE(see_queen_val, 993, 450, 1800, 68, 0.002)                \
                                                                   \
     /* Stat Bonus */                                              \
-    TUNE(stat_bonus_max, 1882, 948, 3792, 142, 0.002)             \
+    TUNE(stat_bonus_max, 1904, 948, 3792, 142, 0.002)             \
     TUNE(stat_bonus_quad, 4, 2, 8, .5, 0.002)                     \
     TUNE(stat_bonus_lin, 102, 60, 240, 9, 0.002)                  \
-    TUNE(stat_bonus_sub, 143, 60, 240, 9, 0.002)                  \
+    TUNE(stat_bonus_sub, 144, 60, 240, 9, 0.002)                  \
                                                                   \
     /* Stat Malus */                                              \
-    TUNE(stat_malus_max, 1341, 948, 3792, 142, 0.002)             \
+    TUNE(stat_malus_max, 1342, 948, 3792, 142, 0.002)             \
     TUNE(stat_malus_quad, 3, 2, 8, .5, 0.002)                     \
-    TUNE(stat_malus_lin, 128, 60, 240, 9, 0.002)                  \
-    TUNE(stat_malus_sub, 115, 60, 240, 9, 0.002)                  \
+    TUNE(stat_malus_lin, 126, 60, 240, 9, 0.002)                  \
+    TUNE(stat_malus_sub, 116, 60, 240, 9, 0.002)                  \
                                                                   \
     /* Search Params */                                           \
     TUNE(asp_window_delta, 25, 25, 100, 4, 0.002)                 \
     NO_TUNE(razor_depth, 7, 1, 20, 0.5, 0.002)                    \
-    TUNE(razor_margin, 664, 353, 1414, 53, 0.002)                 \
+    TUNE(razor_margin, 660, 353, 1414, 53, 0.002)                 \
     NO_TUNE(lmp_depth_mult, 3, 1, 20, 0.5, 0.002)                 \
                                                                   \
     /* Futility Pruning */                                        \
-    TUNE(ffp_margin_base, 479, 250, 1000, 38, 0.002)              \
-    TUNE(ffp_margin_mult, 87, 50, 200, 8, 0.002)                  \
+    TUNE(ffp_margin_base, 472, 250, 1000, 38, 0.002)              \
+    TUNE(ffp_margin_mult, 88, 50, 200, 8, 0.002)                  \
     TUNE(ffp_hist_div, 22, 16, 64, 3, 0.002)                      \
     NO_TUNE(ffp_depth, 8, 1, 20, 0.5, 0.002)                      \
                                                                   \
     /* Quiet History Pruning */                                   \
     NO_TUNE(qhp_depth, 4, 1, 20, 0.5, 0.002)                      \
-    TUNE(qhp_threshold, -2126, -4096, -1024, 154, 0.002)          \
+    TUNE(qhp_threshold, -2113, -4096, -1024, 154, 0.002)          \
                                                                   \
     /* SEE PVS */                                                 \
-    TUNE(see_pvs_quiet, -58, -134, -33, 5, 0.002)                 \
+    TUNE(see_pvs_quiet, -59, -134, -33, 5, 0.002)                 \
     TUNE(see_pvs_noisy_quad, -14, -44, -11, 2, 0.002)             \
-    TUNE(see_pvs_hist_mult, 17, 10, 40, 2, 0.002)                 \
+    TUNE(see_pvs_hist_mult, 16, 10, 40, 2, 0.002)                 \
                                                                   \
     /* Singular Extensions */                                     \
     NO_TUNE(sing_min_depth, 6, 1, 20, 0.5, 0.002)                 \
     NO_TUNE(sing_depth_margin, 3, 1, 20, 0.5, 0.002)              \
-    TUNE(sing_beta_margin, 271, 160, 640, 19, 0.002)              \
+    TUNE(sing_beta_margin, 263, 160, 640, 19, 0.002)              \
     TUNE(dext_margin, 42, 20, 80, 3, 0.002)                       \
-    TUNE(dext_hist_div, 501, 256, 1024, 39, 0.002)                \
-    TUNE(triext_margin, 114, 60, 240, 9, 0.002)                   \
+    TUNE(dext_hist_div, 496, 256, 1024, 39, 0.002)                \
+    TUNE(triext_margin, 115, 60, 240, 9, 0.002)                   \
     TUNE(triext_hist_div, 528, 256, 1024, 39, 0.002)              \
                                                                   \
     /* LMR */                                                     \
-    TUNE(lmr_quiet_base, 651, 394, 1576, 59, 0.002)               \
-    TUNE(lmr_quiet_div, 171, 104, 416, 16, 0.002)                 \
-    TUNE(lmr_noisy_base, 243, 128, 512, 20, 0.002)                \
-    TUNE(lmr_noisy_div, 210, 98, 394, 15, 0.002)                  \
-    TUNE(lmr_pv_node_red, 1182, 512, 2048, 77, 0.002)             \
-    TUNE(lmr_alpha_raise_red, 533, 256, 1024, 38, 0.002)          \
-    TUNE(lmr_not_improving_red, 542, 256, 1024, 38, 0.002)        \
-    TUNE(lmr_in_check_red, 1117, 512, 2048, 77, 0.002)            \
-    TUNE(lmr_cutnode_red, 1251, 512, 2048, 77, 0.002)             \
-    TUNE(lmr_no_tt_red, 917, 512, 2048, 77, 0.002)                \
-    TUNE(lmr_ttpv_red, 1017, 512, 2048, 77, 0.002)                \
-    TUNE(lmr_tt_capture_red, 1050, 512, 2048, 77, 0.002)           \
-    TUNE(lmr_fail_high_red, 956, 512, 2048, 77, 0.002)            \
-    TUNE(lmr_quiet_hist_base, 869, 512, 2048, 77, 0.002)          \
+    TUNE(lmr_quiet_base, 655, 394, 1576, 59, 0.002)               \
+    TUNE(lmr_quiet_div, 169, 104, 416, 16, 0.002)                 \
+    TUNE(lmr_noisy_base, 252, 128, 512, 20, 0.002)                \
+    TUNE(lmr_noisy_div, 213, 98, 394, 15, 0.002)                  \
+    TUNE(lmr_pv_node_red, 1199, 512, 2048, 77, 0.002)             \
+    TUNE(lmr_alpha_raise_red, 531, 256, 1024, 38, 0.002)          \
+    TUNE(lmr_not_improving_red, 553, 256, 1024, 38, 0.002)        \
+    TUNE(lmr_in_check_red, 1118, 512, 2048, 77, 0.002)            \
+    TUNE(lmr_cutnode_red, 1223, 512, 2048, 77, 0.002)             \
+    TUNE(lmr_no_tt_red, 939, 512, 2048, 77, 0.002)                \
+    TUNE(lmr_ttpv_red, 1002, 512, 2048, 77, 0.002)                \
+    TUNE(lmr_tt_capture_red, 1016, 512, 2048, 77, 0.002)           \
+    TUNE(lmr_fail_high_red, 950, 512, 2048, 77, 0.002)            \
+    TUNE(lmr_quiet_hist_base, 848, 512, 2048, 77, 0.002)          \
     TUNE(lmr_hist_div, 13, 4, 16, 2, 0.002)                       \
-    TUNE(lmr_fut_red_base, 528, 250, 1000, 38, 0.002)             \
+    TUNE(lmr_fut_red_base, 521, 250, 1000, 38, 0.002)             \
     TUNE(lmr_fut_red_mult, 100, 50, 200, 8, 0.002)                 \
-    TUNE(lmr_fut_red, 666, 512, 2048, 77, 0.002)                  \
-    TUNE(lmr_max_red, 3160, 1536, 6144, 231, 0.002)               \
+    TUNE(lmr_fut_red, 670, 512, 2048, 77, 0.002)                  \
+    TUNE(lmr_max_red, 3182, 1536, 6144, 231, 0.002)               \
                                                                   \
     /* TIME MANAGEMENT */                                         \
-    TUNE(time_hard_limit, 277, 128, 512, 19, 0.002)               \
-    TUNE(time_soft_limit, 54, 25, 100, 3, 0.002)                  \
-    TUNE(time_soft_increment, 549, 256, 1024, 38, 0.002)          \
-    TUNE(nodetm_min_factor, 430, 256, 1024, 38, 0.002)            \
-    TUNE(nodetm_avg_factor, 2268, 1024, 4096, 153, 0.002)         \
-    TUNE(nodetm_frac_factor, 2128, 948, 3792, 142, 0.002)         \
-    TUNE(d1plexity_base, 880, 394, 1576, 59, 0.002)               \
-    TUNE(d1plexity_max_complexity, 200, 100, 400, 15, 0.002)      \
-    TUNE(d1plexity_divisor, 397, 193, 772, 29, 0.002)             \
+    TUNE(time_hard_limit, 280, 128, 512, 19, 0.002)               \
+    TUNE(time_soft_limit, 53, 25, 100, 3, 0.002)                  \
+    TUNE(time_soft_increment, 559, 256, 1024, 38, 0.002)          \
+    TUNE(nodetm_min_factor, 426, 256, 1024, 38, 0.002)            \
+    TUNE(nodetm_avg_factor, 2264, 1024, 4096, 153, 0.002)         \
+    TUNE(nodetm_frac_factor, 2139, 948, 3792, 142, 0.002)         \
+    TUNE(d1plexity_base, 889, 394, 1576, 59, 0.002)               \
+    TUNE(d1plexity_max_complexity, 204, 100, 400, 15, 0.002)      \
+    TUNE(d1plexity_divisor, 400, 193, 772, 29, 0.002)             \
                                                                   \
     /* End of Tunables */
 
