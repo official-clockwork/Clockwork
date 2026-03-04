@@ -28,45 +28,45 @@ namespace Clockwork::tuned {
                                                                   \
     /* ProbCut Values */                                          \
     TUNE(probcut_margin, 336, 166, 664, 25, 0.002)                \
-    TUNE(probcut_see, 114, 54, 200, 10, 0.002)                     \
+    TUNE(probcut_see, 113, 54, 200, 10, 0.002)                     \
     NO_TUNE(probcut_min_depth, 5, 1, 20, 0.5, 0.002)              \
                                                                   \
     /* SEE Values */                                              \
-    TUNE(quiesce_see_threshold, 24, -1000, 200, 20, 0.002)        \
-    TUNE(movepicker_see_capthist_divisor, 52, 16, 192, 10, 0.002) \
-    TUNE(see_pawn_val, 100, 50, 200, 8, 0.002)                    \
+    TUNE(quiesce_see_threshold, 23, -1000, 200, 20, 0.002)        \
+    TUNE(movepicker_see_capthist_divisor, 53, 16, 192, 10, 0.002) \
+    TUNE(see_pawn_val, 99, 50, 200, 8, 0.002)                    \
     TUNE(see_knight_val, 317, 150, 600, 23, 0.002)                \
     TUNE(see_bishop_val, 287, 150, 600, 23, 0.002)                \
-    TUNE(see_rook_val, 570, 250, 1000, 38, 0.002)                 \
-    TUNE(see_queen_val, 973, 450, 1800, 68, 0.002)                \
+    TUNE(see_rook_val, 568, 250, 1000, 38, 0.002)                 \
+    TUNE(see_queen_val, 976, 450, 1800, 68, 0.002)                \
                                                                   \
     /* Stat Bonus */                                              \
-    TUNE(stat_bonus_max, 1892, 948, 3792, 142, 0.002)             \
+    TUNE(stat_bonus_max, 1891, 948, 3792, 142, 0.002)             \
     TUNE(stat_bonus_quad, 4, 2, 8, .5, 0.002)                     \
     TUNE(stat_bonus_lin, 95, 60, 240, 9, 0.002)                  \
     TUNE(stat_bonus_sub, 144, 60, 240, 9, 0.002)                  \
                                                                   \
     /* Stat Malus */                                              \
-    TUNE(stat_malus_max, 1184, 948, 3792, 142, 0.002)             \
+    TUNE(stat_malus_max, 1182, 948, 3792, 142, 0.002)             \
     TUNE(stat_malus_quad, 3, 2, 8, .5, 0.002)                     \
     TUNE(stat_malus_lin, 124, 60, 240, 9, 0.002)                  \
-    TUNE(stat_malus_sub, 116, 60, 240, 9, 0.002)                  \
+    TUNE(stat_malus_sub, 115, 60, 240, 9, 0.002)                  \
                                                                   \
     /* Search Params */                                           \
     TUNE(asp_window_delta, 26, 25, 100, 4, 0.002)                 \
     NO_TUNE(razor_depth, 7, 1, 20, 0.5, 0.002)                    \
-    TUNE(razor_margin, 671, 353, 1414, 53, 0.002)                 \
+    TUNE(razor_margin, 674, 353, 1414, 53, 0.002)                 \
     NO_TUNE(lmp_depth_mult, 3, 1, 20, 0.5, 0.002)                 \
                                                                   \
     /* Futility Pruning */                                        \
-    TUNE(ffp_margin_base, 430, 250, 1000, 38, 0.002)              \
-    TUNE(ffp_margin_mult, 89, 50, 200, 8, 0.002)                  \
+    TUNE(ffp_margin_base, 429, 250, 1000, 38, 0.002)              \
+    TUNE(ffp_margin_mult, 88, 50, 200, 8, 0.002)                  \
     TUNE(ffp_hist_div, 22, 16, 64, 3, 0.002)                      \
     NO_TUNE(ffp_depth, 8, 1, 20, 0.5, 0.002)                      \
                                                                   \
     /* Quiet History Pruning */                                   \
     NO_TUNE(qhp_depth, 4, 1, 20, 0.5, 0.002)                      \
-    TUNE(qhp_threshold, -2089, -4096, -1024, 154, 0.002)          \
+    TUNE(qhp_threshold, -2090, -4096, -1024, 154, 0.002)          \
                                                                   \
     /* SEE PVS */                                                 \
     TUNE(see_pvs_quiet, -58, -134, -33, 5, 0.002)                 \
@@ -78,41 +78,41 @@ namespace Clockwork::tuned {
     NO_TUNE(sing_depth_margin, 3, 1, 20, 0.5, 0.002)              \
     TUNE(sing_beta_margin, 260, 160, 640, 19, 0.002)              \
     TUNE(dext_margin, 40, 20, 80, 3, 0.002)                       \
-    TUNE(dext_hist_div, 476, 256, 1024, 39, 0.002)                \
+    TUNE(dext_hist_div, 478, 256, 1024, 39, 0.002)                \
     TUNE(triext_margin, 116, 60, 240, 9, 0.002)                   \
-    TUNE(triext_hist_div, 534, 256, 1024, 39, 0.002)              \
+    TUNE(triext_hist_div, 531, 256, 1024, 39, 0.002)              \
                                                                   \
     /* LMR */                                                     \
     TUNE(lmr_quiet_base, 638, 394, 1576, 59, 0.002)               \
-    TUNE(lmr_quiet_div, 176, 104, 416, 16, 0.002)                 \
+    TUNE(lmr_quiet_div, 177, 104, 416, 16, 0.002)                 \
     TUNE(lmr_noisy_base, 243, 128, 512, 20, 0.002)                \
-    TUNE(lmr_noisy_div, 227, 98, 394, 15, 0.002)                  \
-    TUNE(lmr_pv_node_red, 1278, 512, 2048, 77, 0.002)             \
+    TUNE(lmr_noisy_div, 228, 98, 394, 15, 0.002)                  \
+    TUNE(lmr_pv_node_red, 1279, 512, 2048, 77, 0.002)             \
     TUNE(lmr_alpha_raise_red, 525, 256, 1024, 38, 0.002)          \
-    TUNE(lmr_not_improving_red, 544, 256, 1024, 38, 0.002)        \
-    TUNE(lmr_in_check_red, 1030, 512, 2048, 77, 0.002)            \
-    TUNE(lmr_cutnode_red, 1209, 512, 2048, 77, 0.002)             \
-    TUNE(lmr_no_tt_red, 935, 512, 2048, 77, 0.002)                \
+    TUNE(lmr_not_improving_red, 543, 256, 1024, 38, 0.002)        \
+    TUNE(lmr_in_check_red, 1032, 512, 2048, 77, 0.002)            \
+    TUNE(lmr_cutnode_red, 1210, 512, 2048, 77, 0.002)             \
+    TUNE(lmr_no_tt_red, 933, 512, 2048, 77, 0.002)                \
     TUNE(lmr_ttpv_red, 988, 512, 2048, 77, 0.002)                \
     TUNE(lmr_tt_capture_red, 1036, 512, 2048, 77, 0.002)           \
-    TUNE(lmr_fail_high_red, 939, 512, 2048, 77, 0.002)            \
-    TUNE(lmr_quiet_hist_base, 874, 512, 2048, 77, 0.002)          \
+    TUNE(lmr_fail_high_red, 938, 512, 2048, 77, 0.002)            \
+    TUNE(lmr_quiet_hist_base, 875, 512, 2048, 77, 0.002)          \
     TUNE(lmr_hist_div, 14, 4, 16, 2, 0.002)                       \
-    TUNE(lmr_fut_red_base, 525, 250, 1000, 38, 0.002)             \
+    TUNE(lmr_fut_red_base, 523, 250, 1000, 38, 0.002)             \
     TUNE(lmr_fut_red_mult, 103, 50, 200, 8, 0.002)                 \
-    TUNE(lmr_fut_red, 671, 512, 2048, 77, 0.002)                  \
-    TUNE(lmr_max_red, 3264, 1536, 6144, 231, 0.002)               \
+    TUNE(lmr_fut_red, 675, 512, 2048, 77, 0.002)                  \
+    TUNE(lmr_max_red, 3259, 1536, 6144, 231, 0.002)               \
                                                                   \
     /* TIME MANAGEMENT */                                         \
-    TUNE(time_hard_limit, 284, 128, 512, 19, 0.002)               \
+    TUNE(time_hard_limit, 283, 128, 512, 19, 0.002)               \
     TUNE(time_soft_limit, 52, 25, 100, 3, 0.002)                  \
-    TUNE(time_soft_increment, 562, 256, 1024, 38, 0.002)          \
-    TUNE(nodetm_min_factor, 424, 256, 1024, 38, 0.002)            \
-    TUNE(nodetm_avg_factor, 2365, 1024, 4096, 153, 0.002)         \
-    TUNE(nodetm_frac_factor, 2208, 948, 3792, 142, 0.002)         \
-    TUNE(d1plexity_base, 941, 394, 1576, 59, 0.002)               \
-    TUNE(d1plexity_max_complexity, 219, 100, 400, 15, 0.002)      \
-    TUNE(d1plexity_divisor, 398, 193, 772, 29, 0.002)             \
+    TUNE(time_soft_increment, 559, 256, 1024, 38, 0.002)          \
+    TUNE(nodetm_min_factor, 427, 256, 1024, 38, 0.002)            \
+    TUNE(nodetm_avg_factor, 2364, 1024, 4096, 153, 0.002)         \
+    TUNE(nodetm_frac_factor, 2197, 948, 3792, 142, 0.002)         \
+    TUNE(d1plexity_base, 942, 394, 1576, 59, 0.002)               \
+    TUNE(d1plexity_max_complexity, 218, 100, 400, 15, 0.002)      \
+    TUNE(d1plexity_divisor, 399, 193, 772, 29, 0.002)             \
                                                                   \
     /* End of Tunables */
 
