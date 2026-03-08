@@ -8,8 +8,8 @@
 #include <array>
 #include <bit>
 #include <cassert>
-#include <tuple>
 #include <tuned.hpp>
+#include <tuple>
 
 namespace Clockwork::SEE {
 
@@ -20,23 +20,23 @@ inline Value value(PieceType ptype) {
                                           tuned::see_queen_val, 10000}};
     return TABLE[static_cast<usize>(ptype)];
 #else
-    switch (ptype){
-        case PieceType::None:
-            return 0;
-        case PieceType::Pawn:
-            return tuned::see_pawn_val;
-        case PieceType::Knight:
-            return tuned::see_knight_val;
-        case PieceType::Bishop:
-            return tuned::see_bishop_val;
-        case PieceType::Rook:
-            return tuned::see_rook_val;
-        case PieceType::Queen:
-            return tuned::see_queen_val;
-        case PieceType::King:
-            return 10000;
-        default:
-            unreachable();
+    switch (ptype) {
+    case PieceType::None:
+        return 0;
+    case PieceType::Pawn:
+        return tuned::see_pawn_val;
+    case PieceType::Knight:
+        return tuned::see_knight_val;
+    case PieceType::Bishop:
+        return tuned::see_bishop_val;
+    case PieceType::Rook:
+        return tuned::see_rook_val;
+    case PieceType::Queen:
+        return tuned::see_queen_val;
+    case PieceType::King:
+        return 10000;
+    default:
+        unreachable();
     }
 #endif
 }

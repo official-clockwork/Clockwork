@@ -496,7 +496,8 @@ Value Worker::search(
         && !m_in_nmp_verification) {
 
         i32 R = tuned::nmp_base_r + depth * tuned::nmp_depth_r
-              + std::min(3 * 64, (tt_adjusted_eval - beta) * 64 / tuned::nmp_beta_diff) + improving * tuned::nmp_improving_r;
+              + std::min(3 * 64, (tt_adjusted_eval - beta) * 64 / tuned::nmp_beta_diff)
+              + improving * tuned::nmp_improving_r;
         R /= 64;
 
         Position pos_after = pos.null_move();

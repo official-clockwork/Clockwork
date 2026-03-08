@@ -20,7 +20,7 @@ namespace Clockwork::tuned {
     /* NMP Values */                                              \
     NO_TUNE(nmp_depth, 3, 1, 10, .5, 0.002)                       \
     NO_TUNE(nmp_base_r, 192, 64, 384, 16, 0.002)                  \
-    TUNE(nmp_depth_r, 16, 8, 32, 1, 0.002)                       \
+    TUNE(nmp_depth_r, 16, 8, 32, 1, 0.002)                        \
     NO_TUNE(nmp_verif_min_depth, 14, 1, 40, .5, 0.002)            \
     TUNE(nmp_beta_margin, 33, 10, 60, 3, 0.002)                   \
     TUNE(nmp_beta_diff, 390, 200, 800, 38, 0.002)                 \
@@ -28,13 +28,13 @@ namespace Clockwork::tuned {
                                                                   \
     /* ProbCut Values */                                          \
     TUNE(probcut_margin, 339, 166, 664, 25, 0.002)                \
-    TUNE(probcut_see, 114, 54, 200, 10, 0.002)                     \
+    TUNE(probcut_see, 114, 54, 200, 10, 0.002)                    \
     NO_TUNE(probcut_min_depth, 5, 1, 20, 0.5, 0.002)              \
                                                                   \
     /* SEE Values */                                              \
     TUNE(quiesce_see_threshold, 18, -1000, 200, 20, 0.002)        \
     TUNE(movepicker_see_capthist_divisor, 51, 16, 192, 10, 0.002) \
-    TUNE(see_pawn_val, 96, 50, 200, 8, 0.002)                    \
+    TUNE(see_pawn_val, 96, 50, 200, 8, 0.002)                     \
     TUNE(see_knight_val, 310, 150, 600, 23, 0.002)                \
     TUNE(see_bishop_val, 278, 150, 600, 23, 0.002)                \
     TUNE(see_rook_val, 570, 250, 1000, 38, 0.002)                 \
@@ -43,11 +43,11 @@ namespace Clockwork::tuned {
     /* Stat Bonus */                                              \
     TUNE(stat_bonus_max, 1882, 948, 3792, 142, 0.002)             \
     TUNE(stat_bonus_quad, 4, 2, 8, .5, 0.002)                     \
-    TUNE(stat_bonus_lin, 91, 60, 240, 9, 0.002)                  \
+    TUNE(stat_bonus_lin, 91, 60, 240, 9, 0.002)                   \
     TUNE(stat_bonus_sub, 149, 60, 240, 9, 0.002)                  \
                                                                   \
     /* Stat Malus */                                              \
-    TUNE(stat_malus_max, 996, 948, 3792, 142, 0.002)             \
+    TUNE(stat_malus_max, 996, 948, 3792, 142, 0.002)              \
     TUNE(stat_malus_quad, 3, 2, 8, .5, 0.002)                     \
     TUNE(stat_malus_lin, 122, 60, 240, 9, 0.002)                  \
     TUNE(stat_malus_sub, 118, 60, 240, 9, 0.002)                  \
@@ -93,13 +93,13 @@ namespace Clockwork::tuned {
     TUNE(lmr_in_check_red, 1040, 512, 2048, 77, 0.002)            \
     TUNE(lmr_cutnode_red, 1258, 512, 2048, 77, 0.002)             \
     TUNE(lmr_no_tt_red, 919, 512, 2048, 77, 0.002)                \
-    TUNE(lmr_ttpv_red, 976, 512, 2048, 77, 0.002)                \
-    TUNE(lmr_tt_capture_red, 1024, 512, 2048, 77, 0.002)           \
+    TUNE(lmr_ttpv_red, 976, 512, 2048, 77, 0.002)                 \
+    TUNE(lmr_tt_capture_red, 1024, 512, 2048, 77, 0.002)          \
     TUNE(lmr_fail_high_red, 942, 512, 2048, 77, 0.002)            \
     TUNE(lmr_quiet_hist_base, 879, 512, 2048, 77, 0.002)          \
     TUNE(lmr_hist_div, 13, 4, 16, 2, 0.002)                       \
     TUNE(lmr_fut_red_base, 530, 250, 1000, 38, 0.002)             \
-    TUNE(lmr_fut_red_mult, 107, 50, 200, 8, 0.002)                 \
+    TUNE(lmr_fut_red_mult, 107, 50, 200, 8, 0.002)                \
     TUNE(lmr_fut_red, 634, 512, 2048, 77, 0.002)                  \
     TUNE(lmr_max_red, 3211, 1536, 6144, 231, 0.002)               \
                                                                   \

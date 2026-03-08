@@ -438,8 +438,8 @@ PScore apply_winnable(const Position& pos, PScore& score, usize phase) {
 
     Score symmetry = static_cast<Score>(WINNABLE_SYM * sym_files + WINNABLE_ASYM * asym_files);
 
-    Score winnable =
-      static_cast<Score>(WINNABLE_PAWNS * pawn_count + symmetry + WINNABLE_PAWN_ENDGAME * pawn_endgame + WINNABLE_BIAS);
+    Score winnable = static_cast<Score>(WINNABLE_PAWNS * pawn_count + symmetry
+                                        + WINNABLE_PAWN_ENDGAME * pawn_endgame + WINNABLE_BIAS);
 
     if (score.eg() < 0) {
         winnable = static_cast<Score>(-winnable);
