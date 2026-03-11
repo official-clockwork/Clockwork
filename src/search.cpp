@@ -755,7 +755,7 @@ Value Worker::search(
             }
 
             if (ttpv && tt_data && tt_data->score <= alpha) {
-                reduction += tuned::lmr_tt_capture_red;
+                reduction += tuned::lmr_ttpv_fail_low;
             }
 
             if (tt_data && tt_data->move.is_capture() && !m.is_capture()) {

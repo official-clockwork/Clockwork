@@ -95,6 +95,7 @@ namespace Clockwork::tuned {
     TUNE(lmr_no_tt_red, 919, 512, 2048, 77, 0.002)                \
     TUNE(lmr_ttpv_red, 976, 512, 2048, 77, 0.002)                 \
     TUNE(lmr_tt_capture_red, 1024, 512, 2048, 77, 0.002)          \
+    TUNE(lmr_ttpv_fail_low, 1024, 512, 2048, 77, 0.002)           \
     TUNE(lmr_fail_high_red, 942, 512, 2048, 77, 0.002)            \
     TUNE(lmr_quiet_hist_base, 879, 512, 2048, 77, 0.002)          \
     TUNE(lmr_hist_div, 13, 4, 16, 2, 0.002)                       \
