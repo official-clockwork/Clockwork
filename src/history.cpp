@@ -40,6 +40,7 @@ void History::update_cont_hist(
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
     usize     stm_idx  = static_cast<usize>(pos.active_color());
+    
     if (ply >= 1 && (ss - 1)->cont_hist_entry != nullptr) {
         update_hist_entry_banger((*(ss - 1)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
                                  conthist, bonus);
@@ -48,13 +49,16 @@ void History::update_cont_hist(
         update_hist_entry_banger((*(ss - 2)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
                                  conthist, bonus);
     }
-    if (ply >= 4 && (ss - 4)->cont_hist_entry != nullptr) {
-        update_hist_entry_banger((*(ss - 4)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
-                                 conthist, bonus);
-    }
-    if (ply >= 6 && (ss - 6)->cont_hist_entry != nullptr) {
-        update_hist_entry_banger((*(ss - 6)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
-                                 conthist, bonus);
+    // Updates past ply 2 only when not in check
+    if (!pos.is_in_check()){
+        if (ply >= 4 && (ss - 4)->cont_hist_entry != nullptr) {
+            update_hist_entry_banger((*(ss - 4)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
+                                    conthist, bonus);
+        }
+        if (ply >= 6 && (ss - 6)->cont_hist_entry != nullptr) {
+            update_hist_entry_banger((*(ss - 6)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
+                                    conthist, bonus);
+        }
     }
 }
 
@@ -65,7 +69,7 @@ void History::update_quiet_stats(
     auto  from_attacked = pos.is_square_attacked_by(move.from(), ~pos.active_color());
     usize stm_idx       = static_cast<usize>(pos.active_color());
     update_hist_entry(m_main_hist[stm_idx][move.from_to()][from_attacked * 2 + to_attacked], bonus);
-    update_cont_hist(pos, move, ply, ss, bonus);
+    update_cont_hist(pos, move, ply, ss, bonus / 2);
 }
 
 i32 History::get_noisy_stats(const Position& pos, Move move) const {
@@ -118,7 +122,7 @@ void History::update_correction_history(const Position& pos, i32 depth, i32 diff
     update_entry(m_minor_corr_hist[side_index][minor_index]);
 }
 
-i32 History::get_correction(const Position& pos) {
+i32 History::get_correction(const Position& pos) const {
     usize side_index         = static_cast<usize>(pos.active_color());
     u64   pawn_key           = pos.get_pawn_key();
     u64   white_non_pawn_key = pos.get_non_pawn_key(Color::White);

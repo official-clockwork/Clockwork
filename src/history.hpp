@@ -43,7 +43,7 @@ public:
     void update_noisy_stats(const Position& pos, Move move, i32 bonus);
 
     void update_correction_history(const Position& pos, i32 depth, i32 diff);
-    i32  get_correction(const Position& pos);
+    i32  get_correction(const Position& pos) const;
 
     void clear();
 
