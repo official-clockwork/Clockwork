@@ -932,6 +932,11 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         return get_draw_score();
     }
 
+    // Insufficient material check
+    if (pos.is_insufficient_material()) {
+        return get_draw_score();
+    }
+
     // Upcoming repetition detection
     if (alpha < 0 && repetition_info.has_game_cycle(pos, static_cast<usize>(ply))) {
         alpha = 0;
