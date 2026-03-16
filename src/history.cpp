@@ -40,7 +40,7 @@ void History::update_cont_hist(
     PieceType pt       = pos.piece_at(move.from());
     usize     pt_idx   = static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn);
     usize     stm_idx  = static_cast<usize>(pos.active_color());
-    
+
     if (ply >= 1 && (ss - 1)->cont_hist_entry != nullptr) {
         update_hist_entry_banger((*(ss - 1)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
                                  conthist, bonus);
@@ -50,14 +50,14 @@ void History::update_cont_hist(
                                  conthist, bonus);
     }
     // Updates past ply 2 only when not in check
-    if (!pos.is_in_check()){
+    if (!pos.is_in_check()) {
         if (ply >= 4 && (ss - 4)->cont_hist_entry != nullptr) {
             update_hist_entry_banger((*(ss - 4)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
-                                    conthist, bonus);
+                                     conthist, bonus);
         }
         if (ply >= 6 && (ss - 6)->cont_hist_entry != nullptr) {
             update_hist_entry_banger((*(ss - 6)->cont_hist_entry)[stm_idx][pt_idx][move.to().raw],
-                                    conthist, bonus);
+                                     conthist, bonus);
         }
     }
 }
