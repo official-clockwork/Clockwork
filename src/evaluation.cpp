@@ -388,9 +388,13 @@ PScore evaluate_king_safety(const Position& pos) {
     eval += KS_FLANK_DOUBLE_DEFENSE * (double_defended_by_us & flank).ipopcount();
     eval += KS_FLANK_DOUBLE_ATTACK * (double_attacked_by_them & flank).ipopcount();
 
+    // Tempo
+    eval += KS_TEMPO * (opp == pos.active_color());
+
     // King shelter evaluation
     eval += king_shelter<color>(pos);
 
+    // Reduced danger when no queen
     eval += KS_NO_QUEEN * (pos.bitboard_for(opp, PieceType::Queen).empty());
 
     return eval;
