@@ -7,6 +7,7 @@
 #include "square.hpp"
 #include "util/bit.hpp"
 #include "util/types.hpp"
+#include <bit>
 
 namespace Clockwork {
 
@@ -71,9 +72,8 @@ public:
     }
 
     [[nodiscard]] Square msb() const {
-        return Square{static_cast<u8>(std::countl_zero(m_raw))};
+        return Square{static_cast<u8>(std::bit_width(m_raw) - 1)};
     }
-
     [[nodiscard]] Square lsb() const {
         return Square{static_cast<u8>(std::countr_zero(m_raw))};
     }

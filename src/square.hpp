@@ -55,7 +55,7 @@ struct Square {
     }
 
     [[nodiscard]] constexpr i32 relative_rank(Color c) const {
-        return c == Color::White ? rank() : 7 - rank();
+        return c == Color::White ? rank() : rank() ^ 7;
     }
 
     [[nodiscard]] constexpr std::tuple<i32, i32> to_file_and_rank() const {
