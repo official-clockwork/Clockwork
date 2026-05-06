@@ -55,7 +55,7 @@ public:
     }
 
     [[nodiscard]] PieceId msb() const {
-        return PieceId{static_cast<u8>(std::countl_zero(m_raw))};
+        return PieceId{static_cast<u8>(std::bit_width(m_raw) - 1)};
     }
 
     [[nodiscard]] PieceId lsb() const {
