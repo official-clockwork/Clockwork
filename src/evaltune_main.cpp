@@ -37,8 +37,8 @@ int main() {
     std::vector<f64>      results;
 
     const std::vector<std::string> fenFiles = {
-      "data/v5_25knpm.txt",
-      "data/dfrcv2.txt",
+      "data/v5_25knpm.txt",  "data/v4_5knpm.txt",   "data/v4_8knpm.txt",    "data/v4_16knpm.txt",
+      "data/v4.1_5knpm.txt", "data/v4.1_8knpm.txt", "data/v4.1_16knpm.txt", "data/dfrcv2.txt",
     };
 
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency());
@@ -65,18 +65,24 @@ int main() {
         return lines;
     };
 
+    // ── Parallel data loading ────────────────────────────────────────────────
+
+    // Phase 1: sequential I/O — read every raw line from every file into one
+    // flat buffer.  Disk I/O parallelises poorly, so we don't try.
+    struct RawEntry {
+        std::string line;
+        std::string filename;  // kept only for error messages
+    };
+
+    std::vector<RawEntry> raw_lines;
+
     std::cout << "Counting positions..." << std::endl;
     for (const auto& filename : fenFiles) {
         total_positions_estimate += count_lines(filename);
     }
     std::cout << "Estimated positions: " << total_positions_estimate << "\n";
 
-    positions.reserve(total_positions_estimate);
-    results.reserve(total_positions_estimate);
-
-    // Huge pages optimization for dynamic arrays
-    advise_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
-    advise_huge_pages(results.data(), results.capacity() * sizeof(f64));
+    raw_lines.reserve(total_positions_estimate);
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -84,41 +90,91 @@ int main() {
             std::cerr << "Error opening " << filename << "\n";
             return 1;
         }
-
         std::string line;
         while (std::getline(fenFile, line)) {
-            size_t pos = line.find(';');
-            if (pos == std::string::npos) {
-                std::cerr << "Bad line in " << filename << ": " << line << "\n";
-                continue;
-            }
-
-            std::string fen    = line.substr(0, pos);
-            auto        parsed = Position::parse(fen);
-
-            if (!parsed) {
-                std::cerr << "Failed to parse FEN in " << filename << ": " << fen << "\n";
-                continue;
-            }
-
-            positions.push_back(*parsed);
-
-            std::string result = line.substr(pos + 1);
-            result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
-
-            if (result == "w") {
-                results.push_back(1.0);
-            } else if (result == "d") {
-                results.push_back(0.5);
-            } else if (result == "b") {
-                results.push_back(0.0);
-            } else {
-                std::cerr << "Invalid result in " << filename << ": " << line << "\n";
-            }
+            raw_lines.push_back({std::move(line), filename});
         }
     }
 
+    std::cout << "Read " << raw_lines.size() << " raw lines. Parsing...\n";
+
+    // Phase 2: parallel parse — pre-allocate output arrays with sentinels so
+    // each thread writes to its own strided slots with zero contention.
+    const size_t N = raw_lines.size();
+
+    positions.resize(N);      // filled in by workers; bad slots are skipped later
+    results.resize(N, -1.0);  // -1.0 used as "bad slot" sentinel
+
+    advise_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
+    advise_huge_pages(results.data(), results.capacity() * sizeof(f64));
+
+    {
+        std::vector<std::thread> parse_threads;
+        parse_threads.reserve(thread_count);
+
+        for (u32 t = 0; t < thread_count; ++t) {
+            parse_threads.emplace_back([&, t]() {
+                for (size_t i = t; i < N; i += thread_count) {
+                    const auto& [line, filename] = raw_lines[i];
+
+                    size_t sep = line.find(';');
+                    if (sep == std::string::npos) {
+                        std::cerr << "Bad line in " << filename << ": " << line << "\n";
+                        continue;  // results[i] stays -1 → filtered out below
+                    }
+
+                    auto parsed = Position::parse(line.substr(0, sep));
+                    if (!parsed) {
+                        std::cerr << "Failed to parse FEN in " << filename << ": "
+                                  << line.substr(0, sep) << "\n";
+                        continue;
+                    }
+
+                    std::string result = line.substr(sep + 1);
+                    result.erase(std::remove_if(result.begin(), result.end(), ::isspace),
+                                 result.end());
+
+                    f64 r;
+                    if (result == "w") {
+                        r = 1.0;
+                    } else if (result == "d") {
+                        r = 0.5;
+                    } else if (result == "b") {
+                        r = 0.0;
+                    } else {
+                        std::cerr << "Invalid result in " << filename << ": " << line << "\n";
+                        continue;
+                    }
+
+                    positions[i] = *parsed;
+                    results[i]   = r;
+                }
+            });
+        }
+        for (auto& th : parse_threads) {
+            th.join();
+        }
+    }
+
+    // Phase 3: compact — remove sentinel slots (failed parses) in one pass.
+    // We do this in-place to avoid a second large allocation.
+    {
+        size_t write = 0;
+        for (size_t read = 0; read < N; ++read) {
+            if (results[read] >= 0.0) {  // valid slot
+                if (write != read) {
+                    positions[write] = std::move(positions[read]);
+                    results[write]   = results[read];
+                }
+                ++write;
+            }
+        }
+        positions.resize(write);
+        results.resize(write);
+    }
+
     std::cout << "Loaded " << positions.size() << " FENs.\n";
+
     if (positions.empty()) {
         return 1;
     }
