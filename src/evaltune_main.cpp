@@ -65,13 +65,9 @@ int main() {
         return lines;
     };
 
-    // ── Parallel data loading ────────────────────────────────────────────────
-
-    // Phase 1: sequential I/O — read every raw line from every file into one
-    // flat buffer.  Disk I/O parallelises poorly, so we don't try.
     struct RawEntry {
         std::string line;
-        std::string filename;  // kept only for error messages
+        std::string filename;
     };
 
     std::vector<RawEntry> raw_lines;
@@ -98,12 +94,10 @@ int main() {
 
     std::cout << "Read " << raw_lines.size() << " raw lines. Parsing...\n";
 
-    // Phase 2: parallel parse — pre-allocate output arrays with sentinels so
-    // each thread writes to its own strided slots with zero contention.
     const size_t N = raw_lines.size();
 
-    positions.resize(N);      // filled in by workers; bad slots are skipped later
-    results.resize(N, -1.0);  // -1.0 used as "bad slot" sentinel
+    positions.resize(N);
+    results.resize(N, -1.0); 
 
     advise_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
     advise_huge_pages(results.data(), results.capacity() * sizeof(f64));
@@ -120,7 +114,7 @@ int main() {
                     size_t sep = line.find(';');
                     if (sep == std::string::npos) {
                         std::cerr << "Bad line in " << filename << ": " << line << "\n";
-                        continue;  // results[i] stays -1 → filtered out below
+                        continue;
                     }
 
                     auto parsed = Position::parse(line.substr(0, sep));
@@ -156,12 +150,10 @@ int main() {
         }
     }
 
-    // Phase 3: compact — remove sentinel slots (failed parses) in one pass.
-    // We do this in-place to avoid a second large allocation.
     {
         size_t write = 0;
         for (size_t read = 0; read < N; ++read) {
-            if (results[read] >= 0.0) {  // valid slot
+            if (results[read] >= 0.0) { 
                 if (write != read) {
                     positions[write] = std::move(positions[read]);
                     results[write]   = results[read];
