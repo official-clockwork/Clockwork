@@ -97,7 +97,7 @@ int main() {
     const size_t N = raw_lines.size();
 
     positions.resize(N);
-    results.resize(N, -1.0); 
+    results.resize(N, -1.0);
 
     advise_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
     advise_huge_pages(results.data(), results.capacity() * sizeof(f64));
@@ -153,7 +153,7 @@ int main() {
     {
         size_t write = 0;
         for (size_t read = 0; read < N; ++read) {
-            if (results[read] >= 0.0) { 
+            if (results[read] >= 0.0) {
                 if (write != read) {
                     positions[write] = std::move(positions[read]);
                     results[write]   = results[read];
