@@ -776,6 +776,9 @@ Value Worker::search(
                      <= alpha
                    && !is_in_check)
                   * tuned::lmr_fut_red;
+                
+            } else {
+                reduction -= m_td.history.get_noisy_stats(pos, m) / 8192;
             }
 
             if (!quiet) {
