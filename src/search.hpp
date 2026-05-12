@@ -122,7 +122,7 @@ public:
     u64  node_count();
     void reset();
     void resize_tt(size_t mb) {
-        tt.resize(mb);
+        tt.resize(mb, m_workers.size());
     }
 
 private:

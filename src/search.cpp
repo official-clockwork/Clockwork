@@ -135,7 +135,7 @@ void Searcher::reset() {
     for (auto& worker : m_workers) {
         worker->reset_thread_data();
     }
-    tt.clear();
+    tt.clear(m_workers.size());
 }
 
 u64 Searcher::node_count() {

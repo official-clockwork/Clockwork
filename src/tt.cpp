@@ -1,5 +1,6 @@
 #include "tt.hpp"
 #include <algorithm>  // For std::min
+#include <thread>
 
 namespace Clockwork {
 
@@ -60,7 +61,7 @@ TT::TT(size_t mb) :
     m_clusters{nullptr},
     m_size{0},
     m_age{0} {
-    resize(mb);
+    resize(mb, 1);
 }
 
 std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
@@ -161,22 +162,36 @@ void TT::store(const Position& pos,
     }
 }
 
-void TT::resize(size_t mb) {
+void TT::resize(size_t mb, usize thread_count) {
 
     size_t bytes   = mb * 1024 * 1024;
     size_t entries = bytes / sizeof(TTClusterMemory);
 
     m_size     = entries;
     m_clusters = make_unique_for_overwrite_huge_page<TTClusterMemory[]>(m_size);
-    clear();
+    clear(thread_count);
 }
 
-void TT::clear() {
-    for (size_t i = 0; i < m_size; ++i) {
-        m_clusters[i].data[0].store(0, std::memory_order_relaxed);
-        m_clusters[i].data[1].store(0, std::memory_order_relaxed);
-        m_clusters[i].data[2].store(0, std::memory_order_relaxed);
-        m_clusters[i].data[3].store(0, std::memory_order_relaxed);
+void TT::clear(usize thread_count) {
+    std::vector<std::thread> threads;
+    threads.reserve(thread_count);
+    for (usize t = 0; t < thread_count; ++t) {
+        threads.emplace_back([this, t, thread_count]() {
+            size_t start = (m_size * t) / thread_count;
+            size_t end   = (m_size * (t + 1)) / thread_count;
+            if (t == thread_count - 1) {
+                end = m_size;
+            }
+            for (size_t i = start; i < end; ++i) {
+                m_clusters[i].data[0].store(0, std::memory_order_relaxed);
+                m_clusters[i].data[1].store(0, std::memory_order_relaxed);
+                m_clusters[i].data[2].store(0, std::memory_order_relaxed);
+                m_clusters[i].data[3].store(0, std::memory_order_relaxed);
+            }
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
     }
 }
 

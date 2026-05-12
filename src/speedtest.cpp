@@ -367,7 +367,7 @@ void speedtest(Search::Searcher& searcher) {
         positions_processed++;
 
         if (positions_processed % 20 == 0 && positions_processed < total_positions) {
-            searcher.tt.clear();
+            searcher.tt.clear(1u);
         }
 
         const int bar_width = 50;
