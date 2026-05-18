@@ -495,28 +495,41 @@ PScore apply_winnable(const Position& pos, PScore& score, usize phase) {
     return score.complexity_add(winnable);
 }
 
-PScore apply_eg_scale(const Position& pos, PScore& eval) {
+PScore apply_eg_scale(const Position& pos, PScore& eval, isize strong_phase, isize weak_phase) {
     // Strong pawn scaling
     const Color strong_side = eval.eg() > 0 ? Color::White : Color::Black;
+    // Swap phases if we're in the weak side's perspective
+    if (strong_side == Color::Black) {
+        std::swap(strong_phase, weak_phase);
+    }
 
     const isize strong_pawn_count = pos.ipiece_count(strong_side, PieceType::Pawn);
-    const isize pcmul             = 8 - strong_pawn_count;
+
+    // Pawnless position scaling: if our material advantage is very thin and we have no pawns, scale down the eval significantly, as trading can lead to KBK or KNK draws
+    if (strong_pawn_count == 0) {
+        if (strong_phase - weak_phase <= 1) {
+            return eval.scale_eg<128>(strong_phase < 2 ? 0 : weak_phase <= 1 ? 8 : 28);
+        }
+    }
+
+    const isize pcmul = 8 - strong_pawn_count;
 
     return eval.scale_eg<128>(static_cast<i32>(128 - pcmul * pcmul));  // 64 - 128
 }
 
 Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
-    const Color us    = pos.active_color();
-    usize       phase = pos.piece_count(Color::White, PieceType::Knight)
-                + pos.piece_count(Color::Black, PieceType::Knight)
-                + pos.piece_count(Color::White, PieceType::Bishop)
-                + pos.piece_count(Color::Black, PieceType::Bishop)
-                + 2
-                    * (pos.piece_count(Color::White, PieceType::Rook)
-                       + pos.piece_count(Color::Black, PieceType::Rook))
-                + 4
-                    * (pos.piece_count(Color::White, PieceType::Queen)
-                       + pos.piece_count(Color::Black, PieceType::Queen));
+    const Color us          = pos.active_color();
+    const isize white_phase = pos.ipiece_count(Color::White, PieceType::Knight)
+                            + pos.ipiece_count(Color::White, PieceType::Bishop)
+                            + pos.ipiece_count(Color::White, PieceType::Rook) * 2
+                            + pos.ipiece_count(Color::White, PieceType::Queen) * 4;
+
+    const isize black_phase = pos.ipiece_count(Color::Black, PieceType::Knight)
+                            + pos.ipiece_count(Color::Black, PieceType::Bishop)
+                            + pos.ipiece_count(Color::Black, PieceType::Rook) * 2
+                            + pos.ipiece_count(Color::Black, PieceType::Queen) * 4;
+
+    usize phase = std::min<usize>(white_phase + black_phase, 24);
 
     phase = std::min<usize>(phase, 24);
 
@@ -553,7 +566,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval = apply_winnable(pos, eval, phase);
 
     // Eg scaling
-    eval = apply_eg_scale(pos, eval);
+    eval = apply_eg_scale(pos, eval, white_phase, black_phase);
 
     return static_cast<Score>(eval.phase<24>(static_cast<i32>(phase)));
 };
