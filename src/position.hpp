@@ -243,6 +243,17 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool is_opposite_bishops() const {
+        if (piece_count(Color::White, PieceType::Bishop) == 1
+            && piece_count(Color::Black, PieceType::Bishop) == 1) {
+            Square white_bishop_sq = m_board.bitboard_for(Color::White, PieceType::Bishop).lsb();
+            Square black_bishop_sq = m_board.bitboard_for(Color::Black, PieceType::Bishop).lsb();
+
+            return white_bishop_sq.color() != black_bishop_sq.color();
+        }
+        return false;
+    }
+
     [[nodiscard]] u16 get_ply() const {
         return m_ply;
     }

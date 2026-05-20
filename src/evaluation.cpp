@@ -163,7 +163,7 @@ PScore king_shelter(const Position& pos) {
 }
 
 template<Color color>
-PScore evaluate_pawns(const Position& pos) {
+std::tuple<PScore, i32> evaluate_pawns(const Position& pos) {
     constexpr i32   RANK_2 = 1;
     constexpr i32   RANK_3 = 2;
     constexpr Color them   = color == Color::White ? Color::Black : Color::White;
@@ -171,6 +171,8 @@ PScore evaluate_pawns(const Position& pos) {
     Square our_king   = pos.king_sq(color);
     Square their_king = pos.king_sq(them);
     PScore eval       = PSCORE_ZERO;
+
+    i32 passers = 0;
 
     Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
     Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
@@ -186,6 +188,7 @@ PScore evaluate_pawns(const Position& pos) {
         Square   push     = sq.push<color>();
         Bitboard stoppers = opp_pawns & passed_pawn_spans[static_cast<usize>(color)][sq.raw];
         if (stoppers.empty()) {
+            ++passers;
             eval += PASSED_PAWN[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
             if (pos.attack_table(color).read(push).popcount()
                 > pos.attack_table(them).read(push).popcount()) {
@@ -216,7 +219,7 @@ PScore evaluate_pawns(const Position& pos) {
         eval += DEFENDED_PAWN[static_cast<usize>(sq.relative_sq(color).rank() - RANK_3)];
     }
 
-    return eval;
+    return {eval, passers};
 }
 
 template<Color color>
@@ -495,20 +498,35 @@ PScore apply_winnable(const Position& pos, PScore& score, usize phase) {
     return score.complexity_add(winnable);
 }
 
-PScore apply_eg_scale(const Position& pos, PScore& eval, isize strong_phase, isize weak_phase) {
+PScore apply_eg_scale(const Position& pos,
+                      PScore&         eval,
+                      isize           strong_phase,
+                      isize           weak_phase,
+                      i32             strong_passers,
+                      i32             weak_passers) {
     // Strong pawn scaling
     const Color strong_side = eval.eg() > 0 ? Color::White : Color::Black;
     // Swap phases if we're in the weak side's perspective
     if (strong_side == Color::Black) {
         std::swap(strong_phase, weak_phase);
+        std::swap(strong_passers, weak_passers);
     }
 
     const isize strong_pawn_count = pos.ipiece_count(strong_side, PieceType::Pawn);
+    const isize weak_pawn_count   = pos.ipiece_count(~strong_side, PieceType::Pawn);
 
     // Pawnless position scaling: if our material advantage is very thin and we have no pawns, scale down the eval significantly, as trading can lead to KBK or KNK draws
     if (strong_pawn_count == 0) {
         if (strong_phase - weak_phase <= 1) {
             return eval.scale_eg<128>(strong_phase < 2 ? 0 : weak_phase <= 1 ? 8 : 28);
+        }
+    } else if (pos.is_opposite_bishops()) {
+        // Opposite bishops scaling: pure bishops endgame / other pieces present
+        if (strong_phase == 1 && weak_phase == 1) {
+            return eval.scale_eg<128>(28 + 8 * strong_passers
+                                      + 8 * (strong_pawn_count >= weak_pawn_count + 2));
+        } else {
+            return eval.scale_eg<128>(44 + 3 * pos.piece_count(strong_side));
         }
     }
 
@@ -536,7 +554,9 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     PScore eval = psqt_state.score();  // Used for linear components
 
     // pawn eval
-    eval += evaluate_pawns<Color::White>(pos) - evaluate_pawns<Color::Black>(pos);
+    auto [white_pawn_eval, white_passers] = evaluate_pawns<Color::White>(pos);
+    auto [black_pawn_eval, black_passers] = evaluate_pawns<Color::Black>(pos);
+    eval += white_pawn_eval - black_pawn_eval;
 
     // pieces & space
     eval += evaluate_pieces<Color::White>(pos) - evaluate_pieces<Color::Black>(pos);
@@ -566,7 +586,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval = apply_winnable(pos, eval, phase);
 
     // Eg scaling
-    eval = apply_eg_scale(pos, eval, white_phase, black_phase);
+    eval = apply_eg_scale(pos, eval, white_phase, black_phase, white_passers, black_passers);
 
     return static_cast<Score>(eval.phase<24>(static_cast<i32>(phase)));
 };
