@@ -5,6 +5,7 @@
 #include "square.hpp"
 #include "tt.hpp"
 #include "util/types.hpp"
+#include "zobrist.hpp"
 #include <array>
 #include <bit>
 #include <cassert>
@@ -17,6 +18,7 @@ class TT;
 
 struct PsqtState;
 struct PsqtUpdates;
+
 
 template<typename T>
 struct alignas(16) PieceList {
@@ -120,20 +122,20 @@ public:
     [[nodiscard]] RookInfo rook_info(Color color) const {
         return m_rook_info[static_cast<usize>(color)];
     }
-    [[nodiscard]] HashKey get_hash_key() const {
-        return m_hash_key;
+    [[nodiscard]] inline HashKey get_hash_key() const {
+        return m_zobrist_info.full_key();
     }
-    [[nodiscard]] HashKey get_pawn_key() const {
-        return m_pawn_key;
+    [[nodiscard]] inline HashKey get_pawn_key() const {
+        return m_zobrist_info.pawn_key();
     }
-    [[nodiscard]] HashKey get_non_pawn_key(Color color) const {
-        return m_non_pawn_key[static_cast<usize>(color)];
+    [[nodiscard]] inline HashKey get_non_pawn_key(Color color) const {
+        return m_zobrist_info.non_pawn_key(color);
     }
-    [[nodiscard]] HashKey get_major_key() const {
-        return m_major_key;
+    [[nodiscard]] inline HashKey get_major_key() const {
+        return m_zobrist_info.major_key();
     }
-    [[nodiscard]] HashKey get_minor_key() const {
-        return m_minor_key;
+    [[nodiscard]] inline HashKey get_minor_key() const {
+        return m_zobrist_info.minor_key();
     }
 
     [[nodiscard]] Square king_sq(Color color) const {
@@ -326,17 +328,13 @@ private:
     std::array<PieceList<Square>, 2>    m_piece_list_sq{};
     std::array<PieceList<PieceType>, 2> m_piece_list{};
     Byteboard                           m_board{};
-    u64                                 m_hash{};
     u16                                 m_50mr{};
     u16                                 m_ply{};
     Color                               m_active_color{};
     Square                              m_enpassant = Square::invalid();
     std::array<RookInfo, 2>             m_rook_info;
-    HashKey                             m_hash_key;
-    HashKey                             m_pawn_key;
-    std::array<HashKey, 2>              m_non_pawn_key;
-    HashKey                             m_major_key;
-    HashKey                             m_minor_key;
+
+    ZobristInfo m_zobrist_info;
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates& updates);
     void incrementally_add_piece(bool color, Place p, Square sq, PsqtUpdates& updates);

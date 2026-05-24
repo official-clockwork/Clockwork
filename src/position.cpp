@@ -23,22 +23,9 @@ void Position::incrementally_remove_piece(bool         color,
     toggle_rays(from);
 
     // TODO: check if some speed left on the table for zobrist here
-    Color     pcolor    = m_board[from].color();
-    PieceType ptype     = m_board[from].ptype();
-    u64       piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(pcolor)]
-                                                 [static_cast<usize>(ptype)][from.raw];
-    m_hash_key ^= piece_key;
-    if (ptype == PieceType::Pawn) {
-        m_pawn_key ^= piece_key;
-    } else {
-        m_non_pawn_key[static_cast<usize>(pcolor)] ^= piece_key;
-        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
-            m_major_key ^= piece_key;
-        }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
-            m_minor_key ^= piece_key;
-        }
-    }
+    Color     pcolor = m_board[from].color();
+    PieceType ptype  = m_board[from].ptype();
+    m_zobrist_info.toggle(pcolor, ptype, from);
     updates.removes.push_back({pcolor, ptype, from});
     m_board[from] = Place::empty();
 }
@@ -48,20 +35,7 @@ void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdat
     m_board[to]      = p;
     Color     pcolor = p.color();
     PieceType ptype  = p.ptype();
-    u64       piece_key =
-      Zobrist::piece_square_zobrist[static_cast<usize>(pcolor)][static_cast<usize>(ptype)][to.raw];
-    m_hash_key ^= piece_key;
-    if (ptype == PieceType::Pawn) {
-        m_pawn_key ^= piece_key;
-    } else {
-        m_non_pawn_key[static_cast<usize>(pcolor)] ^= piece_key;
-        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
-            m_major_key ^= piece_key;
-        }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
-            m_minor_key ^= piece_key;
-        }
-    }
+    m_zobrist_info.toggle(pcolor, ptype, to);
     updates.adds.push_back({pcolor, ptype, to});
 
     m8x64 m = toggle_rays(to);
@@ -73,37 +47,11 @@ void Position::incrementally_mutate_piece(
     PieceType ptype = m_board[sq].ptype();
 
     // TODO: check if some speed left on the table for zobrist here
-    u64 rem_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
-                                                     [static_cast<usize>(ptype)][sq.raw];
-    m_hash_key ^= rem_piece_key;
-    if (ptype == PieceType::Pawn) {
-        m_pawn_key ^= rem_piece_key;
-    } else {
-        m_non_pawn_key[static_cast<usize>(m_board[sq].color())] ^= rem_piece_key;
-        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
-            m_major_key ^= rem_piece_key;
-        }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
-            m_minor_key ^= rem_piece_key;
-        }
-    }
+    m_zobrist_info.toggle(m_board[sq].color(), ptype, sq);
     updates.removes.push_back({m_board[sq].color(), ptype, sq});
-    m_board[sq]       = p;
-    ptype             = m_board[sq].ptype();
-    u64 add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[sq].color())]
-                                                     [static_cast<usize>(ptype)][sq.raw];
-    m_hash_key ^= add_piece_key;
-    if (ptype == PieceType::Pawn) {
-        m_pawn_key ^= add_piece_key;
-    } else {
-        m_non_pawn_key[static_cast<usize>(m_board[sq].color())] ^= add_piece_key;
-        if (ptype == PieceType::Rook || ptype == PieceType::Queen || ptype == PieceType::King) {
-            m_major_key ^= add_piece_key;
-        }
-        if (ptype == PieceType::Knight || ptype == PieceType::Bishop || ptype == PieceType::King) {
-            m_minor_key ^= add_piece_key;
-        }
-    }
+    m_board[sq] = p;
+    ptype       = m_board[sq].ptype();
+    m_zobrist_info.toggle(p.color(), ptype, sq);
     updates.adds.push_back({p.color(), p.ptype(), sq});
 
     remove_attacks(old_color, old_id);
@@ -120,44 +68,14 @@ void Position::incrementally_move_piece(
 
     // TODO: check if some speed left on the table for zobrist here
     PieceType from_ptype = m_board[from].ptype();
-    u64 rem_piece_key    = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[from].color())]
-                                                     [static_cast<usize>(from_ptype)][from.raw];
-    m_hash_key ^= rem_piece_key;
-    if (from_ptype == PieceType::Pawn) {
-        m_pawn_key ^= rem_piece_key;
-    } else {
-        m_non_pawn_key[static_cast<usize>(m_board[from].color())] ^= rem_piece_key;
-        if (from_ptype == PieceType::Rook || from_ptype == PieceType::Queen
-            || from_ptype == PieceType::King) {
-            m_major_key ^= rem_piece_key;
-        }
-        if (from_ptype == PieceType::Knight || from_ptype == PieceType::Bishop
-            || from_ptype == PieceType::King) {
-            m_minor_key ^= rem_piece_key;
-        }
-    }
+    m_zobrist_info.toggle(m_board[from].color(), from_ptype, from);
     updates.removes.push_back({m_board[from].color(), from_ptype, from});
 
     m_board[from] = Place::empty();
     m_board[to]   = p;
 
-    PieceType to_ptype      = p.ptype();
-    u64       add_piece_key = Zobrist::piece_square_zobrist[static_cast<usize>(m_board[to].color())]
-                                                     [static_cast<usize>(to_ptype)][to.raw];
-    m_hash_key ^= add_piece_key;
-    if (to_ptype == PieceType::Pawn) {
-        m_pawn_key ^= add_piece_key;
-    } else {
-        m_non_pawn_key[static_cast<usize>(m_board[to].color())] ^= add_piece_key;
-        if (to_ptype == PieceType::Rook || to_ptype == PieceType::Queen
-            || to_ptype == PieceType::King) {
-            m_major_key ^= add_piece_key;
-        }
-        if (to_ptype == PieceType::Knight || to_ptype == PieceType::Bishop
-            || to_ptype == PieceType::King) {
-            m_minor_key ^= add_piece_key;
-        }
-    }
+    PieceType to_ptype = p.ptype();
+    m_zobrist_info.toggle(p.color(), to_ptype, to);
     updates.adds.push_back({p.color(), p.ptype(), to});
 
     u8x64 dst_ray_places = dst_ray_coords.swizzle(m_board.to_vector());
@@ -378,18 +296,18 @@ Position Position::move(Move m, PsqtState* psqtState, const TT* tt) const {
     bool   color = static_cast<bool>(m_active_color);
 
     // move() makes a legal, non null move, so we always swap sides.
-    new_pos.m_hash_key ^= Zobrist::side_key;
+    HashKey non_psqt_update = Zobrist::side_key;
 
     if (m_enpassant.is_valid()) {
         // Remove hash for ep square
-        new_pos.m_hash_key ^= Zobrist::en_passant_zobrist[new_pos.m_enpassant.raw];
+        non_psqt_update ^= Zobrist::en_passant_zobrist[m_enpassant.raw];
         new_pos.m_enpassant = Square::invalid();
     }
 
     // Compute old castle index for zobrist indexing and remove it
     usize old_castle_index =
       new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
-    new_pos.m_hash_key ^= Zobrist::castling_zobrist[old_castle_index];
+    non_psqt_update ^= Zobrist::castling_zobrist[old_castle_index];
 
     const auto CHECK_SRC_CASTLING_RIGHTS = [&] {
         if (src.ptype() == PieceType::Rook) {
@@ -418,7 +336,7 @@ Position Position::move(Move m, PsqtState* psqtState, const TT* tt) const {
                 Square ep   = Square{static_cast<u8>((from.raw + to.raw) / 2)};
                 if (is_square_attacked_by(ep, them, PieceType::Pawn)) {
                     new_pos.m_enpassant = ep;
-                    new_pos.m_hash_key ^= Zobrist::en_passant_zobrist[new_pos.m_enpassant.raw];
+                    non_psqt_update ^= Zobrist::en_passant_zobrist[ep.raw];
                 }
             }
         } else {
@@ -513,11 +431,14 @@ Position Position::move(Move m, PsqtState* psqtState, const TT* tt) const {
     // Calculate the new castling index for zobrist indexing and add it back in
     usize new_castle_index =
       new_pos.m_rook_info[0].as_index() | (new_pos.m_rook_info[1].as_index() << 2);
-    new_pos.m_hash_key ^= Zobrist::castling_zobrist[new_castle_index];
+    non_psqt_update ^= Zobrist::castling_zobrist[new_castle_index];
+
+    // Update the full key with the non-PSQT updates we've accumulated
+    new_pos.m_zobrist_info.update_fullkey(non_psqt_update);
 
     // Prefetch hash key tt entry
     if (tt != nullptr) {
-        prefetch(tt->addr_key(new_pos.m_hash_key));
+        prefetch(tt->addr_key(new_pos.m_zobrist_info.full_key()));
     }
 
     new_pos.m_active_color = invert(m_active_color);
@@ -535,11 +456,11 @@ template Position Position::move<false>(Move m, PsqtState* psqtState, const TT* 
 
 Position Position::null_move() const {
     Position new_pos = *this;
-    new_pos.m_hash_key ^= Zobrist::side_key;
+    new_pos.m_zobrist_info.update_fullkey(Zobrist::side_key);
 
     if (m_enpassant.is_valid()) {
         // Remove hash for ep square
-        new_pos.m_hash_key ^= Zobrist::en_passant_zobrist[new_pos.m_enpassant.raw];
+        new_pos.m_zobrist_info.update_fullkey(Zobrist::en_passant_zobrist[new_pos.m_enpassant.raw]);
         new_pos.m_enpassant = Square::invalid();
     }
 
@@ -917,11 +838,10 @@ std::optional<Position> Position::parse(std::string_view board,
     }
 
     result.m_attack_table = result.calc_attacks_slow();
-    result.m_hash_key     = result.calc_hash_key_slow();
-    result.m_pawn_key     = result.calc_pawn_key_slow();
-    result.m_non_pawn_key = result.calc_non_pawn_key_slow();
-    result.m_major_key    = result.calc_major_key_slow();
-    result.m_minor_key    = result.calc_minor_key_slow();
+    // Initialize ZobristInfo
+    result.m_zobrist_info = ZobristInfo(result.calc_hash_key_slow(), result.calc_pawn_key_slow(),
+                                        result.calc_non_pawn_key_slow(),
+                                        result.calc_major_key_slow(), result.calc_minor_key_slow());
 
     return result;
 }
