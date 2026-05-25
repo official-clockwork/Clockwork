@@ -7,7 +7,6 @@
 
 namespace Clockwork {
 
-
 struct alignas(64) ZobristInfo {
     u64x8 m_raw = {};
     constexpr ZobristInfo(HashKey piece_key,
@@ -82,9 +81,5 @@ inline void ZobristInfo::toggle(const Color color, const PieceType ptype, const 
       Zobrist::piece_zobrist_info[static_cast<usize>(color)][static_cast<usize>(ptype)][sq.raw];
     m_raw ^= info.m_raw;
 }
-
-
-// Make sure to align to u64x8
-
 
 }  // namespace Clockwork
