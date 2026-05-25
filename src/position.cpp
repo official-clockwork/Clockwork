@@ -450,14 +450,16 @@ template Position Position::move<true>(Move m, PsqtState* psqtState, const TT* t
 template Position Position::move<false>(Move m, PsqtState* psqtState, const TT* tt = nullptr) const;
 
 Position Position::null_move() const {
-    Position new_pos = *this;
-    new_pos.m_zobrist_info.update_fullkey(Zobrist::side_key);
+    Position new_pos         = *this;
+    HashKey  non_psqt_update = Zobrist::side_key;
 
     if (m_enpassant.is_valid()) {
         // Remove hash for ep square
-        new_pos.m_zobrist_info.update_fullkey(Zobrist::en_passant_zobrist[new_pos.m_enpassant.raw]);
+        non_psqt_update ^= Zobrist::en_passant_zobrist[m_enpassant.raw];
         new_pos.m_enpassant = Square::invalid();
     }
+
+    new_pos.m_zobrist_info.update_fullkey(non_psqt_update);
 
     new_pos.m_active_color = invert(m_active_color);
     new_pos.m_ply++;
