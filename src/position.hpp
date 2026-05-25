@@ -334,7 +334,7 @@ private:
     Square                              m_enpassant = Square::invalid();
     std::array<RookInfo, 2>             m_rook_info;
 
-    ZobristInfo m_zobrist_info;
+    [[no_unique_address]] ZobristInfo m_zobrist_info;
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates& updates);
     void incrementally_add_piece(bool color, Place p, Square sq, PsqtUpdates& updates);

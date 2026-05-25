@@ -7,6 +7,7 @@
 
 namespace Clockwork {
 
+#ifndef EVAL_TUNING
 struct alignas(64) ZobristInfo {
     u64x8 m_raw = {};
     constexpr ZobristInfo(HashKey piece_key,
@@ -60,6 +61,47 @@ struct alignas(64) ZobristInfo {
         return m_raw.read(5);
     }
 };
+static_assert(sizeof(ZobristInfo) == 64);
+#else
+// In eval tune mode we dont use zobrist keys. So we can just turn this struct into a dummy struct to avoid the overhead of computing the keys.
+struct ZobristInfo {
+    constexpr ZobristInfo(HashKey, HashKey, HashKey, HashKey, HashKey, HashKey) {
+    }
+
+    constexpr ZobristInfo(HashKey, HashKey, std::array<HashKey, 2>, HashKey, HashKey) {
+    }
+
+    constexpr ZobristInfo() {
+    }
+
+    inline void toggle(const Color, const PieceType, const Square) {
+    }
+
+    constexpr bool operator==(const ZobristInfo&) const {
+        return true;
+    }
+
+    inline void update_fullkey(HashKey) {
+    }
+
+    [[nodiscard]] HashKey full_key() const {
+        return 0;
+    }
+    [[nodiscard]] HashKey pawn_key() const {
+        return 0;
+    }
+    [[nodiscard]] HashKey non_pawn_key(Color) const {
+        return 0;
+    }
+    [[nodiscard]] HashKey major_key() const {
+        return 0;
+    }
+    [[nodiscard]] HashKey minor_key() const {
+        return 0;
+    }
+};
+
+#endif
 
 class Zobrist {
 public:
@@ -76,10 +118,12 @@ public:
     static void init_zobrist_keys();
 };
 
+#ifndef EVAL_TUNING
 inline void ZobristInfo::toggle(const Color color, const PieceType ptype, const Square sq) {
     const ZobristInfo& info =
       Zobrist::piece_zobrist_info[static_cast<usize>(color)][static_cast<usize>(ptype)][sq.raw];
     m_raw ^= info.m_raw;
 }
+#endif
 
 }  // namespace Clockwork
