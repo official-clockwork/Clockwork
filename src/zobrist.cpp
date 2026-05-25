@@ -39,6 +39,7 @@ void Zobrist::init_zobrist_keys() {
     // Non-pawns also initialize the non-pawn key for their color
     // Major pieces and king also initialize the major piece key
     // Minor pieces and king also initialize the minor piece key
+    // IMPORTANT! From now on, the update rules of the secondary keys go here, not in the position class.
     for (size_t color_index = 0; color_index < 2; ++color_index) {
         for (size_t piece_index = 1; piece_index < 7; ++piece_index) {
             for (size_t sq_index = 0; sq_index < 64; ++sq_index) {

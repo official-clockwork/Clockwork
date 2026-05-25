@@ -10,17 +10,6 @@ namespace Clockwork {
 
 struct alignas(64) ZobristInfo {
     u64x8 m_raw = {};
-
-    // Structure:
-    // [0] - full zobrist key
-    // [1] - pawn key
-    // [2] - non-pawn key for white
-    // [3] - non-pawn key for black
-    // [4] - major piece key
-    // [5] - minor piece key
-    // [6-7] - padding
-
-    // Constructor from the individual components
     constexpr ZobristInfo(HashKey piece_key,
                           HashKey pawn_key,
                           HashKey non_pawn_key_white,
@@ -34,7 +23,6 @@ struct alignas(64) ZobristInfo {
         }} {
     }
 
-    // Alternative constructor that takes std::array for the nonpawn keys
     constexpr ZobristInfo(HashKey                piece_key,
                           HashKey                pawn_key,
                           std::array<HashKey, 2> non_pawn_keys,
@@ -43,12 +31,10 @@ struct alignas(64) ZobristInfo {
         ZobristInfo(piece_key, pawn_key, non_pawn_keys[0], non_pawn_keys[1], major_key, minor_key) {
     }
 
-    // Default constructor
     constexpr ZobristInfo() :
         m_raw{} {
     }
 
-    // Operator ==
     constexpr bool operator==(const ZobristInfo& other) const {
         return m_raw == other.m_raw;
     }

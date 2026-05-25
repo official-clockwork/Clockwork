@@ -21,8 +21,6 @@ void Position::incrementally_remove_piece(bool         color,
                                           PsqtUpdates& updates) {
     remove_attacks(color, id);
     toggle_rays(from);
-
-    // TODO: check if some speed left on the table for zobrist here
     Color     pcolor = m_board[from].color();
     PieceType ptype  = m_board[from].ptype();
     m_zobrist_info.toggle(pcolor, ptype, from);
@@ -31,7 +29,6 @@ void Position::incrementally_remove_piece(bool         color,
 }
 
 void Position::incrementally_add_piece(bool color, Place p, Square to, PsqtUpdates& updates) {
-    // TODO: check if some speed left on the table for zobrist here
     m_board[to]      = p;
     Color     pcolor = p.color();
     PieceType ptype  = p.ptype();
@@ -46,7 +43,6 @@ void Position::incrementally_mutate_piece(
   bool old_color, PieceId old_id, Square sq, bool new_color, Place p, PsqtUpdates& updates) {
     PieceType ptype = m_board[sq].ptype();
 
-    // TODO: check if some speed left on the table for zobrist here
     m_zobrist_info.toggle(m_board[sq].color(), ptype, sq);
     updates.removes.push_back({m_board[sq].color(), ptype, sq});
     m_board[sq] = p;
@@ -66,7 +62,6 @@ void Position::incrementally_move_piece(
     auto [dst_ray_coords, dst_ray_valid] = geometry::superpiece_rays(to);
     u8x64 src_ray_places                 = src_ray_coords.swizzle(m_board.to_vector());
 
-    // TODO: check if some speed left on the table for zobrist here
     PieceType from_ptype = m_board[from].ptype();
     m_zobrist_info.toggle(m_board[from].color(), from_ptype, from);
     updates.removes.push_back({m_board[from].color(), from_ptype, from});
