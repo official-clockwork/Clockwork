@@ -404,6 +404,35 @@ PScore evaluate_threats(const Position& pos) {
     constexpr Color opp  = ~color;
     PScore          eval = PSCORE_ZERO;
 
+    Bitboard b, weak, defended, non_pawn_enemies, strongly_protected, safe;
+
+    non_pawn_enemies =
+      pos.board().get_color_bitboard(opp) & ~pos.bitboard_for(opp, PieceType::Pawn);
+
+    strongly_protected = pos.attacked_by(opp, PieceType::Pawn)
+                       | (pos.attacked_by_two_or_more(opp) & ~pos.attacked_by_two_or_more(opp));
+
+    defended = non_pawn_enemies & strongly_protected;
+
+    weak = pos.board().get_color_bitboard(opp) & ~strongly_protected
+         & pos.attack_table(color).get_attacked_bitboard();
+
+    if ((defended | weak).any()) {
+        // Minor threats
+        b = (defended | weak)
+          & (pos.attacked_by(color, PieceType::Knight) | pos.attacked_by(color, PieceType::Bishop));
+        for (Square sq : b) {
+            PieceType pt = pos.piece_at(sq);
+            eval += MINOR_THREAT[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)];
+        }
+        // Rook threats
+        b = weak & pos.attacked_by(color, PieceType::Rook);
+        for (Square sq : b) {
+            PieceType pt = pos.piece_at(sq);
+            eval += ROOK_THREAT[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)];
+        }
+    }
+
     Bitboard pawn_attacks = pos.attacked_by(color, PieceType::Pawn);
     eval +=
       PAWN_THREAT_KNIGHT * (pos.bitboard_for(opp, PieceType::Knight) & pawn_attacks).ipopcount();
@@ -412,22 +441,6 @@ PScore evaluate_threats(const Position& pos) {
     eval += PAWN_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & pawn_attacks).ipopcount();
     eval +=
       PAWN_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & pawn_attacks).ipopcount();
-
-    Bitboard knight_attacks = pos.attacked_by(color, PieceType::Knight);
-    eval += KNIGHT_THREAT_BISHOP
-          * (pos.bitboard_for(opp, PieceType::Bishop) & knight_attacks).ipopcount();
-    eval +=
-      KNIGHT_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & knight_attacks).ipopcount();
-    eval +=
-      KNIGHT_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & knight_attacks).ipopcount();
-
-    Bitboard bishop_attacks = pos.attacked_by(color, PieceType::Bishop);
-    eval += BISHOP_THREAT_KNIGHT
-          * (pos.bitboard_for(opp, PieceType::Knight) & bishop_attacks).ipopcount();
-    eval +=
-      BISHOP_THREAT_ROOK * (pos.bitboard_for(opp, PieceType::Rook) & bishop_attacks).ipopcount();
-    eval +=
-      BISHOP_THREAT_QUEEN * (pos.bitboard_for(opp, PieceType::Queen) & bishop_attacks).ipopcount();
 
     return eval;
 }

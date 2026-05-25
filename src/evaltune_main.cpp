@@ -419,21 +419,8 @@ int main() {
                   << std::endl;
         std::cout << std::endl;
 
-        std::cout << "inline const PParam KNIGHT_THREAT_BISHOP = " << KNIGHT_THREAT_BISHOP << ";"
-                  << std::endl;
-        std::cout << "inline const PParam KNIGHT_THREAT_ROOK   = " << KNIGHT_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam KNIGHT_THREAT_QUEEN  = " << KNIGHT_THREAT_QUEEN << ";"
-                  << std::endl;
-        std::cout << std::endl;
-
-        std::cout << "inline const PParam BISHOP_THREAT_KNIGHT = " << BISHOP_THREAT_KNIGHT << ";"
-                  << std::endl;
-        std::cout << "inline const PParam BISHOP_THREAT_ROOK   = " << BISHOP_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam BISHOP_THREAT_QUEEN  = " << BISHOP_THREAT_QUEEN << ";"
-                  << std::endl;
-        std::cout << std::endl;
+        print_table("MINOR_THREAT", MINOR_THREAT);
+        print_table("ROOK_THREAT", ROOK_THREAT);
 
         print_table("BISHOP_PAWNS", BISHOP_PAWNS);
         std::cout << std::endl;
