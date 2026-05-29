@@ -431,6 +431,10 @@ PScore evaluate_threats(const Position& pos) {
             PieceType pt = pos.piece_at(sq);
             eval += ROOK_THREAT[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)];
         }
+
+        if ((weak & pos.attacked_by(color, PieceType::King)).any()) {
+            eval += KING_THREAT;
+        }
     }
 
     Bitboard pawn_attacks = pos.attacked_by(color, PieceType::Pawn);

@@ -421,6 +421,8 @@ int main() {
 
         print_table("MINOR_THREAT", MINOR_THREAT);
         print_table("ROOK_THREAT", ROOK_THREAT);
+        std::cout << "inline const PParam KING_THREAT  = " << KING_THREAT << ";" << std::endl
+                  << std::endl;
 
         print_table("BISHOP_PAWNS", BISHOP_PAWNS);
         std::cout << std::endl;
