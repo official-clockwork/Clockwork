@@ -404,15 +404,14 @@ PScore evaluate_threats(const Position& pos) {
     constexpr Color opp  = ~color;
     PScore          eval = PSCORE_ZERO;
 
-    Bitboard b, weak, defended, non_pawn_enemies, strongly_protected, safe;
-
-    non_pawn_enemies =
-      pos.board().get_color_bitboard(opp) & ~pos.bitboard_for(opp, PieceType::Pawn);
+    Bitboard b, weak, defended, opp_pawn, opp_non_pawn, strongly_protected, safe;
+    opp_pawn     = pos.bitboard_for(opp, PieceType::Pawn);
+    opp_non_pawn = pos.board().get_color_bitboard(opp) & ~opp_pawn;
 
     strongly_protected = pos.attacked_by(opp, PieceType::Pawn)
                        | (pos.attacked_by_two_or_more(opp) & ~pos.attacked_by_two_or_more(opp));
 
-    defended = non_pawn_enemies & strongly_protected;
+    defended = opp_non_pawn & strongly_protected;
 
     weak = pos.board().get_color_bitboard(opp) & ~strongly_protected
          & pos.attack_table(color).get_attacked_bitboard();
@@ -425,6 +424,7 @@ PScore evaluate_threats(const Position& pos) {
             PieceType pt = pos.piece_at(sq);
             eval += MINOR_THREAT[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)];
         }
+
         // Rook threats
         b = weak & pos.attacked_by(color, PieceType::Rook);
         for (Square sq : b) {
@@ -432,9 +432,17 @@ PScore evaluate_threats(const Position& pos) {
             eval += ROOK_THREAT[static_cast<usize>(pt) - static_cast<usize>(PieceType::Pawn)];
         }
 
+        // King threats
         if ((weak & pos.attacked_by(color, PieceType::King)).any()) {
             eval += KING_THREAT;
         }
+
+        // Hanging pieces
+        b = weak
+          & (~pos.attack_table(opp).get_attacked_bitboard()
+             | (opp_non_pawn & pos.attacked_by_two_or_more(color)));
+        eval += HANGING_PAWN * (b & opp_pawn).ipopcount();
+        eval += HANGING_NON_PAWN * (b & opp_non_pawn).ipopcount();
     }
 
     Bitboard pawn_attacks = pos.attacked_by(color, PieceType::Pawn);
