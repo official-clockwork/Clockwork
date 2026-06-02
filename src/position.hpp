@@ -236,6 +236,10 @@ public:
         return static_cast<isize>(piece_count(color, ptype));
     }
 
+    [[nodiscard]] i32 i32piece_count(Color color, PieceType ptype) const {
+        return static_cast<i32>(piece_count(color, ptype));
+    }
+
     [[nodiscard]] bool is_kp_endgame() const {
         for (Color color : {Color::White, Color::Black}) {
             if (!(piece_count(color) == 1 + piece_count(color, PieceType::Pawn))) {
