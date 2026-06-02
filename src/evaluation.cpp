@@ -13,8 +13,7 @@ namespace Clockwork {
 
 
 struct EvalData {
-    i32 wp_count[2][6];
-    i32 bp_count[2][6];
+    i32 m_piece_count[2][6];
     i32 wcount;
     i32 bcount;
 
@@ -30,18 +29,18 @@ struct EvalData {
 
         for (PieceType pt : {PieceType::Pawn, PieceType::Knight, PieceType::Bishop, PieceType::Rook,
                              PieceType::Queen}) {
-            wp_count[static_cast<usize>(Color::White)][static_cast<usize>(pt)] =
-              pos.ipiece_count(Color::White, pt);
-            bp_count[static_cast<usize>(Color::Black)][static_cast<usize>(pt)] =
-              pos.ipiece_count(Color::Black, pt);
+            m_piece_count[static_cast<usize>(Color::White)][static_cast<usize>(pt)] =
+              pos.i32piece_count(Color::White, pt);
+            m_piece_count[static_cast<usize>(Color::Black)][static_cast<usize>(pt)] =
+              pos.i32piece_count(Color::Black, pt);
 
             attacks_by_pt[static_cast<usize>(Color::White)][static_cast<usize>(pt)] =
               pos.attacked_by(Color::White, pt);
             attacks_by_pt[static_cast<usize>(Color::Black)][static_cast<usize>(pt)] =
               pos.attacked_by(Color::Black, pt);
 
-            wcount += wp_count[static_cast<usize>(Color::White)][static_cast<usize>(pt)];
-            bcount += bp_count[static_cast<usize>(Color::Black)][static_cast<usize>(pt)];
+            wcount += m_piece_count[static_cast<usize>(Color::White)][static_cast<usize>(pt)];
+            bcount += m_piece_count[static_cast<usize>(Color::Black)][static_cast<usize>(pt)];
         }
 
         attacks_by_pt[static_cast<usize>(Color::White)][static_cast<usize>(PieceType::King)] =
@@ -50,9 +49,8 @@ struct EvalData {
           pos.attacked_by(Color::Black, PieceType::King);
     }
 
-    inline i32 ipiece_count(const Color color, const PieceType pt) const {
-        return color == Color::White ? wp_count[static_cast<usize>(color)][static_cast<usize>(pt)]
-                                     : bp_count[static_cast<usize>(color)][static_cast<usize>(pt)];
+    inline i32 piece_count(const Color color, const PieceType pt) const {
+        return m_piece_count[static_cast<usize>(color)][static_cast<usize>(pt)];
     }
 
     inline i32 piece_count(const Color color) const {
@@ -395,7 +393,7 @@ PScore evaluate_outposts(const Position& pos, const EvalData& data) {
 
 
 template<Color color>
-PScore evaluate_potential_checkers(const Position& pos, const EvalData& data) {
+PScore evaluate_potential_checkers(const Position& pos) {
     constexpr Color opp = ~color;
 
     const PieceMask orth   = pos.get_piece_mask<PieceType::Rook, PieceType::Queen>(opp);
@@ -465,7 +463,7 @@ PScore evaluate_threats(const Position& pos, const EvalData& data) {
     constexpr Color opp  = ~color;
     PScore          eval = PSCORE_ZERO;
 
-    Bitboard b, weak, defended, opp_pawn, opp_non_pawn, strongly_protected, safe;
+    Bitboard b, weak, defended, opp_pawn, opp_non_pawn, strongly_protected;
     opp_pawn     = pos.bitboard_for(opp, PieceType::Pawn);
     opp_non_pawn = pos.board().get_color_bitboard(opp) & ~opp_pawn;
 
@@ -552,7 +550,7 @@ PScore king_safety_activation(PScore& king_safety_score) {
     return activated;
 }
 
-PScore apply_winnable(const Position& pos, PScore& score, usize phase) {
+PScore apply_winnable(const Position& pos, PScore& score, i32 phase) {
 
     bool pawn_endgame = phase == 0;
 
@@ -581,8 +579,8 @@ PScore apply_winnable(const Position& pos, PScore& score, usize phase) {
 
 PScore apply_eg_scale(const Position& pos,
                       PScore&         eval,
-                      isize           strong_phase,
-                      isize           weak_phase,
+                      i32           strong_phase,
+                      i32           weak_phase,
                       i32             strong_passers,
                       i32             weak_passers,
                       EvalData&       eval_data) {
@@ -595,8 +593,8 @@ PScore apply_eg_scale(const Position& pos,
         std::swap(strong_passers, weak_passers);
     }
 
-    const isize strong_pawn_count = eval_data.ipiece_count(strong_side, PieceType::Pawn);
-    const isize weak_pawn_count   = eval_data.ipiece_count(~strong_side, PieceType::Pawn);
+    const i32 strong_pawn_count = eval_data.piece_count(strong_side, PieceType::Pawn);
+    const i32 weak_pawn_count   = eval_data.piece_count(~strong_side, PieceType::Pawn);
 
     // Pawnless position scaling: if our material advantage is very thin and we have no pawns, scale down the eval significantly, as trading can lead to KBK or KNK draws
     if (strong_pawn_count == 0) {
@@ -624,19 +622,17 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     EvalData eval_data;
     eval_data.init(pos);
 
-    const isize white_phase = eval_data.ipiece_count(Color::White, PieceType::Knight)
-                            + eval_data.ipiece_count(Color::White, PieceType::Bishop)
-                            + eval_data.ipiece_count(Color::White, PieceType::Rook) * 2
-                            + eval_data.ipiece_count(Color::White, PieceType::Queen) * 4;
+    const i32 white_phase = eval_data.piece_count(Color::White, PieceType::Knight)
+                            + eval_data.piece_count(Color::White, PieceType::Bishop)
+                            + eval_data.piece_count(Color::White, PieceType::Rook) * 2
+                            + eval_data.piece_count(Color::White, PieceType::Queen) * 4;
 
-    const isize black_phase = eval_data.ipiece_count(Color::Black, PieceType::Knight)
-                            + eval_data.ipiece_count(Color::Black, PieceType::Bishop)
-                            + eval_data.ipiece_count(Color::Black, PieceType::Rook) * 2
-                            + eval_data.ipiece_count(Color::Black, PieceType::Queen) * 4;
+    const i32 black_phase = eval_data.piece_count(Color::Black, PieceType::Knight)
+                            + eval_data.piece_count(Color::Black, PieceType::Bishop)
+                            + eval_data.piece_count(Color::Black, PieceType::Rook) * 2
+                            + eval_data.piece_count(Color::Black, PieceType::Queen) * 4;
 
-    usize phase = std::min<usize>(white_phase + black_phase, 24);
-
-    phase = std::min<usize>(phase, 24);
+    i32 phase = std::min<i32>(white_phase + black_phase, 24);
 
     PScore eval = psqt_state.score();  // Used for linear components
 
@@ -660,8 +656,8 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
       evaluate_pawn_push_threats<Color::White>(pos) - evaluate_pawn_push_threats<Color::Black>(pos);
 
     // King safety
-    eval += evaluate_potential_checkers<Color::White>(pos, eval_data)
-          - evaluate_potential_checkers<Color::Black>(pos, eval_data);
+    eval += evaluate_potential_checkers<Color::White>(pos)
+          - evaluate_potential_checkers<Color::Black>(pos);
 
     // Nonlinear king safety components
     PScore white_king_attack_total = evaluate_king_safety<Color::Black>(pos, eval_data);
