@@ -579,8 +579,8 @@ PScore apply_winnable(const Position& pos, PScore& score, i32 phase) {
 
 PScore apply_eg_scale(const Position& pos,
                       PScore&         eval,
-                      i32           strong_phase,
-                      i32           weak_phase,
+                      i32             strong_phase,
+                      i32             weak_phase,
                       i32             strong_passers,
                       i32             weak_passers,
                       EvalData&       eval_data) {
@@ -623,14 +623,14 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval_data.init(pos);
 
     const i32 white_phase = eval_data.piece_count(Color::White, PieceType::Knight)
-                            + eval_data.piece_count(Color::White, PieceType::Bishop)
-                            + eval_data.piece_count(Color::White, PieceType::Rook) * 2
-                            + eval_data.piece_count(Color::White, PieceType::Queen) * 4;
+                          + eval_data.piece_count(Color::White, PieceType::Bishop)
+                          + eval_data.piece_count(Color::White, PieceType::Rook) * 2
+                          + eval_data.piece_count(Color::White, PieceType::Queen) * 4;
 
     const i32 black_phase = eval_data.piece_count(Color::Black, PieceType::Knight)
-                            + eval_data.piece_count(Color::Black, PieceType::Bishop)
-                            + eval_data.piece_count(Color::Black, PieceType::Rook) * 2
-                            + eval_data.piece_count(Color::Black, PieceType::Queen) * 4;
+                          + eval_data.piece_count(Color::Black, PieceType::Bishop)
+                          + eval_data.piece_count(Color::Black, PieceType::Rook) * 2
+                          + eval_data.piece_count(Color::Black, PieceType::Queen) * 4;
 
     i32 phase = std::min<i32>(white_phase + black_phase, 24);
 
