@@ -388,7 +388,7 @@ PScore evaluate_outposts(const Position& pos, const EvalData& data) {
           * (pos.bitboard_for(color, PieceType::Knight) & viable_outposts).ipopcount();
     eval += OUTPOST_BISHOP_VAL
           * (pos.bitboard_for(color, PieceType::Bishop) & viable_outposts).ipopcount();
-    return eval;
+    return eval; 
 }
 
 
@@ -455,7 +455,7 @@ PScore evaluate_king_safety(const Position& pos, const EvalData& data) {
 
     eval += KS_NO_QUEEN * (pos.bitboard_for(opp, PieceType::Queen).empty());
 
-    return eval;
+    return eval; 
 }
 
 template<Color color>
@@ -467,8 +467,8 @@ PScore evaluate_threats(const Position& pos, const EvalData& data) {
     opp_pawn     = pos.bitboard_for(opp, PieceType::Pawn);
     opp_non_pawn = pos.board().get_color_bitboard(opp) & ~opp_pawn;
 
-    strongly_protected =
-      data.attacked_by(opp, PieceType::Pawn) | (data.attacked_by_2(opp) & ~data.attacked_by_2(opp));
+    strongly_protected = data.attacked_by(opp, PieceType::Pawn)
+                       | (data.attacked_by_2(opp) & ~data.attacked_by_2(color));
 
     defended = opp_non_pawn & strongly_protected;
 
