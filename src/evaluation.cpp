@@ -13,13 +13,14 @@ namespace Clockwork {
 
 
 struct EvalData {
-    i32 m_piece_count[2][6];
-    i32 wcount = 0;
-    i32 bcount = 0;
 
     Bitboard any_attacks_by[2];
     Bitboard any2_attacks_by[2];
     Bitboard attacks_by_pt[2][7];
+    Bitboard m_pawn_files[2];
+    i32      m_piece_count[2][6];
+    i32      wcount = 0;
+    i32      bcount = 0;
 
     void init(const Position& pos) {
         any_attacks_by[0]  = pos.attack_table(Color::White).get_attacked_bitboard();
@@ -47,6 +48,9 @@ struct EvalData {
           pos.attacked_by(Color::White, PieceType::King);
         attacks_by_pt[static_cast<usize>(Color::Black)][static_cast<usize>(PieceType::King)] =
           pos.attacked_by(Color::Black, PieceType::King);
+
+        m_pawn_files[0] = Bitboard::fill_verticals(pos.bitboard_for(Color::White, PieceType::Pawn));
+        m_pawn_files[1] = Bitboard::fill_verticals(pos.bitboard_for(Color::Black, PieceType::Pawn));
     }
 
     inline i32 piece_count(const Color color, const PieceType pt) const {
@@ -67,6 +71,10 @@ struct EvalData {
 
     inline Bitboard attacked_by_2(const Color color) const {
         return any2_attacks_by[static_cast<usize>(color)];
+    }
+
+    inline Bitboard pawn_files(const Color color) const {
+        return m_pawn_files[static_cast<usize>(color)];
     }
 };
 
@@ -236,7 +244,7 @@ std::tuple<PScore, i32> evaluate_pawns(const Position& pos, const EvalData& data
     Bitboard pawns     = pos.board().bitboard_for(color, PieceType::Pawn);
     Bitboard opp_pawns = pos.board().bitboard_for(~color, PieceType::Pawn);
 
-    Bitboard pawn_files = Bitboard::fill_verticals(pawns);
+    Bitboard pawn_files = data.pawn_files(color);
     Bitboard doubled    = pawns & pawns.shift(Direction::North);
     Bitboard isolated =
       pawns & ~(pawn_files.shift(Direction::East) | pawn_files.shift(Direction::West));
@@ -516,11 +524,11 @@ PScore evaluate_threats(const Position& pos, const EvalData& data) {
 
 template<Color color>
 PScore evaluate_space(const Position& pos, const EvalData& data) {
-    PScore          eval       = PSCORE_ZERO;
-    constexpr Color them       = color == Color::White ? Color::Black : Color::White;
-    Bitboard        ourfiles   = Bitboard::fill_verticals(pos.bitboard_for(color, PieceType::Pawn));
-    Bitboard        theirfiles = Bitboard::fill_verticals(pos.bitboard_for(them, PieceType::Pawn));
-    Bitboard        openfiles  = ~(ourfiles | theirfiles);
+    PScore          eval            = PSCORE_ZERO;
+    constexpr Color them            = color == Color::White ? Color::Black : Color::White;
+    Bitboard        ourfiles        = data.pawn_files(color);
+    Bitboard        theirfiles      = data.pawn_files(them);
+    Bitboard        openfiles       = ~(ourfiles | theirfiles);
     Bitboard        half_open_files = (~ourfiles) & theirfiles;
     Bitboard        ourminors =
       pos.bitboard_for(color, PieceType::Knight) | pos.bitboard_for(color, PieceType::Bishop);
@@ -550,7 +558,7 @@ PScore king_safety_activation(PScore& king_safety_score) {
     return activated;
 }
 
-PScore apply_winnable(const Position& pos, PScore& score, i32 phase) {
+PScore apply_winnable(const Position& pos, PScore& score, i32 phase, EvalData& eval_data) {
 
     bool pawn_endgame = phase == 0;
 
@@ -559,8 +567,8 @@ PScore apply_winnable(const Position& pos, PScore& score, i32 phase) {
 
     i32 pawn_count = (white_pawns | black_pawns).ipopcount();
 
-    Bitboard white_files = Bitboard::fill_verticals(white_pawns);
-    Bitboard black_files = Bitboard::fill_verticals(black_pawns);
+    Bitboard white_files = eval_data.pawn_files(Color::White);
+    Bitboard black_files = eval_data.pawn_files(Color::Black);
 
     i32 sym_files  = (white_files & black_files).ipopcount() / 8;
     i32 asym_files = (white_files ^ black_files).ipopcount() / 8;
@@ -670,7 +678,7 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
     eval += (us == Color::White) ? TEMPO_VAL : -TEMPO_VAL;
 
     // Winnable
-    eval = apply_winnable(pos, eval, phase);
+    eval = apply_winnable(pos, eval, phase, eval_data);
 
     // Eg scaling
     eval =
