@@ -510,6 +510,10 @@ void print_params() {
     std::cout << "inline const PParam HANGING_PAWN  = " << HANGING_PAWN << ";" << std::endl;
     std::cout << "inline const PParam HANGING_NON_PAWN  = " << HANGING_NON_PAWN << ";" << std::endl
               << std::endl;
+    print_table("KNIGHT_ON_QUEEN", KNIGHT_ON_QUEEN);
+    print_table("BISHOP_ON_QUEEN", BISHOP_ON_QUEEN);
+    print_table("ROOK_ON_QUEEN", ROOK_ON_QUEEN);
+    std::cout << std::endl;
 
     print_table("BISHOP_PAWNS", BISHOP_PAWNS);
     std::cout << std::endl;
