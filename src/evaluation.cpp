@@ -563,14 +563,12 @@ PScore evaluate_threats(const Position& pos, const EvalData& data) {
 
         Bitboard a = attacks & diagonal_squares_table[sq.raw];
 
-        b = a & data.attacked_by(color, PieceType::Bishop)
-          & safe;
+        b = a & data.attacked_by(color, PieceType::Bishop) & safe;
         eval += BISHOP_ON_QUEEN[queen_imbalance] * b.ipopcount();
 
-        a = attacks ^ a; 
+        a = attacks ^ a;
 
-        b = a & data.attacked_by(color, PieceType::Rook)
-          & safe;
+        b = a & data.attacked_by(color, PieceType::Rook) & safe;
         eval += ROOK_ON_QUEEN[queen_imbalance] * b.ipopcount();
     }
 
@@ -579,11 +577,11 @@ PScore evaluate_threats(const Position& pos, const EvalData& data) {
 
 template<Color color>
 PScore evaluate_space(const Position& pos, const EvalData& data) {
-    PScore          eval            = PSCORE_ZERO;
-    constexpr Color them            = color == Color::White ? Color::Black : Color::White;
+    PScore          eval       = PSCORE_ZERO;
+    constexpr Color them       = color == Color::White ? Color::Black : Color::White;
     Bitboard        ourfiles   = Bitboard::fill_verticals(pos.bitboard_for(color, PieceType::Pawn));
     Bitboard        theirfiles = Bitboard::fill_verticals(pos.bitboard_for(them, PieceType::Pawn));
-    Bitboard        openfiles       = ~(ourfiles | theirfiles);
+    Bitboard        openfiles  = ~(ourfiles | theirfiles);
     Bitboard        half_open_files = (~ourfiles) & theirfiles;
     Bitboard        ourminors =
       pos.bitboard_for(color, PieceType::Knight) | pos.bitboard_for(color, PieceType::Bishop);
