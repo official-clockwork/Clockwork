@@ -18,7 +18,7 @@ inline const PParam BISHOP_PAIR_VAL   = S(64, 230);
 inline const PParam ROOK_OPEN_VAL     = S(109, -2);
 inline const PParam ROOK_SEMIOPEN_VAL = S(43, 13);
 inline const PParam MINOR_BEHIND_PAWN = S(15, 39);
-inline const PParam RESTRICTED_SQUARES = S(-20, -4);
+inline const PParam RESTRICTED_SQUARES = S(20, 4);
 
 inline const PParam DOUBLED_PAWN_VAL = S(-20, -82);
 inline const PParam ISOLATED_PAWN_VAL = S(-14, -36);

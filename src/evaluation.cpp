@@ -533,6 +533,9 @@ PScore evaluate_threats(const Position& pos, const EvalData& data) {
         eval += HANGING_NON_PAWN * (b & opp_non_pawn).ipopcount();
     }
 
+    eval += RESTRICTED_SQUARES
+          * (data.attacked_by(color) & ~strongly_protected & data.attacked_by(opp)).ipopcount();
+
     Bitboard pawn_attacks = data.attacked_by(color, PieceType::Pawn);
     eval +=
       PAWN_THREAT_KNIGHT * (pos.bitboard_for(opp, PieceType::Knight) & pawn_attacks).ipopcount();
@@ -594,12 +597,6 @@ PScore evaluate_space(const Position& pos, const EvalData& data) {
           * (ourminors.shift_relative(color, Direction::North)
              & (pos.bitboard_for(them, PieceType::Pawn) | pos.bitboard_for(color, PieceType::Pawn)))
               .ipopcount();
-
-    Bitboard strongly_defended = data.attacked_by(color, PieceType::Pawn)
-                               | (data.attacked_by_2(color) & ~data.attacked_by_2(them));
-
-    eval += RESTRICTED_SQUARES
-          * (data.attacked_by(color) & ~strongly_defended & data.attacked_by(them)).ipopcount();
 
     return eval;
 }
