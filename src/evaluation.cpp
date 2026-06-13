@@ -278,12 +278,24 @@ std::tuple<PScore, i32> evaluate_pawns(const Position& pos, const EvalData& data
         Bitboard stoppers = opp_pawns & passed_pawn_spans[static_cast<usize>(color)][sq.raw];
         if (stoppers.empty()) {
             ++passers;
+
             eval += PASSED_PAWN[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
-            if (pos.attack_table(color).read(push).popcount()
-                > pos.attack_table(them).read(push).popcount()) {
+
+            if ((passed_pawn_spans[static_cast<usize>(color)][sq.raw] & data.attacked_by(them))
+                  .empty()) {
+                eval +=
+                  PASSED_CLEAR_STOPPERS[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
+            } else if ((Bitboard::forward_ranks(color, sq) & Bitboard::file_mask(sq.file())
+                        & data.attacked_by(them))
+                         .empty()) {
+                eval +=
+                  PASSED_CLEAR_FORWARD[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
+            } else if (pos.attack_table(color).read(push).popcount()
+                       > pos.attack_table(them).read(push).popcount()) {
                 eval +=
                   DEFENDED_PASSED_PUSH[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];
             }
+
             if (pos.piece_at(push) != PieceType::None) {
                 eval +=
                   BLOCKED_PASSED_PAWN[static_cast<usize>(sq.relative_sq(color).rank() - RANK_2)];

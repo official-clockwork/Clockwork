@@ -480,6 +480,8 @@ void print_params() {
     print_table("PAWN_PHALANX", PAWN_PHALANX);
     print_table("DEFENDED_PAWN", DEFENDED_PAWN);
     print_table("PASSED_PAWN", PASSED_PAWN);
+    print_table("PASSED_CLEAR_STOPPERS", PASSED_CLEAR_STOPPERS);
+    print_table("PASSED_CLEAR_FORWARD", PASSED_CLEAR_FORWARD);
     print_table("DEFENDED_PASSED_PUSH", DEFENDED_PASSED_PUSH);
     print_table("BLOCKED_PASSED_PAWN", BLOCKED_PASSED_PAWN);
     std::cout << std::endl;
