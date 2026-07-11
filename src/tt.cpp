@@ -186,7 +186,7 @@ void TT::clear(usize thread_count) {
                 end = m_size;
             }
 
-            usize chunk_bytes = (end - start) * sizeof(Cluster);
+            usize chunk_bytes = (end - start) * sizeof(TTCluster);
             std::memset(&m_clusters[start], 0, chunk_bytes);
         });
     }
