@@ -173,8 +173,8 @@ void TT::resize(size_t mb, usize thread_count) {
 }
 
 void TT::clear(usize thread_count) {
-    usize max_threads = std::min(thread_count, usize(16)); 
-    
+    usize max_threads = std::max(thread_count, usize(1));
+
     std::vector<std::thread> threads;
     threads.reserve(max_threads);
 
