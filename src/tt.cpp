@@ -173,23 +173,24 @@ void TT::resize(size_t mb, usize thread_count) {
 }
 
 void TT::clear(usize thread_count) {
+    usize max_threads = std::max(thread_count, usize(1));
+
     std::vector<std::thread> threads;
-    threads.reserve(thread_count);
-    for (usize t = 0; t < thread_count; ++t) {
-        threads.emplace_back([this, t, thread_count]() {
-            size_t start = (m_size * t) / thread_count;
-            size_t end   = (m_size * (t + 1)) / thread_count;
-            if (t == thread_count - 1) {
+    threads.reserve(max_threads);
+
+    for (usize t = 0; t < max_threads; ++t) {
+        threads.emplace_back([this, t, max_threads]() {
+            usize start = (m_size * t) / max_threads;
+            usize end   = (m_size * (t + 1)) / max_threads;
+            if (t == max_threads - 1) {
                 end = m_size;
             }
-            for (size_t i = start; i < end; ++i) {
-                m_clusters[i].data[0].store(0, std::memory_order_relaxed);
-                m_clusters[i].data[1].store(0, std::memory_order_relaxed);
-                m_clusters[i].data[2].store(0, std::memory_order_relaxed);
-                m_clusters[i].data[3].store(0, std::memory_order_relaxed);
-            }
+
+            usize chunk_bytes = (end - start) * sizeof(TTCluster);
+            std::memset(&m_clusters[start], 0, chunk_bytes);
         });
     }
+
     for (auto& thread : threads) {
         thread.join();
     }
