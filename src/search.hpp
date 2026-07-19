@@ -251,7 +251,8 @@ private:
             }
         }
 
-        assert(false);
+        assert(false && "Failed to find root move");
+        std::terminate();
     }
 
     bool is_legal_root_move(Move move) const {
