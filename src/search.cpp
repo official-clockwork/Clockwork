@@ -461,6 +461,11 @@ Value Worker::search(
         ttpv |= tt_data->ttpv();
     }
 
+    // Ensure the correct move is searched first if pv_idx > 0.
+    const auto tt_move = ROOT_NODE && m_root_depth > 1 ? m_td.root_moves[m_pv_idx].pv.first_move()
+                       : tt_data                       ? tt_data->move
+                                                       : Move::none();
+
     bool  is_in_check = pos.is_in_check();
     bool  improving   = false;
     Value correction  = 0;
@@ -479,8 +484,7 @@ Value Worker::search(
     }
 
     // Internal Iterative Reductions
-    if ((PV_NODE || cutnode) && depth >= 8 && !excluded
-        && (!tt_data || tt_data->move == Move::none())) {
+    if ((PV_NODE || cutnode) && depth >= 8 && !excluded && (!tt_data || tt_move == Move::none())) {
         depth--;
     }
 
@@ -558,8 +562,7 @@ Value Worker::search(
         const Depth probcut_depth = std::clamp<Depth>(depth - 4, 1, depth - 1);
 
         if (!tt_data || tt_data->depth + 3 < depth || tt_data->score >= probcut_beta) {
-            MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(),
-                             tuned::probcut_see};
+            MovePicker moves{pos, m_td.history, tt_move, tuned::probcut_see};
 
             for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
 
@@ -589,7 +592,7 @@ Value Worker::search(
         }
     }
 
-    MovePicker moves{pos, m_td.history, tt_data ? tt_data->move : Move::none(), ply, ss};
+    MovePicker moves{pos, m_td.history, tt_move, ply, ss};
     Move       best_move    = Move::none();
     Value      best_value   = -VALUE_INF;
     i32        moves_played = 0;
@@ -648,9 +651,9 @@ Value Worker::search(
 
         // Singular extensions
         int extension = 0;
-        if (!ROOT_NODE && tt_data && m == tt_data->move && !excluded
-            && depth >= tuned::sing_min_depth && is_valid_score(tt_data->score)
-            && !is_mate_score(tt_data->score) && tt_data->depth >= depth - tuned::sing_depth_margin
+        if (!ROOT_NODE && tt_data && m == tt_move && !excluded && depth >= tuned::sing_min_depth
+            && is_valid_score(tt_data->score) && !is_mate_score(tt_data->score)
+            && tt_data->depth >= depth - tuned::sing_depth_margin
             && tt_data->bound() != Bound::Upper) {
             Value singular_beta  = tt_data->score - depth * tuned::sing_beta_margin / 64;
             int   singular_depth = depth / 2;
@@ -755,7 +758,7 @@ Value Worker::search(
             if (cutnode) {
                 reduction += tuned::lmr_cutnode_red;
                 // If there is no available tt move, increase reduction
-                if (!tt_data || tt_data->move == Move::none()) {
+                if (!tt_data || tt_move == Move::none()) {
                     reduction += tuned::lmr_no_tt_red;
                 }
             }
@@ -768,7 +771,7 @@ Value Worker::search(
                 reduction += tuned::lmr_ttpv_fail_low;
             }
 
-            if (tt_data && tt_data->move.is_capture() && !m.is_capture()) {
+            if (tt_data && tt_move.is_capture() && !m.is_capture()) {
                 reduction += tuned::lmr_tt_capture_red;
             }
 
@@ -923,13 +926,17 @@ Value Worker::search(
     }
 
     if (!excluded) {
-        Bound bound   = best_value >= beta        ? Bound::Lower
-                      : best_move != Move::none() ? Bound::Exact
-                                                  : Bound::Upper;
-        Move  tt_move = best_move != Move::none() ? best_move
-                      : tt_data                   ? tt_data->move
-                                                  : Move::none();
-        m_searcher.tt.store(pos, ply, raw_eval, tt_move, best_value, depth, ttpv, bound);
+        Bound bound = best_value >= beta        ? Bound::Lower
+                    : best_move != Move::none() ? Bound::Exact
+                                                : Bound::Upper;
+
+        // Don't overwrite PV 0's tt entry (the actual best move) in a search where it was excluded.
+        if (!ROOT_NODE || m_pv_idx == 0) {
+            Move new_tt_move = best_move != Move::none() ? best_move
+                             : tt_data                   ? tt_data->move
+                                                         : Move::none();
+            m_searcher.tt.store(pos, ply, raw_eval, new_tt_move, best_value, depth, ttpv, bound);
+        }
 
         // Update to correction history.
         if (!is_in_check
