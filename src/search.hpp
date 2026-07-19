@@ -27,6 +27,7 @@ struct SearchSettings {
     i64   move_time  = -1;
     u64   hard_nodes = 0;
     u64   soft_nodes = 0;
+    usize multipv    = 1;
     bool  silent     = false;
     bool  datagen    = false;
 };
@@ -215,6 +216,7 @@ private:
     std::thread              m_thread;
     ThreadType               m_thread_type;
     SearchLimits             m_search_limits;
+    usize                    m_multipv;
     ThreadData               m_td;
     usize                    m_pv_idx;
     usize                    m_pv_start;
@@ -239,7 +241,29 @@ private:
 
     void init_root_moves(const Position& root_position);
 
-    RootMove& find_root_move(Move move);
+    void print_info_lines();
+    void print_info_line(usize pv_idx);
+
+    RootMove& get_root_move(Move move) {
+        for (auto& root_move : m_td.root_moves) {
+            if (root_move.pv.first_move() == move) {
+                return root_move;
+            }
+        }
+
+        assert(false);
+    }
+
+    bool is_legal_root_move(Move move) const {
+        for (usize i = m_pv_idx; i < m_td.root_moves.size(); ++i) {
+            const auto& root_move = m_td.root_moves[i];
+            if (root_move.pv.first_move() == move) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 }  // namespace Search

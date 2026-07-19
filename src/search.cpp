@@ -238,55 +238,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
     Value base_search_score = -VALUE_INF;
 
-    const auto print_info_line = [&] {
-        const auto& root_move = m_td.pv_move();
-
-        auto score = root_move.display_score;
-
-        auto upperbound = root_move.upperbound;
-        auto lowerbound = root_move.lowerbound;
-
-        if (root_move.score == -VALUE_INF) {
-            score = root_move.previous_score;
-
-            upperbound = false;
-            lowerbound = false;
-        }
-
-        // Lambda to convert internal units score to uci score. TODO: add eval rescaling here once we get one
-        auto format_score = [](Value score) {
-            if (score < -VALUE_WIN && score > -VALUE_MATED) {
-                return "mate " + std::to_string(-(VALUE_MATED + score + 1) / 2);
-            }
-            if (score > VALUE_WIN && score < VALUE_MATED) {
-                return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
-            }
-            return "cp " + std::to_string(score / 4);
-        };
-
-        // Get current time
-        auto curr_time = time::Clock::now();
-
-        std::cout << std::dec << "info depth " << root_move.searched_depth << " seldepth "
-                  << root_move.seldepth << " score " << format_score(score);
-        if (upperbound) {
-            std::cout << " upperbound";
-        }
-        if (lowerbound) {
-            std::cout << " lowerbound";
-        }
-        std::cout << " nodes " << m_searcher.node_count() << " nps "
-                  << time::nps(m_searcher.node_count(), curr_time - m_search_start);
-        if (root_move.searched_depth >= 16) {
-            std::cout << " hashfull " << m_searcher.tt.hashfull();
-        }
-        std::cout << " time " << time::cast<time::Milliseconds>(curr_time - m_search_start).count()
-                  << " pv " << root_move.pv << std::endl;
-    };
-
     init_root_moves(root_position);
-
-    m_pv_idx = 0;
 
     m_pv_start = 0;
     m_pv_end   = m_td.root_moves.size();
@@ -296,34 +248,65 @@ Move Worker::iterative_deepening(const Position& root_position) {
     for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
         m_root_depth = search_depth;
-        m_seldepth   = 0;
 
         for (auto& root_move : m_td.root_moves) {
             root_move.previous_score = root_move.score;
         }
 
-        Value alpha = -VALUE_INF, beta = VALUE_INF;
-        Value delta = tuned::asp_window_delta;
-        if (search_depth >= 5) {
-            const auto window_score = m_td.pv_move().window_score;
-            alpha                   = window_score - delta;
-            beta                    = window_score + delta;
-        }
-        Value score = -VALUE_INF;
+        for (m_pv_idx = 0; m_pv_idx < m_multipv; ++m_pv_idx) {
+            m_seldepth = 0;
 
-        int fail_high_reduction = 0;
+            const auto& root_move = m_td.root_moves[m_pv_idx];
 
-        while (true) {
-            int asp_window_depth = search_depth - fail_high_reduction;
+            Value alpha = -VALUE_INF, beta = VALUE_INF;
+            Value delta = tuned::asp_window_delta;
+            if (search_depth >= 5) {
+                alpha = root_move.window_score - delta;
+                beta  = root_move.window_score + delta;
+            }
 
-            alpha = std::max(-VALUE_INF, alpha);
-            beta  = std::min(VALUE_INF, beta);
-            score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta,
-                                          asp_window_depth, 0, false);
+            Value score = -VALUE_INF;
 
-            // Sort the PVs searched so far. Effectively, find the current best PV and move it to the front.
-            std::stable_sort(m_td.root_moves.begin() + static_cast<isize>(m_pv_idx),
-                             m_td.root_moves.begin() + static_cast<isize>(m_pv_end),
+            int fail_high_reduction = 0;
+
+            while (true) {
+                int asp_window_depth = search_depth - fail_high_reduction;
+
+                alpha = std::max(-VALUE_INF, alpha);
+                beta  = std::min(VALUE_INF, beta);
+                score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta,
+                                              asp_window_depth, 0, false);
+
+                // Sort the PVs searched so far. Effectively, find the current best PV and move it to the front.
+                std::stable_sort(m_td.root_moves.begin() + static_cast<isize>(m_pv_idx),
+                                 m_td.root_moves.begin() + static_cast<isize>(m_pv_end),
+                                 [](const RootMove& a, const RootMove& b) {
+                                     return a.score > b.score;
+                                 });
+
+                if (m_stopped) {
+                    break;
+                }
+
+                if (score <= alpha) {
+                    beta                = (alpha + beta) / 2;
+                    alpha               = score - delta;
+                    fail_high_reduction = 0;
+                } else if (score >= beta) {
+                    beta = score + delta;
+                    if (fail_high_reduction < 3) {
+                        ++fail_high_reduction;
+                    }
+                } else {
+                    break;
+                }
+
+                delta += delta;
+            }
+
+            // Sort all PVs that have been searched, either partially or fully
+            std::stable_sort(m_td.root_moves.begin() + static_cast<isize>(m_pv_start),
+                             m_td.root_moves.begin() + static_cast<isize>(m_pv_idx) + 1,
                              [](const RootMove& a, const RootMove& b) {
                                  return a.score > b.score;
                              });
@@ -331,35 +314,16 @@ Move Worker::iterative_deepening(const Position& root_position) {
             if (m_stopped) {
                 break;
             }
-
-            if (score <= alpha) {
-                beta                = (alpha + beta) / 2;
-                alpha               = score - delta;
-                fail_high_reduction = 0;
-            } else if (score >= beta) {
-                beta = score + delta;
-                if (fail_high_reduction < 3) {
-                    ++fail_high_reduction;
-                }
-            } else {
-                break;
-            }
-
-            delta += delta;
         }
-
-        // Sort all PVs that have been searched, either partially or fully
-        std::stable_sort(m_td.root_moves.begin() + static_cast<isize>(m_pv_start),
-                         m_td.root_moves.begin() + static_cast<isize>(m_pv_idx) + 1,
-                         [](const RootMove& a, const RootMove& b) {
-                             return a.score > b.score;
-                         });
 
         // If m_stopped is true, then the search exited early.
         // It is safe to use results from this partial depth, as the previous depth's best move is always searched first.
         if (m_stopped) {
             break;
         }
+
+        const auto& pv_move = m_td.pv_move();
+        const auto  score   = pv_move.score;
 
         base_search_score = search_depth == 1 ? score : base_search_score;
 
@@ -368,7 +332,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
             break;
         }
 
-        const auto last_best_move = m_td.pv_move().pv.first_move();
+        const auto last_best_move = pv_move.pv.first_move();
 
         const auto total_nodes = std::reduce(std::begin(m_node_counts), std::end(m_node_counts), 0);
         const auto best_move_nodes = m_node_counts[last_best_move.from_to()];
@@ -400,14 +364,14 @@ Move Worker::iterative_deepening(const Position& root_position) {
         }
 
         if (IS_MAIN && !m_searcher.settings.silent) {
-            print_info_line();
+            print_info_lines();
         }
     }
 
     // Print last info line
     // This ensures we output our last value of search_nodes before termination, allowing for accurate search reproduction.
     if (IS_MAIN && !m_searcher.settings.silent) {
-        print_info_line();
+        print_info_lines();
     }
 
     return m_td.pv_move().pv.first_move();
@@ -641,6 +605,10 @@ Value Worker::search(
 
     // Iterate over the move list
     for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
+        if (ROOT_NODE && !is_legal_root_move(m)) {
+            continue;
+        }
+
         if (m == ss->excluded_move) {
             continue;
         }
@@ -867,7 +835,7 @@ Value Worker::search(
         }
 
         if (ROOT_NODE) {
-            auto& root_move = find_root_move(m);
+            auto& root_move = get_root_move(m);
 
             root_move.window_score = value;
 
@@ -1164,16 +1132,66 @@ void Worker::init_root_moves(const Position& root_position) {
 
     insert_root_moves(noisy);
     insert_root_moves(quiet);
+
+    m_multipv = std::min(m_searcher.settings.multipv, m_td.root_moves.size());
 }
 
-RootMove& Worker::find_root_move(Move move) {
-    for (auto& root_move : m_td.root_moves) {
-        if (root_move.pv.first_move() == move) {
-            return root_move;
-        }
+void Worker::print_info_line(usize pv_idx) {
+    const auto& root_move = m_td.root_moves[pv_idx];
+
+    auto score = root_move.display_score;
+
+    auto upperbound = root_move.upperbound;
+    auto lowerbound = root_move.lowerbound;
+
+    if (root_move.score == -VALUE_INF) {
+        score = root_move.previous_score;
+
+        upperbound = false;
+        lowerbound = false;
     }
 
-    assert(false);
+    // Lambda to convert internal units score to uci score. TODO: add eval rescaling here once we get one
+    auto format_score = [](Value score) {
+        if (score < -VALUE_WIN && score > -VALUE_MATED) {
+            return "mate " + std::to_string(-(VALUE_MATED + score + 1) / 2);
+        }
+        if (score > VALUE_WIN && score < VALUE_MATED) {
+            return "mate " + std::to_string((VALUE_MATED + 1 - score) / 2);
+        }
+        return "cp " + std::to_string(score / 4);
+    };
+
+    // Get current time
+    auto curr_time = time::Clock::now();
+
+    std::cout << std::dec << "info";
+
+    if (m_searcher.settings.multipv > 1) {
+        std::cout << " multipv " << (pv_idx + 1);
+    }
+
+    std::cout << " depth " << root_move.searched_depth << " seldepth " << root_move.seldepth
+              << " score " << format_score(score);
+    if (upperbound) {
+        std::cout << " upperbound";
+    }
+    if (lowerbound) {
+        std::cout << " lowerbound";
+    }
+    std::cout << " nodes " << m_searcher.node_count() << " nps "
+              << time::nps(m_searcher.node_count(), curr_time - m_search_start);
+    if (root_move.searched_depth >= 16) {
+        std::cout << " hashfull " << m_searcher.tt.hashfull();
+    }
+    std::cout << " time " << time::cast<time::Milliseconds>(curr_time - m_search_start).count()
+              << " pv " << root_move.pv << std::endl;
+}
+
+void Worker::print_info_lines() {
+    for (usize pv_idx = 0; pv_idx < m_multipv; ++pv_idx) {
+        print_info_line(pv_idx);
+    }
 }
 }  // namespace Search
 }  // namespace Clockwork

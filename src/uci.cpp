@@ -28,6 +28,7 @@ namespace Clockwork::UCI {
 constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
 constexpr usize            MAX_HASH    = 268435456;
 constexpr usize            MAX_THREADS = 1024;
+constexpr usize            MAX_MULTIPV = 256;
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
@@ -63,6 +64,7 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "option name UseSoftNodes type check default false\n";
         std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << "\n";
         std::cout << "option name Hash type spin default 16 min 1 max " << MAX_HASH << "\n";
+        std::cout << "option name MultiPV type spin default 1 min 1 max " << MAX_MULTIPV << "\n";
         tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
@@ -129,7 +131,8 @@ void UCIHandler::handle_debug(std::istringstream&) {
 
 void UCIHandler::handle_go(std::istringstream& is) {
     // Clear any previous settings
-    settings = {};
+    settings         = {};
+    settings.multipv = m_multipv;
     std::string token;
     while (is >> token) {
         if (token == "depth") {
@@ -262,9 +265,16 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
         }
     } else if (name == "Threads") {
         if (auto value = parse_number<usize>(value_str)) {
-            size_t thread_count = std::clamp<size_t>(*value, 1, MAX_THREADS);
+            usize thread_count = std::clamp<usize>(*value, 1, MAX_THREADS);
             searcher.initialize(thread_count);
             searcher.set_position(m_position, m_repetition_info);
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
+    } else if (name == "MultiPV") {
+        if (auto value = parse_number<usize>(value_str)) {
+            usize multipv = std::clamp<usize>(*value, 1, MAX_MULTIPV);
+            m_multipv     = multipv;
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
         }
