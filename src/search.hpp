@@ -45,6 +45,11 @@ public:
         m_pv.clear();
     }
 
+    void set(Move move) {
+        m_pv.clear();
+        m_pv.push_back(move);
+    }
+
     void set(Move move, const PV& child_pv_line) {
         m_pv.clear();
         m_pv.push_back(move);
@@ -78,10 +83,30 @@ struct SearchLimits {
     Depth           depth_limit;
 };
 
+struct RootMove {
+    explicit RootMove(Move move) {
+        pv.set(move);
+    }
+
+    Value score          = -VALUE_INF;
+    Value window_score   = -VALUE_INF;
+    Value previous_score = -VALUE_INF;
+    Value display_score  = -VALUE_INF;
+
+    bool upperbound = false;
+    bool lowerbound = false;
+
+    PV pv;
+
+    Depth searched_depth = 1;
+    Depth seldepth       = 0;
+};
+
 struct ThreadData {
     History                history;
     std::vector<PsqtState> psqt_states;
-    Value                  root_score;
+
+    std::vector<RootMove> root_moves;
 
     PsqtState& push_psqt_state() {
         psqt_states.push_back(psqt_states.back());
@@ -90,6 +115,18 @@ struct ThreadData {
 
     void pop_psqt_state() {
         psqt_states.pop_back();
+    }
+
+    RootMove& pv_move() {
+        return root_moves[0];
+    }
+
+    const RootMove& pv_move() const {
+        return root_moves[0];
+    }
+
+    Value root_score() const {
+        return pv_move().score;
     }
 };
 
@@ -179,9 +216,13 @@ private:
     ThreadType               m_thread_type;
     SearchLimits             m_search_limits;
     ThreadData               m_td;
+    usize                    m_pv_idx;
+    usize                    m_pv_start;
+    usize                    m_pv_end;
     std::atomic<bool>        m_stopped;
     std::atomic<bool>        m_exiting;
     std::array<u64, 64 * 64> m_node_counts;
+    Depth                    m_root_depth;
     Depth                    m_seldepth;
     bool                     m_in_nmp_verification = false;
 
@@ -195,6 +236,10 @@ private:
     Value evaluate(const Position& pos);
     Value adj_shuffle(const Position& pos, Value value);
     bool  check_tm_hard_limit();
+
+    void init_root_moves(const Position& root_position);
+
+    RootMove& find_root_move(Move move);
 };
 
 }  // namespace Search

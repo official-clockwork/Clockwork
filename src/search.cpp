@@ -99,7 +99,7 @@ Value Searcher::wait_for_score() {
     // Protect the read of root_score with a unique_lock.
     std::unique_lock lock_guard{mutex};
     // Return the final score from the main thread's search.
-    return m_workers[0]->get_thread_data().root_score;
+    return m_workers[0]->get_thread_data().root_score();
 }
 
 void Searcher::initialize(size_t thread_count) {
@@ -236,14 +236,23 @@ Move Worker::iterative_deepening(const Position& root_position) {
     constexpr usize                             SS_PADDING = 2;
     std::array<Stack, MAX_PLY + SS_PADDING + 1> ss;
 
-    Depth last_search_depth = 0;
-    Depth last_seldepth     = 0;
-    Value last_search_score = -VALUE_INF;
     Value base_search_score = -VALUE_INF;
-    Move  last_best_move    = Move::none();
-    PV    last_pv{};
 
     const auto print_info_line = [&] {
+        const auto& root_move = m_td.pv_move();
+
+        auto score = root_move.display_score;
+
+        auto upperbound = root_move.upperbound;
+        auto lowerbound = root_move.lowerbound;
+
+        if (root_move.score == -VALUE_INF) {
+            score = root_move.previous_score;
+
+            upperbound = false;
+            lowerbound = false;
+        }
+
         // Lambda to convert internal units score to uci score. TODO: add eval rescaling here once we get one
         auto format_score = [](Value score) {
             if (score < -VALUE_WIN && score > -VALUE_MATED) {
@@ -258,27 +267,47 @@ Move Worker::iterative_deepening(const Position& root_position) {
         // Get current time
         auto curr_time = time::Clock::now();
 
-        std::cout << std::dec << "info depth " << last_search_depth << " seldepth " << last_seldepth
-                  << " score " << format_score(last_search_score) << " nodes "
-                  << m_searcher.node_count() << " nps "
+        std::cout << std::dec << "info depth " << root_move.searched_depth << " seldepth "
+                  << root_move.seldepth << " score " << format_score(score);
+        if (upperbound) {
+            std::cout << " upperbound";
+        }
+        if (lowerbound) {
+            std::cout << " lowerbound";
+        }
+        std::cout << " nodes " << m_searcher.node_count() << " nps "
                   << time::nps(m_searcher.node_count(), curr_time - m_search_start);
-        if (last_search_depth >= 16) {
+        if (root_move.searched_depth >= 16) {
             std::cout << " hashfull " << m_searcher.tt.hashfull();
         }
         std::cout << " time " << time::cast<time::Milliseconds>(curr_time - m_search_start).count()
-                  << " pv " << last_pv << std::endl;
+                  << " pv " << root_move.pv << std::endl;
     };
+
+    init_root_moves(root_position);
+
+    m_pv_idx = 0;
+
+    m_pv_start = 0;
+    m_pv_end   = m_td.root_moves.size();
 
     m_node_counts.fill(0);
 
     for (Depth search_depth = 1; search_depth < MAX_PLY; search_depth++) {
         // Call search
-        m_seldepth  = 0;
+        m_root_depth = search_depth;
+        m_seldepth   = 0;
+
+        for (auto& root_move : m_td.root_moves) {
+            root_move.previous_score = root_move.score;
+        }
+
         Value alpha = -VALUE_INF, beta = VALUE_INF;
         Value delta = tuned::asp_window_delta;
         if (search_depth >= 5) {
-            alpha = last_search_score - delta;
-            beta  = last_search_score + delta;
+            const auto window_score = m_td.pv_move().window_score;
+            alpha                   = window_score - delta;
+            beta                    = window_score + delta;
         }
         Value score = -VALUE_INF;
 
@@ -291,6 +320,13 @@ Move Worker::iterative_deepening(const Position& root_position) {
             beta  = std::min(VALUE_INF, beta);
             score = search<IS_MAIN, true>(root_position, &ss[SS_PADDING], alpha, beta,
                                           asp_window_depth, 0, false);
+
+            // Sort the PVs searched so far. Effectively, find the current best PV and move it to the front.
+            std::stable_sort(m_td.root_moves.begin() + static_cast<isize>(m_pv_idx),
+                             m_td.root_moves.begin() + static_cast<isize>(m_pv_end),
+                             [](const RootMove& a, const RootMove& b) {
+                                 return a.score > b.score;
+                             });
 
             if (m_stopped) {
                 break;
@@ -311,25 +347,28 @@ Move Worker::iterative_deepening(const Position& root_position) {
 
             delta += delta;
         }
-        // If m_stopped is true, then the search exited early. Discard the results for this depth.
+
+        // Sort all PVs that have been searched, either partially or fully
+        std::stable_sort(m_td.root_moves.begin() + static_cast<isize>(m_pv_start),
+                         m_td.root_moves.begin() + static_cast<isize>(m_pv_idx) + 1,
+                         [](const RootMove& a, const RootMove& b) {
+                             return a.score > b.score;
+                         });
+
+        // If m_stopped is true, then the search exited early.
+        // It is safe to use results from this partial depth, as the previous depth's best move is always searched first.
         if (m_stopped) {
             break;
         }
 
-        // Store information only if the last iterative deepening search completed
-        last_search_depth = search_depth;
-        last_seldepth     = m_seldepth;
-        last_search_score = score;
-        last_pv           = ss[SS_PADDING].pv;
-        last_best_move    = last_pv.first_move();
         base_search_score = search_depth == 1 ? score : base_search_score;
-
-        m_td.root_score = last_search_score;
 
         // Check depth limit
         if (IS_MAIN && search_depth >= m_search_limits.depth_limit) {
             break;
         }
+
+        const auto last_best_move = m_td.pv_move().pv.first_move();
 
         const auto total_nodes = std::reduce(std::begin(m_node_counts), std::end(m_node_counts), 0);
         const auto best_move_nodes = m_node_counts[last_best_move.from_to()];
@@ -371,7 +410,7 @@ Move Worker::iterative_deepening(const Position& root_position) {
         print_info_line();
     }
 
-    return last_best_move;
+    return m_td.pv_move().pv.first_move();
 }
 
 template<bool IS_MAIN, bool PV_NODE>
@@ -827,6 +866,35 @@ Value Worker::search(
             return 0;
         }
 
+        if (ROOT_NODE) {
+            auto& root_move = find_root_move(m);
+
+            root_move.window_score = value;
+
+            if (moves_played == 1 || value > alpha) {
+                root_move.searched_depth = m_root_depth;
+                root_move.seldepth       = m_seldepth;
+
+                root_move.score         = value;
+                root_move.display_score = value;
+
+                root_move.upperbound = false;
+                root_move.lowerbound = false;
+
+                if (value <= alpha) {
+                    root_move.display_score = alpha;
+                    root_move.upperbound    = true;
+                } else if (value >= beta) {
+                    root_move.display_score = beta;
+                    root_move.lowerbound    = true;
+                }
+
+                root_move.pv.set(m, (ss + 1)->pv);
+            } else {
+                root_move.score = -VALUE_INF;
+            }
+        }
+
         if (value > best_value) {
             best_value = value;
 
@@ -1075,6 +1143,37 @@ Value Worker::adj_shuffle(const Position& pos, Value value) {
     value     = value * (200 - clock) / 200;
 
     return value;
+}
+
+void Worker::init_root_moves(const Position& root_position) {
+    m_td.root_moves.clear();
+    m_td.root_moves.reserve(256);
+
+    MoveGen movegen{root_position};
+
+    MoveList noisy{};
+    MoveList quiet{};
+
+    movegen.generate_moves(noisy, quiet);
+
+    const auto insert_root_moves = [&](const MoveList& moves) {
+        for (const auto move : moves) {
+            m_td.root_moves.emplace_back(move);
+        }
+    };
+
+    insert_root_moves(noisy);
+    insert_root_moves(quiet);
+}
+
+RootMove& Worker::find_root_move(Move move) {
+    for (auto& root_move : m_td.root_moves) {
+        if (root_move.pv.first_move() == move) {
+            return root_move;
+        }
+    }
+
+    assert(false);
 }
 }  // namespace Search
 }  // namespace Clockwork
