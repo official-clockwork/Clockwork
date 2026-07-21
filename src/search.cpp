@@ -288,6 +288,17 @@ Move Worker::iterative_deepening(const Position& root_position) {
                     break;
                 }
 
+                if (IS_MAIN && !m_searcher.settings.silent && m_searcher.settings.multipv == 1
+                    && (score <= alpha || score >= beta)) {
+                    const auto now = time::Clock::now();
+                    const auto elapsed_ms =
+                      std::chrono::duration_cast<std::chrono::milliseconds>(now - m_search_start)
+                        .count();
+                    if (elapsed_ms >= 1000) {
+                        print_info_line(m_pv_idx);
+                    }
+                }
+
                 if (score <= alpha) {
                     beta                = (alpha + beta) / 2;
                     alpha               = score - delta;
