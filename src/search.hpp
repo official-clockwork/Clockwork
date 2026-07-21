@@ -27,6 +27,7 @@ struct SearchSettings {
     i64   move_time  = -1;
     u64   hard_nodes = 0;
     u64   soft_nodes = 0;
+    usize multipv    = 1;
     bool  silent     = false;
     bool  datagen    = false;
 };
@@ -43,6 +44,11 @@ struct PV {
 public:
     void clear() {
         m_pv.clear();
+    }
+
+    void set(Move move) {
+        m_pv.clear();
+        m_pv.push_back(move);
     }
 
     void set(Move move, const PV& child_pv_line) {
@@ -78,10 +84,30 @@ struct SearchLimits {
     Depth           depth_limit;
 };
 
+struct RootMove {
+    explicit RootMove(Move move) {
+        pv.set(move);
+    }
+
+    Value score          = -VALUE_INF;
+    Value window_score   = -VALUE_INF;
+    Value previous_score = -VALUE_INF;
+    Value display_score  = -VALUE_INF;
+
+    bool upperbound = false;
+    bool lowerbound = false;
+
+    PV pv;
+
+    Depth searched_depth = 1;
+    Depth seldepth       = 0;
+};
+
 struct ThreadData {
     History                history;
     std::vector<PsqtState> psqt_states;
-    Value                  root_score;
+
+    std::vector<RootMove> root_moves;
 
     PsqtState& push_psqt_state() {
         psqt_states.push_back(psqt_states.back());
@@ -90,6 +116,18 @@ struct ThreadData {
 
     void pop_psqt_state() {
         psqt_states.pop_back();
+    }
+
+    RootMove& pv_move() {
+        return root_moves[0];
+    }
+
+    const RootMove& pv_move() const {
+        return root_moves[0];
+    }
+
+    Value root_score() const {
+        return pv_move().score;
     }
 };
 
@@ -178,10 +216,15 @@ private:
     std::thread              m_thread;
     ThreadType               m_thread_type;
     SearchLimits             m_search_limits;
+    usize                    m_multipv;
     ThreadData               m_td;
+    usize                    m_pv_idx;
+    usize                    m_pv_start;
+    usize                    m_pv_end;
     std::atomic<bool>        m_stopped;
     std::atomic<bool>        m_exiting;
     std::array<u64, 64 * 64> m_node_counts;
+    Depth                    m_root_depth;
     Depth                    m_seldepth;
     bool                     m_in_nmp_verification = false;
 
@@ -195,6 +238,33 @@ private:
     Value evaluate(const Position& pos);
     Value adj_shuffle(const Position& pos, Value value);
     bool  check_tm_hard_limit();
+
+    void init_root_moves(const Position& root_position);
+
+    void print_info_lines();
+    void print_info_line(usize pv_idx);
+
+    RootMove& get_root_move(Move move) {
+        for (auto& root_move : m_td.root_moves) {
+            if (root_move.pv.first_move() == move) {
+                return root_move;
+            }
+        }
+
+        assert(false && "Failed to find root move");
+        std::terminate();
+    }
+
+    bool is_legal_root_move(Move move) const {
+        for (usize i = m_pv_idx; i < m_td.root_moves.size(); ++i) {
+            const auto& root_move = m_td.root_moves[i];
+            if (root_move.pv.first_move() == move) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 }  // namespace Search

@@ -22,8 +22,9 @@ private:
     Position       m_position;
     RepetitionInfo m_repetition_info;
     // move this somewhere else later
-    TT   m_tt;
-    bool m_use_soft_nodes = false;
+    TT    m_tt;
+    bool  m_use_soft_nodes = false;
+    usize m_multipv        = 1;
 
     Search::Searcher searcher;
 
