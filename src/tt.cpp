@@ -1,5 +1,8 @@
 #include "tt.hpp"
 #include <algorithm>  // For std::min
+#include <cstring>
+#include <thread>
+#include <vector>
 
 namespace Clockwork {
 
@@ -172,11 +175,29 @@ void TT::resize(size_t mb) {
 }
 
 void TT::clear() {
-    for (size_t i = 0; i < m_size; ++i) {
-        m_clusters[i].data[0].store(0, std::memory_order_relaxed);
-        m_clusters[i].data[1].store(0, std::memory_order_relaxed);
-        m_clusters[i].data[2].store(0, std::memory_order_relaxed);
-        m_clusters[i].data[3].store(0, std::memory_order_relaxed);
+    constexpr size_t MB16 = 16 * 1024 * 1024;
+
+    if (m_size == 0) {
+        return;
+    }
+
+    size_t max_useful = std::max<size_t>(1, m_size * sizeof(TTClusterMemory) / MB16);
+    size_t thread_count =
+      std::min(max_useful, std::max<size_t>(1, std::thread::hardware_concurrency()));
+
+    auto clear_range = [this](size_t begin, size_t end) {
+        std::memset(&m_clusters[begin], 0, (end - begin) * sizeof(TTClusterMemory));
+    };
+
+    std::vector<std::thread> threads;
+    threads.reserve(thread_count - 1);
+    for (size_t t = 1; t < thread_count; ++t) {
+        threads.emplace_back(clear_range, m_size * t / thread_count,
+                             m_size * (t + 1) / thread_count);
+    }
+    clear_range(0, m_size / thread_count);
+    for (auto& thread : threads) {
+        thread.join();
     }
 }
 

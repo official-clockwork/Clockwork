@@ -40,23 +40,23 @@ struct TTCluster {
 };
 
 struct TTClusterMemory {
-    alignas(32) std::array<std::atomic<u64>, 4> data;
+    alignas(32) std::array<u64, 4> data;
 
-    [[nodiscard]] auto load() const -> TTCluster {
+    [[nodiscard]] auto load() -> TTCluster {
         std::array<u64, 4> out;
-        out[0] = this->data[0].load(std::memory_order_relaxed);
-        out[1] = this->data[1].load(std::memory_order_relaxed);
-        out[2] = this->data[2].load(std::memory_order_relaxed);
-        out[3] = this->data[3].load(std::memory_order_relaxed);
+        out[0] = std::atomic_ref{this->data[0]}.load(std::memory_order_relaxed);
+        out[1] = std::atomic_ref{this->data[1]}.load(std::memory_order_relaxed);
+        out[2] = std::atomic_ref{this->data[2]}.load(std::memory_order_relaxed);
+        out[3] = std::atomic_ref{this->data[3]}.load(std::memory_order_relaxed);
         return std::bit_cast<TTCluster>(out);
     }
 
     auto store(TTCluster cluster) {
         std::array<u64, 4> mem = std::bit_cast<std::array<u64, 4>>(cluster);
-        this->data[0].store(mem[0], std::memory_order_relaxed);
-        this->data[1].store(mem[1], std::memory_order_relaxed);
-        this->data[2].store(mem[2], std::memory_order_relaxed);
-        this->data[3].store(mem[3], std::memory_order_relaxed);
+        std::atomic_ref{this->data[0]}.store(mem[0], std::memory_order_relaxed);
+        std::atomic_ref{this->data[1]}.store(mem[1], std::memory_order_relaxed);
+        std::atomic_ref{this->data[2]}.store(mem[2], std::memory_order_relaxed);
+        std::atomic_ref{this->data[3]}.store(mem[3], std::memory_order_relaxed);
     }
 };
 
