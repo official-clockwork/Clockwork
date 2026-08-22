@@ -36,7 +36,7 @@ Move MovePicker::next() {
 
         [[fallthrough]];
     case Stage::ScoreNoisy:
-        score_moves(m_noisy);
+        score_moves<false>(m_noisy);
 
         m_stage         = Stage::EmitGoodNoisy;
         m_current_index = 0;
@@ -85,7 +85,7 @@ Move MovePicker::next() {
         [[fallthrough]];
 
     case Stage::ScoreQuiet:
-        score_moves(m_quiet);
+        score_moves<true>(m_quiet);
 
         m_stage         = Stage::EmitQuiet;
         m_current_index = 0;
@@ -126,12 +126,6 @@ void MovePicker::generate_moves() {
         m_movegen.generate_noisy_moves(m_noisy);
     } else {
         m_movegen.generate_moves(m_noisy, m_quiet);
-    }
-}
-
-void MovePicker::score_moves(MoveList& moves) {
-    for (usize i = 0; i < moves.size(); i++) {
-        m_scores[i] = score_move(moves[i]);
     }
 }
 
@@ -186,16 +180,19 @@ Move RandomMovePicker::next() {
     }
 }
 
+template<bool quiets>
 i32 MovePicker::score_move(Move move) const {
-    if (quiet_move(move)) {
+    if constexpr (quiets) {
         return m_history.get_quiet_stats(m_pos, move, m_ply, m_stack);
-    } else if (move.is_promotion()) {
-        return 500 + m_history.get_noisy_stats(m_pos, move);
     } else {
-        constexpr int MVV[6]   = {0, 800, 2400, 2400, 4800, 7200};
-        PieceType     captured = move.is_en_passant() ? PieceType::Pawn : m_pos.piece_at(move.to());
+        if (!move.is_promotion()) {
+            constexpr int MVV[6] = {0, 800, 2400, 2400, 4800, 7200};
+            PieceType captured = move.is_en_passant() ? PieceType::Pawn : m_pos.piece_at(move.to());
 
-        return MVV[static_cast<usize>(captured)] + m_history.get_noisy_stats(m_pos, move);
+            return MVV[static_cast<usize>(captured)] + m_history.get_noisy_stats(m_pos, move);
+        } else {
+            return 500 + m_history.get_noisy_stats(m_pos, move);
+        }
     }
 }
 

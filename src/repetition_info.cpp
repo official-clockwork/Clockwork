@@ -4,6 +4,7 @@
 #include "position.hpp"
 #include "rays.hpp"
 #include "util/types.hpp"
+#include <unordered_set>
 
 namespace Clockwork {
 
@@ -109,6 +110,32 @@ bool RepetitionInfo::has_game_cycle(const Position& pos, usize ply) {
 
             return piece.color() == pos.active_color();
         }
+    }
+
+    return false;
+}
+
+bool RepetitionInfo::has_repeated() {
+    const auto [last_key, last_reversible] = m_repetition_table.back();
+    if (!last_reversible) {
+        return false;
+    }
+
+    std::unordered_set<HashKey> key_set{};
+    key_set.insert(last_key);
+
+    for (usize idx = 1; idx < m_repetition_table.size(); idx++) {
+        const auto [key, is_reversible] = m_repetition_table[m_repetition_table.size() - idx - 1];
+
+        if (key_set.contains(key)) {
+            return true;
+        }
+
+        if (!is_reversible) {
+            return false;
+        }
+
+        key_set.insert(key);
     }
 
     return false;

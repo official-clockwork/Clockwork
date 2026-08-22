@@ -158,6 +158,13 @@ template<class T, class... Args>
 void make_unique_for_overwrite_huge_page(Args&&...) = delete;
 
 
+template<typename T>
+void advise_huge_pages(T* ptr, std::size_t size_bytes) {
+#ifdef __linux__
+    madvise(static_cast<void*>(ptr), size_bytes, MADV_HUGEPAGE);
+#endif
+}
+
 // Prefetching utilities
 inline void prefetch(const void* ptr) {
     __builtin_prefetch(ptr);

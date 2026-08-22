@@ -59,6 +59,11 @@ public:
         return {m_parameters.size(), m_pair_parameters.size()};
     }
 
+    void freeze_value_range(usize start, usize end);
+    void unfreeze_value_range(usize start, usize end);
+    void freeze_pair_range(usize start, usize end);
+    void unfreeze_pair_range(usize start, usize end);
+
     bool is_parameter_constant(usize i) const;
     bool is_pair_parameter_constant(usize i) const;
 
@@ -103,6 +108,13 @@ public:
         return m_constant;
     }
 
+    void freeze() {
+        m_constant = true;
+    }
+    void unfreeze() {
+        m_constant = false;
+    }
+
 private:
     usize m_index;
     f64   m_default_value;
@@ -139,6 +151,12 @@ public:
     bool constant() const {
         return m_constant;
     }
+    void freeze() {
+        m_constant = true;
+    }
+    void unfreeze() {
+        m_constant = false;
+    }
 
 private:
     usize m_index;
@@ -154,5 +172,32 @@ inline bool Globals::is_pair_parameter_constant(usize i) const {
     return m_pair_parameters[i]->constant();
 }
 
+inline void Globals::freeze_value_range(usize start, usize end) {
+    lock();
+    for (usize i = start; i < end && i < m_parameters.size(); ++i) {
+        m_parameters[i]->freeze();
+    }
+}
+
+inline void Globals::unfreeze_value_range(usize start, usize end) {
+    lock();
+    for (usize i = start; i < end && i < m_parameters.size(); ++i) {
+        m_parameters[i]->unfreeze();
+    }
+}
+
+inline void Globals::freeze_pair_range(usize start, usize end) {
+    lock();
+    for (usize i = start; i < end && i < m_pair_parameters.size(); ++i) {
+        m_pair_parameters[i]->freeze();
+    }
+}
+
+inline void Globals::unfreeze_pair_range(usize start, usize end) {
+    lock();
+    for (usize i = start; i < end && i < m_pair_parameters.size(); ++i) {
+        m_pair_parameters[i]->unfreeze();
+    }
+}
 
 }  // namespace Clockwork::Autograd

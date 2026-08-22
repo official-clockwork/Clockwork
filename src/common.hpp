@@ -8,17 +8,50 @@ namespace Clockwork {
 
 inline std::atomic<bool> g_frc = false;
 
-constexpr i32   MAX_PLY     = 256;
-constexpr Value VALUE_INF   = 32501;
-constexpr Value VALUE_MATED = 32500;
-constexpr Value VALUE_WIN   = 32000;
+constexpr i32   MAX_PLY      = 256;
+constexpr Value VALUE_INF    = 32501;
+constexpr Value VALUE_MATED  = 32500;
+constexpr Value VALUE_TB_WIN = 31500;
+constexpr Value VALUE_WIN    = 31000;
 
-constexpr bool is_mate_score(Value value) {
+constexpr bool is_decisive_score(Value value) {
     return std::abs(value) >= VALUE_WIN;
 }
 
-constexpr bool is_being_mated_score(Value value) {
+constexpr bool is_win_score(Value value) {
+    return value >= VALUE_WIN;
+}
+
+constexpr bool is_loss_score(Value value) {
     return value <= -VALUE_WIN;
+}
+
+constexpr bool is_mate_score(Value value) {
+    return std::abs(value) > VALUE_TB_WIN;
+}
+
+constexpr bool is_mating_score(Value value) {
+    return value > VALUE_TB_WIN && value <= VALUE_MATED;
+}
+
+constexpr bool is_being_mated_score(Value value) {
+    return value < -VALUE_TB_WIN && value >= -VALUE_MATED;
+}
+
+constexpr bool is_tb_score(Value value) {
+    return is_decisive_score(value) && !is_mate_score(value);
+}
+
+constexpr bool is_tb_win_score(Value value) {
+    return value >= VALUE_WIN && value <= VALUE_TB_WIN;
+}
+
+constexpr bool is_tb_loss_score(Value value) {
+    return value <= -VALUE_WIN && value >= -VALUE_TB_WIN;
+}
+
+constexpr bool is_valid_score(Value value) {
+    return value != -VALUE_INF;
 }
 
 enum class Color {

@@ -19,6 +19,7 @@ public:
 
     bool detect_repetition(usize root_ply);
     bool has_game_cycle(const Position& pos, usize ply);
+    bool has_repeated();
 
 private:
     std::vector<std::pair<HashKey, bool>> m_repetition_table;

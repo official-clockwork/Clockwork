@@ -8,6 +8,7 @@
 #include "tuning/optim.hpp"
 #include "tuning/value.hpp"
 
+#include "util/mem.hpp"
 #include "util/pretty.hpp"
 #include "util/types.hpp"
 
@@ -17,7 +18,6 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -27,19 +27,213 @@
 using namespace Clockwork;
 using namespace Clockwork::Autograd;
 
+void print_params();
+
+f64 find_optimal_k(const std::vector<Position>& positions, const std::vector<f64>& targets) {
+    constexpr f64 K_MIN = 0.0015;
+    constexpr f64 K_MAX = 0.0035;
+
+    constexpr int COARSE_SAMPLES = 256;
+    constexpr int KEEP_BEST      = 3;
+    constexpr int LOCAL_SAMPLES  = 64;
+    constexpr int REFINEMENTS    = 3;
+
+    // Adjust this to your fixed point representation
+    constexpr f64 VALUE_SCALE = 1.0;
+
+
+    // ------------------------------------------------------------
+    // Fast sigmoid
+    // ------------------------------------------------------------
+
+    auto sigmoid = [](f64 x) -> f64 {
+        return 1.0 / (1.0 + std::exp(-x));
+    };
+
+
+    // ------------------------------------------------------------
+    // Build cache
+    // ------------------------------------------------------------
+
+    std::vector<f64> white_pov_cache;
+    white_pov_cache.reserve(positions.size());
+
+    for (const auto& pos : positions) {
+
+        Score output = evaluate_white_pov(pos);
+
+        // Force evaluation before graph destruction
+        i32 raw = output.get_value();
+
+        white_pov_cache.push_back(static_cast<f64>(raw) * VALUE_SCALE);
+
+        Graph::get().cleanup();
+    }
+
+
+    // ------------------------------------------------------------
+    // Cheap evaluator
+    // ------------------------------------------------------------
+
+    auto evaluate_loss = [&](f64 K) -> f64 {
+        f64 loss = 0.0;
+
+        for (size_t i = 0; i < white_pov_cache.size(); ++i) {
+
+            f64 p = sigmoid(white_pov_cache[i] * K);
+
+            f64 e = p - targets[i];
+
+            loss += e * e;
+        }
+
+        return loss / white_pov_cache.size();
+    };
+
+
+    struct Sample {
+        f64 k;
+        f64 loss;
+    };
+
+
+    auto sample_grid = [&](f64 left, f64 right, int count) {
+        std::vector<Sample> samples;
+        samples.reserve(count);
+
+        for (int i = 0; i < count; i++) {
+
+            f64 t = static_cast<f64>(i) / (count - 1);
+
+            f64 k = left + t * (right - left);
+
+            samples.push_back({k, evaluate_loss(k)});
+        }
+
+        std::sort(samples.begin(), samples.end(), [](const Sample& a, const Sample& b) {
+            return a.loss < b.loss;
+        });
+
+        return samples;
+    };
+
+
+    struct Region {
+        f64 center;
+        f64 radius;
+    };
+
+
+    // ------------------------------------------------------------
+    // Initial search
+    // ------------------------------------------------------------
+
+    auto initial = sample_grid(K_MIN, K_MAX, COARSE_SAMPLES);
+
+
+    std::vector<Region> regions;
+
+    f64 initial_radius = (K_MAX - K_MIN) / (COARSE_SAMPLES - 1);
+
+
+    for (int i = 0; i < KEEP_BEST; i++) {
+        regions.push_back({initial[i].k, initial_radius});
+    }
+
+
+    // ------------------------------------------------------------
+    // Refinement
+    // ------------------------------------------------------------
+
+    for (int r = 0; r < REFINEMENTS; r++) {
+
+        std::vector<Sample> candidates;
+
+        for (const auto& region : regions) {
+
+            auto local = sample_grid(region.center - region.radius, region.center + region.radius,
+                                     LOCAL_SAMPLES);
+
+            candidates.insert(candidates.end(), local.begin(), local.end());
+        }
+
+
+        std::sort(candidates.begin(), candidates.end(), [](const Sample& a, const Sample& b) {
+            return a.loss < b.loss;
+        });
+
+
+        f64 spacing = std::abs(candidates[1].k - candidates[0].k);
+
+
+        regions.clear();
+
+        for (int i = 0; i < KEEP_BEST; i++) {
+
+            regions.push_back({candidates[i].k, spacing * 2.0});
+        }
+
+
+        std::cout << "refinement " << r + 1 << ": K=" << candidates[0].k
+                  << " loss=" << candidates[0].loss << "\n";
+    }
+
+
+    return regions[0].center;
+}
+
 int main() {
+
+    // Todo: make these CLI-specifiable
+    const size_t batch_size       = 16 * 16384;
+    const size_t micro_batch_size = 160;
 
     std::vector<Position> positions;
     std::vector<f64>      results;
 
     const std::vector<std::string> fenFiles = {
-      "data/dfrcv1.txt",   "data/dfrcv0.txt",    "data/v3.txt",         "data/v4_5knpm.txt",
-      "data/v4_8knpm.txt", "data/v4_16knpm.txt", "data/v4.1_5knpm.txt", "data/v4.1_8knpm.txt",
+      "data/v5_25knpm.txt",   "data/v4_8knpm.txt", "data/v4_16knpm.txt", "data/v4.1_8knpm.txt",
+      "data/v4.1_16knpm.txt", "data/dfrcv2.txt",   "data/dfrcv3.txt",
     };
 
-    const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency() / 2);
+    const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency());
 
     std::cout << "Running on " << thread_count << " threads\n";
+
+    // Pre-pass: Count total lines to reserve memory
+    size_t total_positions_estimate = 0;
+    auto   count_lines              = [](const std::string& filename) -> size_t {
+        std::ifstream f(filename, std::ios::binary);
+        if (!f) {
+            return 0;
+        }
+        constexpr size_t  buffer_size = 128 * 1024;
+        std::vector<char> buffer(buffer_size);
+        size_t            lines = 0;
+        while (f.read(buffer.data(), buffer_size) || f.gcount() > 0) {
+            lines +=
+              static_cast<size_t>(std::count(buffer.data(), buffer.data() + f.gcount(), '\n'));
+            if (!f) {
+                break;
+            }
+        }
+        return lines;
+    };
+
+    struct RawEntry {
+        std::string line;
+        std::string filename;
+    };
+
+    std::vector<RawEntry> raw_lines;
+
+    std::cout << "Counting positions..." << std::endl;
+    for (const auto& filename : fenFiles) {
+        total_positions_estimate += count_lines(filename);
+    }
+    std::cout << "Estimated positions: " << total_positions_estimate << "\n";
+
+    raw_lines.reserve(total_positions_estimate);
 
     for (const auto& filename : fenFiles) {
         std::ifstream fenFile(filename);
@@ -47,41 +241,87 @@ int main() {
             std::cerr << "Error opening " << filename << "\n";
             return 1;
         }
-
         std::string line;
         while (std::getline(fenFile, line)) {
-            size_t pos = line.find(';');
-            if (pos == std::string::npos) {
-                std::cerr << "Bad line in " << filename << ": " << line << "\n";
-                continue;
-            }
-
-            std::string fen    = line.substr(0, pos);
-            auto        parsed = Position::parse(fen);
-
-            if (!parsed) {
-                std::cerr << "Failed to parse FEN in " << filename << ": " << fen << "\n";
-                continue;
-            }
-
-            positions.push_back(*parsed);
-
-            std::string result = line.substr(pos + 1);
-            result.erase(std::remove_if(result.begin(), result.end(), ::isspace), result.end());
-
-            if (result == "w") {
-                results.push_back(1.0);
-            } else if (result == "d") {
-                results.push_back(0.5);
-            } else if (result == "b") {
-                results.push_back(0.0);
-            } else {
-                std::cerr << "Invalid result in " << filename << ": " << line << "\n";
-            }
+            raw_lines.push_back({std::move(line), filename});
         }
     }
 
+    std::cout << "Read " << raw_lines.size() << " raw lines. Parsing...\n";
+
+    const size_t N = raw_lines.size();
+
+    positions.resize(N);
+    results.resize(N, -1.0);
+
+    advise_huge_pages(positions.data(), positions.capacity() * sizeof(Position));
+    advise_huge_pages(results.data(), results.capacity() * sizeof(f64));
+
+    {
+        std::vector<std::thread> parse_threads;
+        parse_threads.reserve(thread_count);
+
+        for (u32 t = 0; t < thread_count; ++t) {
+            parse_threads.emplace_back([&, t]() {
+                for (size_t i = t; i < N; i += thread_count) {
+                    const auto& [line, filename] = raw_lines[i];
+
+                    size_t sep = line.find(';');
+                    if (sep == std::string::npos) {
+                        std::cerr << "Bad line in " << filename << ": " << line << "\n";
+                        continue;
+                    }
+
+                    auto parsed = Position::parse(line.substr(0, sep));
+                    if (!parsed) {
+                        std::cerr << "Failed to parse FEN in " << filename << ": "
+                                  << line.substr(0, sep) << "\n";
+                        continue;
+                    }
+
+                    std::string result = line.substr(sep + 1);
+                    result.erase(std::remove_if(result.begin(), result.end(), ::isspace),
+                                 result.end());
+
+                    f64 r;
+                    if (result == "w") {
+                        r = 1.0;
+                    } else if (result == "d") {
+                        r = 0.5;
+                    } else if (result == "b") {
+                        r = 0.0;
+                    } else {
+                        std::cerr << "Invalid result in " << filename << ": " << line << "\n";
+                        continue;
+                    }
+
+                    positions[i] = *parsed;
+                    results[i]   = r;
+                }
+            });
+        }
+        for (auto& th : parse_threads) {
+            th.join();
+        }
+    }
+
+    {
+        size_t write = 0;
+        for (size_t read = 0; read < N; ++read) {
+            if (results[read] >= 0.0) {
+                if (write != read) {
+                    positions[write] = std::move(positions[read]);
+                    results[write]   = results[read];
+                }
+                ++write;
+            }
+        }
+        positions.resize(write);
+        results.resize(write);
+    }
+
     std::cout << "Loaded " << positions.size() << " FENs.\n";
+
     if (positions.empty()) {
         return 1;
     }
@@ -93,87 +333,129 @@ int main() {
     Parameters current_parameter_values = Graph::get().get_all_parameter_values();
 
     // Uncomment for zero tune: Overwrite them all with zeros.
-    current_parameter_values = Parameters::zeros(parameter_count);
+    current_parameter_values = Parameters::rand_init(parameter_count);
 
     // The optimizer will now start with all-zero parameters
-    AdamW optim(parameter_count, 10, 0.9, 0.999, 1e-8, 0.0);
+    AdamW optim(parameter_count, 1, 0.9, 0.999, 1e-8, 0.0);
+
 #ifdef PROFILE_RUN
     const i32 epochs = 8;
 #else
-    const i32 epochs = 1000;
+    const i32 epochs = 450;
 #endif
-    const f64    K          = 1.0 / 400;
-    const size_t batch_size = 16 * 16384;
+
+    const f64 K = find_optimal_k(positions, results);
+
+    std::cout << "K = " << K << "\n";
 
     std::mt19937        rng(std::random_device{}());
     std::vector<size_t> indices(positions.size());
-    // Initialize indices 1..N
+
+    // Initialize indices 0..N-1
     std::iota(indices.begin(), indices.end(), 0);
+
+    advise_huge_pages(indices.data(), indices.size() * sizeof(size_t));
+
     const size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
-    // Shared gradient accumulator
-    Parameters batch_gradients = Parameters::zeros(parameter_count);
+    // Per-thread gradient buffers for lock-free accumulation
+    std::vector<Parameters> thread_grads(thread_count, Parameters::zeros(parameter_count));
 
-    std::mutex mutex;
+    for (auto& tg : thread_grads) {
+        advise_huge_pages(tg.parameters.data(), tg.parameters.size() * sizeof(f64));
+        advise_huge_pages(tg.pair_parameters.data(), tg.pair_parameters.size() * sizeof(f64x2));
+    }
+
+    // Running batch loss accumulator
+    std::atomic<f64> running_loss_accum{0.0};
 
     std::barrier epoch_barrier{thread_count + 1};
+
     std::barrier batch_barrier{thread_count + 1, [&]() noexcept {
-                                   // Single-thread optimizer update
-                                   optim.step(current_parameter_values, batch_gradients);
-                                   batch_gradients = Parameters::zeros(parameter_count);
+                                   // Reduce all thread gradients into thread_grads[0]
+                                   for (u32 i = 1; i < thread_count; ++i) {
+                                       thread_grads[0].accumulate(thread_grads[i]);
+                                   }
+
+                                   // Apply optimizer
+                                   optim.step(current_parameter_values, thread_grads[0]);
                                }};
 
     // Spawn worker threads
     for (u32 t = 0; t < thread_count; ++t) {
         std::thread([&, t]() {
-            // Each thread uses its own Graph arena
+            // Pre-allocated buffers (reused across micro-batches)
+            std::vector<ValueHandle> outputs;
+            std::vector<f64>         targets;
+
+            outputs.reserve(micro_batch_size);
+            targets.reserve(micro_batch_size);
+
             for (int epoch = 0; epoch < epochs; ++epoch) {
 
                 epoch_barrier.arrive_and_wait();
 
                 for (size_t batch_start = 0; batch_start < positions.size();
                      batch_start += batch_size) {
+
                     size_t batch_end       = std::min(batch_start + batch_size, positions.size());
                     size_t this_batch_size = batch_end - batch_start;
 
-                    size_t sub_size = (this_batch_size + thread_count - 1) / thread_count;
-
+                    size_t sub_size  = (this_batch_size + thread_count - 1) / thread_count;
                     size_t sub_start = batch_start + sub_size * t;
                     size_t sub_end   = std::min(sub_start + sub_size, batch_end);
 
+                    // Clear thread-local gradients for this batch
+                    auto& my_grads = thread_grads[t];
+
+                    std::fill(my_grads.parameters.begin(), my_grads.parameters.end(), 0.0);
+
+                    for (auto& p : my_grads.pair_parameters) {
+                        p = f64x2::zero();
+                    }
+
                     Graph::get().copy_parameter_values(current_parameter_values);
 
-                    std::vector<ValueHandle> outputs;
-                    std::vector<f64>         targets;
-                    outputs.reserve(sub_end - sub_start);
-                    targets.reserve(sub_end - sub_start);
+                    // Thread-local scalar loss accumulator
+                    f64 local_batch_loss = 0.0;
 
-                    // Forward
-                    for (size_t j = sub_start; j < sub_end; ++j) {
-                        size_t idx = indices[j];
+                    // Process micro-batches to keep tape small
+                    for (size_t mb_start = sub_start; mb_start < sub_end;
+                         mb_start += micro_batch_size) {
 
-                        auto        y = results[idx];
-                        ValueHandle v = (evaluate_white_pov(positions[idx]) * K).sigmoid();
-                        outputs.push_back(v);
-                        targets.push_back(y);
+                        size_t mb_end = std::min(mb_start + micro_batch_size, sub_end);
+
+                        outputs.clear();
+                        targets.clear();
+
+                        // Forward pass for this micro-batch
+                        for (size_t j = mb_start; j < mb_end; ++j) {
+
+                            size_t idx = indices[j];
+                            outputs.push_back((evaluate_white_pov(positions[idx]) * K).sigmoid());
+                            targets.push_back(results[idx]);
+                        }
+
+                        // Backward pass
+                        ValueHandle loss = mse<f64, Reduction::Sum>(outputs, targets);
+
+                        local_batch_loss += loss.get_value();
+
+                        ValueHandle scaled_loss =
+                          loss * ValueHandle::create(1.0 / double(this_batch_size));
+
+                        Graph::get().backward();
+
+                        // Accumulate to thread-local buffer (no lock needed)
+                        my_grads.accumulate(Graph::get().get_all_parameter_gradients());
+
+                        Graph::get().cleanup();
+                        Graph::get().zero_grad();
                     }
 
-                    // Backward
-                    ValueHandle loss = mse<f64, Reduction::Sum>(outputs, targets)
-                                     * ValueHandle::create(1.0 / double(this_batch_size));
-
-                    Graph::get().backward();
-
-                    Parameters grads = Graph::get().get_all_parameter_gradients();
-
-                    // Accumulate
-                    {
-                        std::lock_guard guard(mutex);
-                        batch_gradients.accumulate(grads);
-                    }
-
-                    Graph::get().cleanup();
-                    Graph::get().zero_grad();
+                    // Publish loss once per batch (very low overhead)
+                    running_loss_accum.fetch_add(local_batch_loss / double(this_batch_size),
+                                                 std::memory_order_relaxed);
 
                     batch_barrier.arrive_and_wait();
                 }
@@ -181,8 +463,38 @@ int main() {
         }).detach();
     }
 
+    // Freeze all parameters before tuning, except for material parameters.
+    ParameterCountInfo counts = Globals::get().get_parameter_counts();
+
+    // Freeze all value
+    Globals::get().freeze_value_range(0, counts.parameter_count);
+
+    // Freeze all pair, except first 5 (material parameters)
+    Globals::get().freeze_pair_range(5, counts.pair_parameter_count);
+
     // Epoch loop
     for (int epoch = 0; epoch < epochs; ++epoch) {
+
+        if (epoch == 24) {
+            // Unfreeze all parameters after 24 epochs. Dont unfreeze king safety just yet
+            Globals::get().unfreeze_value_range(0, counts.parameter_count);
+            Globals::get().unfreeze_pair_range(
+              0, counts.pair_parameter_count - (28 + 7 + 28 + 5 + 5 + 1 + 1 + 1 + 1 + 1 + 2));
+            optim.set_lr(.1);
+        }
+        if (epoch == 96) {
+            // Unfreeze king safety parameters after 96 epochs
+            Globals::get().unfreeze_pair_range(0, counts.pair_parameter_count);
+        }
+
+
+        if (epoch < 24) {
+            optim.set_lr(20.0 * std::pow(0.0333, double(epoch) / 24.0));
+        } else if (epoch < 72) {
+            optim.set_lr(2 * std::pow(0.0667, double(epoch - 24) / 28.0));
+        } else {
+            optim.set_lr(std::pow(0.1, double(epoch - 72) / 128.0));
+        }
 
         std::cout << "Epoch " << epoch + 1 << "/" << epochs << "\n";
 
@@ -193,8 +505,12 @@ int main() {
         epoch_barrier.arrive_and_wait();
 
         for (size_t bi = 0, bstart = 0; bstart < positions.size(); bstart += batch_size, ++bi) {
+
             batch_barrier.arrive_and_wait();
-            print_progress(bi + 1, total_batches);
+
+            const f64 running_loss = running_loss_accum.exchange(0.0, std::memory_order_relaxed);
+
+            print_progress(bi + 1, total_batches, running_loss);
         }
 
         std::cout << "\n";
@@ -204,145 +520,201 @@ int main() {
 
         Graph::get().cleanup();
         Graph::get().zero_grad();
+
 #ifndef PROFILE_RUN
-        std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
-        std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
-        std::cout << "inline const PParam BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
-        std::cout << "inline const PParam ROOK_MAT   = " << ROOK_MAT << ";" << std::endl;
-        std::cout << "inline const PParam QUEEN_MAT  = " << QUEEN_MAT << ";" << std::endl;
-        std::cout << "inline const PParam TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
-        std::cout << std::endl;
-
-        std::cout << "inline const PParam BISHOP_PAIR_VAL   = " << BISHOP_PAIR_VAL << ";"
-                  << std::endl;
-        std::cout << "inline const PParam ROOK_OPEN_VAL     = " << ROOK_OPEN_VAL << ";"
-                  << std::endl;
-        std::cout << "inline const PParam ROOK_SEMIOPEN_VAL = " << ROOK_SEMIOPEN_VAL << ";"
-                  << std::endl;
-        std::cout << std::endl;
-        std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";"
-                  << std::endl;
-        std::cout << std::endl;
-
-        std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
-                  << std::endl;
-
-        std::cout << "inline const PParam OUTPOST_KNIGHT_VAL    = " << OUTPOST_KNIGHT_VAL << ";"
-                  << std::endl;
-        std::cout << "inline const PParam OUTPOST_BISHOP_VAL    = " << OUTPOST_BISHOP_VAL << ";"
-                  << std::endl;
-
-        std::cout << std::endl;
-
-        std::cout << "inline const PParam PAWN_PUSH_THREAT_KNIGHT = " << PAWN_PUSH_THREAT_KNIGHT
-                  << ";" << std::endl;
-        std::cout << "inline const PParam PAWN_PUSH_THREAT_BISHOP = " << PAWN_PUSH_THREAT_BISHOP
-                  << ";" << std::endl;
-        std::cout << "inline const PParam PAWN_PUSH_THREAT_ROOK   = " << PAWN_PUSH_THREAT_ROOK
-                  << ";" << std::endl;
-        std::cout << "inline const PParam PAWN_PUSH_THREAT_QUEEN  = " << PAWN_PUSH_THREAT_QUEEN
-                  << ";" << std::endl;
-        std::cout << std::endl;
-
-        auto print_table = [](const std::string& name, const auto& table) {
-            std::cout << "inline const std::array<PParam, " << table.size() << "> " << name
-                      << " = {" << std::endl
-                      << "   ";
-            for (const auto& val : table) {
-                std::cout << " " << val << ",";
-            }
-            std::cout << std::endl << "};" << std::endl;
-        };
-
-        print_table("PAWN_PHALANX", PAWN_PHALANX);
-        print_table("DEFENDED_PAWN", DEFENDED_PAWN);
-        print_table("PASSED_PAWN", PASSED_PAWN);
-        print_table("DEFENDED_PASSED_PUSH", DEFENDED_PASSED_PUSH);
-        print_table("BLOCKED_PASSED_PAWN", BLOCKED_PASSED_PAWN);
-        std::cout << std::endl;
-
-        print_table("FRIENDLY_KING_PASSED_PAWN_DISTANCE", FRIENDLY_KING_PASSED_PAWN_DISTANCE);
-        print_table("ENEMY_KING_PASSED_PAWN_DISTANCE", ENEMY_KING_PASSED_PAWN_DISTANCE);
-        std::cout << std::endl;
-
-        print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
-        print_table("BISHOP_MOBILITY", BISHOP_MOBILITY);
-        print_table("ROOK_MOBILITY", ROOK_MOBILITY);
-        print_table("QUEEN_MOBILITY", QUEEN_MOBILITY);
-        print_table("KING_MOBILITY", KING_MOBILITY);
-        std::cout << std::endl;
-
-        print_table("KNIGHT_KING_RING", KNIGHT_KING_RING);
-        print_table("BISHOP_KING_RING", BISHOP_KING_RING);
-        print_table("ROOK_KING_RING", ROOK_KING_RING);
-        print_table("QUEEN_KING_RING", QUEEN_KING_RING);
-        std::cout << std::endl;
-        print_table("PT_INNER_RING_ATTACKS", PT_INNER_RING_ATTACKS);
-        print_table("PT_OUTER_RING_ATTACKS", PT_OUTER_RING_ATTACKS);
-        std::cout << std::endl;
-
-        std::cout << "inline const PParam PAWN_THREAT_KNIGHT = " << PAWN_THREAT_KNIGHT << ";"
-                  << std::endl;
-        std::cout << "inline const PParam PAWN_THREAT_BISHOP = " << PAWN_THREAT_BISHOP << ";"
-                  << std::endl;
-        std::cout << "inline const PParam PAWN_THREAT_ROOK   = " << PAWN_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam PAWN_THREAT_QUEEN  = " << PAWN_THREAT_QUEEN << ";"
-                  << std::endl;
-        std::cout << std::endl;
-
-        std::cout << "inline const PParam KNIGHT_THREAT_BISHOP = " << KNIGHT_THREAT_BISHOP << ";"
-                  << std::endl;
-        std::cout << "inline const PParam KNIGHT_THREAT_ROOK   = " << KNIGHT_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam KNIGHT_THREAT_QUEEN  = " << KNIGHT_THREAT_QUEEN << ";"
-                  << std::endl;
-        std::cout << std::endl;
-
-        std::cout << "inline const PParam BISHOP_THREAT_KNIGHT = " << BISHOP_THREAT_KNIGHT << ";"
-                  << std::endl;
-        std::cout << "inline const PParam BISHOP_THREAT_ROOK   = " << BISHOP_THREAT_ROOK << ";"
-                  << std::endl;
-        std::cout << "inline const PParam BISHOP_THREAT_QUEEN  = " << BISHOP_THREAT_QUEEN << ";"
-                  << std::endl;
-        std::cout << std::endl;
-
-        print_table("BISHOP_PAWNS", BISHOP_PAWNS);
-        std::cout << std::endl;
-
-        auto printPsqtArray = [](const std::string& name, const auto& arr) {
-            std::cout << "inline const std::array<PParam, " << arr.size() << "> " << name << " = {"
-                      << std::endl;
-            for (std::size_t i = 0; i < arr.size(); ++i) {
-                if ((i & 7) == 0) {
-                    std::cout << "    ";
-                }
-                std::stringstream ss;
-                ss << arr[i] << ",";
-                std::cout << std::left << std::setw(16) << ss.str();
-                if ((i & 7) == 7) {
-                    std::cout << "//" << std::endl;
-                }
-            }
-            std::cout << "};" << std::endl;
-        };
-
-        printPsqtArray("PAWN_PSQT", PAWN_PSQT);
-        printPsqtArray("KNIGHT_PSQT", KNIGHT_PSQT);
-        printPsqtArray("BISHOP_PSQT", BISHOP_PSQT);
-        printPsqtArray("ROOK_PSQT", ROOK_PSQT);
-        printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
-        printPsqtArray("KING_PSQT", KING_PSQT);
-        std::cout << std::endl;
+        print_params();
 #endif
+
         const auto end = time::Clock::now();
+
         std::cout << "// Epoch duration: " << time::cast<time::FloatSeconds>(end - start).count()
                   << "s\n";
-
-        if (epoch > 5) {
-            optim.set_lr(optim.get_lr() * 0.99);
-        }
     }
 
     return 0;
+}
+
+void print_params() {
+
+    auto print_table = [](const std::string& name, const auto& table) {
+        std::cout << "inline const std::array<PParam, " << table.size() << "> " << name << " = {"
+                  << std::endl
+                  << "   ";
+        for (const auto& val : table) {
+            std::cout << " " << val << ",";
+        }
+        std::cout << std::endl << "};" << std::endl;
+    };
+
+    auto printPsqtArray = [](const std::string& name, const auto& arr) {
+        std::cout << "inline const std::array<PParam, " << arr.size() << "> " << name << " = {"
+                  << std::endl;
+        for (std::size_t i = 0; i < arr.size(); ++i) {
+            if ((i & 7) == 0) {
+                std::cout << "    ";
+            }
+            std::stringstream ss;
+            ss << arr[i] << ",";
+            std::cout << std::left << std::setw(16) << ss.str();
+            if ((i & 7) == 7) {
+                std::cout << "//" << std::endl;
+            }
+        }
+        std::cout << "};" << std::endl;
+    };
+
+    auto print_2d_array = [](const std::string& name, const auto& arr) {
+        std::cout << "inline const std::array<std::array<PParam, " << arr[0].size() << ">, "
+                  << arr.size() << "> " << name << " = {{" << std::endl;
+        for (const auto& subarr : arr) {
+            std::cout << "  {{";
+            for (const auto& val : subarr) {
+                std::cout << " " << val << ",";
+            }
+            std::cout << " }}," << std::endl;
+        }
+        std::cout << "}};" << std::endl;
+    };
+
+    auto print_sigmoid = [](const std::string& name, const auto& sigmoid, const i32 templ) {
+        PairHandle a_h = static_cast<PairHandle>(sigmoid.a());
+        PairHandle c_h = static_cast<PairHandle>(sigmoid.c());
+        std::cout << "inline TunableSigmoid<" << templ << "> " << name << "(\n"
+                  << "\t" << std::lround(a_h.first()) << ", " << std::lround(a_h.second()) << ", "
+                  << std::lround(c_h.first()) << ", " << std::lround(c_h.second()) << "\n"
+                  << ");\n";
+    };
+
+    std::cout << "inline const PParam PAWN_MAT   = " << PAWN_MAT << ";" << std::endl;
+    std::cout << "inline const PParam KNIGHT_MAT = " << KNIGHT_MAT << ";" << std::endl;
+    std::cout << "inline const PParam BISHOP_MAT = " << BISHOP_MAT << ";" << std::endl;
+    std::cout << "inline const PParam ROOK_MAT   = " << ROOK_MAT << ";" << std::endl;
+    std::cout << "inline const PParam QUEEN_MAT  = " << QUEEN_MAT << ";" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "inline const PParam TEMPO_VAL  = " << TEMPO_VAL << ";" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "inline const PParam BISHOP_XRAY_PAWNS   = " << BISHOP_XRAY_PAWNS << ";"
+              << std::endl;
+    std::cout << "inline const PParam BISHOP_PAIR_VAL   = " << BISHOP_PAIR_VAL << ";" << std::endl;
+    std::cout << "inline const PParam ROOK_OPEN_VAL     = " << ROOK_OPEN_VAL << ";" << std::endl;
+    std::cout << "inline const PParam ROOK_SEMIOPEN_VAL = " << ROOK_SEMIOPEN_VAL << ";"
+              << std::endl;
+    std::cout << "inline const PParam MINOR_BEHIND_PAWN = " << MINOR_BEHIND_PAWN << ";"
+              << std::endl;
+    std::cout << "inline const PParam RESTRICTED_SQUARES = " << RESTRICTED_SQUARES << ";"
+              << std::endl;
+
+    std::cout << std::endl;
+    std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";" << std::endl;
+    std::cout << "inline const PParam ISOLATED_PAWN_VAL = " << ISOLATED_PAWN_VAL << ";"
+              << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "inline const PParam POTENTIAL_CHECKER_VAL = " << POTENTIAL_CHECKER_VAL << ";"
+              << std::endl;
+
+    std::cout << "inline const PParam OUTPOST_KNIGHT_VAL    = " << OUTPOST_KNIGHT_VAL << ";"
+              << std::endl;
+    std::cout << "inline const PParam OUTPOST_BISHOP_VAL    = " << OUTPOST_BISHOP_VAL << ";"
+              << std::endl;
+
+    std::cout << std::endl;
+
+    std::cout << "inline const PParam PAWN_PUSH_THREAT_KNIGHT = " << PAWN_PUSH_THREAT_KNIGHT << ";"
+              << std::endl;
+    std::cout << "inline const PParam PAWN_PUSH_THREAT_BISHOP = " << PAWN_PUSH_THREAT_BISHOP << ";"
+              << std::endl;
+    std::cout << "inline const PParam PAWN_PUSH_THREAT_ROOK   = " << PAWN_PUSH_THREAT_ROOK << ";"
+              << std::endl;
+    std::cout << "inline const PParam PAWN_PUSH_THREAT_QUEEN  = " << PAWN_PUSH_THREAT_QUEEN << ";"
+              << std::endl;
+    std::cout << std::endl;
+
+    print_table("PAWN_PHALANX", PAWN_PHALANX);
+    print_table("DEFENDED_PAWN", DEFENDED_PAWN);
+    print_table("PASSED_PAWN", PASSED_PAWN);
+    print_table("PASSED_CLEAR_STOPPERS", PASSED_CLEAR_STOPPERS);
+    print_table("PASSED_CLEAR_FORWARD", PASSED_CLEAR_FORWARD);
+    print_table("DEFENDED_PASSED_PUSH", DEFENDED_PASSED_PUSH);
+    print_table("BLOCKED_PASSED_PAWN", BLOCKED_PASSED_PAWN);
+    std::cout << std::endl;
+
+    print_table("FRIENDLY_KING_PASSED_PAWN_DISTANCE", FRIENDLY_KING_PASSED_PAWN_DISTANCE);
+    print_table("ENEMY_KING_PASSED_PAWN_DISTANCE", ENEMY_KING_PASSED_PAWN_DISTANCE);
+    std::cout << std::endl;
+
+    print_table("KNIGHT_MOBILITY", KNIGHT_MOBILITY);
+    print_table("BISHOP_MOBILITY", BISHOP_MOBILITY);
+    print_table("ROOK_MOBILITY", ROOK_MOBILITY);
+    print_table("QUEEN_MOBILITY", QUEEN_MOBILITY);
+    std::cout << std::endl;
+
+    std::cout << "inline const PParam PAWN_THREAT_KNIGHT = " << PAWN_THREAT_KNIGHT << ";"
+              << std::endl;
+    std::cout << "inline const PParam PAWN_THREAT_BISHOP = " << PAWN_THREAT_BISHOP << ";"
+              << std::endl;
+    std::cout << "inline const PParam PAWN_THREAT_ROOK   = " << PAWN_THREAT_ROOK << ";"
+              << std::endl;
+    std::cout << "inline const PParam PAWN_THREAT_QUEEN  = " << PAWN_THREAT_QUEEN << ";"
+              << std::endl;
+    std::cout << std::endl;
+
+    print_2d_array("MINOR_THREAT", MINOR_THREAT);
+    print_2d_array("ROOK_THREAT", ROOK_THREAT);
+    std::cout << "inline const PParam KING_THREAT  = " << KING_THREAT << ";" << std::endl;
+    std::cout << "inline const PParam HANGING_PAWN  = " << HANGING_PAWN << ";" << std::endl;
+    std::cout << "inline const PParam HANGING_NON_PAWN  = " << HANGING_NON_PAWN << ";" << std::endl
+              << std::endl;
+    print_table("KNIGHT_ON_QUEEN", KNIGHT_ON_QUEEN);
+    print_table("BISHOP_ON_QUEEN", BISHOP_ON_QUEEN);
+    print_table("ROOK_ON_QUEEN", ROOK_ON_QUEEN);
+    std::cout << std::endl;
+
+    print_table("BISHOP_PAWNS", BISHOP_PAWNS);
+    std::cout << std::endl;
+    std::cout << "inline const PParam ROOK_LINEUP = " << ROOK_LINEUP << ";" << std::endl;
+    std::cout << std::endl;
+
+
+    printPsqtArray("PAWN_PSQT", PAWN_PSQT);
+    printPsqtArray("KNIGHT_PSQT", KNIGHT_PSQT);
+    printPsqtArray("BISHOP_PSQT", BISHOP_PSQT);
+    printPsqtArray("ROOK_PSQT", ROOK_PSQT);
+    printPsqtArray("QUEEN_PSQT", QUEEN_PSQT);
+    printPsqtArray("KING_PSQT", KING_PSQT);
+    std::cout << std::endl;
+
+
+    std::cout << "inline const PParam KS_NO_QUEEN = " << KS_NO_QUEEN << ";" << std::endl;
+    std::cout << std::endl;
+
+    print_table("PT_INNER_RING_ATTACKS", PT_INNER_RING_ATTACKS);
+    print_table("PT_OUTER_RING_ATTACKS", PT_OUTER_RING_ATTACKS);
+    std::cout << std::endl;
+
+
+    std::cout << "inline const PParam KS_FLANK_ATTACK = " << KS_FLANK_ATTACK << ";" << std::endl;
+    std::cout << "inline const PParam KS_FLANK_DEFENSE = " << KS_FLANK_DEFENSE << ";" << std::endl;
+    std::cout << "inline const PParam KS_FLANK_DOUBLE_ATTACK   = " << KS_FLANK_DOUBLE_ATTACK << ";"
+              << std::endl;
+    std::cout << "inline const PParam KS_FLANK_DOUBLE_DEFENSE  = " << KS_FLANK_DOUBLE_DEFENSE << ";"
+              << std::endl;
+    std::cout << std::endl;
+
+    print_2d_array("KING_SHELTER", KING_SHELTER);
+    print_table("BLOCKED_SHELTER_STORM", BLOCKED_SHELTER_STORM);
+    print_2d_array("SHELTER_STORM", SHELTER_STORM);
+
+
+    print_sigmoid("KING_SAFETY_ACTIVATION", KING_SAFETY_ACTIVATION, 32);
+    std::cout << std::endl;
+
+    std::cout << "inline VParam WINNABLE_PAWNS = " << WINNABLE_PAWNS << ";\n";
+    std::cout << "inline VParam WINNABLE_SYM = " << WINNABLE_SYM << ";\n";
+    std::cout << "inline VParam WINNABLE_ASYM = " << WINNABLE_ASYM << ";\n";
+    std::cout << "inline VParam WINNABLE_PAWN_ENDGAME = " << WINNABLE_PAWN_ENDGAME << ";\n";
+    std::cout << "inline VParam WINNABLE_BIAS = " << WINNABLE_BIAS << ";\n";
+    std::cout << std::endl;
 }

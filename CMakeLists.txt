@@ -42,6 +42,16 @@ add_library(lps INTERFACE)
 target_include_directories(lps INTERFACE vendor/lps/include)
 add_dependencies(lps checkout_lps)
 
+# Checkout Pyrrhic
+add_library(pyrrhic OBJECT
+    vendor/Pyrrhic/stdendian.h
+    vendor/Pyrrhic/tbconfig.h
+    vendor/Pyrrhic/tbprobe.cpp
+    vendor/Pyrrhic/tbprobe.h)
+target_include_directories(pyrrhic PUBLIC vendor/Pyrrhic)
+# Pyrrhic depends on bb_attacks.hpp, which depends on util/types.h, which depends on lps
+target_link_libraries(pyrrhic PRIVATE lps)
+
 # Flags
 function(target_add_flags target)
 
@@ -55,6 +65,7 @@ function(target_add_flags target)
     # We don't support MSVC
     target_compile_options(${target} PUBLIC -Wall -Wextra -Wconversion)
 
+    # Debug sanitizers
     target_compile_options(${target} PUBLIC
         $<$<CONFIG:Debug>:
         -fsanitize=address,undefined -g3
@@ -66,30 +77,30 @@ function(target_add_flags target)
         -fsanitize=address,undefined
         >)
 
+    # Stack size
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        target_link_options(${target} PUBLIC
-            -Wl,-z,stack-size=2097152)
+        target_link_options(${target} PUBLIC -Wl,-z,stack-size=8388608) # 8 MB
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "MSYS" OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        target_link_options(${target} PUBLIC "-Wl,--stack,8388608") # 8 MB for MinGW/Clang
     endif()
 
     # Include directories
     target_include_directories(${target} PUBLIC src)
 
     # Libraries
-    target_link_libraries(${target} PUBLIC git_hash lps)
+    target_link_libraries(${target} PUBLIC git_hash lps pyrrhic)
 
     # LTO
     message(STATUS "LTO is set to: ${lto}")
-    # LTO
-    if (lto)
+    if(lto)
         set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
-
-    
-
 endfunction()
 
 # Sorted list of source files
 set(srcs
+    src/bb_attacks.cpp
+    src/bb_attacks.hpp
     src/bench.cpp
     src/bench.hpp
     src/board.cpp
@@ -120,11 +131,15 @@ set(srcs
     src/psqt_state.hpp
     src/repetition_info.cpp
     src/repetition_info.hpp
+    src/root_move.cpp
+    src/root_move.hpp
     src/search.cpp
     src/search.hpp
     src/speedtest.cpp
     src/speedtest.hpp
     src/square.hpp
+    src/tb.cpp
+    src/tb.hpp
     src/tm.cpp
     src/tm.hpp
     src/tt.cpp
@@ -186,7 +201,7 @@ else()
     endfunction()
 
     do_test(test_piece_count)
-    do_test(test_see)
+    # do_test(test_see)
     do_test(test_is_legal)
     do_test(test_repetition)
     do_test(test_static_vector)

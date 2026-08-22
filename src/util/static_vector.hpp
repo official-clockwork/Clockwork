@@ -166,6 +166,16 @@ public:
         m_len = new_size;
     }
 
+    template<typename F>
+    void resize_with(usize new_size, F&& f)
+        requires std::invocable<F&> && std::constructible_from<T, std::invoke_result_t<F&>>
+    {
+        resize_with(new_size, [&](usize) {
+            return f();
+        });
+    }
+
+
     T& operator[](usize index) {
         assert(index < m_len);
         return data()[index];

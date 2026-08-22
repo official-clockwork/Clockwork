@@ -1,8 +1,6 @@
 #include "tt.hpp"
 #include <algorithm>  // For std::min
-#include <cstring>
 #include <thread>
-#include <vector>
 
 namespace Clockwork {
 
@@ -63,7 +61,7 @@ TT::TT(size_t mb) :
     m_clusters{nullptr},
     m_size{0},
     m_age{0} {
-    resize(mb);
+    resize(mb, 1);
 }
 
 std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
@@ -164,38 +162,35 @@ void TT::store(const Position& pos,
     }
 }
 
-void TT::resize(size_t mb) {
+void TT::resize(size_t mb, usize thread_count) {
 
     size_t bytes   = mb * 1024 * 1024;
     size_t entries = bytes / sizeof(TTClusterMemory);
 
     m_size     = entries;
     m_clusters = make_unique_for_overwrite_huge_page<TTClusterMemory[]>(m_size);
-    clear();
+    clear(thread_count);
 }
 
-void TT::clear() {
-    constexpr size_t MB16 = 16 * 1024 * 1024;
-
-    if (m_size == 0) {
-        return;
-    }
-
-    size_t max_useful = std::max<size_t>(1, m_size * sizeof(TTClusterMemory) / MB16);
-    size_t thread_count =
-      std::min(max_useful, std::max<size_t>(1, std::thread::hardware_concurrency()));
-
-    auto clear_range = [this](size_t begin, size_t end) {
-        std::memset(&m_clusters[begin], 0, (end - begin) * sizeof(TTClusterMemory));
-    };
+void TT::clear(usize thread_count) {
+    usize max_threads = std::max(thread_count, usize(1));
 
     std::vector<std::thread> threads;
-    threads.reserve(thread_count - 1);
-    for (size_t t = 1; t < thread_count; ++t) {
-        threads.emplace_back(clear_range, m_size * t / thread_count,
-                             m_size * (t + 1) / thread_count);
+    threads.reserve(max_threads);
+
+    for (usize t = 0; t < max_threads; ++t) {
+        threads.emplace_back([this, t, max_threads]() {
+            usize start = (m_size * t) / max_threads;
+            usize end   = (m_size * (t + 1)) / max_threads;
+            if (t == max_threads - 1) {
+                end = m_size;
+            }
+
+            usize chunk_bytes = (end - start) * sizeof(TTCluster);
+            std::memset(&m_clusters[start], 0, chunk_bytes);
+        });
     }
-    clear_range(0, m_size / thread_count);
+
     for (auto& thread : threads) {
         thread.join();
     }

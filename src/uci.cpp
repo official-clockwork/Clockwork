@@ -7,6 +7,7 @@
 #include "position.hpp"
 #include "search.hpp"
 #include "speedtest.hpp"
+#include "tb.hpp"
 #include "tuned.hpp"
 #include "util/ios_fmt_guard.hpp"
 #include "util/parse.hpp"
@@ -28,11 +29,15 @@ namespace Clockwork::UCI {
 constexpr std::string_view STARTPOS{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"};
 constexpr usize            MAX_HASH    = 268435456;
 constexpr usize            MAX_THREADS = 1024;
+constexpr usize            MAX_MULTIPV = 256;
 
 UCIHandler::UCIHandler() :
     m_position(*Position::parse(STARTPOS)) {
-    searcher.initialize(1);
     searcher.set_position(m_position, m_repetition_info);
+}
+
+UCIHandler::~UCIHandler() {
+    tb::free();
 }
 
 void UCIHandler::loop() {
@@ -63,6 +68,8 @@ void UCIHandler::execute_command(const std::string& line) {
         std::cout << "option name UseSoftNodes type check default false\n";
         std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << "\n";
         std::cout << "option name Hash type spin default 16 min 1 max " << MAX_HASH << "\n";
+        std::cout << "option name MultiPV type spin default 1 min 1 max " << MAX_MULTIPV << "\n";
+        std::cout << "option name SyzygyPath type string default <empty>\n";
         tuned::uci_print_tunable_options();
         std::cout << "uciok" << std::endl;
     } else if (command == "ucinewgame") {
@@ -96,6 +103,8 @@ void UCIHandler::execute_command(const std::string& line) {
         handle_bench(is);
     } else if (command == "speedtest") {
         handle_speedtest(is);
+    } else if (command == "debug") {
+        handle_debug(is);
     }
 #ifndef EVAL_TUNING
     else if (command == "eval") {
@@ -119,9 +128,17 @@ void UCIHandler::handle_bench(std::istringstream& is) {
     Bench::benchmark(searcher, depth);
 }
 
+// Note: This function is left here so that one doesn't need to reimplement it every time we need to expose a function through uci.
+// The professional thing to do is to empty the body of the function / put a placeholder in here when finished (and before pr).
+void UCIHandler::handle_debug(std::istringstream&) {
+    std::cout << "readyok" << std::endl;
+}
+
 void UCIHandler::handle_go(std::istringstream& is) {
     // Clear any previous settings
-    settings = {};
+    settings            = {};
+    settings.multipv    = m_multipv;
+    settings.tb_enabled = m_tb_enabled;
     std::string token;
     while (is >> token) {
         if (token == "depth") {
@@ -254,9 +271,16 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
         }
     } else if (name == "Threads") {
         if (auto value = parse_number<usize>(value_str)) {
-            size_t thread_count = std::clamp<size_t>(*value, 1, MAX_THREADS);
+            usize thread_count = std::clamp<usize>(*value, 1, MAX_THREADS);
             searcher.initialize(thread_count);
             searcher.set_position(m_position, m_repetition_info);
+        } else {
+            std::cout << "Invalid value " << value_str << std::endl;
+        }
+    } else if (name == "MultiPV") {
+        if (auto value = parse_number<usize>(value_str)) {
+            usize multipv = std::clamp<usize>(*value, 1, MAX_MULTIPV);
+            m_multipv     = multipv;
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
         }
@@ -267,6 +291,22 @@ void UCIHandler::handle_setoption(std::istringstream& is) {
             m_use_soft_nodes = false;
         } else {
             std::cout << "Invalid value " << value_str << std::endl;
+        }
+    } else if (name == "SyzygyPath") {
+        //TODO accept paths with spaces
+        m_tb_enabled = false;
+        switch (tb::init(value_str)) {
+        case tb::InitStatus::Failed:
+            std::cout << "Failed to initialize Pyrrhic" << std::endl;
+            break;
+        case tb::InitStatus::NoneFound:
+            std::cout << "No TB files found" << std::endl;
+            break;
+        case tb::InitStatus::Success:
+            std::cout << "info string Found " << tb::wdl_count() << " WDL and " << tb::dtz_count()
+                      << " DTZ files up to " << tb::max_pieces() << "-man" << std::endl;
+            m_tb_enabled = true;
+            break;
         }
     } else if (tuned::uci_parse_tunable(name, value_str)) {
         // Successfully parsed tunable

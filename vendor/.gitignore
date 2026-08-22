@@ -1,2 +1,3 @@
-# Ignore all subdirectories
+# Ignore all subdirectories, except Pyrrhic
 */
+!Pyrrhic/

@@ -50,8 +50,12 @@ struct Square {
         return ((file() + rank()) & 1) ? Color::White : Color::Black;
     }
 
-    [[nodiscard]] constexpr Square relative_sq(Color c) const {
+    [[nodiscard]] constexpr Square relative_sq(const Color c) const {
         return c == Color::White ? *this : flip_vertical();
+    }
+
+    [[nodiscard]] constexpr i32 relative_rank(const Color c) const {
+        return c == Color::White ? rank() : rank() ^ 7;
     }
 
     [[nodiscard]] constexpr std::tuple<i32, i32> to_file_and_rank() const {

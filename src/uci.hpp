@@ -14,6 +14,7 @@ namespace Clockwork::UCI {
 class UCIHandler {
 public:
     UCIHandler();
+    ~UCIHandler();
 
     void loop();
     void handle_command_line(i32 argc, char* argv[]);
@@ -22,8 +23,10 @@ private:
     Position       m_position;
     RepetitionInfo m_repetition_info;
     // move this somewhere else later
-    TT   m_tt;
-    bool m_use_soft_nodes = false;
+    TT    m_tt;
+    bool  m_use_soft_nodes = false;
+    usize m_multipv        = 1;
+    bool  m_tb_enabled     = false;
 
     Search::Searcher searcher;
 
@@ -40,6 +43,7 @@ private:
     void handle_speedtest(std::istringstream&);
 
     void handle_genfens(std::istringstream&);
+    void handle_debug(std::istringstream&);
 };
 
 }  // namespace Clockwork::UCI

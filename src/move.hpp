@@ -29,6 +29,15 @@ enum class MoveFlags : u16 {
     PromoQueenCapture  = (0b1100 | (static_cast<u16>(PieceType::Queen) - 2)) << 12,
 };
 
+constexpr MoveFlags operator|(MoveFlags a, MoveFlags b) {
+    return static_cast<MoveFlags>(static_cast<u16>(a) | static_cast<u16>(b));
+}
+
+constexpr MoveFlags& operator|=(MoveFlags& a, MoveFlags b) {
+    a = a | b;
+    return a;
+}
+
 struct Move {
     u16 raw          = 0;
     constexpr Move() = default;

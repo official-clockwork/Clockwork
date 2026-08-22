@@ -5,6 +5,7 @@
 #include "square.hpp"
 #include "tt.hpp"
 #include "util/types.hpp"
+#include "zobrist.hpp"
 #include <array>
 #include <bit>
 #include <cassert>
@@ -17,6 +18,7 @@ class TT;
 
 struct PsqtState;
 struct PsqtUpdates;
+
 
 template<typename T>
 struct alignas(16) PieceList {
@@ -120,20 +122,20 @@ public:
     [[nodiscard]] RookInfo rook_info(Color color) const {
         return m_rook_info[static_cast<usize>(color)];
     }
-    [[nodiscard]] HashKey get_hash_key() const {
-        return m_hash_key;
+    [[nodiscard]] inline HashKey get_hash_key() const {
+        return m_zobrist_info.full_key();
     }
-    [[nodiscard]] HashKey get_pawn_key() const {
-        return m_pawn_key;
+    [[nodiscard]] inline HashKey get_pawn_key() const {
+        return m_zobrist_info.pawn_key();
     }
-    [[nodiscard]] HashKey get_non_pawn_key(Color color) const {
-        return m_non_pawn_key[static_cast<usize>(color)];
+    [[nodiscard]] inline HashKey get_non_pawn_key(Color color) const {
+        return m_zobrist_info.non_pawn_key(color);
     }
-    [[nodiscard]] HashKey get_major_key() const {
-        return m_major_key;
+    [[nodiscard]] inline HashKey get_major_key() const {
+        return m_zobrist_info.major_key();
     }
-    [[nodiscard]] HashKey get_minor_key() const {
-        return m_minor_key;
+    [[nodiscard]] inline HashKey get_minor_key() const {
+        return m_zobrist_info.minor_key();
     }
 
     [[nodiscard]] Square king_sq(Color color) const {
@@ -202,6 +204,15 @@ public:
         return attack_table(color).get_piece_mask_bitboard(piece_list(color).mask_eq(ptype));
     }
 
+    [[nodiscard]] Bitboard attacked_by_two_or_more(Color color) const {
+        const auto& wb = attack_table(color).raw;
+
+        u16x64 minus_one    = wb - u16x64::splat(1u);
+        u16x64 at_least_two = wb & minus_one;
+
+        return Bitboard{at_least_two.nonzeros().to_bits()};
+    }
+
     [[nodiscard]] usize mobility_of(Color color, PieceId id) const {
         return attack_table(color).count_matching_mask(id.to_piece_mask());
     }
@@ -225,6 +236,10 @@ public:
         return static_cast<isize>(piece_count(color, ptype));
     }
 
+    [[nodiscard]] i32 i32piece_count(Color color, PieceType ptype) const {
+        return static_cast<i32>(piece_count(color, ptype));
+    }
+
     [[nodiscard]] bool is_kp_endgame() const {
         for (Color color : {Color::White, Color::Black}) {
             if (!(piece_count(color) == 1 + piece_count(color, PieceType::Pawn))) {
@@ -232,6 +247,17 @@ public:
             }
         }
         return true;
+    }
+
+    [[nodiscard]] bool is_opposite_bishops() const {
+        if (piece_count(Color::White, PieceType::Bishop) == 1
+            && piece_count(Color::Black, PieceType::Bishop) == 1) {
+            Square white_bishop_sq = m_board.bitboard_for(Color::White, PieceType::Bishop).lsb();
+            Square black_bishop_sq = m_board.bitboard_for(Color::Black, PieceType::Bishop).lsb();
+
+            return white_bishop_sq.color() != black_bishop_sq.color();
+        }
+        return false;
     }
 
     [[nodiscard]] u16 get_ply() const {
@@ -279,7 +305,7 @@ public:
 
     [[nodiscard]] u16 get_50mr_counter() const;
 
-    [[nodiscard]] bool is_reversible(Move move);
+    [[nodiscard]] bool is_reversible(Move move) const;
 
     const std::array<Wordboard, 2> calc_attacks_slow();
     const std::array<PieceMask, 2> calc_attacks_slow(Square sq);
@@ -306,17 +332,13 @@ private:
     std::array<PieceList<Square>, 2>    m_piece_list_sq{};
     std::array<PieceList<PieceType>, 2> m_piece_list{};
     Byteboard                           m_board{};
-    u64                                 m_hash{};
     u16                                 m_50mr{};
     u16                                 m_ply{};
     Color                               m_active_color{};
     Square                              m_enpassant = Square::invalid();
     std::array<RookInfo, 2>             m_rook_info;
-    HashKey                             m_hash_key;
-    HashKey                             m_pawn_key;
-    std::array<HashKey, 2>              m_non_pawn_key;
-    HashKey                             m_major_key;
-    HashKey                             m_minor_key;
+
+    [[no_unique_address]] ZobristInfo m_zobrist_info;
 
     void incrementally_remove_piece(bool color, PieceId id, Square sq, PsqtUpdates& updates);
     void incrementally_add_piece(bool color, Place p, Square sq, PsqtUpdates& updates);

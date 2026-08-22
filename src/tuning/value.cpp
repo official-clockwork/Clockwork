@@ -14,13 +14,13 @@ ValueHandle ValueHandle::create(f64 data) {
 
 ValueHandle ValueHandle::sum(const std::vector<ValueHandle>& inputs) {
     if (inputs.empty()) {
-        return ValueHandle::create(0.0);
+        return Graph::get().get_zero_value();
     }
-    ValueHandle total = inputs[0];
-    for (size_t i = 1; i < inputs.size(); ++i) {
-        total = total + inputs[i];
+    if (inputs.size() == 1) {
+        return inputs[0];
     }
-    return total;
+    // Defer to our new native C++ loop node
+    return Graph::get().record_sum(inputs);
 }
 
 ValueHandle ValueHandle::exp() const {
@@ -87,6 +87,12 @@ f64 PairHandle::first() const {
 f64 PairHandle::second() const {
     return get_values().second();
 }
+f64 PairHandle::mg() const {
+    return get_values().first();
+}
+f64 PairHandle::eg() const {
+    return get_values().second();
+}
 
 void PairHandle::set_values(const f64x2& v) const {
     Graph::get().set_pair_values(index, v);
@@ -103,33 +109,69 @@ void PairHandle::zero_grad() const {
 ValueHandle PairHandle::phase_impl(f64 scaled_alpha) const {
     return Graph::get().record_phase(*this, scaled_alpha);
 }
+// Sigmoid operation
+PairHandle PairHandle::sigmoid() const {
+    return Graph::get().record_pair_unary(OpType::PairSigmoid, *this);
+}
 
 // ValueHandle Operators
 ValueHandle operator-(ValueHandle a) {
     return Graph::get().record_op(OpType::Neg, a);
 }
+
 ValueHandle operator+(ValueHandle a, ValueHandle b) {
+    if (a.index == Graph::get().get_zero_value().index) {
+        return b;
+    }
+    if (b.index == Graph::get().get_zero_value().index) {
+        return a;
+    }
     return Graph::get().record_op(OpType::Add, a, b);
 }
+
 ValueHandle operator-(ValueHandle a, ValueHandle b) {
+    if (b.index == Graph::get().get_zero_value().index) {
+        return a;
+    }
+    if (a.index == Graph::get().get_zero_value().index) {
+        return -b;
+    }
     return Graph::get().record_op(OpType::Sub, a, b);
 }
+
 ValueHandle operator*(ValueHandle a, ValueHandle b) {
+    if (a.index == Graph::get().get_zero_value().index
+        || b.index == Graph::get().get_zero_value().index) {
+        return Graph::get().get_zero_value();
+    }
     return Graph::get().record_op(OpType::Mul, a, b);
 }
+
 ValueHandle operator/(ValueHandle a, ValueHandle b) {
     return Graph::get().record_op(OpType::Div, a, b);
 }
 
 ValueHandle operator+(ValueHandle a, f64 b) {
+    if (b == 0.0) {
+        return a;
+    }
     return Graph::get().record_op(OpType::AddScalar, a, b);
 }
+
 ValueHandle operator-(ValueHandle a, f64 b) {
-    return Graph::get().record_op(OpType::ValSubScalar, a, b);
+    if (b == 0.0) {
+        return a;
+    }
+    return Graph::get().record_op(OpType::SubScalarVal, a, b);
 }
+
 ValueHandle operator*(ValueHandle a, f64 b) {
+    if (b == 0.0) {
+        return Graph::get().get_zero_value();
+    }
     return Graph::get().record_op(OpType::MulScalar, a, b);
 }
+
 ValueHandle operator/(ValueHandle a, f64 b) {
     return Graph::get().record_op(OpType::ValDivScalar, a, b);
 }
@@ -156,20 +198,41 @@ bool operator>(ValueHandle a, ValueHandle b) {
 
 // PairHandle Operators
 PairHandle operator+(PairHandle a, PairHandle b) {
+    if (a.index == Graph::get().get_zero_pair().index) {
+        return b;
+    }
+    if (b.index == Graph::get().get_zero_pair().index) {
+        return a;
+    }
     return Graph::get().record_pair_op(OpType::PairAdd, a, b);
 }
+
 PairHandle operator-(PairHandle a, PairHandle b) {
+    if (b.index == Graph::get().get_zero_pair().index) {
+        return a;
+    }
+    if (a.index == Graph::get().get_zero_pair().index) {
+        return -b;
+    }
     return Graph::get().record_pair_op(OpType::PairSub, a, b);
 }
+
 PairHandle operator-(PairHandle a) {
     return Graph::get().record_pair_scalar(OpType::PairNeg, a, 0.0);
 }
 
 PairHandle operator*(PairHandle a, f64 scalar) {
+    if (scalar == 0.0) {
+        return Graph::get().get_zero_pair();
+    }
     return Graph::get().record_pair_scalar(OpType::PairMulScalar, a, scalar);
 }
+
 PairHandle operator*(f64 scalar, PairHandle a) {
     return a * scalar;
+}
+PairHandle operator*(PairHandle a, PairHandle b) {
+    return Graph::get().record_pair_value(OpType::PairMulPair, a, b);
 }
 PairHandle operator/(PairHandle a, f64 scalar) {
     return Graph::get().record_pair_scalar(OpType::PairDivScalar, a, scalar);
@@ -194,6 +257,11 @@ PairHandle operator/(ValueHandle v, PairHandle a) {
 // Printing overloads for debugging
 std::ostream& operator<<(std::ostream& os, const PairHandle& p) {
     os << "S(" << std::round(p.first()) << ", " << std::round(p.second()) << ")";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const ValueHandle& v) {
+    os << "V(" << std::round(v.get_value()) << ")";
     return os;
 }
 
@@ -256,6 +324,15 @@ PairHandle& operator/=(PairHandle& a, f64 scalar) {
 PairHandle& operator/=(PairHandle& a, ValueHandle v) {
     a = a / v;
     return a;
+}
+
+
+PairHandle PairHandle::complexity_add(ValueHandle value) const {
+    return Graph::get().record_pair_value(OpType::PairAddClampedSecond, *this, value);
+}
+
+PairHandle PairHandle::scale_eg_impl(f64 ratio) const {
+    return Graph::get().record_pair_scalar(OpType::ScaleEg, *this, ratio);
 }
 
 }  // namespace Clockwork::Autograd

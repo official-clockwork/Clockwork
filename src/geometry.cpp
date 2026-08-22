@@ -27,7 +27,7 @@ constexpr std::array<u8, 64> AVX512_OFFSETS{{
 }};
 
 template<std::array<u8, 64> OFFSETS, u8 RAY_OFFSET>
-consteval std::array<u8x64, 64> calc_superpiece_inverse_rays_table() {
+constexpr std::array<u8x64, 64> calc_superpiece_inverse_rays_table() {
     // clang-format off
     constexpr u8 NONE = 0x80;
     constexpr std::array<u8, 256> BASE{{
@@ -73,7 +73,7 @@ const std::array<u8x64, 64> SUPERPIECE_INVERSE_RAYS_FLIPPED_AVX512_TABLE =
   calc_superpiece_inverse_rays_table<AVX512_OFFSETS, 32>();
 
 template<std::array<u8, 64> OFFSETS>
-consteval std::array<u8x64, 64> calc_piece_moves_table() {
+constexpr std::array<u8x64, 64> calc_piece_moves_table() {
     // clang-format off
     constexpr u8 K = 1 << static_cast<i32>(PieceType::King);
     constexpr u8 Q = 1 << static_cast<i32>(PieceType::Queen);

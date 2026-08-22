@@ -24,6 +24,10 @@ Graph::Graph() {
     for (auto* p : pair_params) {
         m_pairs.alloc(p->default_value(), f64x2::zero());
     }
+
+    // Initialize constant zeros
+    m_zero_value = ValueHandle(m_values.alloc(0.0, 0.0));
+    m_zero_pair  = PairHandle(m_pairs.alloc(f64x2::zero(), f64x2::zero()));
 }
 
 ValueHandle Graph::create_value(f64 data) {
@@ -161,6 +165,9 @@ PairHandle Graph::record_pair_scalar(OpType op, PairHandle lhs, f64 scalar) {
     case OpType::ScalarDivPair:
         res = f64x2::scalar_div(scalar, l);
         break;
+    case OpType::ScaleEg:
+        res = f64x2::make(l.first(), l.second() * scalar);
+        break;
     default:
         break;
     }
@@ -189,6 +196,64 @@ PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, ValueHandle rhs) 
     case OpType::ValueDivPair:
         res = f64x2::scalar_div(v, pair_val);
         break;
+    case OpType::PairAddClampedSecond: {
+        f64 add_res = pair_val.second() + v;
+        if (pair_val.second() > 0) {
+            res = f64x2::make(pair_val.first(), std::max(0.0, add_res));
+        } else if (pair_val.second() < 0) {
+            res = f64x2::make(pair_val.first(), std::min(0.0, add_res));
+        } else {
+            res = pair_val;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+    m_pairs.alloc(res, f64x2::zero());
+
+    m_tape.push_back(Node::make_binary(op, out.index, lhs.index, rhs.index));
+
+    return out;
+}
+
+PairHandle Graph::record_pair_unary(OpType op, PairHandle input) {
+    PairHandle out    = m_pairs.next_handle();
+    f64x2      in_val = m_pairs.val(input.index);
+    f64x2      res    = f64x2::zero();
+
+    switch (op) {
+    case OpType::PairSigmoid: {
+        // Apply sigmoid to each component: 1 / (1 + exp(-x))
+        f64 mg     = in_val.first();
+        f64 eg     = in_val.second();
+        f64 sig_mg = 1.0 / (1.0 + std::exp(-mg));
+        f64 sig_eg = 1.0 / (1.0 + std::exp(-eg));
+        res        = f64x2::make(sig_mg, sig_eg);
+        break;
+    }
+    default:
+        break;
+    }
+
+    m_pairs.alloc(res, f64x2::zero());
+
+    m_tape.push_back(Node::make_scalar(op, out.index, input.index, 0.0));
+
+    return out;
+}
+
+PairHandle Graph::record_pair_value(OpType op, PairHandle lhs, PairHandle rhs) {
+    PairHandle out = m_pairs.next_handle();
+    f64x2      l   = m_pairs.val(lhs.index);
+    f64x2      r   = m_pairs.val(rhs.index);
+    f64x2      res = f64x2::zero();
+
+    switch (op) {
+    case OpType::PairMulPair:
+        res = f64x2::mul(l, r);
+        break;
     default:
         break;
     }
@@ -208,6 +273,27 @@ ValueHandle Graph::record_phase(PairHandle lhs, f64 alpha) {
     m_values.alloc(val, 0.0);
 
     m_tape.push_back(Node::make_scalar(OpType::Phase, out.index, lhs.index, alpha));
+
+    return out;
+}
+
+ValueHandle Graph::record_sum(const std::vector<ValueHandle>& inputs) {
+    ValueHandle out = m_values.next_handle();
+    f64         res = 0.0;
+
+    // Store offset and count for the backward pass
+    u32 offset = static_cast<u32>(m_sum_buffer.size());
+    u32 count  = static_cast<u32>(inputs.size());
+
+    for (const auto& h : inputs) {
+        res += m_values.val(h.index);
+        m_sum_buffer.push_back(h.index);
+    }
+
+    m_values.alloc(res, 0.0);
+
+    // We reuse lhs_idx for offset, and rhs_idx for count
+    m_tape.push_back(Node::make_binary(OpType::Sum, out.index, offset, count));
 
     return out;
 }
@@ -335,6 +421,25 @@ void Graph::backward() {
             break;
         }
 
+        case OpType::PairSigmoid: {
+            const f64x2 grad_out = pair_grads[out_idx];
+
+            // sigmoid output values already computed in forward pass
+            f64x2 sigmoid_out = pair_vals[out_idx];
+
+            f64 sig_mg = sigmoid_out.first();
+            f64 sig_eg = sigmoid_out.second();
+
+            f64 grad_mg = sig_mg * (1.0 - sig_mg);
+            f64 grad_eg = sig_eg * (1.0 - sig_eg);
+
+            f64x2 local_grad = f64x2::make(grad_mg, grad_eg);
+            f64x2 update     = f64x2::mul(local_grad, grad_out);
+
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
+            break;
+        }
+
         case OpType::PairAdd: {
             const f64x2 grad_out   = pair_grads[out_idx];
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_out);
@@ -369,6 +474,12 @@ void Graph::backward() {
             f64x2       val        = pair_vals[node.lhs()];
             f64x2       grad       = f64x2::scalar_div(-node.scalar(), f64x2::mul(val, val));
             f64x2       update     = f64x2::mul(grad, grad_out);
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
+            break;
+        }
+        case OpType::ScaleEg: {
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64x2       update   = f64x2::make(grad_out.first(), grad_out.second() * node.scalar());
             pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], update);
             break;
         }
@@ -411,6 +522,64 @@ void Graph::backward() {
               grad_out.first() * recip.first() + grad_out.second() * recip.second();
             break;
         }
+        case OpType::PairMulPair: {
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64x2       l        = pair_vals[node.lhs()];
+            f64x2       r        = pair_vals[node.rhs()];
+
+            f64x2 grad_lhs         = f64x2::mul(grad_out, r);
+            f64x2 grad_rhs         = f64x2::mul(grad_out, l);
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_lhs);
+            pair_grads[node.rhs()] = f64x2::add(pair_grads[node.rhs()], grad_rhs);
+            break;
+        }
+        case OpType::PairAddClampedSecond: {
+            const f64x2 grad_out = pair_grads[out_idx];
+            f64x2       val_lhs  = pair_vals[node.lhs()];
+            f64         val_rhs  = vals[node.rhs()];
+
+            // First component always passes through
+            f64x2 grad_pair = f64x2::make(grad_out.first(), 0.0);
+            f64   grad_rhs  = 0.0;
+
+            // For the second component
+            if (val_lhs.second() > 0) {
+                // Forward: res.second = max(0.0, val_lhs.second() + val_rhs)
+                f64 add_res = val_lhs.second() + val_rhs;
+                if (add_res > 0.0) {
+                    // Gradient flows through both inputs
+                    grad_pair = f64x2::make(grad_out.first(), grad_out.second());
+                    grad_rhs  = grad_out.second();
+                }
+            } else if (val_lhs.second() < 0) {
+                // Forward: res.second = min(0.0, val_lhs.second() + val_rhs)
+                f64 add_res = val_lhs.second() + val_rhs;
+                if (add_res < 0.0) {
+                    // Gradient flows through both inputs
+                    grad_pair = f64x2::make(grad_out.first(), grad_out.second());
+                    grad_rhs  = grad_out.second();
+                }
+            } else {
+                // val_lhs.second() == 0: output = input (no addition)
+                grad_pair = grad_out;
+                grad_rhs  = 0.0;
+            }
+
+            pair_grads[node.lhs()] = f64x2::add(pair_grads[node.lhs()], grad_pair);
+            grads[node.rhs()] += grad_rhs;
+            break;
+        }
+        // Special reduction cases
+        case OpType::Sum: {
+            const f64 grad_out = grads[out_idx];
+            const u32 offset   = node.lhs();
+            const u32 count    = node.rhs();
+
+            for (u32 i = 0; i < count; ++i) {
+                grads[m_sum_buffer[offset + i]] += grad_out;
+            }
+            break;
+        }
 
         default:
             unreachable();
@@ -420,17 +589,26 @@ void Graph::backward() {
 }
 
 void Graph::cleanup() {
-    m_values.reset_to(m_global_param_count);
-    m_pairs.reset_to(m_global_pair_count);
+    // Keep global parameters + 1 for the permanent zero node
+    m_values.reset_to(m_global_param_count + 1);
+    m_pairs.reset_to(m_global_pair_count + 1);
     m_tape.clear();
+    m_sum_buffer.clear();
 }
 
 void Graph::zero_grad() {
     for (usize i = 0; i < m_global_param_count; ++i) {
-        m_values.grad(i) = 0.0;
+        m_values.grad(static_cast<u32>(i)) = 0.0;
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        m_pairs.grad(i) = f64x2::zero();
+        m_pairs.grad(static_cast<u32>(i)) = f64x2::zero();
+    }
+
+    // Assert that constant zeros are still zero
+    if (m_values.val(m_zero_value.index) != 0.0 || m_pairs.val(m_zero_pair.index).first() != 0.0
+        || m_pairs.val(m_zero_pair.index).second() != 0.0) {
+        std::cerr << "Error: Constant zero values have been modified!" << std::endl;
+        std::terminate();
     }
 }
 
@@ -441,10 +619,10 @@ void Graph::copy_parameter_values(const Parameters& source) {
         std::terminate();
     }
     for (usize i = 0; i < m_global_param_count; ++i) {
-        m_values.val(i) = source.parameters[i];
+        m_values.val(static_cast<u32>(i)) = source.parameters[i];
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        m_pairs.val(i) = source.pair_parameters[i];
+        m_pairs.val(static_cast<u32>(i)) = source.pair_parameters[i];
     }
 }
 
@@ -453,10 +631,10 @@ Parameters Graph::get_all_parameter_values() const {
     p.parameters.reserve(m_global_param_count);
     p.pair_parameters.reserve(m_global_pair_count);
     for (usize i = 0; i < m_global_param_count; ++i) {
-        p.parameters.push_back(m_values.val(i));
+        p.parameters.push_back(m_values.val(static_cast<u32>(i)));
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        p.pair_parameters.push_back(m_pairs.val(i));
+        p.pair_parameters.push_back(m_pairs.val(static_cast<u32>(i)));
     }
     return p;
 }
@@ -466,10 +644,10 @@ Parameters Graph::get_all_parameter_gradients() const {
     p.parameters.reserve(m_global_param_count);
     p.pair_parameters.reserve(m_global_pair_count);
     for (usize i = 0; i < m_global_param_count; ++i) {
-        p.parameters.push_back(m_values.grad(i));
+        p.parameters.push_back(m_values.grad(static_cast<u32>(i)));
     }
     for (usize i = 0; i < m_global_pair_count; ++i) {
-        p.pair_parameters.push_back(m_pairs.grad(i));
+        p.pair_parameters.push_back(m_pairs.grad(static_cast<u32>(i)));
     }
     return p;
 }

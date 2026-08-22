@@ -66,9 +66,17 @@ public:
 private:
     void                 generate_moves();
     std::pair<Move, i32> pick_next(MoveList& moves);
-    void                 score_moves(MoveList& moves);
 
+    template<bool quiets>
     i32 score_move(Move move) const;
+
+    template<bool quiets>
+    inline void score_moves(MoveList& moves) {
+        for (usize i = 0; i < moves.size(); i++) {
+            m_scores[i] = score_move<quiets>(moves[i]);
+        }
+    }
+
 
     Stage m_stage = Stage::EmitTTMove;
 

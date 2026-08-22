@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
@@ -104,7 +104,7 @@ jobs:
         shell: "msys2 {0}"
     steps:
       - name: Check Out Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}

@@ -5,8 +5,8 @@
 #include "position.hpp"
 #include "psqt_state.hpp"
 #include "repetition_info.hpp"
+#include "root_move.hpp"
 #include "tt.hpp"
-#include "util/static_vector.hpp"
 #include "util/types.hpp"
 #include <barrier>
 #include <iosfwd>
@@ -27,8 +27,10 @@ struct SearchSettings {
     i64   move_time  = -1;
     u64   hard_nodes = 0;
     u64   soft_nodes = 0;
+    usize multipv    = 1;
     bool  silent     = false;
     bool  datagen    = false;
+    bool  tb_enabled = false;
 };
 
 // Forward declare for Searcher
@@ -37,28 +39,6 @@ class alignas(128) Worker;
 enum class ThreadType {
     MAIN      = 1,
     SECONDARY = 0,
-};
-
-struct PV {
-public:
-    void clear() {
-        m_pv.clear();
-    }
-
-    void set(Move move, const PV& child_pv_line) {
-        m_pv.clear();
-        m_pv.push_back(move);
-        m_pv.append(child_pv_line.m_pv);
-    }
-
-    Move first_move() const {
-        return m_pv.empty() ? Move::none() : m_pv[0];
-    }
-
-    friend std::ostream& operator<<(std::ostream& os, const PV& pv);
-
-private:
-    StaticVector<Move, MAX_PLY + 1> m_pv;
 };
 
 struct Stack {
@@ -81,7 +61,8 @@ struct SearchLimits {
 struct ThreadData {
     History                history;
     std::vector<PsqtState> psqt_states;
-    Value                  root_score;
+
+    std::vector<RootMove> root_moves;
 
     PsqtState& push_psqt_state() {
         psqt_states.push_back(psqt_states.back());
@@ -91,6 +72,18 @@ struct ThreadData {
     void pop_psqt_state() {
         psqt_states.pop_back();
     }
+
+    RootMove& pv_move() {
+        return root_moves[0];
+    }
+
+    const RootMove& pv_move() const {
+        return root_moves[0];
+    }
+
+    Value root_score() const {
+        return pv_move().score;
+    }
 };
 
 class Searcher {
@@ -99,15 +92,22 @@ public:
     SearchSettings settings;
     TT             tt;
 
+    // Root moves are duplicated here to avoid probing DTZ tables once for every thread,
+    // which is costly with many threads and DTZ tables on an HDD (TCEC).
+    std::vector<RootMove> root_moves;
+    usize                 multipv;
+    bool                  tb_root   = false;
+    bool                  probe_wdl = false;
+
     // We use a shared_mutex to ensure proper mutual thread exclusion.and avoid races.
     // The UCI thread only ever obtains exclusive access (using std::unique_lock);
     // search threads only ever obtain shared access (using std::shared_lock).
     // This ensures that the two classes of thread never step on each other.
     std::shared_mutex mutex;
 
-    using BarrierPtr = std::unique_ptr<std::barrier<>>;
-    BarrierPtr idle_barrier;
-    BarrierPtr started_barrier;
+    using BarrierPtr           = std::unique_ptr<std::barrier<>>;
+    BarrierPtr idle_barrier    = nullptr;
+    BarrierPtr started_barrier = nullptr;
 
     Searcher();
     ~Searcher();
@@ -120,12 +120,15 @@ public:
     void  exit();
 
     u64  node_count();
+    u64  tb_hit_count();
     void reset();
     void resize_tt(size_t mb) {
-        tt.resize(mb);
+        tt.resize(mb, m_workers.size());
     }
 
 private:
+    void init_root_moves(const Position& root_position, RepetitionInfo& repetition_info);
+
     std::vector<unique_ptr_huge_page<Worker>> m_workers;
 };
 
@@ -155,6 +158,9 @@ public:
     [[nodiscard]] u64 search_nodes() const {
         return m_search_nodes.load(std::memory_order_relaxed);
     }
+    [[nodiscard]] u64 tb_hits() const {
+        return m_tb_hits.load(std::memory_order_relaxed);
+    }
 
     [[nodiscard]] const ThreadData& get_thread_data() const {
         return m_td;
@@ -171,7 +177,12 @@ private:
         m_search_nodes.fetch_add(1, std::memory_order_relaxed);
     }
 
+    void increment_tb_hits() {
+        m_tb_hits.fetch_add(1, std::memory_order_relaxed);
+    }
+
     std::atomic<u64>         m_search_nodes;
+    std::atomic<u64>         m_tb_hits;
     time::TimePoint          m_search_start;
     time::TimePoint          m_last_info_time;
     Searcher&                m_searcher;
@@ -179,9 +190,13 @@ private:
     ThreadType               m_thread_type;
     SearchLimits             m_search_limits;
     ThreadData               m_td;
+    usize                    m_pv_idx;
+    usize                    m_pv_start;
+    usize                    m_pv_end;
     std::atomic<bool>        m_stopped;
     std::atomic<bool>        m_exiting;
     std::array<u64, 64 * 64> m_node_counts;
+    Depth                    m_root_depth;
     Depth                    m_seldepth;
     bool                     m_in_nmp_verification = false;
 
@@ -190,11 +205,36 @@ private:
     template<bool IS_MAIN, bool PV_NODE>
     Value search(
       const Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, i32 ply, bool cutnode);
-    template<bool IS_MAIN>
+    template<bool IS_MAIN, bool PV_NODE>
     Value quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i32 ply);
     Value evaluate(const Position& pos);
     Value adj_shuffle(const Position& pos, Value value);
     bool  check_tm_hard_limit();
+
+    void print_info_lines();
+    void print_info_line(usize pv_idx);
+
+    RootMove& get_root_move(Move move) {
+        for (auto& root_move : m_td.root_moves) {
+            if (root_move.pv.first_move() == move) {
+                return root_move;
+            }
+        }
+
+        assert(false && "Failed to find root move");
+        std::terminate();
+    }
+
+    bool is_legal_root_move(Move move) const {
+        for (usize i = m_pv_idx; i < m_pv_end; ++i) {
+            const auto& root_move = m_td.root_moves[i];
+            if (root_move.pv.first_move() == move) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 }  // namespace Search

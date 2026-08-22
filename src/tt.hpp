@@ -101,8 +101,8 @@ public:
                                 Depth           depth,
                                 bool            ttpv,
                                 Bound           bound);
-    void                  resize(size_t mb);
-    void                  clear();
+    void                  resize(size_t mb, usize thread_count);
+    void                  clear(usize thread_count);
     void                  increment_age();
     i32                   hashfull() const;
     TTClusterMemory*      addr_key(const u64 key) const;

@@ -55,7 +55,7 @@ public:
     }
 
     [[nodiscard]] PieceId msb() const {
-        return PieceId{static_cast<u8>(std::countl_zero(m_raw))};
+        return PieceId{static_cast<u8>(std::bit_width(m_raw) - 1)};
     }
 
     [[nodiscard]] PieceId lsb() const {
@@ -209,6 +209,10 @@ struct Byteboard {
         auto vec      = to_vector();
         return Bitboard{~vec.test(u8x64::splat(0x10)).to_bits() ^ color_bb}
              & get_occupied_bitboard();
+    }
+
+    [[nodiscard]] usize get_piece_count() const {
+        return to_vector().nonzeros().popcount();
     }
 
     [[nodiscard]] Bitboard bitboard_for(Color color, PieceType ptype) const {

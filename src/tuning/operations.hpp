@@ -38,6 +38,7 @@ enum class OpType : u32 {
     PairAdd,
     PairSub,
     PairNeg,
+    PairSigmoid,
 
     // Pair-Scalar Ops
     PairMulScalar,
@@ -49,6 +50,11 @@ enum class OpType : u32 {
     ValueMulPair,
     PairDivValue,
     ValueDivPair,
+    PairAddClampedSecond,  // For complexity
+    ScaleEg,               // For eg scaling
+
+    // Pair-Pair Ops
+    PairMulPair,
 
     // Phasing
     Phase,  // Pair -> Value via alpha

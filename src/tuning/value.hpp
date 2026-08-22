@@ -59,7 +59,9 @@ struct PairHandle {
     f64x2 get_values() const;
     f64x2 get_gradients() const;
     f64   first() const;
+    f64   mg() const;
     f64   second() const;
+    f64   eg() const;
     void  set_values(const f64x2& v) const;
     void  set_values(f64 f, f64 s) const;
     void  zero_grad() const;
@@ -71,6 +73,18 @@ struct PairHandle {
     ValueHandle phase(f64 alpha) const {
         return phase_impl(alpha / max);
     }
+
+    PairHandle sigmoid() const;
+
+    PairHandle complexity_add(ValueHandle value) const;
+
+    template<i32 max>
+    PairHandle scale_eg(f64 alpha) const {
+        return scale_eg_impl(alpha / static_cast<f64>(max));
+    }
+
+private:
+    PairHandle scale_eg_impl(f64 ratio) const;
 };
 
 // Operation decls
@@ -99,9 +113,11 @@ PairHandle    operator/(PairHandle a, f64 scalar);
 PairHandle    operator/(f64 scalar, PairHandle a);
 PairHandle    operator*(PairHandle a, ValueHandle v);
 PairHandle    operator*(ValueHandle v, PairHandle a);
+PairHandle    operator*(PairHandle a, PairHandle b);
 PairHandle    operator/(PairHandle a, ValueHandle v);
 PairHandle    operator/(ValueHandle v, PairHandle a);
 std::ostream& operator<<(std::ostream& os, const PairHandle& p);
+std::ostream& operator<<(std::ostream& os, const ValueHandle& v);
 
 // Value Inplaces
 ValueHandle& operator+=(ValueHandle& a, ValueHandle b);

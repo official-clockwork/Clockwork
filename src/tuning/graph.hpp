@@ -19,9 +19,16 @@ private:
     // Tape (Linear record of operations)
     std::vector<Node> m_tape;
 
+    // Buffer for reduction inputs (to avoid reallocating in hot loops)
+    std::vector<u32> m_sum_buffer;
+
     // Counts of global parameters
     usize m_global_param_count = 0;
     usize m_global_pair_count  = 0;
+
+    // Constant zeros to optimize certain operations (e.g. adding zero)
+    ValueHandle m_zero_value;
+    PairHandle  m_zero_pair;
 
     Graph();
 
@@ -29,6 +36,14 @@ public:
     inline static Graph& get() {
         thread_local Graph instance;
         return instance;
+    }
+
+    // Accessors for constant zeros
+    inline ValueHandle get_zero_value() const {
+        return m_zero_value;
+    }
+    inline PairHandle get_zero_pair() const {
+        return m_zero_pair;
     }
 
     // Creation
@@ -41,6 +56,11 @@ public:
     PairHandle  record_pair_op(OpType op, PairHandle lhs, PairHandle rhs);
     PairHandle  record_pair_scalar(OpType op, PairHandle input, f64 scalar);
     PairHandle  record_pair_value(OpType op, PairHandle pair, ValueHandle val);
+    PairHandle  record_pair_value(OpType op, PairHandle lhs, PairHandle rhs);
+    PairHandle  record_pair_unary(OpType op, PairHandle input);
+
+    // Special sum
+    ValueHandle record_sum(const std::vector<ValueHandle>& inputs);
 
     ValueHandle record_phase(PairHandle input, f64 alpha);
 
