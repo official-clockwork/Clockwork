@@ -781,6 +781,16 @@ Value Worker::search(
             if (!SEE::see(pos, m, see_threshold - move_history * tuned::see_pvs_hist_mult / 1024)) {
                 continue;
             }
+
+            Value bad_noisy_futility_margin = ss->static_eval + 75 * depth;
+            // Bad Noisy Futility Pruning
+            if (!is_in_check && depth <= 8 && moves.stage() == MovePicker::Stage::EmitBadNoisy
+                && bad_noisy_futility_margin <= alpha) {
+                if (!is_decisive_score(beta) && best_value < bad_noisy_futility_margin) {
+                    best_value = bad_noisy_futility_margin;
+                }
+                break;
+            }
         }
 
         // Singular extensions
