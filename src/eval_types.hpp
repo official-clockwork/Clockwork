@@ -130,7 +130,6 @@ public:
 using PParam = PScore;
 using VParam = Score;
 
-
 [[nodiscard]] inline PScore operator/(const PScore& score, i32 divisor) {
     return PScore{static_cast<Score>(score.mg() / divisor),
                   static_cast<Score>(score.eg() / divisor)};
