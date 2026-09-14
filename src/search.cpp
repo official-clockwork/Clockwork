@@ -1089,7 +1089,7 @@ Value Worker::search(
             && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
             && !((bound == Bound::Lower && best_value <= ss->static_eval)
                  || (bound == Bound::Upper && best_value >= ss->static_eval))) {
-            m_td.history.update_correction_history(pos, depth, ss->static_eval);
+            m_td.history.update_correction_history(pos, depth, best_value - ss->static_eval);
         }
     }
 
