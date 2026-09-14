@@ -130,14 +130,11 @@ public:
 using PParam = PScore;
 using VParam = Score;
 
-// Component-wise division, truncating toward zero
 [[nodiscard]] inline PScore operator/(const PScore& score, i32 divisor) {
     return PScore{static_cast<Score>(score.mg() / divisor),
                   static_cast<Score>(score.eg() / divisor)};
 }
 
-// score * num / den per component in 64 bits: large multipliers would overflow the packed 16-bit
-// components, and dividing the multiplier first loses precision
 [[nodiscard]] inline PScore mul_div(const PScore& score, i32 num, i32 den) {
     const i64 mg = i64{score.mg()} * num / den;
     const i64 eg = i64{score.eg()} * num / den;
@@ -152,7 +149,6 @@ using PScore = Autograd::PairHandle;
 using PParam = Autograd::PairPlaceholder;   // Handle for the TUNABLE parameter
 using VParam = Autograd::ValuePlaceholder;  // Handle for the TUNABLE parameter
 
-// Division by an integer is provided by Autograd::operator/(PairHandle, f64)
 inline PScore mul_div(const PScore& score, i32 num, i32 den) {
     return score * (static_cast<f64>(num) / static_cast<f64>(den));
 }
