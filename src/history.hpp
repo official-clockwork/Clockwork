@@ -17,7 +17,7 @@ constexpr i32 HISTORY_MAX                     = 16384;
 constexpr u64 CORRECTION_HISTORY_ENTRY_NB     = 16384;
 constexpr i32 CORRECTION_HISTORY_GRAIN        = 256;
 constexpr i32 CORRECTION_HISTORY_WEIGHT_SCALE = 256;
-constexpr i32 CORRECTION_HISTORY_MAX          = CORRECTION_HISTORY_GRAIN * 32;
+constexpr i32 CORRECTION_HISTORY_MAX          = CORRECTION_HISTORY_GRAIN * 64;
 
 namespace Search {
 struct Stack;
