@@ -615,6 +615,30 @@ PScore evaluate_space(const Position& pos, const EvalData& data) {
     return eval;
 }
 
+// SFC-style space
+template<Color color>
+PScore evaluate_sf_space(const Position& pos, const EvalData& data, i32 blocked_pawns) {
+    constexpr Color    opp = ~color;
+    constexpr Bitboard space_mask =
+      Bitboard::central_files()
+      & (color == Color::White
+           ? Bitboard::rank_mask(1) | Bitboard::rank_mask(2) | Bitboard::rank_mask(3)
+           : Bitboard::rank_mask(6) | Bitboard::rank_mask(5) | Bitboard::rank_mask(4));
+
+    Bitboard own_pawns = pos.bitboard_for(color, PieceType::Pawn);
+    Bitboard safe      = space_mask & ~own_pawns & ~data.attacked_by(opp, PieceType::Pawn);
+
+    // Squares at most three squares behind one of our pawns
+    Bitboard behind = own_pawns;
+    behind |= behind.shift_relative(color, Direction::South);
+    behind |= behind.shift_relative(color, Direction::South, 2);
+
+    i32 bonus  = safe.ipopcount() + (behind & safe & ~data.attacked_by(opp)).ipopcount();
+    i32 weight = pos.board().get_color_bitboard(color).ipopcount() - 3 + std::min(blocked_pawns, 9);
+
+    return mul_div(SPACE_VAL, bonus * weight * weight, 1024);
+}
+
 template<Color color>
 PScore king_safety_activation(PScore& king_safety_score) {
     // Apply sigmoid activation to king safety score
@@ -720,6 +744,24 @@ Score evaluate_white_pov(const Position& pos, const PsqtState& psqt_state) {
           - evaluate_outposts<Color::Black>(pos, eval_data);
     eval +=
       evaluate_space<Color::White>(pos, eval_data) - evaluate_space<Color::Black>(pos, eval_data);
+
+    // SFC-style space, phase switch
+    if (phase >= 18) {
+        const Bitboard white_pawns = pos.bitboard_for(Color::White, PieceType::Pawn);
+        const Bitboard black_pawns = pos.bitboard_for(Color::Black, PieceType::Pawn);
+        const Bitboard white_pawn_double_attacks =
+          white_pawns.shift(Direction::NorthEast) & white_pawns.shift(Direction::NorthWest);
+        const Bitboard black_pawn_double_attacks =
+          black_pawns.shift(Direction::SouthEast) & black_pawns.shift(Direction::SouthWest);
+
+        const i32 blocked_pawns =
+          (white_pawns.shift(Direction::North) & (black_pawns | black_pawn_double_attacks))
+            .ipopcount()
+          + (black_pawns.shift(Direction::South) & (white_pawns | white_pawn_double_attacks))
+              .ipopcount();
+        eval += evaluate_sf_space<Color::White>(pos, eval_data, blocked_pawns)
+              - evaluate_sf_space<Color::Black>(pos, eval_data, blocked_pawns);
+    }
 
     // Threats
     eval += evaluate_threats<Color::White>(pos, eval_data)
