@@ -280,6 +280,10 @@ int main() {
                     }
 
                     std::string result = line.substr(sep + 1);
+                    // Only the second field is the result; ignore any later fields (e.g. stored eval)
+                    if (size_t sep2 = result.find(';'); sep2 != std::string::npos) {
+                        result.resize(sep2);
+                    }
                     result.erase(std::remove_if(result.begin(), result.end(), ::isspace),
                                  result.end());
 
@@ -605,6 +609,7 @@ void print_params() {
               << std::endl;
     std::cout << "inline const PParam RESTRICTED_SQUARES = " << RESTRICTED_SQUARES << ";"
               << std::endl;
+    std::cout << "inline const PParam SPACE_VAL = " << SPACE_VAL << ";" << std::endl;
 
     std::cout << std::endl;
     std::cout << "inline const PParam DOUBLED_PAWN_VAL = " << DOUBLED_PAWN_VAL << ";" << std::endl;

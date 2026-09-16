@@ -129,12 +129,29 @@ public:
 
 using PParam = PScore;
 using VParam = Score;
+
+[[nodiscard]] inline PScore operator/(const PScore& score, i32 divisor) {
+    return PScore{static_cast<Score>(score.mg() / divisor),
+                  static_cast<Score>(score.eg() / divisor)};
+}
+
+[[nodiscard]] inline PScore mul_div(const PScore& score, i32 num, i32 den) {
+    const i64 mg = i64{score.mg()} * num / den;
+    const i64 eg = i64{score.eg()} * num / den;
+    assert(std::numeric_limits<Score>::min() <= mg && mg <= std::numeric_limits<Score>::max());
+    assert(std::numeric_limits<Score>::min() <= eg && eg <= std::numeric_limits<Score>::max());
+    return PScore{static_cast<Score>(mg), static_cast<Score>(eg)};
+}
 #else
 
 using Score  = Autograd::ValueHandle;
 using PScore = Autograd::PairHandle;
 using PParam = Autograd::PairPlaceholder;   // Handle for the TUNABLE parameter
 using VParam = Autograd::ValuePlaceholder;  // Handle for the TUNABLE parameter
+
+inline PScore mul_div(const PScore& score, i32 num, i32 den) {
+    return score * (static_cast<f64>(num) / static_cast<f64>(den));
+}
 
 #endif
 
