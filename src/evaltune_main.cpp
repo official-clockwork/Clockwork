@@ -192,7 +192,8 @@ int main() {
     std::vector<f64>      results;
 
     const std::vector<std::string> fenFiles = {
-      "data/v5_25knpm.txt", "data/dfrcv3.txt",
+      "data/v5_25knpm.txt",
+      "data/dfrcv3.txt",
     };
 
     const u32 thread_count = std::max<u32>(1, std::thread::hardware_concurrency());
