@@ -1,4 +1,3 @@
-#include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
 #include "dbg_tools.hpp"
@@ -6,6 +5,7 @@
 #include "history.hpp"
 #include "movegen.hpp"
 #include "movepick.hpp"
+#include "search.hpp"
 #include "see.hpp"
 #include "tb.hpp"
 #include "tm.hpp"
@@ -502,6 +502,8 @@ Value Worker::search(
         return 0;
     }
 
+    bool is_in_check = pos.is_in_check();
+
     // Draw checks
     if (!ROOT_NODE) {
         // Repetition check
@@ -518,6 +520,15 @@ Value Worker::search(
         }
         // Upcoming repetition detection
         if (alpha < 0 && repetition_info.has_game_cycle(pos, static_cast<usize>(ply))) {
+            if (!is_in_check) {
+                auto raw_eval   = evaluate(pos);
+                auto correction = m_td.history.get_correction(pos);
+                auto eval       = adj_shuffle(pos, raw_eval) + correction;
+                if (eval < 0) {
+                    m_td.history.update_correction_history(pos, depth, -eval);
+                }
+            }
+
             alpha = 0;
             if (alpha >= beta) {
                 return alpha;
@@ -600,11 +611,10 @@ Value Worker::search(
                        : tt_data                       ? tt_data->move
                                                        : Move::none();
 
-    bool  is_in_check = pos.is_in_check();
-    bool  improving   = false;
-    Value correction  = 0;
-    Value raw_eval    = -VALUE_INF;
-    ss->static_eval   = -VALUE_INF;
+    bool  improving  = false;
+    Value correction = 0;
+    Value raw_eval   = -VALUE_INF;
+    ss->static_eval  = -VALUE_INF;
     if (!is_in_check) {
         correction = excluded ? 0 : m_td.history.get_correction(pos);
         raw_eval   = tt_data && !is_decisive_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
