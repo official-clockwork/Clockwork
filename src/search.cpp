@@ -1,3 +1,4 @@
+#include "search.hpp"
 #include "board.hpp"
 #include "common.hpp"
 #include "dbg_tools.hpp"
@@ -5,7 +6,6 @@
 #include "history.hpp"
 #include "movegen.hpp"
 #include "movepick.hpp"
-#include "search.hpp"
 #include "see.hpp"
 #include "tb.hpp"
 #include "tm.hpp"
