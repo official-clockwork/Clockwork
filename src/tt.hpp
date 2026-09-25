@@ -16,7 +16,6 @@ enum Bound : u8 {
 };
 
 struct TTEntry {
-    u16  key16;
     Move move;
     i16  score;
     i16  eval;
@@ -34,35 +33,55 @@ struct TTEntry {
     }
 };
 
-struct TTCluster {
-    std::array<TTEntry, 3> entries;
-    std::array<u8, 2>      padding;
-};
+struct alignas(32) TTCluster {
+public:
+    static constexpr usize ENTRY_COUNT    = 3;
+    static constexpr usize FRAGMENT_WIDTH = 21;
+    static constexpr u64   FRAGMENT_MASK  = (1 << FRAGMENT_WIDTH) - 1;
 
-struct TTClusterMemory {
-    alignas(32) std::array<u64, 4> data;
-
-    [[nodiscard]] auto load() -> TTCluster {
-        std::array<u64, 4> out;
-        out[0] = std::atomic_ref{this->data[0]}.load(std::memory_order_relaxed);
-        out[1] = std::atomic_ref{this->data[1]}.load(std::memory_order_relaxed);
-        out[2] = std::atomic_ref{this->data[2]}.load(std::memory_order_relaxed);
-        out[3] = std::atomic_ref{this->data[3]}.load(std::memory_order_relaxed);
-        return std::bit_cast<TTCluster>(out);
+    [[nodiscard]] TTEntry load(usize index) const {
+        u64 raw = std::atomic_ref{entries[index]}.load(std::memory_order_relaxed);
+        return std::bit_cast<TTEntry>(raw);
     }
 
-    auto store(TTCluster cluster) {
-        std::array<u64, 4> mem = std::bit_cast<std::array<u64, 4>>(cluster);
-        std::atomic_ref{this->data[0]}.store(mem[0], std::memory_order_relaxed);
-        std::atomic_ref{this->data[1]}.store(mem[1], std::memory_order_relaxed);
-        std::atomic_ref{this->data[2]}.store(mem[2], std::memory_order_relaxed);
-        std::atomic_ref{this->data[3]}.store(mem[3], std::memory_order_relaxed);
+    void store(usize index, TTEntry entry) {
+        u64 raw = std::bit_cast<u64>(entry);
+        std::atomic_ref{entries[index]}.store(raw, std::memory_order_relaxed);
     }
+
+    usize lookup(u64 fragment) const {
+        u64 needle   = fragment * FRAGMENTS_LSB;
+        u64 haystack = std::atomic_ref{fragments}.load(std::memory_order_relaxed);
+        u64 zeros    = needle ^ haystack;
+        u64 matches  = (zeros - FRAGMENTS_LSB) & ~zeros & FRAGMENTS_MSB;
+        return static_cast<usize>(std::countr_zero(matches)) / FRAGMENT_WIDTH;
+    }
+
+    u64 get_fragment(usize index) const {
+        u64   f     = std::atomic_ref{fragments}.load(std::memory_order_relaxed);
+        usize shift = FRAGMENT_WIDTH * index;
+        return (f >> shift) & FRAGMENT_MASK;
+    }
+
+    void set_fragment(usize index, u64 fragment) {
+        u64   f     = std::atomic_ref{fragments}.load(std::memory_order_relaxed);
+        usize shift = FRAGMENT_WIDTH * index;
+        f &= ~(FRAGMENT_MASK << shift);
+        f |= fragment << shift;
+        std::atomic_ref{fragments}.store(f, std::memory_order_relaxed);
+    }
+
+private:
+    static constexpr u64 FRAGMENTS_LSB = 0x0000'0400'0020'0001;
+    static constexpr u64 FRAGMENTS_MSB = 0x4000'0200'0010'0000;
+
+    std::array<u64, ENTRY_COUNT> entries;
+    u64                          fragments;
 };
 
-static_assert(sizeof(TTEntry) == 10 * sizeof(u8));
+static_assert(sizeof(TTEntry) == 8 * sizeof(u8));
 static_assert(sizeof(TTCluster) == 32 * sizeof(u8));
-static_assert(sizeof(TTClusterMemory) == 32 * sizeof(u8));
+static_assert(sizeof(TTCluster) == 32 * sizeof(u8));
 
 struct TTData {
     Value eval;
@@ -105,13 +124,13 @@ public:
     void                  clear(usize thread_count);
     void                  increment_age();
     i32                   hashfull() const;
-    TTClusterMemory*      addr_key(const u64 key) const;
+    TTCluster*            addr_key(const u64 key) const;
 
 
 private:
-    unique_ptr_huge_page<TTClusterMemory[]> m_clusters;
-    size_t                                  m_size;
-    u8                                      m_age;
+    unique_ptr_huge_page<TTCluster[]> m_clusters;
+    size_t                            m_size;
+    u8                                m_age;
 };
 
 }  // namespace Clockwork
