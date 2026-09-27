@@ -64,10 +64,10 @@ TT::TT(size_t mb) :
     resize(mb, 1);
 }
 
-std::optional<TTData> TT::probe(const Position& pos, i32 ply) const {
-    size_t      cluster_index = mulhi64(pos.get_hash_key(), m_size);
-    const auto& cluster       = this->m_clusters[cluster_index];
-    auto        fragment      = to_fragment(pos.get_hash_key());
+std::optional<TTData> TT::probe(const Position& pos, i32 ply) {
+    size_t cluster_index = mulhi64(pos.get_hash_key(), m_size);
+    auto&  cluster       = this->m_clusters[cluster_index];
+    auto   fragment      = to_fragment(pos.get_hash_key());
 
     if (auto entry_index = cluster.lookup(fragment); entry_index < TTCluster::ENTRY_COUNT) {
         auto entry = cluster.load(entry_index);
@@ -200,7 +200,7 @@ void TT::increment_age() {
     this->m_age      = new_age;
 }
 
-i32 TT::hashfull() const {
+i32 TT::hashfull() {
     if (m_size == 0) {
         return 0;
     }
@@ -214,7 +214,7 @@ i32 TT::hashfull() const {
     }
 
     for (size_t i = 0; i < num_to_probe; ++i) {
-        const auto& cluster = this->m_clusters[i];
+        auto& cluster = this->m_clusters[i];
         for (size_t entry_index = 0; entry_index < TTCluster::ENTRY_COUNT; entry_index++) {
             auto entry = cluster.load(entry_index);
             if (entry.age() == m_age && entry.bound() != Bound::None) {
