@@ -40,35 +40,35 @@ public:
     static constexpr u64   FRAGMENT_MASK  = (1 << FRAGMENT_WIDTH) - 1;
 
     [[nodiscard]] TTEntry load(usize index) const {
-        u64 raw = std::atomic_ref{entries[index]}.load(std::memory_order_relaxed);
+        u64 raw = std::atomic_ref{this->entries[index]}.load(std::memory_order_relaxed);
         return std::bit_cast<TTEntry>(raw);
     }
 
     void store(usize index, TTEntry entry) {
         u64 raw = std::bit_cast<u64>(entry);
-        std::atomic_ref{entries[index]}.store(raw, std::memory_order_relaxed);
+        std::atomic_ref{this->entries[index]}.store(raw, std::memory_order_relaxed);
     }
 
     usize lookup(u64 fragment) const {
         u64 needle   = fragment * FRAGMENTS_LSB;
-        u64 haystack = std::atomic_ref{fragments}.load(std::memory_order_relaxed);
+        u64 haystack = std::atomic_ref{this->fragments}.load(std::memory_order_relaxed);
         u64 zeros    = needle ^ haystack;
         u64 matches  = (zeros - FRAGMENTS_LSB) & ~zeros & FRAGMENTS_MSB;
         return static_cast<usize>(std::countr_zero(matches)) / FRAGMENT_WIDTH;
     }
 
     u64 get_fragment(usize index) const {
-        u64   f     = std::atomic_ref{fragments}.load(std::memory_order_relaxed);
+        u64   f     = std::atomic_ref{this->fragments}.load(std::memory_order_relaxed);
         usize shift = FRAGMENT_WIDTH * index;
         return (f >> shift) & FRAGMENT_MASK;
     }
 
     void set_fragment(usize index, u64 fragment) {
-        u64   f     = std::atomic_ref{fragments}.load(std::memory_order_relaxed);
+        u64   f     = std::atomic_ref{this->fragments}.load(std::memory_order_relaxed);
         usize shift = FRAGMENT_WIDTH * index;
         f &= ~(FRAGMENT_MASK << shift);
         f |= fragment << shift;
-        std::atomic_ref{fragments}.store(f, std::memory_order_relaxed);
+        std::atomic_ref{this->fragments}.store(f, std::memory_order_relaxed);
     }
 
 private:
