@@ -4,6 +4,7 @@
 #include "position.hpp"
 #include "rays.hpp"
 #include "util/types.hpp"
+#include "zobrist.hpp"
 #include <unordered_set>
 
 namespace Clockwork {
@@ -73,12 +74,12 @@ bool RepetitionInfo::has_game_cycle(const Position& pos, usize ply) {
     Bitboard occ          = pos.board().get_occupied_bitboard();
     HashKey  original_key = pos.get_hash_key();
 
-    HashKey other = ~(original_key ^ old_key(2));
+    HashKey other = original_key ^ old_key(2) ^ Zobrist::side_key;
 
     for (usize i = 3; i <= end; i += 2) {
         HashKey curr_key = old_key(i + 1);
 
-        other ^= ~(curr_key ^ old_key(i));
+        other ^= curr_key ^ old_key(i) ^ Zobrist::side_key;
         if (other != 0) {
             continue;
         }
