@@ -89,7 +89,16 @@ void History::update_noisy_stats(const Position& pos, Move move, i32 bonus) {
                       bonus);
 }
 
-void History::update_correction_history(const Position& pos, i32 depth, i32 diff) {
+static i32* get_cont_corr_slot(i32 ply, const Search::Stack* ss) {
+    if (ply < 2 || (ss - 2)->cont_corr_entry == nullptr || (ss - 1)->move == Move::none()) {
+        return nullptr;
+    }
+    usize prev_pt = static_cast<usize>((ss - 1)->moved_piece) - static_cast<usize>(PieceType::Pawn);
+    return &(*(ss - 2)->cont_corr_entry)[prev_pt][(ss - 1)->move.to().raw];
+}
+
+void History::update_correction_history(
+  const Position& pos, i32 depth, i32 diff, i32 ply, const Search::Stack* ss) {
     usize side_index         = static_cast<usize>(pos.active_color());
     u64   pawn_key           = pos.get_pawn_key();
     u64   white_non_pawn_key = pos.get_non_pawn_key(Color::White);
@@ -120,9 +129,12 @@ void History::update_correction_history(const Position& pos, i32 depth, i32 diff
     update_entry(m_non_pawn_corr_hist[1][side_index][black_non_pawn_index]);
     update_entry(m_major_corr_hist[side_index][major_index]);
     update_entry(m_minor_corr_hist[side_index][minor_index]);
+    if (i32* cont_corr = get_cont_corr_slot(ply, ss)) {
+        update_entry(*cont_corr);
+    }
 }
 
-i32 History::get_correction(const Position& pos) const {
+i32 History::get_correction(const Position& pos, i32 ply, const Search::Stack* ss) const {
     usize side_index         = static_cast<usize>(pos.active_color());
     u64   pawn_key           = pos.get_pawn_key();
     u64   white_non_pawn_key = pos.get_non_pawn_key(Color::White);
@@ -143,6 +155,9 @@ i32 History::get_correction(const Position& pos) const {
     correction += m_non_pawn_corr_hist[1][side_index][black_non_pawn_index];
     correction += m_major_corr_hist[side_index][major_index];
     correction += m_minor_corr_hist[side_index][minor_index];
+    if (const i32* cont_corr = get_cont_corr_slot(ply, ss)) {
+        correction += *cont_corr;
+    }
 
     return correction / CORRECTION_HISTORY_GRAIN;
 }
@@ -156,6 +171,7 @@ void History::clear() {
     std::memset(&m_non_pawn_corr_hist[1], 0, sizeof(CorrectionHistory));
     std::memset(&m_major_corr_hist, 0, sizeof(CorrectionHistory));
     std::memset(&m_minor_corr_hist, 0, sizeof(CorrectionHistory));
+    std::memset(&m_cont_corr_hist, 0, sizeof(ContCorrHistory));
 }
 
 }  // namespace Clockwork

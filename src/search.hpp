@@ -46,6 +46,9 @@ struct Stack {
     Move           killer      = Move::none();
     Move           excluded_move;
     ContHistEntry* cont_hist_entry = nullptr;
+    Move           move            = Move::none();
+    PieceType      moved_piece     = PieceType::None;
+    ContCorrEntry* cont_corr_entry = nullptr;
     i32            fail_high_count = 0;
     PV             pv;
 };

@@ -522,10 +522,10 @@ Value Worker::search(
         if (alpha < 0 && repetition_info.has_game_cycle(pos, static_cast<usize>(ply))) {
             if (!is_in_check) {
                 auto raw_eval   = evaluate(pos);
-                auto correction = m_td.history.get_correction(pos);
+                auto correction = m_td.history.get_correction(pos, ply, ss);
                 auto eval       = adj_shuffle(pos, raw_eval) + correction;
                 if (eval < 0) {
-                    m_td.history.update_correction_history(pos, depth, -eval);
+                    m_td.history.update_correction_history(pos, depth, -eval, ply, ss);
                 }
             }
 
@@ -616,7 +616,7 @@ Value Worker::search(
     Value raw_eval   = -VALUE_INF;
     ss->static_eval  = -VALUE_INF;
     if (!is_in_check) {
-        correction = excluded ? 0 : m_td.history.get_correction(pos);
+        correction = excluded ? 0 : m_td.history.get_correction(pos, ply, ss);
         raw_eval   = tt_data && !is_decisive_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
         ss->static_eval = adj_shuffle(pos, raw_eval) + correction;
         improving =
@@ -711,6 +711,9 @@ Value Worker::search(
             for (Move m = moves.next(); m != Move::none(); m = moves.next()) {
 
                 ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
+                ss->move            = m;
+                ss->moved_piece     = pos.piece_at(m.from());
+                ss->cont_corr_entry = &m_td.history.get_cont_corr_entry(pos, m);
                 Position pos_after  = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
                 repetition_info.push(pos_after.get_hash_key(), pos.is_reversible(m));
 
@@ -726,6 +729,9 @@ Value Worker::search(
                 repetition_info.pop();
                 m_td.pop_psqt_state();
                 ss->cont_hist_entry = nullptr;
+                ss->move            = Move::none();
+                ss->moved_piece     = PieceType::None;
+                ss->cont_corr_entry = nullptr;
 
                 if (probcut_value >= probcut_beta) {
                     m_searcher.tt.store(pos, ply, raw_eval, m, probcut_value, probcut_depth, false,
@@ -878,6 +884,9 @@ Value Worker::search(
 
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
+        ss->move            = m;
+        ss->moved_piece     = pos.piece_at(m.from());
+        ss->cont_corr_entry = &m_td.history.get_cont_corr_entry(pos, m);
 
         Position pos_after = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
         moves_played++;
@@ -986,6 +995,9 @@ Value Worker::search(
         repetition_info.pop();
         m_td.pop_psqt_state();
         ss->cont_hist_entry = nullptr;
+        ss->move            = Move::none();
+        ss->moved_piece     = PieceType::None;
+        ss->cont_corr_entry = nullptr;
 
         if (m_stopped) {
             return 0;
@@ -1099,7 +1111,8 @@ Value Worker::search(
             && !(best_move != Move::none() && (best_move.is_capture() || best_move.is_promotion()))
             && !((bound == Bound::Lower && best_value <= ss->static_eval)
                  || (bound == Bound::Upper && best_value >= ss->static_eval))) {
-            m_td.history.update_correction_history(pos, depth, best_value - ss->static_eval);
+            m_td.history.update_correction_history(pos, depth, best_value - ss->static_eval, ply,
+                                                   ss);
         }
     }
 
@@ -1166,7 +1179,7 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
     Value raw_eval    = -VALUE_INF;
     Value static_eval = -VALUE_INF;
     if (!is_in_check) {
-        correction  = m_td.history.get_correction(pos);
+        correction  = m_td.history.get_correction(pos, ply, ss);
         raw_eval    = tt_data && !is_decisive_score(tt_data->eval) ? tt_data->eval : evaluate(pos);
         static_eval = adj_shuffle(pos, raw_eval) + correction;
 
@@ -1204,6 +1217,9 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
 
         // Do move
         ss->cont_hist_entry = &m_td.history.get_cont_hist_entry(pos, m);
+        ss->move            = m;
+        ss->moved_piece     = pos.piece_at(m.from());
+        ss->cont_corr_entry = &m_td.history.get_cont_corr_entry(pos, m);
         Position pos_after  = pos.move(m, m_td.push_psqt_state(), &m_searcher.tt);
         moves_searched++;
 
@@ -1220,6 +1236,9 @@ Value Worker::quiesce(const Position& pos, Stack* ss, Value alpha, Value beta, i
         repetition_info.pop();
         m_td.pop_psqt_state();
         ss->cont_hist_entry = nullptr;
+        ss->move            = Move::none();
+        ss->moved_piece     = PieceType::None;
+        ss->cont_corr_entry = nullptr;
 
         if (m_stopped) {
             return 0;
