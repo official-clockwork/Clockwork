@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <barrier>
+#include <cmath>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -362,6 +363,21 @@ int main() {
 
     const size_t total_batches = (positions.size() + batch_size - 1) / batch_size;
 
+    // linear warmup over the first 1% of steps, then cosine decay
+    constexpr f64 LR_PEAK     = 3.0;
+    constexpr f64 LR_END      = 0.001;
+    constexpr f64 WARMUP_FRAC = 0.01;
+    const f64     total_steps = static_cast<f64>(total_batches) * epochs;
+    u64           step        = 0;
+    auto          lr_at       = [&](f64 s) {
+        const f64 t = s / total_steps;
+        if (t < WARMUP_FRAC) {
+            return LR_PEAK * t / WARMUP_FRAC;
+        }
+        const f64 u = (t - WARMUP_FRAC) / (1.0 - WARMUP_FRAC);
+        return LR_END + 0.5 * (LR_PEAK - LR_END) * (1.0 + std::cos(3.141592653589793 * u));
+    };
+
     // Per-thread gradient buffers for lock-free accumulation
     std::vector<Parameters> thread_grads(thread_count, Parameters::zeros(parameter_count));
 
@@ -382,6 +398,7 @@ int main() {
                                    }
 
                                    // Apply optimizer
+                                   optim.set_lr(lr_at(static_cast<f64>(step++)));
                                    optim.step(current_parameter_values, thread_grads[0]);
                                }};
 
@@ -467,38 +484,8 @@ int main() {
         }).detach();
     }
 
-    // Freeze all parameters before tuning, except for material parameters.
-    ParameterCountInfo counts = Globals::get().get_parameter_counts();
-
-    // Freeze all value
-    Globals::get().freeze_value_range(0, counts.parameter_count);
-
-    // Freeze all pair, except first 5 (material parameters)
-    Globals::get().freeze_pair_range(5, counts.pair_parameter_count);
-
     // Epoch loop
     for (int epoch = 0; epoch < epochs; ++epoch) {
-
-        if (epoch == 24) {
-            // Unfreeze all parameters after 24 epochs. Dont unfreeze king safety just yet
-            Globals::get().unfreeze_value_range(0, counts.parameter_count);
-            Globals::get().unfreeze_pair_range(
-              0, counts.pair_parameter_count - (28 + 7 + 28 + 5 + 5 + 1 + 1 + 1 + 1 + 1 + 2));
-            optim.set_lr(.1);
-        }
-        if (epoch == 96) {
-            // Unfreeze king safety parameters after 96 epochs
-            Globals::get().unfreeze_pair_range(0, counts.pair_parameter_count);
-        }
-
-
-        if (epoch < 24) {
-            optim.set_lr(20.0 * std::pow(0.0333, double(epoch) / 24.0));
-        } else if (epoch < 72) {
-            optim.set_lr(2 * std::pow(0.0667, double(epoch - 24) / 28.0));
-        } else {
-            optim.set_lr(std::pow(0.1, double(epoch - 72) / 128.0));
-        }
 
         std::cout << "Epoch " << epoch + 1 << "/" << epochs << "\n";
 
